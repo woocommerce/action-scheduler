@@ -93,6 +93,9 @@ class ActionScheduler_wpCommentLogger extends ActionScheduler_Logger {
 		add_action( 'action_scheduler_after_execute', array( $this, 'log_completed_action' ), 10, 1 );
 		add_action( 'action_scheduler_failed_execution', array( $this, 'log_failed_action' ), 10, 2 );
 		add_action( 'action_scheduler_reset_action', array( $this, 'log_reset_action' ), 10, 1 );
+
+		add_filter( 'comments_clauses', array( $this, 'exclude_comments' ), 11, 1 ); // hook after WC_Comments::exclude_order_comments()
+		add_action( 'comment_feed_where', array( $this, 'exclude_comments_from_feed' ) );
 	}
 
 	public function disable_comment_counting() {
@@ -126,5 +129,42 @@ class ActionScheduler_wpCommentLogger extends ActionScheduler_Logger {
 		$this->log( $action_id, __('action reset', 'action_scheduler') );
 	}
 
+	/**
+	 * Exclude action scheduler comments from admin queries to hide them from the "Comments" screen
+	 * and the admin dashboard widget.
+	 *
+	 * Requires WooCommerce to have run WC_Comments::exclude_order_comments() to join the posts table.
+	 *
+	 * @param array $clauses
+	 * @return array
+	 */
+	public function exclude_comments( $clauses ) {
+		global $wpdb, $typenow, $pagenow;
+
+		if ( is_admin() ) {
+			$clauses['where'] .= " AND $wpdb->posts.post_type NOT IN ('" . ActionScheduler_wpPostStore::POST_TYPE . "') ";
+			error_log( '$clauses = ' . print_r( $clauses, true ) );
+		}
+
+		return $clauses;
+	}
+
+	/**
+	 * Exclude order comments from RSS feeds
+	 *
+	 * @param string $where
+	 * @return string
+	 */
+	public function exclude_comments_from_feed( $where ) {
+		global $wpdb;
+
+		if ( $where ) {
+			$where .= ' AND ';
+		}
+
+		$where .= " $wpdb->posts.post_type NOT IN ('" . ActionScheduler_wpPostStore::POST_TYPE . "') ";
+
+	    return $where;
+	}
 }
  

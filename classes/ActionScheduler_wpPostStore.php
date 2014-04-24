@@ -361,6 +361,18 @@ class ActionScheduler_wpPostStore extends ActionScheduler_Store {
 		return new ActionScheduler_ActionClaim( $claim_id, $action_ids );
 	}
 
+	/**
+	 * @return int
+	 */
+	public function get_claim_count(){
+		global $wpdb;
+
+		$sql = "SELECT COUNT(DISTINCT post_password) FROM {$wpdb->posts} WHERE post_password != '' AND post_type = %s AND post_status IN ('in-progress','pending')";
+		$sql = $wpdb->prepare( $sql, array( self::POST_TYPE ) );
+
+		return $wpdb->get_var( $sql );
+	}
+
 	protected function generate_claim_id() {
 		$claim_id = md5(microtime(true) . rand(0,1000));
 		return substr($claim_id, 0, 20); // to fit in db field with 20 char limit
@@ -392,7 +404,7 @@ class ActionScheduler_wpPostStore extends ActionScheduler_Store {
 	 * @param string $claim_id
 	 * @return array
 	 */
-	protected function find_actions_by_claim_id( $claim_id ) {
+	public function find_actions_by_claim_id( $claim_id ) {
 		/** @var wpdb $wpdb */
 		global $wpdb;
 		$sql = "SELECT ID FROM {$wpdb->posts} WHERE post_type = %s AND post_password = %s";
@@ -452,8 +464,9 @@ class ActionScheduler_wpPostStore extends ActionScheduler_Store {
 	public function log_execution( $action_id ) {
 		/** @var wpdb $wpdb */
 		global $wpdb;
-		$sql = "UPDATE {$wpdb->posts} SET menu_order = menu_order+1, post_status=%s WHERE ID = %d AND post_type = %s";
-		$sql = $wpdb->prepare( $sql, self::STATUS_RUNNING, $action_id, self::POST_TYPE );
+
+		$sql = "UPDATE {$wpdb->posts} SET menu_order = menu_order+1, post_status=%s, post_modified_gmt = %s, post_modified = %s WHERE ID = %d AND post_type = %s";
+		$sql = $wpdb->prepare( $sql, self::STATUS_RUNNING, current_time('mysql', true), current_time('mysql'), $action_id, self::POST_TYPE );
 		$wpdb->query($sql);
 	}
 

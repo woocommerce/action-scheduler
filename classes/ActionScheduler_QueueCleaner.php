@@ -9,7 +9,6 @@ class ActionScheduler_QueueCleaner {
 
 	private $month_in_seconds = 2678400; // 31 days
 	private $five_minutes = 300;
-	private $thirty_minutes = 1800;
 
 	public function __construct( ActionScheduler_Store $store = NULL ) {
 		$this->store = $store ? $store : ActionScheduler_Store::instance();
@@ -23,7 +22,7 @@ class ActionScheduler_QueueCleaner {
 			'status' => ActionScheduler_Store::STATUS_COMPLETE,
 			'modified' => $cutoff,
 			'modified_compare' => '<=',
-			'per_page' => apply_filters( 'action_scheduler_cleanup_batch_size', 10 ),
+			'per_page' => apply_filters( 'action_scheduler_cleanup_batch_size', 20 ),
 		) );
 
 		foreach ( $actions_to_delete as $action_id ) {
@@ -42,7 +41,7 @@ class ActionScheduler_QueueCleaner {
 			'modified' => $cutoff,
 			'modified_compare' => '<=',
 			'claimed' => TRUE,
-			'per_page' => apply_filters( 'action_scheduler_cleanup_batch_size', 10 ),
+			'per_page' => apply_filters( 'action_scheduler_cleanup_batch_size', 20 ),
 		) );
 
 		foreach ( $actions_to_reset as $action_id ) {
@@ -52,7 +51,7 @@ class ActionScheduler_QueueCleaner {
 	}
 
 	public function mark_failures() {
-		$timeout = apply_filters( 'action_scheduler_failure_period', $this->thirty_minutes );
+		$timeout = apply_filters( 'action_scheduler_failure_period', $this->five_minutes );
 		if ( $timeout < 0 ) {
 			return;
 		}
@@ -62,7 +61,7 @@ class ActionScheduler_QueueCleaner {
 			'modified' => $cutoff,
 			'modified_compare' => '<=',
 			'claimed' => TRUE,
-			'per_page' => apply_filters( 'action_scheduler_cleanup_batch_size', 10 ),
+			'per_page' => apply_filters( 'action_scheduler_cleanup_batch_size', 20 ),
 		) );
 
 		foreach ( $actions_to_reset as $action_id ) {

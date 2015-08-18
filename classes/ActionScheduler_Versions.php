@@ -15,7 +15,7 @@ class ActionScheduler_Versions {
 		if ( isset($this->versions[$version_string]) ) {
 			return FALSE;
 		}
-		$this->versions[$version_string] = $initialization_callback;
+		$this->versions[$version_string] = call_user_func( $initialization_callback );
 		return TRUE;
 	}
 

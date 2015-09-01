@@ -41,17 +41,16 @@ abstract class ActionScheduler {
 	}
 
 	/**
-	 * Get the absolute system path to the plugin directory, or a file therein
+	 * Get the plugin directory path, or a file therein
 	 * @static
 	 * @param string $path
 	 * @return string
 	 */
 	public static function plugin_path( $path ) {
-		$base = dirname(self::$plugin_file);
 		if ( $path ) {
-			return trailingslashit($base).$path;
+			return plugin_dir_path( self::$plugin_file ) . $path;
 		} else {
-			return untrailingslashit($base);
+			return untrailingslashit( plugin_dir_path( self::$plugin_file ) );
 		}
 	}
 
@@ -115,4 +114,4 @@ abstract class ActionScheduler {
 
 	final private function __construct() {}
 }
- 
+

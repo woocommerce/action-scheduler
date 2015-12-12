@@ -29,6 +29,7 @@ class ActionScheduler_wpPostStore extends ActionScheduler_Store {
 		$post = array(
 			'post_type' => self::POST_TYPE,
 			'post_title' => $action->get_hook(),
+			'post_name' => uniqid( $action->get_hook() . '-', true ) . '-' . wp_generate_password( 34, false, false ),
 			'post_content' => json_encode($action->get_args()),
 			'post_status' => ( $action->is_finished() ? 'publish' : 'pending' ),
 			'post_date_gmt' => $this->get_timestamp($action, $date),
@@ -581,4 +582,4 @@ class ActionScheduler_wpPostStore extends ActionScheduler_Store {
 		$taxonomy_registrar->register();
 	}
 }
- 
+

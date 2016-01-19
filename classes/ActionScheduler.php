@@ -28,6 +28,10 @@ abstract class ActionScheduler {
 		return ActionScheduler_QueueRunner::instance();
 	}
 
+	public static function admin_view() {
+		return ActionScheduler_AdminView::instance();
+	}
+
 	public static function get_datetime_object( $when ) {
 		$when = empty($when) ? time() : $when;
 		if ( is_object($when) && $when instanceof DateTime ) {
@@ -100,6 +104,9 @@ abstract class ActionScheduler {
 
 		$runner = self::runner();
 		add_action( 'init', array( $runner, 'init' ), 1, 0 );
+
+		$admin_view = self::admin_view();
+		add_action( 'init', array( $admin_view, 'init' ), 0, 0 ); // run before $store::init()
 
 		require_once( self::plugin_path('functions.php') );
 	}

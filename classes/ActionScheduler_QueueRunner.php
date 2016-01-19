@@ -49,16 +49,16 @@ class ActionScheduler_QueueRunner {
 
 	public function run() {
 		@ini_set( 'memory_limit', apply_filters( 'admin_memory_limit', WP_MAX_MEMORY_LIMIT ) );
+		@set_time_limit( apply_filters( 'action_scheduler_queue_runner_time_limit', 600 ) );
 		do_action( 'action_scheduler_before_process_queue' );
 		$this->run_cleanup();
 		$count = 0;
-		$batch_size = apply_filters( 'action_scheduler_queue_runner_batch_size', 20 );
-		$this->monitor = new ActionScheduler_FatalErrorMonitor( $this->store );
-		do {
+		if ( $this->store->get_claim_count() < apply_filters( 'action_scheduler_queue_runner_concurrent_batches', 5 ) ) {
+			$batch_size = apply_filters( 'action_scheduler_queue_runner_batch_size', 25 );
+			$this->monitor = new ActionScheduler_FatalErrorMonitor( $this->store );
 			$actions_run = $this->do_batch( $batch_size );
-			$count += $actions_run;
-		} while ( $actions_run > 0 ); // keep going until we run out of actions, time, or memory
-		unset( $this->monitor );
+			unset( $this->monitor );
+		}
 
 		do_action( 'action_scheduler_after_process_queue' );
 		return $count;
@@ -136,4 +136,4 @@ class ActionScheduler_QueueRunner {
 		return $schedules;
 	}
 }
-
+ 

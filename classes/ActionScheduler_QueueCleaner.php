@@ -60,13 +60,12 @@ class ActionScheduler_QueueCleaner {
 			'status' => ActionScheduler_Store::STATUS_RUNNING,
 			'modified' => $cutoff,
 			'modified_compare' => '<=',
-			'claimed' => TRUE,
 			'per_page' => apply_filters( 'action_scheduler_cleanup_batch_size', 20 ),
 		) );
 
 		foreach ( $actions_to_reset as $action_id ) {
 			$this->store->mark_failure( $action_id );
-			do_action( 'action_scheduler_failed_action', $action_id );
+			do_action( 'action_scheduler_failed_action', $action_id, $timeout );
 		}
 	}
 }

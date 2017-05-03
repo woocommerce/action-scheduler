@@ -1,17 +1,29 @@
 <?php
+abstract class PHPUnit_Framework_Assert extends PHPUnit\Framework\Assert {
+}
+
 class PHPUnit_Framework_Exception extends PHPUnit\Framework\Exception {
 }
 
 class PHPUnit_Framework_AssertionFailedError extends PHPUnit\Framework\AssertionFailedError {
 }
 
+abstract class PHPUnit_Framework_BaseTestListener extends PHPUnit\Framework\BaseTestListener {
+}
+
 class PHPUnit_Framework_CodeCoverageException extends PHPUnit\Framework\CodeCoverageException {
+}
+
+abstract class PHPUnit_Framework_Constraint_Constraint extends PHPUnit\Framework\Constraint\Constraint {
 }
 
 class PHPUnit_Framework_Constraint_ArrayHasKey extends PHPUnit\Framework\Constraint\ArrayHasKey {
 }
 
 class PHPUnit_Framework_Constraint_ArraySubset extends PHPUnit\Framework\Constraint\ArraySubset {
+}
+
+abstract class PHPUnit_Framework_Constraint_Composite extends PHPUnit\Framework\Constraint\Composite {
 }
 
 class PHPUnit_Framework_Constraint_Attribute extends PHPUnit\Framework\Constraint\Attribute {
@@ -173,6 +185,9 @@ class PHPUnit_Framework_ExceptionWrapper extends PHPUnit\Framework\ExceptionWrap
 class PHPUnit_Framework_ExpectationFailedException extends PHPUnit\Framework\ExpectationFailedException {
 }
 
+abstract class PHPUnit_Framework_TestCase extends PHPUnit\Framework\TestCase {
+}
+
 class PHPUnit_Framework_IncompleteTestCase extends PHPUnit\Framework\IncompleteTestCase {
 }
 
@@ -218,7 +233,13 @@ class PHPUnit_Framework_Warning extends PHPUnit\Framework\Warning {
 class PHPUnit_Framework_WarningTestCase extends PHPUnit\Framework\WarningTestCase {
 }
 
+abstract class PHPUnit_Runner_BaseTestRunner extends PHPUnit\Runner\BaseTestRunner {
+}
+
 class PHPUnit_Runner_Exception extends PHPUnit\Runner\Exception {
+}
+
+abstract class PHPUnit_Runner_Filter_GroupFilterIterator extends PHPUnit\Runner\Filter\GroupFilterIterator {
 }
 
 class PHPUnit_Runner_Filter_ExcludeGroupFilterIterator extends PHPUnit\Runner\Filter\ExcludeGroupFilterIterator {
@@ -290,6 +311,9 @@ class PHPUnit_Util_Log_JUnit extends PHPUnit\Util\Log\JUnit {
 class PHPUnit_Util_Log_TeamCity extends PHPUnit\Util\Log\TeamCity {
 }
 
+abstract class PHPUnit_Util_PHP_AbstractPhpProcess extends PHPUnit\Util\PHP\AbstractPhpProcess {
+}
+
 class PHPUnit_Util_PHP_DefaultPhpProcess extends PHPUnit\Util\PHP\DefaultPhpProcess {
 }
 
@@ -300,6 +324,9 @@ class PHPUnit_Util_RegularExpression extends PHPUnit\Util\RegularExpression {
 }
 
 class PHPUnit_Util_Test extends PHPUnit\Util\Test {
+}
+
+abstract class PHPUnit_Util_TestDox_ResultPrinter extends PHPUnit\Util\TestDox\ResultPrinter {
 }
 
 class PHPUnit_Util_TestDox_HtmlResultPrinter extends PHPUnit\Util\TestDox\HtmlResultPrinter {

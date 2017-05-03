@@ -28,7 +28,7 @@ if( false !== getenv( 'WP_TESTS_DIR' ) ) {
 	require dirname( dirname( dirname( dirname( dirname( dirname( __FILE__ ) ) ) ) ) ) . '/tests/phpunit/includes/bootstrap.php';
 }
 
-if (!class_exists('\PHPUnit_Framework_TestCase')) {
+if ( ! class_exists( 'PHPUnit_Framework_TestCase' ) ) {
     require __DIR__ . '/phpunit-compat.php';
 }
 

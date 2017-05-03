@@ -347,17 +347,3 @@ class PHPUnit_Util_Type extends PHPUnit\Util\Type {
 
 class PHPUnit_Util_Xml extends PHPUnit\Util\Xml {
 }
-
-
-Fatal error: Uncaught PHPUnit\Runner\Exception: Class 'tests/phpunit-compat' could not be found in '/Users/crodas/projects/Prosspress/action-scheduler/tests/phpunit-compat.php'. in phar:///Users/crodas/Downloads/phpunit-6.1.3.phar/phpunit/Runner/StandardTestSuiteLoader.php on line 101
-
-PHPUnit\Runner\Exception: Class 'tests/phpunit-compat' could not be found in '/Users/crodas/projects/Prosspress/action-scheduler/tests/phpunit-compat.php'. in phar:///Users/crodas/Downloads/phpunit-6.1.3.phar/phpunit/Runner/StandardTestSuiteLoader.php on line 101
-
-Call Stack:
-    0.0148     803680   1. {main}() /Users/crodas/Downloads/phpunit-6.1.3.phar:0
-    0.0843    8012440   2. PHPUnit\TextUI\Command::main() /Users/crodas/Downloads/phpunit-6.1.3.phar:545
-    0.0843    8012552   3. PHPUnit\TextUI\Command->run() phar:///Users/crodas/Downloads/phpunit-6.1.3.phar/phpunit/TextUI/Command.php:140
-    0.0844    8014848   4. PHPUnit\Runner\BaseTestRunner->getTest() phar:///Users/crodas/Downloads/phpunit-6.1.3.phar/phpunit/TextUI/Command.php:161
-    0.0844    8014848   5. PHPUnit\Runner\BaseTestRunner->loadSuiteClass() phar:///Users/crodas/Downloads/phpunit-6.1.3.phar/phpunit/Runner/BaseTestRunner.php:71
-    0.0844    8014888   6. PHPUnit\Runner\StandardTestSuiteLoader->load() phar:///Users/crodas/Downloads/phpunit-6.1.3.phar/phpunit/Runner/BaseTestRunner.php:130
-

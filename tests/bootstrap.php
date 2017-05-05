@@ -15,6 +15,13 @@ foreach ( array('WP_CONTENT_DIR', 'WP_CONTENT_URL', 'WP_PLUGIN_DIR', 'WP_PLUGIN_
 	}
 }
 
+// Make it compatible with newer PHPUnit which uses
+// namespaces instead of bare classes.
+if ( ! class_exists( 'PHPUnit_Framework_TestCase' ) ) {
+    require __DIR__ . '/phpunit-compat.php';
+}
+
+
 // If the wordpress-tests repo location has been customized (and specified
 // with WP_TESTS_DIR), use that location. This will most commonly be the case
 // when configured for use with Travis CI.

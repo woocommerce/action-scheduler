@@ -86,6 +86,15 @@ abstract class ActionScheduler_Store {
 	abstract public function get_claim_count();
 
 	/**
+	 * Returns the claim ID of an $action_id
+	 *
+	 * @param mixed $action_id
+	 *
+	 * @return string|null
+	 */
+	abstract public function get_claim_id_for_action( $action_id );
+
+	/**
 	 * @param ActionScheduler_ActionClaim $claim
 	 *
 	 * @return void

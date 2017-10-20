@@ -124,6 +124,19 @@ class ActionScheduler_wpPostStore extends ActionScheduler_Store {
 		} else {
 			$action = new ActionScheduler_FinishedAction( $hook, $args, $schedule, $group );
 		}
+		$status = $post->post_status;
+		switch ( $post->post_status ) {
+			case 'publish':
+				$status = ActionScheduler_Store::STATUS_COMPLETE;
+				break;
+			case 'trash':
+				$status = ActionScheduler_Store::STATUS_CANCELED;
+				break;
+		}
+		$action->set_status( $status );
+		$action->set_id( $post->ID );
+		$action->set_claim_id( $post->post_password );
+
 		return $action;
 	}
 
@@ -460,6 +473,21 @@ class ActionScheduler_wpPostStore extends ActionScheduler_Store {
 		$action_ids = $this->find_actions_by_claim_id( $claim_id );
 		return new ActionScheduler_ActionClaim( $claim_id, $action_ids );
 	}
+
+	/**
+	 * Returns the claim ID of an $action_id
+	 *
+	 * @param mixed $action_id
+	 *
+	 * @return string|null
+	 */
+	public function get_claim_id_for_action( $action_id ) {
+		/** @var \wpdb $wpdb */
+		global $wpdb;
+		$sql = $wpdb->prepare( "SELECT post_password FROM {$wpdb->posts} WHERE ID=%d AND post_type=%s", $action_id, self::POST_TYPE );
+		return $wpdb->get_var( $sql );
+	}
+
 
 	/**
 	 * @return int

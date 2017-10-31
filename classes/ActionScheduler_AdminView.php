@@ -64,7 +64,6 @@ class ActionScheduler_AdminView {
 			set_transient( __METHOD__, compact( 'action_ids' ) );
 		}
 
-		$action_ids = array( 2151 );
 		$actions = array();
 		foreach ( $action_ids as $id ) {
 			$actions[ $id ] = $instance->fetch_action( $id );

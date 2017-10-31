@@ -35,9 +35,41 @@ class ActionScheduler_AdminView {
 			} else {
 				add_action( 'admin_menu', array( $self, 'register_menu' ) );
 			}
+			add_action( 'admin_notices', array( $self, 'check_past_due_actions' ) );
 		}
 	}
 
+	/**
+	 * Check if there are any past due action
+	 *
+	 * This method will check if there are past due. Because Action Scheduler is action agnostic,
+	 * it will execute an action with a list of the actions.
+	 *
+	 * The action owners should be listening to this action, and do something to warn the users
+	 * about how to fix their WP-Cron or to run their actions manually.
+	 *
+	 * This method is executed by the `admin_notices`, so it is safe to render the admin notification
+	 * from the `action_scheduler_past_due_action` action.
+	 *
+	 */
+	public function check_past_due_actions() {
+		$instance = ActionScheduler_Store::instance();
+		if ( $cache = get_transient( __METHOD__ ) ) {
+			$action_ids = $cache['action_ids'];
+		} else {
+			$action_ids = $instance->query_actions( array(
+				'date' => new Datetime( apply_filters( 'action_scheduler_past_due_time', '-5 days' ) ),
+				'status' => ActionScheduler_Store::STATUS_PENDING,
+			) );
+			set_transient( __METHOD__, compact( 'action_ids' ) );
+		}
+
+		$actions = array();
+		foreach ( $action_ids as $id ) {
+			$actions[ $id ] = $instance->fetch_action( $id );
+		}
+		do_action( 'action_scheduler_past_due_action', $actions );
+	}
 
 	/**
 	 * Registers action-scheduler into WooCommerce > System status.

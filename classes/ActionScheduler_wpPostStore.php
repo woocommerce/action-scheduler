@@ -277,10 +277,14 @@ class ActionScheduler_wpPostStore extends ActionScheduler_Store {
 		}
 		$sql .= " WHERE post_type=%s";
 		$sql_params[] = self::POST_TYPE;
-		if ( $query['hook'] ) {
+		if ( $query['hook'] && is_scalar( $query['hook'] ) ) {
 			$sql .= " AND p.post_title=%s";
 			$sql_params[] = $query['hook'];
+		} else if ( $query['hook'] ) {
+			$sql .= ' AND p.post_title IN (' . implode( ',', array_fill( '%s', 0, count( $query['hook'] ) ) ) . ')';
+			$sql_params = array_merge( $sql_params, $query['hook'] );
 		}
+
 		if ( !is_null($query['args']) ) {
 			$sql .= " AND p.post_content=%s";
 			$sql_params[] = json_encode($query['args']);

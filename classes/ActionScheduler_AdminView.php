@@ -45,29 +45,40 @@ class ActionScheduler_AdminView {
 	 * This method will check if there are past due. Because Action Scheduler is action agnostic,
 	 * it will execute an action with a list of the actions.
 	 *
-	 * The action owners should be listening to this action, and do something to warn the users
-	 * about how to fix their WP-Cron or to run their actions manually.
+	 * To make narrow down possible results, and improve query looking for past due actions, any
+	 * interested plugin must add their hook to an array through the `action_scheduler_past_due_hooks`
+	 * filter.
 	 *
-	 * This method is executed by the `admin_notices`, so it is safe to render the admin notification
-	 * from the `action_scheduler_past_due_action` action.
+	 * The action owner should be listening to the `action_schedule_past_due_action` action, 
+	 * and do something to warn the users about how to fix their WP-Cron or to run their actions manually.
 	 *
+	 * This method is executed on the `admin_notices`, so it is safe to render the admin notification.
 	 */
 	public function check_past_due_actions() {
 		$instance = ActionScheduler_Store::instance();
-		if ( $cache = get_transient( __METHOD__ ) ) {
-			$action_ids = $cache['action_ids'];
-		} else {
-			$action_ids = $instance->query_actions( array(
-				'date' => new Datetime( apply_filters( 'action_scheduler_past_due_time', '-5 days' ) ),
-				'status' => ActionScheduler_Store::STATUS_PENDING,
-			) );
-			set_transient( __METHOD__, compact( 'action_ids' ) );
+
+		$actions = apply_filters( 'action_scheduler_past_due_hooks', array() );
+		
+		if ( ! empty( $actions ) ) {
+			return;
+		}
+
+		$action_ids = $instance->query_actions( array(
+			'date'   => new Datetime( apply_filters( 'action_scheduler_past_due_time', '-5 days' ) ),
+			'status' => ActionScheduler_Store::STATUS_PENDING,
+			'hook'   => $actions,
+		) );
+
+		if ( ! empty( $action_ids ) ) {
+			return;
 		}
 
 		$actions = array();
 		foreach ( $action_ids as $id ) {
-			$actions[ $id ] = $instance->fetch_action( $id );
+			$action = $instance->fetch_action( $id );
+			$actions[ $action->get_hook() ][] = $action;
 		}
+
 		do_action( 'action_scheduler_past_due_action', $actions );
 	}
 

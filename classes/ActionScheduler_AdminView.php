@@ -40,13 +40,14 @@ class ActionScheduler_AdminView {
 	}
 
 	/**
-	 * Check if there are any past due action
+	 * Check if there are any past due actions.
 	 *
-	 * This method will check if there are past due. Because Action Scheduler is action agnostic,
-	 * it will execute an action with a list of the actions.
+	 * This method will check if there are past due actions. Because Action Scheduler is action agnostic,
+	 * it will trigger an action with a list of hooks that callbacks can use to handle past due actions
+	 * as needed.
 	 *
-	 * To make narrow down possible results, and improve query looking for past due actions, any
-	 * interested plugin must add their hook to an array through the `action_scheduler_past_due_hooks`
+	 * To narrow down possible results, and improve query looking for past due actions, any plugin
+	 * must add their hook name to an array through the `action_scheduler_past_due_hooks`
 	 * filter.
 	 *
 	 * The action owner should be listening to the `action_schedule_past_due_action` action, 

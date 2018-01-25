@@ -231,7 +231,7 @@ class ActionScheduler_wpPostStore extends ActionScheduler_Store {
 		if ( $query['hook'] && is_scalar( $query['hook'] ) ) {
 			$sql .= " AND p.post_title=%s";
 			$sql_params[] = $query['hook'];
-		} else if ( $query['hook'] ) {
+		} else if ( is_array( $query['hook'] ) ) {
 			$sql .= ' AND p.post_title IN (' . implode( ',', array_fill( '%s', 0, count( $query['hook'] ) ) ) . ')';
 			$sql_params = array_merge( $sql_params, $query['hook'] );
 		}
@@ -324,7 +324,7 @@ class ActionScheduler_wpPostStore extends ActionScheduler_Store {
 		if ( $query['hook'] && is_scalar( $query['hook'] ) ) {
 			$sql .= " AND p.post_title=%s";
 			$sql_params[] = $query['hook'];
-		} else if ( $query['hook'] ) {
+		} else if ( is_array( $query['hook'] ) ) {
 			$sql .= ' AND p.post_title IN (' . implode( ',', array_fill( 0, count( $query['hook'] ), '%s' ) ) . ')';
 			$sql_params = array_merge( $sql_params, $query['hook'] );
 		}

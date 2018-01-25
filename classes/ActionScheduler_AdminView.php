@@ -57,16 +57,16 @@ class ActionScheduler_AdminView {
 	 */
 	public function past_due_actions() {
 
-		$actions = apply_filters( 'action_scheduler_past_due_hooks', array() );
-		
-		if ( ! empty( $actions ) ) {
+		$action_hooks = apply_filters( 'action_scheduler_past_due_hooks', array() );
+
+		if ( ! empty( $action_hooks ) ) {
 			return;
 		}
 
 		$action_ids = ActionScheduler::store()->query_actions( array(
 			'date'   => new Datetime( apply_filters( 'action_scheduler_past_due_time', '-5 days' ) ),
 			'status' => ActionScheduler_Store::STATUS_PENDING,
-			'hook'   => $actions,
+			'hook'   => $action_hooks,
 		) );
 
 		if ( ! empty( $action_ids ) ) {

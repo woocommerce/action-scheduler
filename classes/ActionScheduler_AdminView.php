@@ -35,9 +35,52 @@ class ActionScheduler_AdminView {
 			} else {
 				add_action( 'admin_menu', array( $self, 'register_menu' ) );
 			}
+			add_action( 'admin_notices', array( $self, 'past_due_actions' ) );
 		}
 	}
 
+	/**
+	 * Trigger API for 3rd parties to handle past due actions.
+	 *
+	 * This method will check if there are past due actions. Because Action Scheduler is action agnostic,
+	 * it will trigger an action with a list of hooks that callbacks can use to handle past due actions
+	 * as needed.
+	 *
+	 * To narrow down possible results, and improve query looking for past due actions, any plugin
+	 * must add their hook name to an array through the `action_scheduler_past_due_hooks`
+	 * filter.
+	 *
+	 * The action owner should be listening to the `action_schedule_past_due_action` action, 
+	 * and do something to warn the users about how to fix their WP-Cron or to run their actions manually.
+	 *
+	 * This method is executed on the `admin_notices`, so it is safe to render the admin notification.
+	 */
+	public function past_due_actions() {
+
+		$action_hooks = apply_filters( 'action_scheduler_past_due_hooks_to_check', array() );
+
+		if ( ! empty( $action_hooks ) ) {
+			return;
+		}
+
+		$action_ids = ActionScheduler::store()->query_actions( array(
+			'date'   => new Datetime( apply_filters( 'action_scheduler_past_due_time', '-5 days' ) ),
+			'status' => ActionScheduler_Store::STATUS_PENDING,
+			'hook'   => $action_hooks,
+		) );
+
+		if ( ! empty( $action_ids ) ) {
+			return;
+		}
+
+		$actions = array();
+		foreach ( $action_ids as $id ) {
+			$action = ActionScheduler::store()->fetch_action( $id );
+			$actions[ $action->get_hook() ][] = $action;
+		}
+
+		do_action( 'action_scheduler_past_due_action', $actions );
+	}
 
 	/**
 	 * Registers action-scheduler into WooCommerce > System status.

@@ -35,12 +35,12 @@ class ActionScheduler_AdminView {
 			} else {
 				add_action( 'admin_menu', array( $self, 'register_menu' ) );
 			}
-			add_action( 'admin_notices', array( $self, 'check_past_due_actions' ) );
+			add_action( 'admin_notices', array( $self, 'past_due_actions' ) );
 		}
 	}
 
 	/**
-	 * Check if there are any past due actions.
+	 * Trigger API for 3rd parties to handle past due actions.
 	 *
 	 * This method will check if there are past due actions. Because Action Scheduler is action agnostic,
 	 * it will trigger an action with a list of hooks that callbacks can use to handle past due actions
@@ -55,7 +55,7 @@ class ActionScheduler_AdminView {
 	 *
 	 * This method is executed on the `admin_notices`, so it is safe to render the admin notification.
 	 */
-	public function check_past_due_actions() {
+	public function past_due_actions() {
 		$instance = ActionScheduler_Store::instance();
 
 		$actions = apply_filters( 'action_scheduler_past_due_hooks', array() );

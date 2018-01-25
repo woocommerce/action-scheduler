@@ -57,7 +57,7 @@ class ActionScheduler_AdminView {
 	 */
 	public function past_due_actions() {
 
-		$action_hooks = apply_filters( 'action_scheduler_past_due_hooks', array() );
+		$action_hooks = apply_filters( 'action_scheduler_past_due_hooks_to_check', array() );
 
 		if ( ! empty( $action_hooks ) ) {
 			return;

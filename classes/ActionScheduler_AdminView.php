@@ -56,7 +56,6 @@ class ActionScheduler_AdminView {
 	 * This method is executed on the `admin_notices`, so it is safe to render the admin notification.
 	 */
 	public function past_due_actions() {
-		$instance = ActionScheduler_Store::instance();
 
 		$actions = apply_filters( 'action_scheduler_past_due_hooks', array() );
 		
@@ -64,7 +63,7 @@ class ActionScheduler_AdminView {
 			return;
 		}
 
-		$action_ids = $instance->query_actions( array(
+		$action_ids = ActionScheduler::store()->query_actions( array(
 			'date'   => new Datetime( apply_filters( 'action_scheduler_past_due_time', '-5 days' ) ),
 			'status' => ActionScheduler_Store::STATUS_PENDING,
 			'hook'   => $actions,
@@ -76,7 +75,7 @@ class ActionScheduler_AdminView {
 
 		$actions = array();
 		foreach ( $action_ids as $id ) {
-			$action = $instance->fetch_action( $id );
+			$action = ActionScheduler::store()->fetch_action( $id );
 			$actions[ $action->get_hook() ][] = $action;
 		}
 

@@ -2,6 +2,8 @@
 
 /**
  * Class ActionScheduler_Action
+ *
+ * An action which has been saved and can be excuted.
  */
 class ActionScheduler_Action {
 	protected $hook = '';

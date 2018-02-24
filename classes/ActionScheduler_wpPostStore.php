@@ -11,7 +11,7 @@ class ActionScheduler_wpPostStore extends ActionScheduler_Store {
 	/** @var DateTimeZone */
 	protected $local_timezone = NULL;
 
-	public function save_action( ActionScheduler_Action $action, DateTime $date = NULL ){
+	public function save_action( ActionScheduler_AbstractAction $action, DateTime $date = NULL ){
 		try {
 			$post_array = $this->create_post_array( $action, $date );
 			$post_id = $this->save_post_array( $post_array );

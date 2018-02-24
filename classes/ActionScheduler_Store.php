@@ -22,7 +22,7 @@ abstract class ActionScheduler_Store {
 	 *
 	 * @return string The action ID
 	 */
-	abstract public function save_action( ActionScheduler_Action $action, DateTime $date = NULL );
+	abstract public function save_action( ActionScheduler_AbstractAction $action, DateTime $date = NULL );
 
 	/**
 	 * @param string $action_id

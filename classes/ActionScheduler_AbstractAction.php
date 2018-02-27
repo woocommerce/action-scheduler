@@ -24,7 +24,7 @@ abstract class ActionScheduler_AbstractAction implements ActionScheduler_Interfa
 	protected $is_finished = false;
 
 	public function execute() {
-		return do_action_ref_array( $this->get_hook(), $this->get_args() );
+		do_action_ref_array( $this->get_hook(), $this->get_args() );
 	}
 
 	/**

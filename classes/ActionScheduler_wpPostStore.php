@@ -11,7 +11,7 @@ class ActionScheduler_wpPostStore extends ActionScheduler_Store {
 	/** @var DateTimeZone */
 	protected $local_timezone = NULL;
 
-	public function save_action( ActionScheduler_Action $action, DateTime $date = NULL ){
+	public function save_action( ActionScheduler_AbstractAction $action, DateTime $date = NULL ){
 		try {
 			$post_array = $this->create_post_array( $action, $date );
 			$post_id = $this->save_post_array( $post_array );
@@ -113,6 +113,9 @@ class ActionScheduler_wpPostStore extends ActionScheduler_Store {
 	protected function make_action_from_post( $post ) {
 		$hook = $post->post_title;
 		$args = json_decode( $post->post_content, true );
+
+		$status   = $this->get_action_status_by_post_status( $post->post_status );
+		$claim_id = $post->post_password;
 		$schedule = get_post_meta( $post->ID, self::SCHEDULE_META_KEY, true );
 		if ( empty($schedule) ) {
 			$schedule = new ActionScheduler_NullSchedule();
@@ -120,17 +123,7 @@ class ActionScheduler_wpPostStore extends ActionScheduler_Store {
 		$group = wp_get_object_terms( $post->ID, self::GROUP_TAXONOMY, array('fields' => 'names') );
 		$group = empty( $group ) ? '' : reset($group);
 
-		$status = $this->get_action_status_by_post_status( $post->post_status );
-
-		if ( self::STATUS_PENDING === $status ) {
-			$action_class = 'ActionScheduler_StoredAction';
-		} elseif ( self::STATUS_CANCELED === $status ) {
-			$action_class = 'ActionScheduler_CanceledAction';
-		} else {
-			$action_class = 'ActionScheduler_FinishedAction';
-		}
-
-		return new $action_class( $hook, $args, $schedule, $group, $post->ID, $status, $post->post_password );
+		return ActionScheduler::factory()->get_stored_action_instance( $post->ID, $hook, $status, $claim_id, $args, $schedule, $group );
 	}
 
 	/**

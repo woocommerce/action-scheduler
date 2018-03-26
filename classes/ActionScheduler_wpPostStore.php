@@ -24,6 +24,25 @@ class ActionScheduler_wpPostStore extends ActionScheduler_Store {
 		}
 	}
 
+	/**
+	 * Update an existing action by ID.
+	 *
+	 * @author Jeremy Pry
+	 *
+	 * @param ActionScheduler_Action $action The action ID to update.
+	 * @param array                  $fields The array of field data to update.
+	 *
+	 * @return false|int
+	 */
+	public function update_action( ActionScheduler_Action $action, array $fields ) {
+		try {
+			$post_array = $this->create_post_array( $action );
+		} catch ( Exception $e ) {
+
+		}
+	}
+
+
 	protected function create_post_array( ActionScheduler_Action $action, DateTime $scheduled_date = NULL ) {
 		$post = array(
 			'post_type' => self::POST_TYPE,

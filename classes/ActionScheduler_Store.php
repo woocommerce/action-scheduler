@@ -25,6 +25,18 @@ abstract class ActionScheduler_Store {
 	abstract public function save_action( ActionScheduler_Action $action, DateTime $scheduled_date = NULL );
 
 	/**
+	 * Update an existing action by ID.
+	 *
+	 * @author Jeremy Pry
+	 *
+	 * @param ActionScheduler_Action $action The action ID to update.
+	 * @param array                  $fields The array of field data to update.
+	 *
+	 * @return false|int
+	 */
+	abstract public function update_action( ActionScheduler_Action $action, array $fields );
+
+	/**
 	 * @param string $action_id
 	 *
 	 * @return ActionScheduler_Action

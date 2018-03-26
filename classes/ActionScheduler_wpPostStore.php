@@ -628,6 +628,38 @@ class ActionScheduler_wpPostStore extends ActionScheduler_Store {
 	}
 
 	/**
+	 * Get the last time the action was attempted.
+	 *
+	 * The time should be given in GMT.
+	 *
+	 * @param string $action_id
+	 *
+	 * @return DateTime
+	 * @throws InvalidArgumentException When the action cannot be found.
+	 */
+	public function get_last_attempt( $action_id ) {
+		$post = $this->get_valid_post_object( $action_id );
+
+		return as_get_datetime_object( $post->post_modified_gmt );
+	}
+
+	/**
+	 * Get the last time the action was attempted.
+	 *
+	 * The time should be given in the local time of the site.
+	 *
+	 * @param string $action_id
+	 *
+	 * @return DateTime
+	 * @throws InvalidArgumentException When the action cannot be found.
+	 */
+	public function get_last_attempt_local( $action_id ) {
+		$post = $this->get_valid_post_object( $action_id );
+
+		return as_get_datetime_object( $post->post_modified, get_option( 'timezone_string' ) );
+	}
+
+	/**
 	 * Get a valid WP_Post object based on the action ID.
 	 *
 	 * @author Jeremy Pry

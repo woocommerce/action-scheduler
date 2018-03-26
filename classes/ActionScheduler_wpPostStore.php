@@ -408,19 +408,13 @@ class ActionScheduler_wpPostStore extends ActionScheduler_Store {
 	 * @return void
 	 */
 	public function cancel_action( $action_id ) {
-		$post = get_post($action_id);
-		if ( empty($post) || ($post->post_type != self::POST_TYPE) ) {
-			throw new InvalidArgumentException(sprintf(__('Unidentified action %s', 'action-scheduler'), $action_id));
-		}
+		$this->get_valid_post_object( $action_id );
 		do_action( 'action_scheduler_canceled_action', $action_id );
 		wp_trash_post($action_id);
 	}
 
 	public function delete_action( $action_id ) {
-		$post = get_post($action_id);
-		if ( empty($post) || ($post->post_type != self::POST_TYPE) ) {
-			throw new InvalidArgumentException(sprintf(__('Unidentified action %s', 'action-scheduler'), $action_id));
-		}
+		$this->get_valid_post_object( $action_id );
 		do_action( 'action_scheduler_deleted_action', $action_id );
 		wp_delete_post($action_id, TRUE);
 	}
@@ -443,10 +437,7 @@ class ActionScheduler_wpPostStore extends ActionScheduler_Store {
 	 * @return DateTime The date the action is schedule to run, or the date that it ran.
 	 */
 	public function get_date_gmt( $action_id ) {
-		$post = get_post($action_id);
-		if ( empty($post) || ($post->post_type != self::POST_TYPE) ) {
-			throw new InvalidArgumentException(sprintf(__('Unidentified action %s', 'action-scheduler'), $action_id));
-		}
+		$post = $this->get_valid_post_object( $action_id );
 		if ( $post->post_status == 'publish' ) {
 			return as_get_datetime_object($post->post_modified_gmt);
 		} else {
@@ -610,10 +601,7 @@ class ActionScheduler_wpPostStore extends ActionScheduler_Store {
 
 
 	public function mark_complete( $action_id ) {
-		$post = get_post($action_id);
-		if ( empty($post) || ($post->post_type != self::POST_TYPE) ) {
-			throw new InvalidArgumentException(sprintf(__('Unidentified action %s', 'action-scheduler'), $action_id));
-		}
+		$post = $this->get_valid_post_object( $action_id );
 		add_filter( 'wp_insert_post_data', array( $this, 'filter_insert_post_data' ), 10, 1 );
 		$result = wp_update_post(array(
 			'ID' => $action_id,
@@ -637,5 +625,24 @@ class ActionScheduler_wpPostStore extends ActionScheduler_Store {
 
 		$taxonomy_registrar = new ActionScheduler_wpPostStore_TaxonomyRegistrar();
 		$taxonomy_registrar->register();
+	}
+
+	/**
+	 * Get a valid WP_Post object based on the action ID.
+	 *
+	 * @author Jeremy Pry
+	 *
+	 * @param string $action_id
+	 *
+	 * @return WP_Post
+	 * @throws InvalidArgumentException When the action cannot be found.
+	 */
+	protected function get_valid_post_object( $action_id ) {
+		$post = get_post( $action_id );
+		if ( empty( $post ) || ( $post->post_type !== self::POST_TYPE ) ) {
+			throw new InvalidArgumentException( sprintf( __( 'Unidentified action %s', 'action-scheduler' ), $action_id ) );
+		}
+
+		return $post;
 	}
 }

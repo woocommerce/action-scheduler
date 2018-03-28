@@ -15,6 +15,26 @@ abstract class ActionScheduler_Store {
 	private static $store = NULL;
 
 	/**
+	 * Fields that can be stored with actions.
+	 *
+	 * @var array
+	 */
+	protected $action_fields = array(
+		'action_id'            => 1,
+		'hook'                 => 1,
+		'status'               => 1,
+		'scheduled_date_gmt'   => 1,
+		'scheduled_date_local' => 1,
+		'args'                 => 1,
+		'schedule'             => 1,
+		'group_id'             => 1,
+		'attempts'             => 1,
+		'last_attempt_gmt'     => 1,
+		'last_attempt_local'   => 1,
+		'claim_id'             => 1,
+	);
+
+	/**
 	 * @param ActionScheduler_Action $action
 	 * @param DateTime $scheduled_date Optional Date of the first instance
 	 *        to store. Otherwise uses the first date of the action's
@@ -195,6 +215,17 @@ abstract class ActionScheduler_Store {
 			self::STATUS_FAILED   => __( 'Failed', 'action-scheduler' ),
 			self::STATUS_CANCELED => __( 'Canceled', 'action-scheduler' ),
 		);
+	}
+
+	/**
+	 * Get valid action fields based on known valid fields.
+	 *
+	 * @param array $fields Array of fields.
+	 *
+	 * @return array Array of valid fields.
+	 */
+	protected function get_valid_fields( $fields ) {
+		return array_intersect_key( $fields, $this->action_fields );
 	}
 
 	public function init() {}

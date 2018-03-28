@@ -11,7 +11,24 @@ class ActionScheduler_wpPostStore extends ActionScheduler_Store {
 	/** @var DateTimeZone */
 	protected $local_timezone = NULL;
 
-	public function save_action( ActionScheduler_Action $action, DateTime $scheduled_date = NULL ){
+	/**
+	 * Mappings for Action fields to post fields.
+	 *
+	 * @var array
+	 */
+	protected $field_map = array(
+		'action_id'            => 'ID',
+		'hook'                 => 'post_title',
+		'status'               => 'post_status',
+		'scheduled_date_gmt'   => 'post_date_gmt',
+		'scheduled_date_local' => 'post_date',
+		'args'                 => 'post_content',
+		'last_attempt_gmt'     => 'post_modified_gmt',
+		'last_attempt_local'   => 'post_modified',
+		'claim_id'             => 'post_password',
+	);
+
+	public function save_action( ActionScheduler_Action $action, DateTime $scheduled_date = null ) {
 		try {
 			$post_array = $this->create_post_array( $action, $scheduled_date );
 			$post_id = $this->save_post_array( $post_array );
@@ -29,16 +46,55 @@ class ActionScheduler_wpPostStore extends ActionScheduler_Store {
 	 *
 	 * @author Jeremy Pry
 	 *
-	 * @param ActionScheduler_Action $action The action ID to update.
-	 * @param array                  $fields The array of field data to update.
+	 * @param string $action_id The action ID to update.
+	 * @param array  $fields    The array of field data to update.
 	 *
-	 * @return false|int
+	 * @return mixed False if the update fails, or the action ID on success.
 	 */
-	public function update_action( ActionScheduler_Action $action, array $fields ) {
+	public function update_action( $action_id, array $fields ) {
 		try {
-			$post_array = $this->create_post_array( $action );
-		} catch ( Exception $e ) {
+			$fields = $this->get_valid_fields( $fields );
+			if ( empty( $fields ) ) {
+				return false;
+			}
 
+			$post = get_object_vars( $this->get_valid_post_object( $action_id ) );
+
+			// Adjust the post fields as needed.
+			foreach ( $fields as $field => $value ) {
+				if ( ! isset( $this->field_map[ $field ] ) ) {
+					continue;
+				}
+
+				$post[ $this->field_map[ $field ] ] = $value;
+			}
+
+			// Ensure the ID is correct.
+			$post['ID'] = $action_id;
+
+			// Remove any filter setting.
+			unset( $post['filter'] );
+
+			$result = wp_insert_post( $post, true );
+			if ( is_wp_error( $result ) ) {
+				throw new Exception( $result->get_error_message(), $result->get_error_code() );
+			}
+
+			// Update the schedule.
+			if ( isset( $fields['schedule'] ) ) {
+				$this->save_post_schedule( $action_id, $fields['schedule'] );
+			}
+
+			// Update the group.
+			if ( isset( $fields['group_id'] ) ) {
+				$this->save_action_group( $action_id, $fields['group_id'] );
+			}
+
+			do_action( 'action_scheduler_stored_action', $action_id );
+			return $action_id;
+
+		} catch ( Exception $e ) {
+			return false;
 		}
 	}
 

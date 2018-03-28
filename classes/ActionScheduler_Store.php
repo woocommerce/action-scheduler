@@ -49,12 +49,12 @@ abstract class ActionScheduler_Store {
 	 *
 	 * @author Jeremy Pry
 	 *
-	 * @param ActionScheduler_Action $action The action ID to update.
-	 * @param array                  $fields The array of field data to update.
+	 * @param string $action_id The action ID to update.
+	 * @param array  $fields    The array of field data to update.
 	 *
-	 * @return false|int
+	 * @return mixed False if the update fails, or the action ID on success.
 	 */
-	abstract public function update_action( ActionScheduler_Action $action, array $fields );
+	abstract public function update_action( $action_id, array $fields );
 
 	/**
 	 * @param string $action_id

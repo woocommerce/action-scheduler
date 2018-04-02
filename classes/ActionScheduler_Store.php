@@ -172,7 +172,7 @@ abstract class ActionScheduler_Store {
 	 *
 	 * @param string $action_id
 	 *
-	 * @return DateTime
+	 * @return DateTime|null
 	 */
 	abstract public function get_last_attempt( $action_id );
 
@@ -183,7 +183,7 @@ abstract class ActionScheduler_Store {
 	 *
 	 * @param string $action_id
 	 *
-	 * @return DateTime
+	 * @return DateTime|null
 	 */
 	abstract public function get_last_attempt_local( $action_id );
 

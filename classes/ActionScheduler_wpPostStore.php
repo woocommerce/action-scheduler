@@ -731,7 +731,7 @@ class ActionScheduler_wpPostStore extends ActionScheduler_Store {
 	public function get_last_attempt_local( $action_id ) {
 		$post = $this->get_valid_post_object( $action_id );
 
-		return as_get_datetime_object( $post->post_modified, get_option( 'timezone_string' ) );
+		return as_get_datetime_object( $post->post_modified, get_option( 'gmt_offset', '0' ) );
 	}
 
 	/**

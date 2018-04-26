@@ -28,17 +28,10 @@ class ActionScheduler_wpPostStore extends ActionScheduler_Store {
 		'claim_id'             => 'post_password',
 	);
 
-	public function save_action( ActionScheduler_Action $action, DateTime $scheduled_date = null ) {
-		try {
-			$post_array = $this->create_post_array( $action, $scheduled_date );
-			$post_id = $this->save_post_array( $post_array );
-			$this->save_post_schedule( $post_id, $action->get_schedule() );
-			$this->save_action_group( $post_id, $action->get_group() );
-			do_action( 'action_scheduler_stored_action', $post_id );
-			return $post_id;
-		} catch ( Exception $e ) {
-			throw new RuntimeException( sprintf( __('Error saving action: %s', 'action-scheduler'), $e->getMessage() ), 0 );
-		}
+	public function save_action( ActionScheduler_Action $action, DateTime $scheduled_date = null ){
+		$post_array = $this->create_post_array( $action, $scheduled_date );
+
+		return $this->store_action( $post_array, $action->get_schedule(), $action->get_group() );
 	}
 
 	/**

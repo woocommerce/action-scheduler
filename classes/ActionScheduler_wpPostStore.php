@@ -58,41 +58,40 @@ class ActionScheduler_wpPostStore extends ActionScheduler_Store {
 				return false;
 			}
 
-			$post = get_object_vars( $this->get_valid_post_object( $action_id ) );
+			$post     = $this->get_valid_post_object( $action_id )->to_array();
+			$schedule = null;
+			$group    = null;
 
 			// Adjust the post fields as needed.
 			foreach ( $fields as $field => $value ) {
-				if ( ! isset( $this->field_map[ $field ] ) ) {
-					continue;
-				}
+				switch ( $field ) {
+					case 'schedule':
+						$schedule = $value;
+						break;
 
-				$post[ $this->field_map[ $field ] ] = $value;
+					case 'group_id':
+						$group = $value;
+						break;
+
+					case 'args':
+						$post[ $this->field_map[ $field ] ] = is_string( $value ) ? $value : json_encode( $value );
+						break;
+
+					default:
+						if ( ! isset( $this->field_map[ $field ] ) ) {
+							continue;
+						}
+
+						$post[ $this->field_map[ $field ] ] = $value;
+						break;
+				}
 			}
 
-			// Ensure the ID is correct.
+			// Clean up other post values.
 			$post['ID'] = $action_id;
-
-			// Remove any filter setting.
 			unset( $post['filter'] );
 
-			$result = wp_insert_post( $post, true );
-			if ( is_wp_error( $result ) ) {
-				throw new Exception( $result->get_error_message(), $result->get_error_code() );
-			}
-
-			// Update the schedule.
-			if ( isset( $fields['schedule'] ) ) {
-				$this->save_post_schedule( $action_id, $fields['schedule'] );
-			}
-
-			// Update the group.
-			if ( isset( $fields['group_id'] ) ) {
-				$this->save_action_group( $action_id, $fields['group_id'] );
-			}
-
-			do_action( 'action_scheduler_stored_action', $action_id );
-			return $action_id;
-
+			return $this->store_action( $post, $schedule, $group );
 		} catch ( Exception $e ) {
 			return false;
 		}

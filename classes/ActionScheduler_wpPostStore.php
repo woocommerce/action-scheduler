@@ -98,6 +98,43 @@ class ActionScheduler_wpPostStore extends ActionScheduler_Store {
 		}
 	}
 
+	/**
+	 * Store the action as valid post data.
+	 *
+	 * @author Jeremy Pry
+	 *
+	 * @param array $post_array
+	 * @param ActionScheduler_Schedule $schedule
+	 * @param string $group
+	 *
+	 * @return int|WP_Error
+	 * @throws RuntimeException
+	 */
+	protected function store_action( $post_array, $schedule = null, $group = null ) {
+		try {
+			$update = isset( $post_array['ID'] ) && ! empty( $post_array['ID'] );
+			$post_id = $this->save_post_array( $post_array );
+
+			if ( null !== $schedule ) {
+				$this->save_post_schedule( $post_id, $schedule );
+			}
+
+			if ( null !== $schedule ) {
+				$this->save_action_group( $post_id, $group );
+			}
+
+			if ( $update ) {
+				do_action( 'action_scheduler_update_action' );
+			} else {
+				do_action( 'action_scheduler_stored_action', $post_id );
+			}
+
+			return $post_id;
+		} catch ( Exception $e ) {
+			throw new RuntimeException( sprintf( __( 'Error saving action: %s', 'action-scheduler' ), $e->getMessage() ), 0 );
+		}
+	}
+
 	protected function create_post_array( ActionScheduler_Action $action, DateTime $scheduled_date = null, DateTime $last_attempt = null ) {
 		$post = array(
 			'post_type'     => self::POST_TYPE,

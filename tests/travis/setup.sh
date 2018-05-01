@@ -5,8 +5,9 @@
 # Author: Benjamin J. Balter ( ben@balter.com | ben.balter.com )
 # License: GPL3
 
-export WP_CORE_DIR=/tmp/wordpress
-export WP_TESTS_DIR=/tmp/wordpress-tests/tests/phpunit
+export WP_DIR=/tmp/wordpress
+export WP_CORE_DIR=${WP_DIR}/src
+export WP_TESTS_DIR=${WP_DIR}/tests/phpunit
 
 if [[ "$1" = "5.6" || "$1" > "5.6" ]]
 then
@@ -21,13 +22,8 @@ plugin_dir=$WP_CORE_DIR/wp-content/plugins/$plugin_slug
 # Init database
 mysql -e 'CREATE DATABASE wordpress_test;' -uroot
 
-# Grab specified version of WordPress from github
-wget -nv -O /tmp/wordpress.tar.gz https://github.com/WordPress/WordPress/tarball/$WP_VERSION
-mkdir -p $WP_CORE_DIR
-tar --strip-components=1 -zxmf /tmp/wordpress.tar.gz -C $WP_CORE_DIR
-
-# Grab testing framework
-svn co --quiet https://develop.svn.wordpress.org/tags/$WP_VERSION/ /tmp/wordpress-tests
+# Grab specified version of WordPress
+git clone --quiet --depth=1 --branch="${WP_VERSION}" git://develop.git.wordpress.org/ ${WP_DIR}
 
 # Put various components in proper folders
 cp tests/travis/wp-tests-config.php $WP_TESTS_DIR/wp-tests-config.php

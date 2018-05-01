@@ -12,24 +12,28 @@ php:
     - "7.0"
     - "7.1"
 
-# Specify a custom build matrix to include Precise for PHP 5.3
+# Specify versions of WordPress to test against
+# WP_VERSION = WordPress version number (use "master" for SVN trunk)
+# WP_MULTISITE = whether to test multisite (use either "0" or "1")
+env:
+    - WP_VERSION=master WP_MULTISITE=0
+    - WP_VERSION=4.9 WP_MULTISITE=0
+    - WP_VERSION=4.8 WP_MULTISITE=0
+    - WP_VERSION=4.7 WP_MULTISITE=0
+    - WP_VERSION=master WP_MULTISITE=1
+    - WP_VERSION=4.9 WP_MULTISITE=1
+    - WP_VERSION=4.8 WP_MULTISITE=1
+    - WP_VERSION=4.7 WP_MULTISITE=1
+
+# Specify a custom build matrix
+# This allows for testing PHP 5.3, and allows for failing on master.
 matrix:
     include:
         - os: linux
           dist: precise
           php: "5.3"
-
-
-# Specify versions of WordPress to test against
-# WP_VERSION = WordPress version number (use "master" for SVN trunk)
-# WP_MULTISITE = whether to test multisite (use either "0" or "1")
-env:
-    - WP_VERSION=4.8 WP_MULTISITE=0
-    - WP_VERSION=4.7 WP_MULTISITE=0
-    - WP_VERSION=4.6 WP_MULTISITE=0
-    - WP_VERSION=4.8 WP_MULTISITE=1
-    - WP_VERSION=4.7 WP_MULTISITE=1
-    - WP_VERSION=4.6 WP_MULTISITE=1
+    allow_failures:
+        - env: WP_VERSION=master
 
 # Grab the setup script and execute
 before_script:

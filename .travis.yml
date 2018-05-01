@@ -2,13 +2,11 @@
 
 # Tell Travis CI we're using PHP
 language: php
-
-# We nee to use Precise, not Trusty, to test against PHP 5.3, see https://github.com/travis-ci/travis-ci/issues/8219
-dist: precise
+os: linux
+sudo: false
 
 # Versions of PHP to test against
 php:
-    - "5.3"
     - "5.4"
     - "5.5"
     - "5.6"
@@ -19,12 +17,45 @@ php:
 # WP_VERSION = WordPress version number (use "master" for SVN trunk)
 # WP_MULTISITE = whether to test multisite (use either "0" or "1")
 env:
+    - WP_VERSION=master WP_MULTISITE=0
+    - WP_VERSION=4.9 WP_MULTISITE=0
     - WP_VERSION=4.8 WP_MULTISITE=0
     - WP_VERSION=4.7 WP_MULTISITE=0
-    - WP_VERSION=4.6 WP_MULTISITE=0
+    - WP_VERSION=master WP_MULTISITE=1
+    - WP_VERSION=4.9 WP_MULTISITE=1
     - WP_VERSION=4.8 WP_MULTISITE=1
     - WP_VERSION=4.7 WP_MULTISITE=1
-    - WP_VERSION=4.6 WP_MULTISITE=1
+
+# Specify a custom build matrix. See https://docs.travis-ci.com/user/customizing-the-build/#Build-Matrix
+matrix:
+    include:
+        - dist: precise
+          php: "5.3"
+          env: WP_VERSION=master WP_MULTISITE=0
+        - dist: precise
+          php: "5.3"
+          env: WP_VERSION=4.9 WP_MULTISITE=0
+        - dist: precise
+          php: "5.3"
+          env: WP_VERSION=4.8 WP_MULTISITE=0
+        - dist: precise
+          php: "5.3"
+          env: WP_VERSION=4.7 WP_MULTISITE=0
+        - dist: precise
+          php: "5.3"
+          env: WP_VERSION=master WP_MULTISITE=1
+        - dist: precise
+          php: "5.3"
+          env: WP_VERSION=4.9 WP_MULTISITE=1
+        - dist: precise
+          php: "5.3"
+          env: WP_VERSION=4.8 WP_MULTISITE=1
+        - dist: precise
+          php: "5.3"
+          env: WP_VERSION=4.7 WP_MULTISITE=1
+    allow_failures:
+        - env: WP_VERSION=master WP_MULTISITE=0
+        - env: WP_VERSION=master WP_MULTISITE=1
 
 # Grab the setup script and execute
 before_script:

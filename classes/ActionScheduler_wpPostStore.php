@@ -118,7 +118,7 @@ class ActionScheduler_wpPostStore extends ActionScheduler_Store {
 	 */
 	protected function store_action( $post_array, $schedule = null, $group = null ) {
 		try {
-			$update = isset( $post_array['ID'] ) && ! empty( $post_array['ID'] );
+			$update  = isset( $post_array['ID'] ) && ! empty( $post_array['ID'] );
 			$post_id = $this->save_post_array( $post_array );
 
 			if ( null !== $schedule ) {
@@ -130,7 +130,7 @@ class ActionScheduler_wpPostStore extends ActionScheduler_Store {
 			}
 
 			if ( $update ) {
-				do_action( 'action_scheduler_update_action' );
+				do_action( 'action_scheduler_update_action', $post_id );
 			} else {
 				do_action( 'action_scheduler_stored_action', $post_id );
 			}

@@ -32,6 +32,11 @@ matrix:
         - os: linux
           dist: precise
           php: "5.3"
+          env: WP_VERSION=master WP_MULTISITE=0
+        - os: linux
+          dis: precise
+          php: "5.3"
+          env: WP_VERSION=4.9 WP_MULTISITE=0
     allow_failures:
         - env: WP_VERSION=master WP_MULTISITE=0
         - env: WP_VERSION=master WP_MULTISITE=1

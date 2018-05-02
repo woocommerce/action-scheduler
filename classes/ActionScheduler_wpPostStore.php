@@ -786,4 +786,32 @@ class ActionScheduler_wpPostStore extends ActionScheduler_Store {
 
 		return $post;
 	}
+
+	/**
+	 * Set the last attempt for the given action.
+	 *
+	 * @param string   $action_id The action ID to update.
+	 * @param DateTime $date The DateTime object representing the last attempt. If not provided, the current
+	 *                       time will be used for the last attempt.
+	 *
+	 * @return bool Whether setting the last attempt was successful.
+	 */
+	public function set_last_attempt_date( $action_id, DateTime $date = null ) {
+		if ( null === $date ) {
+			$date = as_get_datetime_object();
+		}
+
+		try {
+			$action     = $this->fetch_action( $action_id );
+			$post_array = array(
+				'ID'                => $action_id,
+				'post_modified_gmt' => $this->get_timestamp( $action, $date ),
+				'post_modified'     => $this->get_local_timestamp( $action, $date ),
+			);
+
+			return (bool) $this->update_action( $action_id, $post_array );
+		} catch ( Exception $e ) {
+			return false;
+		}
+	}
 }

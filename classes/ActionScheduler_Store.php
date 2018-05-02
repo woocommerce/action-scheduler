@@ -176,6 +176,16 @@ abstract class ActionScheduler_Store {
 	abstract public function get_last_attempt_local( $action_id );
 
 	/**
+	 * Set the last attempt for the given action.
+	 *
+	 * @param string $action_id
+	 * @param DateTime $date
+	 *
+	 * @return bool Whether setting the last attempt was successful.
+	 */
+	abstract public function set_last_attempt_date( $action_id, DateTime $date );
+
+	/**
 	 * @param string $claim_id
 	 * @return array
 	 */

@@ -51,9 +51,11 @@ class ActionScheduler_wpPostStore extends ActionScheduler_Store {
 				return false;
 			}
 
-			$post     = $this->get_valid_post_object( $action_id )->to_array();
-			$schedule = null;
-			$group    = null;
+			$old_post     = $this->get_valid_post_object( $action_id )->to_array();
+			$post         = $old_post;
+			$schedule     = null;
+			$group        = null;
+			$needs_update = false;
 
 			// Adjust the post fields as needed.
 			foreach ( $fields as $field => $value ) {
@@ -75,9 +77,21 @@ class ActionScheduler_wpPostStore extends ActionScheduler_Store {
 							continue;
 						}
 
+						// Validate that we actually need to do an update to the field.
+						if ( $post[ $this->field_map[ $field ] ] === $old_post[ $this->field_map[ $field ] ] ) {
+							continue;
+						}
+
 						$post[ $this->field_map[ $field ] ] = $value;
 						break;
 				}
+
+				// If we got this far, we know there is something to update.
+				$needs_update = true;
+			}
+
+			if ( ! $needs_update ) {
+				return $action_id;
 			}
 
 			// Clean up other post values.

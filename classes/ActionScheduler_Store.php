@@ -218,7 +218,8 @@ abstract class ActionScheduler_Store {
 	/**
 	 * Get valid action fields based on known valid fields.
 	 *
-	 * @param array $fields Array of fields.
+	 * @param array $fields Array of fields in field name => value format. Field names must be
+	 *                      present in $this->action_fields to be kept.
 	 *
 	 * @return array Array of valid fields.
 	 */

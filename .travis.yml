@@ -33,7 +33,8 @@ matrix:
           dist: precise
           php: "5.3"
     allow_failures:
-        - env: WP_VERSION=master
+        - env: WP_VERSION=master WP_MULTISITE=0
+        - env: WP_VERSION=master WP_MULTISITE=1
 
 # Grab the setup script and execute
 before_script:

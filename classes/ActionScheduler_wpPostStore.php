@@ -44,7 +44,7 @@ class ActionScheduler_wpPostStore extends ActionScheduler_Store {
 	 *
 	 * @return mixed False if the update fails, or the action ID on success.
 	 */
-	public function update_action( $action_id, array $fields ) {
+	protected function update_action( $action_id, array $fields ) {
 		try {
 			$fields = $this->get_valid_fields( $fields );
 			if ( empty( $fields ) ) {

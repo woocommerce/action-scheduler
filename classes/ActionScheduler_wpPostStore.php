@@ -62,7 +62,7 @@ class ActionScheduler_wpPostStore extends ActionScheduler_Store {
 						$schedule = $value;
 						break;
 
-					case 'group_id':
+					case 'group':
 						$group = $value;
 						break;
 
@@ -111,7 +111,7 @@ class ActionScheduler_wpPostStore extends ActionScheduler_Store {
 				$this->save_post_schedule( $post_id, $schedule );
 			}
 
-			if ( null !== $schedule ) {
+			if ( null !== $group ) {
 				$this->save_action_group( $post_id, $group );
 			}
 

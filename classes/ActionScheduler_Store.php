@@ -27,7 +27,7 @@ abstract class ActionScheduler_Store {
 		'scheduled_date_local' => 1,
 		'args'                 => 1,
 		'schedule'             => 1,
-		'group_id'             => 1,
+		'group'                => 1,
 		'attempts'             => 1,
 		'last_attempt_gmt'     => 1,
 		'last_attempt_local'   => 1,

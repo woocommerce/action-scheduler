@@ -2,7 +2,7 @@
 
 # WordPress test setup script for Travis CI
 #
-# Author: Benjamin J. Balter ( ben@balter.com | ben.balter.com )
+# Author: Benjamin J. Balter ( ben@balter.com | ben.balter.com ), Prospress, Jeremy Pry
 # License: GPL3
 
 set -ev

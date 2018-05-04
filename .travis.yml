@@ -2,7 +2,7 @@
 
 # Tell Travis CI we're using PHP
 language: php
-ox: linux
+os: linux
 sudo: false
 
 # Versions of PHP to test against

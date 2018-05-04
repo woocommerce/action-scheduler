@@ -32,7 +32,7 @@ mysql -e 'CREATE DATABASE IF NOT EXISTS wordpress_test;' -uroot
 git clone --quiet --depth=1 --branch="${WP_VERSION}" git://develop.git.wordpress.org/ "${WP_DIR}"
 
 # Put various components in proper folders
-cp tests/travis/wp-tests-config.php ${WP_TESTS_DIR}/wp-tests-config.php
+cp tests/setup/travis-config.php ${WP_TESTS_DIR}/wp-tests-config.php
 
 cd ..
 mv ${PLUGIN_SLUG} ${PLUGIN_DIR}

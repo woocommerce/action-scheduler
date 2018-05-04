@@ -7,9 +7,10 @@
 
 set -ev
 
+# Set necessary variables.
 export WP_DIR=/tmp/wordpress
-export WP_CORE_DIR=${WP_DIR}/src
-export WP_TESTS_DIR=${WP_DIR}/tests/phpunit
+export WP_CORE_DIR="${WP_DIR}/src"
+export WP_TESTS_DIR="${WP_DIR}/tests/phpunit"
 
 if [[ "$1" = "5.6" || "$1" > "5.6" ]]
 then
@@ -25,7 +26,7 @@ PLUGIN_DIR=${WP_CORE_DIR}/wp-content/plugins/${PLUGIN_SLUG}
 mysql -e 'CREATE DATABASE wordpress_test;' -uroot
 
 # Grab specified version of WordPress
-git clone --quiet --depth=1 --branch="${WP_VERSION}" git://develop.git.wordpress.org/ ${WP_DIR}
+git clone --quiet --depth=1 --branch="${WP_VERSION}" git://develop.git.wordpress.org/ "${WP_DIR}"
 
 # Put various components in proper folders
 cp tests/travis/wp-tests-config.php ${WP_TESTS_DIR}/wp-tests-config.php

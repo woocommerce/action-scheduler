@@ -26,7 +26,7 @@ PLUGIN_SLUG=$(basename $(pwd))
 PLUGIN_DIR=${WP_CORE_DIR}/wp-content/plugins/${PLUGIN_SLUG}
 
 # Init database
-mysql -e 'CREATE DATABASE wordpress_test;' -uroot
+mysql -e 'CREATE DATABASE IF NOT EXISTS wordpress_test;' -uroot
 
 # Grab specified version of WordPress
 git clone --quiet --depth=1 --branch="${WP_VERSION}" git://develop.git.wordpress.org/ "${WP_DIR}"

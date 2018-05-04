@@ -35,7 +35,7 @@ PLUGIN_SLUG="$(basename $(pwd))"
 PLUGIN_DIR="${WP_CORE_DIR}/wp-content/plugins/${PLUGIN_SLUG}"
 
 # Put various components in proper folders
-cp tests/travis/wp-tests-config.php ${WP_TESTS_DIR}/wp-tests-config.php
+cp tests/setup/local-config.php ${WP_TESTS_DIR}/wp-tests-config.php
 
 cd ..
 cp -R ${PLUGIN_SLUG} ${PLUGIN_DIR}

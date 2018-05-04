@@ -18,8 +18,8 @@ then
   mv phpunit-5.7.phar `which phpunit`
 fi
 
-plugin_slug=$(basename $(pwd))
-plugin_dir=${WP_CORE_DIR}/wp-content/plugins/${plugin_slug}
+PLUGIN_SLUG=$(basename $(pwd))
+PLUGIN_DIR=${WP_CORE_DIR}/wp-content/plugins/${PLUGIN_SLUG}
 
 # Init database
 mysql -e 'CREATE DATABASE wordpress_test;' -uroot
@@ -31,6 +31,6 @@ git clone --quiet --depth=1 --branch="${WP_VERSION}" git://develop.git.wordpress
 cp tests/travis/wp-tests-config.php ${WP_TESTS_DIR}/wp-tests-config.php
 
 cd ..
-mv ${plugin_slug} ${plugin_dir}
+mv ${PLUGIN_SLUG} ${PLUGIN_DIR}
 
-cd ${plugin_dir}
+cd ${PLUGIN_DIR}

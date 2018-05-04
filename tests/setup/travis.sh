@@ -12,6 +12,9 @@ export WP_DIR=/tmp/wordpress
 export WP_CORE_DIR="${WP_DIR}/src"
 export WP_TESTS_DIR="${WP_DIR}/tests/phpunit"
 
+# Ensure we have a WP_VERSION
+WP_VERSION="${WP_VERSION:-master}"
+
 if [[ "$1" = "5.6" || "$1" > "5.6" ]]
 then
   wget -c https://phar.phpunit.de/phpunit-5.7.phar

@@ -2,11 +2,8 @@
 
 # Tell Travis CI we're using PHP
 language: php
+ox: linux
 sudo: false
-
-dist:
-    - "precise" # Ubuntu 12.04 LTS
-    - "trusty"  # Ubuntu 14.04 LTS
 
 # Versions of PHP to test against
 php:
@@ -32,23 +29,31 @@ env:
 
 # Specify a custom build matrix. See https://docs.travis-ci.com/user/customizing-the-build/#Build-Matrix
 matrix:
-    exclude:
-        # Exclude PHP 5.3 when building on the Trusty distro.
-        - dist: "trusty"
+    include:
+        - dist: precise
           php: "5.3"
-
-        # Exclude all other version of PHP when building on the Precise distro.
-        - dist: "precise"
-          php: "5.4"
-        - dist: "precise"
-          php: "5.5"
-        - dist: "precise"
-          php: "5.6"
-        - dist: "precise"
-          php: "7.0"
-        - dist: "precise"
-          php: "7.1"
-
+          env: WP_VERSION=master WP_MULTISITE=0
+        - dist: precise
+          php: "5.3"
+          env: WP_VERSION=4.9 WP_MULTISITE=0
+        - dist: precise
+          php: "5.3"
+          env: WP_VERSION=4.8 WP_MULTISITE=0
+        - dist: precise
+          php: "5.3"
+          env: WP_VERSION=4.7 WP_MULTISITE=0
+        - dist: precise
+          php: "5.3"
+          env: WP_VERSION=master WP_MULTISITE=1
+        - dist: precise
+          php: "5.3"
+          env: WP_VERSION=4.9 WP_MULTISITE=1
+        - dist: precise
+          php: "5.3"
+          env: WP_VERSION=4.8 WP_MULTISITE=1
+        - dist: precise
+          php: "5.3"
+          env: WP_VERSION=4.7 WP_MULTISITE=1
     allow_failures:
         - env: WP_VERSION=master WP_MULTISITE=0
         - env: WP_VERSION=master WP_MULTISITE=1

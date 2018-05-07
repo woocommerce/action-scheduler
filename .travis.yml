@@ -17,14 +17,17 @@ php:
 # WP_VERSION = WordPress version number (use "master" for SVN trunk)
 # WP_MULTISITE = whether to test multisite (use either "0" or "1")
 env:
-    - WP_VERSION=master WP_MULTISITE=0
-    - WP_VERSION=4.9 WP_MULTISITE=0
-    - WP_VERSION=4.8 WP_MULTISITE=0
-    - WP_VERSION=4.7 WP_MULTISITE=0
-    - WP_VERSION=master WP_MULTISITE=1
-    - WP_VERSION=4.9 WP_MULTISITE=1
-    - WP_VERSION=4.8 WP_MULTISITE=1
-    - WP_VERSION=4.7 WP_MULTISITE=1
+    global:
+        - WP_LATEST=4.9
+    matrix:
+        - WP_VERSION=master WP_MULTISITE=0
+        - WP_VERSION=4.9 WP_MULTISITE=0
+        - WP_VERSION=4.8 WP_MULTISITE=0
+        - WP_VERSION=4.7 WP_MULTISITE=0
+        - WP_VERSION=master WP_MULTISITE=1
+        - WP_VERSION=4.9 WP_MULTISITE=1
+        - WP_VERSION=4.8 WP_MULTISITE=1
+        - WP_VERSION=4.7 WP_MULTISITE=1
 
 # Specify a custom build matrix. See https://docs.travis-ci.com/user/customizing-the-build/#Build-Matrix
 matrix:

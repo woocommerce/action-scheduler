@@ -4,6 +4,8 @@
 language: php
 os: linux
 sudo: false
+cache:
+    - $HOME/.composer/cache/files
 
 # Versions of PHP to test against
 php:

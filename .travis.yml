@@ -57,6 +57,11 @@ matrix:
         - env: WP_VERSION=master WP_MULTISITE=0
         - env: WP_VERSION=master WP_MULTISITE=1
 
+# Customize the installation.
+before_install:
+    - composer self-update
+    - composer install
+
 # Grab the setup script and execute
 before_script:
     - source tests/setup/travis.sh $TRAVIS_PHP_VERSION
@@ -65,4 +70,4 @@ script:
     - tests/run_tests.sh
 
 after_script:
-  - bash <(curl -s https://codecov.io/bash)
+    - bash <(curl -s https://codecov.io/bash)

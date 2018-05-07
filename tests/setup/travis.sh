@@ -17,6 +17,9 @@ WP_VERSION="${WP_VERSION:-master}"
 PLUGIN_SLUG=$(basename $(pwd))
 PLUGIN_DIR=${WP_CORE_DIR}/wp-content/plugins/${PLUGIN_SLUG}
 
+# Install composer dependencies
+composer install --ignore-platform-reqs --no-interaction
+
 # Init database
 mysql -e 'CREATE DATABASE IF NOT EXISTS wordpress_test;' -uroot
 

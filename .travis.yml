@@ -4,6 +4,8 @@
 language: php
 os: linux
 sudo: false
+cache:
+    - $HOME/.composer/cache/files
 
 # Versions of PHP to test against
 php:
@@ -60,16 +62,12 @@ matrix:
         - env: WP_VERSION=master WP_MULTISITE=0
         - env: WP_VERSION=master WP_MULTISITE=1
 
-# Customize the installation.
-before_install:
-    - composer install --ignore-platform-reqs --no-interaction
-
 # Grab the setup script and execute
 before_script:
-    - source tests/setup/travis.sh $TRAVIS_PHP_VERSION
+    - source tests/setup/travis.sh
 
 script:
     - tests/run_tests.sh
 
-after_script:
-    - bash <(curl -s https://codecov.io/bash)
+after_success:
+    - if [[ -n "${AS_CODE_COVERAGE}" ]]; then bash <(curl -s https://codecov.io/bash); fi

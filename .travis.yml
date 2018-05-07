@@ -59,8 +59,7 @@ matrix:
 
 # Customize the installation.
 before_install:
-    - composer self-update
-    - composer install
+    - composer install --ignore-platform-reqs --no-interaction
 
 # Grab the setup script and execute
 before_script:

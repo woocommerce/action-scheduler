@@ -14,14 +14,6 @@ export WP_TESTS_DIR="${WP_DIR}/tests/phpunit"
 
 # Ensure we have a WP_VERSION
 WP_VERSION="${WP_VERSION:-master}"
-
-if [[ "$1" = "5.6" || "$1" > "5.6" ]]
-then
-  wget -c https://phar.phpunit.de/phpunit-5.7.phar
-  chmod +x phpunit-5.7.phar
-  mv phpunit-5.7.phar `which phpunit`
-fi
-
 PLUGIN_SLUG=$(basename $(pwd))
 PLUGIN_DIR=${WP_CORE_DIR}/wp-content/plugins/${PLUGIN_SLUG}
 

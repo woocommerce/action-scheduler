@@ -62,7 +62,7 @@ before_script:
     - source tests/setup/travis.sh $TRAVIS_PHP_VERSION
 
 script:
- - if [[ "$TRAVIS_PHP_VERSION" == "7.1" ]] && [[ "$WP_VERSION" == "4.8" ]] && [[ "$WP_MULTISITE" == "0" ]] && [[ "$TRAVIS_BRANCH" == "master" ]]; then phpunit --configuration tests/phpunit.xml.dist --coverage-clover clover.xml; else phpunit --configuration tests/phpunit.xml.dist; fi
+    - tests/run_tests.sh
 
 after_script:
   - bash <(curl -s https://codecov.io/bash)

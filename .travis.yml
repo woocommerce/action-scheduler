@@ -69,5 +69,5 @@ before_script:
 script:
     - tests/run_tests.sh
 
-after_script:
+after_success:
     - if [[ -n "${AS_CODE_COVERAGE}" ]]; then bash <(curl -s https://codecov.io/bash); fi

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-if [[ "${TRAVIS_PHP_VERSION}" -ge "5.6" ]]
+if [[ "${TRAVIS_PHP_VERSION}" > "5.6" || "${TRAVIS_PHP_VERSION}" = "5.6" ]]
 then
 	PHPUNIT="vendor/bin/phpunit"
 else

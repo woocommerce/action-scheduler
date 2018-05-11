@@ -808,7 +808,7 @@ class ActionScheduler_wpPostStore extends ActionScheduler_Store {
 	 *
 	 * @return bool Whether setting the last attempt was successful.
 	 */
-	public function set_last_attempt_date( $action_id, DateTime $date = null ) {
+	public function update_last_attempt_date( $action_id, DateTime $date = null ) {
 		if ( null === $date ) {
 			$date = as_get_datetime_object();
 		}

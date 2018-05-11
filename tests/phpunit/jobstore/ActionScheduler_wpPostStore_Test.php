@@ -235,4 +235,38 @@ class ActionScheduler_wpPostStore_Test extends ActionScheduler_UnitTestCase {
 		$store->mark_failure( $action_id );
 		$this->assertEquals( ActionScheduler_Store::STATUS_FAILED, $store->get_status( $action_id ) );
 	}
+
+
+	public function test_get_last_attempt() {
+		$time      = as_get_datetime_object( '-10 minutes' );
+		$schedule  = new ActionScheduler_IntervalSchedule( $time, HOUR_IN_SECONDS );
+		$action    = new ActionScheduler_Action( 'my_hook', array(), $schedule );
+		$store     = new ActionScheduler_wpPostStore();
+		$action_id = $store->save_action( $action );
+
+		$this->assertEquals( ActionScheduler_Store::STATUS_PENDING, $store->get_status( $action_id ) );
+
+		// Log the current time, and the attempted execution of the action.
+		$current_time = current_time( 'mysql', true );
+		$current_time_local = current_time( 'mysql' );
+		$store->log_execution( $action_id );
+
+		// Determine the actual time that the action was last executed.
+		$actual_time = $store->get_last_attempt( $action_id )->format( 'Y-m-d H:i:s' );
+		$actual_time_local = $store->get_last_attempt_local( $action_id )->format( 'Y-m-d H:i:s' );
+		$this->assertEquals( ActionScheduler_Store::STATUS_RUNNING, $store->get_status( $action_id ) );
+		$this->assertEquals( $current_time, $actual_time );
+		$this->assertEquals( $current_time_local, $actual_time_local );
+	}
+
+	/**
+	 * @expectedException InvalidArgumentException
+	 * @expectedExceptionMessage Unidentified action 3892134798
+	 */
+	public function test_valid_action() {
+		$store = new ActionScheduler_wpPostStore();
+		$fake_action_id = 3892134798;
+
+		$store->cancel_action( $fake_action_id );
+	}
 }

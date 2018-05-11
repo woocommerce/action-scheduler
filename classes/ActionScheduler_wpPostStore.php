@@ -828,4 +828,21 @@ class ActionScheduler_wpPostStore extends ActionScheduler_Store {
 			return false;
 		}
 	}
+
+	/**
+	 * Determine if a string is valid JSON.
+	 *
+	 * For our purposes, the JSON is "valid" if it returns an array.
+	 *
+	 * @author Jeremy Pry
+	 *
+	 * @param string $maybe_json
+	 *
+	 * @return bool
+	 */
+	private function is_valid_json( $maybe_json ) {
+		$result = json_decode( $maybe_json, true );
+
+		return null !== $result && is_array( $result );
+	}
 }

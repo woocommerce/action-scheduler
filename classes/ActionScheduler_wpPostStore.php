@@ -777,9 +777,10 @@ class ActionScheduler_wpPostStore extends ActionScheduler_Store {
 	 * @throws InvalidArgumentException When the action cannot be found.
 	 */
 	public function get_last_attempt_local( $action_id ) {
-		$post = $this->get_valid_post_object( $action_id );
+		$last_attempt = $this->get_last_attempt( $action_id );
+		$last_attempt->setTimezone( $this->get_local_timezone() );
 
-		return as_get_datetime_object( $post->post_modified, get_option( 'gmt_offset', '0' ) );
+		return $last_attempt;
 	}
 
 	/**

@@ -41,4 +41,24 @@ class ActionScheduler_UnitTestCase extends WP_UnitTestCase {
 
 		return $result;
 	}
+
+	/**
+	 * A utility function to make certain methods public.
+	 *
+	 * Useful for testing protected methods that affect public APIs, but are not public to avoid
+	 * use due to potential confusion.
+	 *
+	 * @param object $object
+	 * @param string $method_name
+	 *
+	 * @return ReflectionMethod
+	 * @throws ReflectionException When class doesn't exist.
+	 */
+	protected function get_accessible_protected_method( $object, $method_name ) {
+		$reflection = new ReflectionClass( $object );
+		$method     = $reflection->getMethod( $method_name );
+		$method->setAccessible( true );
+
+		return $method;
+	}
 }

@@ -38,67 +38,67 @@ class ActionScheduler_wpPostStore extends ActionScheduler_Store {
 	/**
 	 * Update an existing action by ID.
 	 *
+	 * Note that the fields array expects the field keys to match ActionScheduler_Store::$action_fields.
+	 *
 	 * @author Jeremy Pry
 	 *
 	 * @param string $action_id The action ID to update.
 	 * @param array  $fields    The array of field data to update.
 	 *
 	 * @return mixed False if the update fails, or the action ID on success.
+	 * @throws InvalidArgumentException When an invalid action ID is provided.
+	 * @throws RuntimeException When there is an error saving the action.
 	 */
 	protected function update_action( $action_id, array $fields ) {
-		try {
-			$fields = $this->get_valid_fields( $fields );
-			if ( empty( $fields ) ) {
-				return false;
-			}
-
-			// Set up our post data from the existing post object.
-			$old_post = $this->get_valid_post_object( $action_id )->to_array();
-			$post     = $old_post;
-
-			// Update the schedule and group separately.
-			$schedule = isset( $fields['schedule'] ) ? $fields['schedule'] : null;
-			$group    = isset( $fields['group'] ) ? $fields['group'] : null;
-			unset( $fields['schedule'], $fields['group'] );
-
-			// Initial determination whether we need an update.
-			$needs_update = null !== $schedule || null !== $group;
-
-			// Adjust the post fields as needed.
-			foreach ( $fields as $field => $value ) {
-				if ( 'args' === $field ) {
-					// We'd prefer to receive an array, but if we receive JSON that's OK too.
-					if ( is_string( $value ) && ! $this->is_valid_json( $value ) ) {
-						throw new InvalidArgumentException( 'The args parameter must be an array or valid JSON' );
-					} else {
-						$encoded = json_encode( $value );
-						$value   = JSON_ERROR_NONE === json_last_error() ? $encoded : $value;
-					}
-				}
-
-				// Validate that we actually need to do an update to the field.
-				if ( $old_post[ $this->field_map[ $field ] ] === $value ) {
-					continue;
-				}
-
-				$post[ $this->field_map[ $field ] ] = $value;
-
-				// If we got this far, we know there is something to update.
-				$needs_update = true;
-			}
-
-			if ( ! $needs_update ) {
-				return $action_id;
-			}
-
-			// Clean up other post values.
-			$post['ID'] = $action_id;
-			unset( $post['filter'] );
-
-			return $this->store_action( $post, $schedule, $group );
-		} catch ( Exception $e ) {
+		$fields = $this->get_valid_fields( $fields );
+		if ( empty( $fields ) ) {
 			return false;
 		}
+
+		// Set up our post data from the existing post object.
+		$old_post = $this->get_valid_post_object( $action_id )->to_array();
+		$post     = $old_post;
+
+		// Update the schedule and group separately.
+		$schedule = isset( $fields['schedule'] ) ? $fields['schedule'] : null;
+		$group    = isset( $fields['group'] ) ? $fields['group'] : null;
+		unset( $fields['schedule'], $fields['group'] );
+
+		// Initial determination whether we need an update.
+		$needs_update = null !== $schedule || null !== $group;
+
+		// Adjust the post fields as needed.
+		foreach ( $fields as $field => $value ) {
+			if ( 'args' === $field ) {
+				// We'd prefer to receive an array, but if we receive JSON that's OK too.
+				if ( is_string( $value ) && ! $this->is_valid_json( $value ) ) {
+					throw new InvalidArgumentException( 'The args parameter must be an array or valid JSON' );
+				} else {
+					$encoded = json_encode( $value );
+					$value   = JSON_ERROR_NONE === json_last_error() ? $encoded : $value;
+				}
+			}
+
+			// Validate that we actually need to do an update to the field.
+			if ( $old_post[ $this->field_map[ $field ] ] === $value ) {
+				continue;
+			}
+
+			$post[ $this->field_map[ $field ] ] = $value;
+
+			// If we got this far, we know there is something to update.
+			$needs_update = true;
+		}
+
+		if ( ! $needs_update ) {
+			return $action_id;
+		}
+
+		// Clean up other post values.
+		$post['ID'] = $action_id;
+		unset( $post['filter'] );
+
+		return $this->store_action( $post, $schedule, $group );
 	}
 
 	/**

@@ -734,18 +734,22 @@ class ActionScheduler_wpPostStore extends ActionScheduler_Store {
 		$wpdb->query($sql);
 	}
 
-
+	/**
+	 * Mark an action as completed.
+	 *
+	 * @param string $action_id
+	 *
+	 * @throws InvalidArgumentException When the action ID is not valid.
+	 * @throws RuntimeException
+	 */
 	public function mark_complete( $action_id ) {
 		$post = $this->get_valid_post_object( $action_id );
-		add_filter( 'wp_insert_post_data', array( $this, 'filter_insert_post_data' ), 10, 1 );
-		$result = wp_update_post(array(
-			'ID' => $action_id,
-			'post_status' => 'publish',
-		), TRUE);
-		remove_filter( 'wp_insert_post_data', array( $this, 'filter_insert_post_data' ), 10 );
-		if ( is_wp_error($result) ) {
-			throw new RuntimeException($result->get_error_message());
-		}
+		$now  = new DateTime( 'now', new DateTimeZone( 'UTC' ) );
+		$this->update_action( $action_id, array(
+			'status'             => 'publish',
+			'last_attempt_gmt'   => $now->format( 'Y-m-d H:i:s' ),
+			'last_attempt_local' => $now->setTimezone( $this->get_local_timezone() )->format( 'Y-m-d H:i:s' ),
+		) );
 	}
 
 	/**

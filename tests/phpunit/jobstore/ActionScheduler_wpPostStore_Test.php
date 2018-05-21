@@ -6,6 +6,14 @@
  */
 class ActionScheduler_wpPostStore_Test extends ActionScheduler_UnitTestCase {
 
+	/** @var ActionScheduler_wpPostStore */
+	protected $store;
+
+	function setUp() {
+		parent::setUp();
+		$this->store = new ActionScheduler_wpPostStore();
+	}
+
 	public function test_create_action() {
 		$time = as_get_datetime_object();
 		$schedule = new ActionScheduler_SimpleSchedule($time);
@@ -268,5 +276,25 @@ class ActionScheduler_wpPostStore_Test extends ActionScheduler_UnitTestCase {
 		$fake_action_id = 3892134798;
 
 		$store->cancel_action( $fake_action_id );
+	}
+
+	public function test_last_attempt_date() {
+		$date       = as_get_datetime_object( '-2 hours' );
+		$later_date = as_get_datetime_object( '-1 hour' );
+		$action     = new ActionScheduler_Action(
+			__METHOD__,
+			array(),
+			new ActionScheduler_SimpleSchedule( $date ),
+			__METHOD__
+		);
+
+		// This has an implicit assertion of not throwing an exception.
+		$action_id = $this->store->save_action( $action );
+
+		// Update the last attempt date.
+		$this->store->update_last_attempt_date( $action_id, $later_date );
+		$expected = $later_date->format( 'Y-m-d H:i:s' );
+		$actual   = $this->store->get_last_attempt( $action_id )->format( 'Y-m-d H:i:s' );
+		$this->assertEquals( $expected, $actual );
 	}
 }

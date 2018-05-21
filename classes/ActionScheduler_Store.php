@@ -19,10 +19,12 @@ abstract class ActionScheduler_Store {
 	 * @param DateTime $date Optional date of the first instance
 	 *        to store. Otherwise uses the first date of the action's
 	 *        schedule.
+	 * @param DateTime $last_attempt_date Optional date of the last time
+	 *        the action was attempted. Otherwise set to 0000-00-00 00:00:00.
 	 *
 	 * @return string The action ID
 	 */
-	abstract public function save_action( ActionScheduler_Action $action, DateTime $date = NULL );
+	abstract public function save_action( ActionScheduler_Action $action, DateTime $date = NULL, DateTime $last_attempt_date = NULL );
 
 	/**
 	 * @param string $action_id

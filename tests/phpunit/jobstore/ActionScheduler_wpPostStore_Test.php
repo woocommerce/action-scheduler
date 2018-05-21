@@ -28,9 +28,10 @@ class ActionScheduler_wpPostStore_Test extends ActionScheduler_UnitTestCase {
 
 		$this->assertEquals( $last_attempt_date->format( 'U' ), $action_date->format( 'U' ) );
 
-		$action_id   = $store->save_action( $action, $scheduled_date, $last_attempt_date );
-		$action_date = $store->get_date( $action_id );
+		$updated_id  = $store->save_action( $action, $scheduled_date, $last_attempt_date );
+		$action_date = $store->get_date( $updated_id );
 
+		$this->assertEquals( $action_id, $updated_id );
 		$this->assertEquals( $last_attempt_date->format( 'U' ), $action_date->format( 'U' ) );
 	}
 

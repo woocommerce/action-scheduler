@@ -829,14 +829,14 @@ class ActionScheduler_wpPostStore extends ActionScheduler_Store {
 		}
 
 		try {
-			$action     = $this->fetch_action( $action_id );
-			$post_array = array(
-				'ID'                => $action_id,
-				'post_modified_gmt' => $this->get_timestamp( $action, $date ),
-				'post_modified'     => $this->get_local_timestamp( $action, $date ),
+			$action = $this->fetch_action( $action_id );
+			$fields = array(
+				'action_id'          => $action_id,
+				'last_attempt_gmt'   => $this->get_timestamp( $action, $date ),
+				'last_attempt_local' => $this->get_local_timestamp( $action, $date ),
 			);
 
-			return (bool) $this->update_action( $action_id, $post_array );
+			return (bool) $this->update_action( $action_id, $fields );
 		} catch ( Exception $e ) {
 			return false;
 		}

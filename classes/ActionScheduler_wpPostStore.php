@@ -178,24 +178,39 @@ class ActionScheduler_wpPostStore extends ActionScheduler_Store {
 		return ActionScheduler_TimezoneHelper::get_local_timezone();
 	}
 
+	/**
+	 * Save the post array to the database.
+	 *
+	 * @param array $post_array
+	 *
+	 * @return int The post (action) ID.
+	 * @throws RuntimeException
+	 */
 	protected function save_post_array( $post_array ) {
-		add_filter( 'wp_insert_post_data', array( $this, 'filter_insert_post_data' ), 10, 1 );
-		$post_id = wp_insert_post($post_array);
+		add_filter( 'wp_insert_post_data', array( $this, 'filter_insert_post_data' ), 10, 2 );
+		$post_id = wp_insert_post( $post_array, true );
 		remove_filter( 'wp_insert_post_data', array( $this, 'filter_insert_post_data' ), 10 );
 
-		if ( is_wp_error($post_id) || empty($post_id) ) {
-			throw new RuntimeException(__('Unable to save action.', 'action-scheduler'));
+		if ( is_wp_error($post_id) ) {
+			throw new RuntimeException( $post_id->get_error_message() );
 		}
 		return $post_id;
 	}
 
-	public function filter_insert_post_data( $postdata ) {
+	public function filter_insert_post_data( $postdata, $post_array = array() ) {
 		if ( $postdata['post_type'] == self::POST_TYPE ) {
 			$postdata['post_author'] = 0;
 			if ( $postdata['post_status'] == 'future' ) {
 				$postdata['post_status'] = 'publish';
 			}
+
+			// WordPress doesn't allow setting post modified via wp_insert_post(), so we need to filter it here
+			if ( isset( $post_array['post_modified'] ) && isset( $post_array['post_modified_gmt'] ) ) {
+				$postdata['post_modified']     = $post_array['post_modified'];
+				$postdata['post_modified_gmt'] = $post_array['post_modified_gmt'];
+			}
 		}
+
 		return $postdata;
 	}
 

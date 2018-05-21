@@ -11,9 +11,9 @@ class ActionScheduler_wpPostStore extends ActionScheduler_Store {
 	/** @var DateTimeZone */
 	protected $local_timezone = NULL;
 
-	public function save_action( ActionScheduler_Action $action, DateTime $date = NULL ){
+	public function save_action( ActionScheduler_Action $action, DateTime $date = NULL, DateTime $last_attempt_date = NULL ){
 		try {
-			$post_array = $this->create_post_array( $action, $date );
+			$post_array = $this->create_post_array( $action, $date, $last_attempt_date );
 			$post_id = $this->save_post_array( $post_array );
 			$this->save_post_schedule( $post_id, $action->get_schedule() );
 			$this->save_action_group( $post_id, $action->get_group() );
@@ -24,7 +24,7 @@ class ActionScheduler_wpPostStore extends ActionScheduler_Store {
 		}
 	}
 
-	protected function create_post_array( ActionScheduler_Action $action, DateTime $date = NULL ) {
+	protected function create_post_array( ActionScheduler_Action $action, DateTime $date = NULL, DateTime $last_attempt_date = NULL ) {
 		$post = array(
 			'post_type' => self::POST_TYPE,
 			'post_title' => $action->get_hook(),
@@ -33,6 +33,12 @@ class ActionScheduler_wpPostStore extends ActionScheduler_Store {
 			'post_date_gmt' => $this->get_timestamp($action, $date),
 			'post_date' => $this->get_local_timestamp($action, $date),
 		);
+
+		if ( ! is_null( $last_attempt_date ) ) {
+			$post['post_modified_gmt'] = $this->get_timestamp($action, $last_attempt_date);
+			$post['post_modified']     = $this->get_local_timestamp($action, $last_attempt_date);
+		}
+
 		return $post;
 	}
 
@@ -59,7 +65,7 @@ class ActionScheduler_wpPostStore extends ActionScheduler_Store {
 	}
 
 	protected function save_post_array( $post_array ) {
-		add_filter( 'wp_insert_post_data', array( $this, 'filter_insert_post_data' ), 10, 1 );
+		add_filter( 'wp_insert_post_data', array( $this, 'filter_insert_post_data' ), 10, 2 );
 		$post_id = wp_insert_post($post_array);
 		remove_filter( 'wp_insert_post_data', array( $this, 'filter_insert_post_data' ), 10 );
 
@@ -69,13 +75,20 @@ class ActionScheduler_wpPostStore extends ActionScheduler_Store {
 		return $post_id;
 	}
 
-	public function filter_insert_post_data( $postdata ) {
+	public function filter_insert_post_data( $postdata, $post_array = array() ) {
 		if ( $postdata['post_type'] == self::POST_TYPE ) {
 			$postdata['post_author'] = 0;
 			if ( $postdata['post_status'] == 'future' ) {
 				$postdata['post_status'] = 'publish';
 			}
 		}
+
+		// WordPress doesn't allow setting post modified via wp_insert_post(), so we need to filter it here
+		if ( isset( $post_array['post_modified'] ) && isset( $post_array['post_modified_gmt'] ) ) {
+			$postdata['post_modified'] = $post_array['post_modified'];
+			$postdata['post_modified_gmt'] = $post_array['post_modified_gmt'];
+		}
+
 		return $postdata;
 	}
 

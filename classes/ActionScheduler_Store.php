@@ -15,6 +15,26 @@ abstract class ActionScheduler_Store {
 	private static $store = NULL;
 
 	/**
+	 * Fields that can be stored with actions.
+	 *
+	 * @var array
+	 */
+	protected $action_fields = array(
+		'action_id'            => 1,
+		'hook'                 => 1,
+		'status'               => 1,
+		'scheduled_date_gmt'   => 1,
+		'scheduled_date_local' => 1,
+		'args'                 => 1,
+		'schedule'             => 1,
+		'group'                => 1,
+		'attempts'             => 1,
+		'last_attempt_gmt'     => 1,
+		'last_attempt_local'   => 1,
+		'claim_id'             => 1,
+	);
+
+	/**
 	 * @param ActionScheduler_Action $action
 	 * @param DateTime $scheduled_date Optional Date of the first instance
 	 *        to store. Otherwise uses the first date of the action's
@@ -134,6 +154,39 @@ abstract class ActionScheduler_Store {
 	abstract public function get_claim_id( $action_id );
 
 	/**
+	 * Get the last time the action was attempted.
+	 *
+	 * The time should be given in GMT.
+	 *
+	 * @param string $action_id
+	 *
+	 * @return DateTime|null
+	 */
+	abstract public function get_last_attempt( $action_id );
+
+	/**
+	 * Get the last time the action was attempted.
+	 *
+	 * The time should be given in the local time of the site.
+	 *
+	 * @param string $action_id
+	 *
+	 * @return DateTime|null
+	 */
+	abstract public function get_last_attempt_local( $action_id );
+
+	/**
+	 * Set the last attempt for the given action.
+	 *
+	 * @param string   $action_id The action ID to update.
+	 * @param DateTime $date      The DateTime object representing the last attempt. If not provided, the current
+	 *                            time will be used for the last attempt.
+	 *
+	 * @return bool Whether setting the last attempt was successful.
+	 */
+	abstract public function update_last_attempt_date( $action_id, DateTime $date = null );
+
+	/**
 	 * @param string $claim_id
 	 * @return array
 	 */
@@ -163,6 +216,18 @@ abstract class ActionScheduler_Store {
 		);
 	}
 
+	/**
+	 * Get valid action fields based on known valid fields.
+	 *
+	 * @param array $fields Array of fields in field name => value format. Field names must be
+	 *                      present in $this->action_fields to be kept.
+	 *
+	 * @return array Array of valid fields.
+	 */
+	protected function get_valid_fields( $fields ) {
+		return array_intersect_key( $fields, $this->action_fields );
+	}
+
 	public function init() {}
 
 	/**
@@ -176,4 +241,3 @@ abstract class ActionScheduler_Store {
 		return self::$store;
 	}
 }
- 

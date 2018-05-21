@@ -11,28 +11,148 @@ class ActionScheduler_wpPostStore extends ActionScheduler_Store {
 	/** @var DateTimeZone */
 	protected $local_timezone = NULL;
 
-	public function save_action( ActionScheduler_Action $action, DateTime $scheduled_date = NULL ){
+	/**
+	 * Mappings for Action fields to post fields.
+	 *
+	 * @var array
+	 */
+	protected $field_map = array(
+		'action_id'            => 'ID',
+		'hook'                 => 'post_title',
+		'status'               => 'post_status',
+		'scheduled_date_gmt'   => 'post_date_gmt',
+		'scheduled_date_local' => 'post_date',
+		'args'                 => 'post_content',
+		'attempts'             => 'menu_order',
+		'last_attempt_gmt'     => 'post_modified_gmt',
+		'last_attempt_local'   => 'post_modified',
+		'claim_id'             => 'post_password',
+	);
+
+	public function save_action( ActionScheduler_Action $action, DateTime $scheduled_date = null ){
+		$post_array = $this->create_post_array( $action, $scheduled_date );
+
+		return $this->store_action( $post_array, $action->get_schedule(), $action->get_group() );
+	}
+
+	/**
+	 * Update an existing action by ID.
+	 *
+	 * Note that the fields array expects the field keys to match ActionScheduler_Store::$action_fields.
+	 *
+	 * @author Jeremy Pry
+	 *
+	 * @param string $action_id The action ID to update.
+	 * @param array  $fields    The array of field data to update.
+	 *
+	 * @return mixed False if the update fails, or the action ID on success.
+	 * @throws InvalidArgumentException When an invalid action ID is provided.
+	 * @throws RuntimeException When there is an error saving the action.
+	 */
+	protected function update_action( $action_id, array $fields ) {
+		$fields = $this->get_valid_fields( $fields );
+		if ( empty( $fields ) ) {
+			return false;
+		}
+
+		// Set up our post data from the existing post object.
+		$old_post = $this->get_valid_post_object( $action_id )->to_array();
+		$post     = $old_post;
+
+		// Update the schedule and group separately.
+		$schedule = isset( $fields['schedule'] ) ? $fields['schedule'] : null;
+		$group    = isset( $fields['group'] ) ? $fields['group'] : null;
+		unset( $fields['schedule'], $fields['group'] );
+
+		// Initial determination whether we need an update.
+		$needs_update = null !== $schedule || null !== $group;
+
+		// Adjust the post fields as needed.
+		foreach ( $fields as $field => $value ) {
+			if ( 'args' === $field ) {
+				// We'd prefer to receive an array, but if we receive JSON that's OK too.
+				if ( is_string( $value ) && ! $this->is_valid_json( $value ) ) {
+					throw new InvalidArgumentException( 'The args parameter must be an array or valid JSON' );
+				} else {
+					$encoded = json_encode( $value );
+					$value   = JSON_ERROR_NONE === json_last_error() ? $encoded : $value;
+				}
+			}
+
+			// Validate that we actually need to do an update to the field.
+			if ( $old_post[ $this->field_map[ $field ] ] === $value ) {
+				continue;
+			}
+
+			$post[ $this->field_map[ $field ] ] = $value;
+
+			// If we got this far, we know there is something to update.
+			$needs_update = true;
+		}
+
+		if ( ! $needs_update ) {
+			return $action_id;
+		}
+
+		// Clean up other post values.
+		$post['ID'] = $action_id;
+		unset( $post['filter'] );
+
+		return $this->store_action( $post, $schedule, $group );
+	}
+
+	/**
+	 * Store the action as valid post data.
+	 *
+	 * @author Jeremy Pry
+	 *
+	 * @param array $post_array
+	 * @param ActionScheduler_Schedule $schedule
+	 * @param string $group
+	 *
+	 * @return int|WP_Error
+	 * @throws RuntimeException
+	 */
+	protected function store_action( $post_array, $schedule = null, $group = null ) {
 		try {
-			$post_array = $this->create_post_array( $action, $scheduled_date );
+			$update  = isset( $post_array['ID'] ) && ! empty( $post_array['ID'] );
 			$post_id = $this->save_post_array( $post_array );
-			$this->save_post_schedule( $post_id, $action->get_schedule() );
-			$this->save_action_group( $post_id, $action->get_group() );
-			do_action( 'action_scheduler_stored_action', $post_id );
+
+			if ( null !== $schedule ) {
+				$this->save_post_schedule( $post_id, $schedule );
+			}
+
+			if ( null !== $group ) {
+				$this->save_action_group( $post_id, $group );
+			}
+
+			if ( $update ) {
+				do_action( 'action_scheduler_update_action', $post_id );
+			} else {
+				do_action( 'action_scheduler_stored_action', $post_id );
+			}
+
 			return $post_id;
 		} catch ( Exception $e ) {
-			throw new RuntimeException( sprintf( __('Error saving action: %s', 'action-scheduler'), $e->getMessage() ), 0 );
+			throw new RuntimeException( sprintf( __( 'Error saving action: %s', 'action-scheduler' ), $e->getMessage() ), 0 );
 		}
 	}
 
-	protected function create_post_array( ActionScheduler_Action $action, DateTime $scheduled_date = NULL ) {
+	protected function create_post_array( ActionScheduler_Action $action, DateTime $scheduled_date = null, DateTime $last_attempt = null ) {
 		$post = array(
-			'post_type' => self::POST_TYPE,
-			'post_title' => $action->get_hook(),
-			'post_content' => json_encode($action->get_args()),
-			'post_status' => ( $action->is_finished() ? 'publish' : 'pending' ),
-			'post_date_gmt' => $this->get_timestamp($action, $scheduled_date),
-			'post_date' => $this->get_local_timestamp($action, $scheduled_date),
+			'post_type'     => self::POST_TYPE,
+			'post_title'    => $action->get_hook(),
+			'post_content'  => json_encode( $action->get_args() ),
+			'post_status'   => ( $action->is_finished() ? 'publish' : 'pending' ),
+			'post_date_gmt' => $this->get_timestamp( $action, $scheduled_date ),
+			'post_date'     => $this->get_local_timestamp( $action, $scheduled_date ),
 		);
+
+		if ( null !== $last_attempt ) {
+			$post['post_modified_gmt'] = $this->get_timestamp( $action, $last_attempt );
+			$post['post_modified']     = $this->get_local_timestamp( $action, $last_attempt );
+		}
+
 		return $post;
 	}
 
@@ -58,24 +178,39 @@ class ActionScheduler_wpPostStore extends ActionScheduler_Store {
 		return ActionScheduler_TimezoneHelper::get_local_timezone();
 	}
 
+	/**
+	 * Save the post array to the database.
+	 *
+	 * @param array $post_array
+	 *
+	 * @return int The post (action) ID.
+	 * @throws RuntimeException
+	 */
 	protected function save_post_array( $post_array ) {
-		add_filter( 'wp_insert_post_data', array( $this, 'filter_insert_post_data' ), 10, 1 );
-		$post_id = wp_insert_post($post_array);
+		add_filter( 'wp_insert_post_data', array( $this, 'filter_insert_post_data' ), 10, 2 );
+		$post_id = wp_insert_post( $post_array, true );
 		remove_filter( 'wp_insert_post_data', array( $this, 'filter_insert_post_data' ), 10 );
 
-		if ( is_wp_error($post_id) || empty($post_id) ) {
-			throw new RuntimeException(__('Unable to save action.', 'action-scheduler'));
+		if ( is_wp_error($post_id) ) {
+			throw new RuntimeException( $post_id->get_error_message() );
 		}
 		return $post_id;
 	}
 
-	public function filter_insert_post_data( $postdata ) {
+	public function filter_insert_post_data( $postdata, $post_array = array() ) {
 		if ( $postdata['post_type'] == self::POST_TYPE ) {
 			$postdata['post_author'] = 0;
 			if ( $postdata['post_status'] == 'future' ) {
 				$postdata['post_status'] = 'publish';
 			}
+
+			// WordPress doesn't allow setting post modified via wp_insert_post(), so we need to filter it here
+			if ( isset( $post_array['post_modified'] ) && isset( $post_array['post_modified_gmt'] ) ) {
+				$postdata['post_modified']     = $post_array['post_modified'];
+				$postdata['post_modified_gmt'] = $post_array['post_modified_gmt'];
+			}
 		}
+
 		return $postdata;
 	}
 
@@ -408,19 +543,13 @@ class ActionScheduler_wpPostStore extends ActionScheduler_Store {
 	 * @return void
 	 */
 	public function cancel_action( $action_id ) {
-		$post = get_post($action_id);
-		if ( empty($post) || ($post->post_type != self::POST_TYPE) ) {
-			throw new InvalidArgumentException(sprintf(__('Unidentified action %s', 'action-scheduler'), $action_id));
-		}
+		$this->get_valid_post_object( $action_id );
 		do_action( 'action_scheduler_canceled_action', $action_id );
 		wp_trash_post($action_id);
 	}
 
 	public function delete_action( $action_id ) {
-		$post = get_post($action_id);
-		if ( empty($post) || ($post->post_type != self::POST_TYPE) ) {
-			throw new InvalidArgumentException(sprintf(__('Unidentified action %s', 'action-scheduler'), $action_id));
-		}
+		$this->get_valid_post_object( $action_id );
 		do_action( 'action_scheduler_deleted_action', $action_id );
 		wp_delete_post($action_id, TRUE);
 	}
@@ -443,10 +572,7 @@ class ActionScheduler_wpPostStore extends ActionScheduler_Store {
 	 * @return DateTime The date the action is schedule to run, or the date that it ran.
 	 */
 	public function get_date_gmt( $action_id ) {
-		$post = get_post($action_id);
-		if ( empty($post) || ($post->post_type != self::POST_TYPE) ) {
-			throw new InvalidArgumentException(sprintf(__('Unidentified action %s', 'action-scheduler'), $action_id));
-		}
+		$post = $this->get_valid_post_object( $action_id );
 		if ( $post->post_status == 'publish' ) {
 			return as_get_datetime_object($post->post_modified_gmt);
 		} else {
@@ -608,21 +734,22 @@ class ActionScheduler_wpPostStore extends ActionScheduler_Store {
 		$wpdb->query($sql);
 	}
 
-
+	/**
+	 * Mark an action as completed.
+	 *
+	 * @param string $action_id
+	 *
+	 * @throws InvalidArgumentException When the action ID is not valid.
+	 * @throws RuntimeException
+	 */
 	public function mark_complete( $action_id ) {
-		$post = get_post($action_id);
-		if ( empty($post) || ($post->post_type != self::POST_TYPE) ) {
-			throw new InvalidArgumentException(sprintf(__('Unidentified action %s', 'action-scheduler'), $action_id));
-		}
-		add_filter( 'wp_insert_post_data', array( $this, 'filter_insert_post_data' ), 10, 1 );
-		$result = wp_update_post(array(
-			'ID' => $action_id,
-			'post_status' => 'publish',
-		), TRUE);
-		remove_filter( 'wp_insert_post_data', array( $this, 'filter_insert_post_data' ), 10 );
-		if ( is_wp_error($result) ) {
-			throw new RuntimeException($result->get_error_message());
-		}
+		$post = $this->get_valid_post_object( $action_id );
+		$now  = new DateTime( 'now', new DateTimeZone( 'UTC' ) );
+		$this->update_action( $action_id, array(
+			'status'             => 'publish',
+			'last_attempt_gmt'   => $now->format( 'Y-m-d H:i:s' ),
+			'last_attempt_local' => $now->setTimezone( $this->get_local_timezone() )->format( 'Y-m-d H:i:s' ),
+		) );
 	}
 
 	/**
@@ -637,5 +764,102 @@ class ActionScheduler_wpPostStore extends ActionScheduler_Store {
 
 		$taxonomy_registrar = new ActionScheduler_wpPostStore_TaxonomyRegistrar();
 		$taxonomy_registrar->register();
+	}
+
+	/**
+	 * Get the last time the action was attempted.
+	 *
+	 * The time should be given in GMT.
+	 *
+	 * @param string $action_id
+	 *
+	 * @return DateTime
+	 * @throws InvalidArgumentException When the action cannot be found.
+	 */
+	public function get_last_attempt( $action_id ) {
+		$post = $this->get_valid_post_object( $action_id );
+
+		return as_get_datetime_object( $post->post_modified_gmt );
+	}
+
+	/**
+	 * Get the last time the action was attempted.
+	 *
+	 * The time should be given in the local time of the site.
+	 *
+	 * @param string $action_id
+	 *
+	 * @return DateTime
+	 * @throws InvalidArgumentException When the action cannot be found.
+	 */
+	public function get_last_attempt_local( $action_id ) {
+		$last_attempt = $this->get_last_attempt( $action_id );
+		$last_attempt->setTimezone( $this->get_local_timezone() );
+
+		return $last_attempt;
+	}
+
+	/**
+	 * Get a valid WP_Post object based on the action ID.
+	 *
+	 * @author Jeremy Pry
+	 *
+	 * @param string $action_id
+	 *
+	 * @return WP_Post
+	 * @throws InvalidArgumentException When the action cannot be found.
+	 */
+	protected function get_valid_post_object( $action_id ) {
+		$post = get_post( $action_id );
+		if ( empty( $post ) || ( $post->post_type !== self::POST_TYPE ) ) {
+			throw new InvalidArgumentException( sprintf( __( 'Unidentified action %s', 'action-scheduler' ), $action_id ) );
+		}
+
+		return $post;
+	}
+
+	/**
+	 * Set the last attempt for the given action.
+	 *
+	 * @param string   $action_id The action ID to update.
+	 * @param DateTime $date The DateTime object representing the last attempt. If not provided, the current
+	 *                       time will be used for the last attempt.
+	 *
+	 * @return bool Whether setting the last attempt was successful.
+	 */
+	public function update_last_attempt_date( $action_id, DateTime $date = null ) {
+		if ( null === $date ) {
+			$date = as_get_datetime_object();
+		}
+
+		try {
+			$action = $this->fetch_action( $action_id );
+			$fields = array(
+				'action_id'          => $action_id,
+				'last_attempt_gmt'   => $this->get_timestamp( $action, $date ),
+				'last_attempt_local' => $this->get_local_timestamp( $action, $date ),
+			);
+
+			return (bool) $this->update_action( $action_id, $fields );
+		} catch ( Exception $e ) {
+			return false;
+		}
+	}
+
+	/**
+	 * Determine if a string is valid JSON.
+	 *
+	 * For our purposes, the JSON is "valid" if it returns an array.
+	 *
+	 * @author Jeremy Pry
+	 *
+	 * @param string $maybe_json
+	 *
+	 * @return bool
+	 */
+	private function is_valid_json( $maybe_json ) {
+		$result = json_decode( $maybe_json, true );
+
+		return null !== $result && is_array( $result );
 	}
 }

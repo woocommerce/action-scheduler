@@ -18,18 +18,32 @@ abstract class ActionScheduler_TimezoneHelper {
 					$tzstring = 'UTC';
 				} else {
 					$gmt_offset *= HOUR_IN_SECONDS;
-					$tzstring = timezone_name_from_abbr('', $gmt_offset);
+					$tzstring   = timezone_name_from_abbr( '', $gmt_offset, 1 );
+
+					// If there's no timezone string, try again with no DST.
+					if ( false === $tzstring ) {
+						$tzstring = timezone_name_from_abbr( '', $gmt_offset, 0 );
+					}
+
+					// Try mapping to the first abbreviation we can find.
 					if ( false === $tzstring ) {
 						$is_dst = date( 'I' );
 						foreach ( timezone_abbreviations_list() as $abbr ) {
 							foreach ( $abbr as $city ) {
 								if ( $city['dst'] == $is_dst && $city['offset'] == $gmt_offset ) {
+									// If there's no valid timezone ID, keep looking.
+									if ( null === $city['timezone_id'] ) {
+										continue;
+									}
+
 									$tzstring = $city['timezone_id'];
 									break 2;
 								}
 							}
 						}
 					}
+
+					// If we still have no valid string, then fall back to UTC.
 					if ( false === $tzstring ) {
 						$tzstring = 'UTC';
 					}
@@ -41,4 +55,3 @@ abstract class ActionScheduler_TimezoneHelper {
 		return self::$local_timezone;
 	}
 }
- 

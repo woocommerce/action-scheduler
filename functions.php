@@ -207,3 +207,27 @@ function as_get_datetime_object( $date_string = null, $timezone = 'UTC' ) {
 	}
 	return $date;
 }
+
+/**
+ * Generate a random UUID (version 4).
+ *
+ * Will use wp_generate_uuid4() if it exists (WP 4.7+).
+ *
+ * @see wp_generate_uuid4()
+ * @since 2.2.0
+ *
+ * @return string UUID.
+ */
+function as_get_uuid() {
+	if ( function_exists( 'wp_generate_uuid4' ) ) {
+		return wp_generate_uuid4();
+	}
+
+	return sprintf( '%04x%04x-%04x-%04x-%04x-%04x%04x%04x',
+		mt_rand( 0, 0xffff ), mt_rand( 0, 0xffff ),
+		mt_rand( 0, 0xffff ),
+		mt_rand( 0, 0x0fff ) | 0x4000,
+		mt_rand( 0, 0x3fff ) | 0x8000,
+		mt_rand( 0, 0xffff ), mt_rand( 0, 0xffff ), mt_rand( 0, 0xffff )
+	);
+}

@@ -30,12 +30,13 @@ class ActionScheduler_wpPostStore extends ActionScheduler_Store {
 
 	protected function create_post_array( ActionScheduler_Action $action, DateTime $scheduled_date = NULL ) {
 		$post = array(
-			'post_type' => self::POST_TYPE,
-			'post_title' => $action->get_hook(),
-			'post_content' => json_encode($action->get_args()),
-			'post_status' => ( $action->is_finished() ? 'publish' : 'pending' ),
+			'post_type'     => self::POST_TYPE,
+			'post_title'    => $action->get_hook(),
+			'post_content'  => json_encode( $action->get_args() ),
+			'post_status'   => ( $action->is_finished() ? 'publish' : 'pending' ),
 			'post_date_gmt' => $this->get_scheduled_date_string( $action, $scheduled_date ),
 			'post_date'     => $this->get_scheduled_date_string_local( $action, $scheduled_date ),
+			'post_name'     => as_get_uuid(),
 		);
 		return $post;
 	}

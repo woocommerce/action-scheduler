@@ -231,3 +231,39 @@ function as_get_uuid() {
 		mt_rand( 0, 0xffff ), mt_rand( 0, 0xffff ), mt_rand( 0, 0xffff )
 	);
 }
+
+/**
+ * Validates that a UUID is valid.
+ *
+ * Will use wp_is_uuid() if it exists (WP 4.9+).
+ *
+ * @see wp_is_uuid()
+ * @since 2.2.0
+ *
+ * @param mixed $uuid    UUID to check.
+ * @param int $version Specify which version of UUID to check against. Default is none,
+ *                     to accept any UUID version. Otherwise, only version allowed is `4`.
+ *
+ * @return bool The string is a valid UUID or false on failure.
+ */
+function as_is_uuid( $uuid, $version = null ) {
+	if ( function_exists( 'wp_is_uuid' ) ) {
+		return wp_is_uuid( $uuid, $version );
+	}
+
+	if ( ! is_string( $uuid ) ) {
+		return false;
+	}
+
+	if ( is_numeric( $version ) ) {
+		if ( 4 !== (int) $version ) {
+			_doing_it_wrong( __FUNCTION__, __( 'Only UUID V4 is supported at this time.' ), '4.9.0' );
+			return false;
+		}
+		$regex = '/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/';
+	} else {
+		$regex = '/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/';
+	}
+
+	return (bool) preg_match( $regex, $uuid );
+}

@@ -372,4 +372,23 @@ class ActionScheduler_wpPostStore_Test extends ActionScheduler_UnitTestCase {
 		$this->assertFalse( in_array( $action2, $claim->get_actions() ) );
 		$store->release_claim( $claim );
 	}
+
+	public function test_post_name() {
+		$store = new ActionScheduler_wpPostStore();
+		$action_ids = [];
+
+		for ( $i = 1; $i < 3; $i++ ) {
+			$time         = as_get_datetime_object( "{$i} hours" );
+			$schedule     = new ActionScheduler_SimpleSchedule( $time );
+			$action       = new ActionScheduler_Action( 'my_hook', array(), $schedule );
+			$action_ids[] = $store->save_action( $action );
+		}
+
+		foreach ( $action_ids as $action_id ) {
+			$post_object = get_post( $action_id );
+			$this->assertTrue( as_is_uuid( $post_object->post_name ) );
+			$this->assertEquals( 'my_hook', $post_object->post_title );
+			$this->assertFalse( (bool) preg_match( '#-\d+$#', $post_object->post_name ) );
+		}
+	}
 }

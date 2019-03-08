@@ -110,6 +110,7 @@ class ActionScheduler_wcSystemStatus {
 			<tbody>
 				<?php
 				foreach ( $action_counts as $status => $count ) {
+					// WC uses the 3rd column for export, so we need to display more data in that (hidden when viewed as part of the table) and add an empty 2nd column.
 					printf(
 						'<tr><td>%1$s</td><td>&nbsp;</td><td>%2$s<span style="display: none;">, Oldest: %3$s, Newest: %4$s</span></td><td>%3$s</td><td>%4$s</td></tr>',
 						esc_html( $status_labels[ $status ] ),

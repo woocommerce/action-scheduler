@@ -28,19 +28,23 @@ class ActionScheduler_WPCLI_Scheduler_command extends WP_CLI_Command {
 	 * [--force]
 	 * : Whether to force execution despite the maximum number of concurrent processes being exceeded.
 	 *
+	 * [--t]
+	 * : Whether to print timestamp on each line.
+	 *
 	 * @param array $args Positional arguments.
 	 * @param array $assoc_args Keyed arguments.
 	 * @throws \WP_CLI\ExitException When an error occurs.
 	 */
 	public function run( $args, $assoc_args ) {
 		// Handle passed arguments.
-		$batch   = absint( \WP_CLI\Utils\get_flag_value( $assoc_args, 'batch-size', 100 ) );
-		$batches = absint( \WP_CLI\Utils\get_flag_value( $assoc_args, 'batches', 0 ) );
-		$clean   = absint( \WP_CLI\Utils\get_flag_value( $assoc_args, 'cleanup-batch-size', $batch ) );
-		$hooks   = explode( ',', WP_CLI\Utils\get_flag_value( $assoc_args, 'hooks', '' ) );
-		$hooks   = array_filter( array_map( 'trim', $hooks ) );
-		$group   = \WP_CLI\Utils\get_flag_value( $assoc_args, 'group', '' );
-		$force   = \WP_CLI\Utils\get_flag_value( $assoc_args, 'force', false );
+		$batch           = absint( \WP_CLI\Utils\get_flag_value( $assoc_args, 'batch-size', 100 ) );
+		$batches         = absint( \WP_CLI\Utils\get_flag_value( $assoc_args, 'batches', 0 ) );
+		$clean           = absint( \WP_CLI\Utils\get_flag_value( $assoc_args, 'cleanup-batch-size', $batch ) );
+		$hooks           = explode( ',', WP_CLI\Utils\get_flag_value( $assoc_args, 'hooks', '' ) );
+		$hooks           = array_filter( array_map( 'trim', $hooks ) );
+		$group           = \WP_CLI\Utils\get_flag_value( $assoc_args, 'group', '' );
+		$force           = \WP_CLI\Utils\get_flag_value( $assoc_args, 'force', false );
+		$print_timestamp = \WP_CLI\Utils\get_flag_value( $assoc_args, 't', false );
 
 		$batches_completed = 0;
 		$actions_completed = 0;
@@ -54,23 +58,23 @@ class ActionScheduler_WPCLI_Scheduler_command extends WP_CLI_Command {
 			$runner = new ActionScheduler_WPCLI_QueueRunner( null, null, $cleaner );
 
 			// Determine how many tasks will be run in the first batch.
-			$total = $runner->setup( $batch, $hooks, $group, $force );
+			$total = $runner->setup( $batch, $hooks, $group, $force, $print_timestamp );
 
 			// Run actions for as long as possible.
 			while ( $total > 0 ) {
-				$this->print_total_actions( $total );
+				$this->print_total_actions( $total, $print_timestamp );
 				$actions_completed += $runner->run();
 				$batches_completed++;
 
 				// Maybe set up tasks for the next batch.
-				$total = ( $unlimited || $batches_completed < $batches ) ? $runner->setup( $batch, $hooks, $group, $force ) : 0;
+				$total = ( $unlimited || $batches_completed < $batches ) ? $runner->setup( $batch, $hooks, $group, $force, $print_timestamp ) : 0;
 			}
 		} catch ( Exception $e ) {
-			$this->print_error( $e );
+			$this->print_error( $e, $print_timestamp );
 		}
 
-		$this->print_total_batches( $batches_completed );
-		$this->print_success( $actions_completed );
+		$this->print_total_batches( $batches_completed, $print_timestamp );
+		$this->print_success( $actions_completed, $print_timestamp );
 	}
 
 	/**
@@ -80,11 +84,14 @@ class ActionScheduler_WPCLI_Scheduler_command extends WP_CLI_Command {
 	 *
 	 * @param int $total
 	 */
-	protected function print_total_actions( $total ) {
+	protected function print_total_actions( $total, $print_timestamp = false ) {
+		$timestamp = $print_timestamp ? as_get_datetime_object()->getCliTimestamp() : '';
+
 		WP_CLI::log(
 			sprintf(
 				/* translators: %d refers to how many scheduled taks were found to run */
-				_n( 'Found %d scheduled task', 'Found %d scheduled tasks', $total, 'action-scheduler' ),
+				_n( '%sFound %d scheduled task', '%sFound %d scheduled tasks', $total, 'action-scheduler' ),
+				$timestamp,
 				number_format_i18n( $total )
 			)
 		);
@@ -97,11 +104,14 @@ class ActionScheduler_WPCLI_Scheduler_command extends WP_CLI_Command {
 	 *
 	 * @param int $batches_completed
 	 */
-	protected function print_total_batches( $batches_completed ) {
+	protected function print_total_batches( $batches_completed, $print_timestamp = false ) {
+		$timestamp = $print_timestamp ? as_get_datetime_object()->getCliTimestamp() : '';
+
 		WP_CLI::log(
 			sprintf(
 				/* translators: %d refers to the total number of batches executed */
-				_n( '%d batch executed.', '%d batches executed.', $batches_completed, 'action-scheduler' ),
+				_n( '%s%d batch executed.', '%s%d batches executed.', $batches_completed, 'action-scheduler' ),
+				$timestamp,
 				number_format_i18n( $batches_completed )
 			)
 		);
@@ -116,11 +126,14 @@ class ActionScheduler_WPCLI_Scheduler_command extends WP_CLI_Command {
 	 *
 	 * @throws \WP_CLI\ExitException
 	 */
-	protected function print_error( Exception $e ) {
+	protected function print_error( Exception $e, $print_timestamp = false ) {
+		$timestamp = $print_timestamp ? as_get_datetime_object()->getCliTimestamp() : '';
+
 		WP_CLI::error(
 			sprintf(
 				/* translators: %s refers to the exception error message. */
-				__( 'There was an error running the action scheduler: %s', 'action-scheduler' ),
+				__( '%sThere was an error running the action scheduler: %s', 'action-scheduler' ),
+				$timestamp,
 				$e->getMessage()
 			)
 		);
@@ -133,11 +146,14 @@ class ActionScheduler_WPCLI_Scheduler_command extends WP_CLI_Command {
 	 *
 	 * @param int $actions_completed
 	 */
-	protected function print_success( $actions_completed ) {
+	protected function print_success( $actions_completed, $print_timestamp = false ) {
+		$timestamp = $print_timestamp ? as_get_datetime_object()->getCliTimestamp() : '';
+
 		WP_CLI::success(
 			sprintf(
 				/* translators: %d refers to the total number of taskes completed */
-				_n( '%d scheduled task completed.', '%d scheduled tasks completed.', $actions_completed, 'action-scheduler' ),
+				_n( '%s%d scheduled task completed.', '%s%d scheduled tasks completed.', $actions_completed, 'action-scheduler' ),
+				$timestamp,
 				number_format_i18n( $actions_completed )
 			)
 		);

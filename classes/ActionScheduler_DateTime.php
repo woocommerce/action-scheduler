@@ -73,15 +73,4 @@ class ActionScheduler_DateTime extends DateTime {
 	public function getOffsetTimestamp() {
 		return $this->getTimestamp() + $this->getOffset();
 	}
-
-	/**
-	 * Get the timestamp for use in WP CLI output.
-	 *
-	 * @return string
-	 */
-	public function getCliTimestamp() {
-		if ( defined( 'AS_CLI_TIMESTAMP' ) && AS_CLI_TIMESTAMP ) {
-			return '[' . date_i18n( AS_CLI_TIMESTAMP, $this->format( 'U' ) ) . '] ';
-		}
-	}
 }

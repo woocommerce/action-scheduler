@@ -61,9 +61,9 @@ class ActionScheduler_WPCLI_QueueRunner extends ActionScheduler_Abstract_QueueRu
 		$too_many    = $claim_count >= $this->get_allowed_concurrent_batches();
 		if ( $too_many ) {
 			if ( $force ) {
-				WP_CLI::warning( as_get_datetime_object()->getCliTimestamp() . __( 'There are too many concurrent batches, but the run is forced to continue.', 'action-scheduler' ) );
+				WP_CLI::warning( as_get_formatted_cli_timestamp() . __( 'There are too many concurrent batches, but the run is forced to continue.', 'action-scheduler' ) );
 			} else {
-				WP_CLI::error( as_get_datetime_object()->getCliTimestamp() . __( 'There are too many concurrent batches.', 'action-scheduler' ) );
+				WP_CLI::error( as_get_formatted_cli_timestamp() . __( 'There are too many concurrent batches.', 'action-scheduler' ) );
 			}
 		}
 
@@ -111,7 +111,7 @@ class ActionScheduler_WPCLI_QueueRunner extends ActionScheduler_Abstract_QueueRu
 		foreach ( $this->actions as $action_id ) {
 			// Error if we lost the claim.
 			if ( ! in_array( $action_id, $this->store->find_actions_by_claim_id( $this->claim->get_id() ) ) ) {
-				WP_CLI::warning( as_get_datetime_object()->getCliTimestamp() . __( 'The claim has been lost. Aborting current batch.', 'action-scheduler' ) );
+				WP_CLI::warning( as_get_formatted_cli_timestamp() . __( 'The claim has been lost. Aborting current batch.', 'action-scheduler' ) );
 				break;
 			}
 
@@ -141,7 +141,7 @@ class ActionScheduler_WPCLI_QueueRunner extends ActionScheduler_Abstract_QueueRu
 	 */
 	public function before_execute( $action_id ) {
 		/* translators: %s refers to the action ID */
-		WP_CLI::log( sprintf( '%s' . __( 'Started processing action %s', 'action-scheduler' ), as_get_datetime_object()->getCliTimestamp(), $action_id ) );
+		WP_CLI::log( sprintf( '%s' . __( 'Started processing action %s', 'action-scheduler' ), as_get_formatted_cli_timestamp(), $action_id ) );
 	}
 
 	/**
@@ -158,7 +158,7 @@ class ActionScheduler_WPCLI_QueueRunner extends ActionScheduler_Abstract_QueueRu
 			$action = $this->store->fetch_action( $action_id );
 		}
 		/* translators: %s refers to the action ID */
-		WP_CLI::log( sprintf( '%s' . __( 'Completed processing action %s with hook: %s', 'action-scheduler' ), as_get_datetime_object()->getCliTimestamp(), $action_id, $action->get_hook() ) );
+		WP_CLI::log( sprintf( '%s' . __( 'Completed processing action %s with hook: %s', 'action-scheduler' ), as_get_formatted_cli_timestamp(), $action_id, $action->get_hook() ) );
 	}
 
 	/**
@@ -173,7 +173,7 @@ class ActionScheduler_WPCLI_QueueRunner extends ActionScheduler_Abstract_QueueRu
 	public function action_failed( $action_id, $exception ) {
 		WP_CLI::error(
 			/* translators: %2$s refers to the action ID, %3$s refers to the Exception message */
-			sprintf( '%1$s' . __( 'Error processing action %2$s: %3$s', 'action-scheduler' ), as_get_datetime_object()->getCliTimestamp(), $action_id, $exception->getMessage() ),
+			sprintf( '%1$s' . __( 'Error processing action %2$s: %3$s', 'action-scheduler' ), as_get_formatted_cli_timestamp(), $action_id, $exception->getMessage() ),
 			false
 		);
 	}
@@ -185,11 +185,11 @@ class ActionScheduler_WPCLI_QueueRunner extends ActionScheduler_Abstract_QueueRu
 	 */
 	protected function stop_the_insanity( $sleep_time = 0 ) {
 		if ( 0 < $sleep_time ) {
-			WP_CLI::warning( sprintf( '%sStopped the insanity for %d %s', as_get_datetime_object()->getCliTimestamp(), $sleep_time, _n( 'second', 'seconds', $sleep_time ) ) );
+			WP_CLI::warning( sprintf( '%sStopped the insanity for %d %s', as_get_formatted_cli_timestamp(), $sleep_time, _n( 'second', 'seconds', $sleep_time ) ) );
 			sleep( $sleep_time );
 		}
 
-		WP_CLI::warning( as_get_datetime_object()->getCliTimestamp() . __( 'Attempting to reduce used memory...', 'action-scheduler' ) );
+		WP_CLI::warning( as_get_formatted_cli_timestamp() . __( 'Attempting to reduce used memory...', 'action-scheduler' ) );
 
 		/**
 		 * @var $wpdb            \wpdb

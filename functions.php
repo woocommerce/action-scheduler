@@ -209,11 +209,11 @@ function as_get_datetime_object( $date_string = null, $timezone = 'UTC' ) {
 }
 
 /**
- * Get the timestamp for use in WP CLI output.
+ * Get the formatted timestamp for use in WP CLI output.
  *
  * @return string
  */
-public function as_get_formatted_cli_timestamp()() {
+function as_get_formatted_cli_timestamp()() {
 	if ( defined( 'AS_CLI_TIMESTAMP' ) && AS_CLI_TIMESTAMP ) {
 		return '[' . date_i18n( AS_CLI_TIMESTAMP, $this->format( 'U' ) ) . '] ';
 	}

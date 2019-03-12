@@ -80,6 +80,8 @@ class ActionScheduler_DateTime extends DateTime {
 	 * @return string
 	 */
 	public function getCliTimestamp() {
-		return '[' . date_i18n( 'Y-m-d H:i:s', $this->format( 'U' ) ) . '] ';
+		if ( defined( 'AS_CLI_TIMESTAMP' ) && AS_CLI_TIMESTAMP ) {
+			return '[' . date_i18n( AS_CLI_TIMESTAMP, $this->format( 'U' ) ) . '] ';
+		}
 	}
 }

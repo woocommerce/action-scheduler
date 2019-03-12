@@ -16,9 +16,6 @@ class ActionScheduler_WPCLI_QueueRunner extends ActionScheduler_Abstract_QueueRu
 	/** @var \cli\progress\Bar */
 	protected $progress_bar;
 
-	/** @var bool */
-	protected $print_timestamp = false;
-
 	/**
 	 * ActionScheduler_WPCLI_QueueRunner constructor.
 	 *
@@ -51,8 +48,6 @@ class ActionScheduler_WPCLI_QueueRunner extends ActionScheduler_Abstract_QueueRu
 	 * @throws \WP_CLI\ExitException When there are too many concurrent batches.
 	 */
 	public function setup( $batch_size, $hooks = array(), $group = '', $force = false ) {
-		$this->print_timestamp = $print_timestamp;
-
 		$this->run_cleanup();
 		$this->add_hooks();
 

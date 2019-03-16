@@ -50,7 +50,7 @@ class ActionScheduler_WPCLI_Scheduler_command extends WP_CLI_Command {
 		$actions_completed = 0;
 		$unlimited         = $batches === 0;
 
-		if ( $time !== (string) $time ) {
+		if ( true === $time ) {
 			$time = 'Y-m-d H:i:s T';
 		}
 

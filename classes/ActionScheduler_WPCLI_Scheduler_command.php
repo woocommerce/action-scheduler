@@ -58,7 +58,7 @@ class ActionScheduler_WPCLI_Scheduler_command extends WP_CLI_Command {
 
 			// Run actions for as long as possible.
 			while ( $total > 0 ) {
-				$this->print_total_actions( $total );
+				$this->print_run_total_actions( $total );
 				$actions_completed += $runner->run();
 				$batches_completed++;
 
@@ -66,11 +66,11 @@ class ActionScheduler_WPCLI_Scheduler_command extends WP_CLI_Command {
 				$total = ( $unlimited || $batches_completed < $batches ) ? $runner->setup( $batch, $hooks, $group, $force ) : 0;
 			}
 		} catch ( Exception $e ) {
-			$this->print_error( $e );
+			$this->print_run_error( $e );
 		}
 
-		$this->print_total_batches( $batches_completed );
-		$this->print_success( $actions_completed );
+		$this->print_run_total_batches( $batches_completed );
+		$this->print_run_success( $actions_completed );
 	}
 
 	/**
@@ -80,7 +80,7 @@ class ActionScheduler_WPCLI_Scheduler_command extends WP_CLI_Command {
 	 *
 	 * @param int $total
 	 */
-	protected function print_total_actions( $total ) {
+	protected function print_run_total_actions( $total ) {
 		WP_CLI::log(
 			sprintf(
 				/* translators: %d refers to how many scheduled taks were found to run */
@@ -97,7 +97,7 @@ class ActionScheduler_WPCLI_Scheduler_command extends WP_CLI_Command {
 	 *
 	 * @param int $batches_completed
 	 */
-	protected function print_total_batches( $batches_completed ) {
+	protected function print_run_total_batches( $batches_completed ) {
 		WP_CLI::log(
 			sprintf(
 				/* translators: %d refers to the total number of batches executed */
@@ -116,7 +116,7 @@ class ActionScheduler_WPCLI_Scheduler_command extends WP_CLI_Command {
 	 *
 	 * @throws \WP_CLI\ExitException
 	 */
-	protected function print_error( Exception $e ) {
+	protected function print_run_error( Exception $e ) {
 		WP_CLI::error(
 			sprintf(
 				/* translators: %s refers to the exception error message. */
@@ -133,7 +133,7 @@ class ActionScheduler_WPCLI_Scheduler_command extends WP_CLI_Command {
 	 *
 	 * @param int $actions_completed
 	 */
-	protected function print_success( $actions_completed ) {
+	protected function print_run_success( $actions_completed ) {
 		WP_CLI::success(
 			sprintf(
 				/* translators: %d refers to the total number of taskes completed */

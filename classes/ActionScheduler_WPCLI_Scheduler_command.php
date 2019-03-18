@@ -166,6 +166,9 @@ class ActionScheduler_WPCLI_Scheduler_command extends WP_CLI_Command {
 	 * [--limit=<limit>]
 	 * : Number of recurring events to schedule.
 	 *
+	 * [--cron=<cron>]
+	 * : Cron schedule string.
+	 *
 	 * @param array $args Positional arguments.
 	 * @param array $assoc_args Keyed arguments.
 	 * @throws \WP_CLI\ExitException When an error occurs.
@@ -178,58 +181,68 @@ class ActionScheduler_WPCLI_Scheduler_command extends WP_CLI_Command {
 		$group     = \WP_CLI\Utils\get_flag_value( $assoc_args, 'group', '' );
 		$interval  = absint( \WP_CLI\Utils\get_flag_value( $assoc_args, 'interval', 0 ) );
 		$limit     = absint( \WP_CLI\Utils\get_flag_value( $assoc_args, 'limit', 0 ) );
+		$cron      = \WP_CLI\Utils\get_flag_value( $assoc_args, 'cron', false );
 		$start     = as_get_datetime_object( $start );
 
 		if ( ! empty( $hook_args ) ) {
 			$hook_args = json_decode( $hook_args, true );
 		}
 
-		try {
-			if ( ! empty( $limit ) && ! empty( $interval ) ) {
-				$actions_added = $this->add_multiple_single_actions( $start, $interval, $limit, $hook, $hook_args, $group );
-			} else if ( ! empty( $interval ) ) {
-				$scheduled = as_schedule_recurring_action( $start->format( 'U' ), $interval, $hook, $hook_args, $group );
-			} else {
-				$scheduled = as_schedule_single_action( $start->format( 'U' ), $hook, $hook_args, $group );
-			}
+		$func_args = array(
+			$start->format( 'U' ),
+			$cron,
+			$interval,
+			$limit,
+			$hook,
+			$hook_args,
+			$group
+		);
 
-			if ( ! empty( $scheduled ) ) {
-				$actions_added = 1;
-			}
+		if ( ! empty( $cron ) ) {
+			$func = 'as_schedule_cron_action';
+		} else if ( ! empty( $limit ) && ! empty( $interval ) ) {
+			$func = array( $this, 'add_multiple_single_actions' );
+		} else if ( ! empty( $interval ) ) {
+			$func = 'as_schedule_recurring_action';
+		} else {
+			$func = 'as_schedule_single_action';
+		}
+
+		$func_args = array_filter( $func_args );
+
+		try {
+			$actions_added = call_user_func_array( $func, $func_args );
+			$num_actions_added = count( $actions_added );
 		} catch ( Exception $e ) {
 			$this->print_add_error( $e );
 		}
 
-		$this->print_add_success( $actions_added );
+		$this->print_add_success( $num_actions_added );
 	}
 
 	/**
 	 * Schedule multiple single actions.
 	 *
-	 * @param ActionScheduler_DateTime $start Starting time of first action.
+	 * @param int $start_timestamp Starting timestamp of first action.
 	 * @param int $interval How long to wait between runs.
 	 * @param int $limit Limit number of actions to schedule.
 	 * @param string $hook The hook to trigger.
 	 * @param array $args Arguments to pass when the hook triggers.
 	 * @param string $group The group to assign this job to.
 	 *
-	 * @return int Number of actions added.
+	 * @return int[] IDs of actions added.
 	 */
-	protected function add_multiple_single_actions( $start, $interval, $limit, $hook, $args, $group ) {
-		$actions_added = 0;
+	protected function add_multiple_single_actions( $start_timestamp, $interval, $limit, $hook, $args = array(), $group = '' ) {
+		$actions_added = array();
 		$progress_bar = \WP_CLI\Utils\make_progress_bar(
 			sprintf( _n( 'Creating %d action', 'Creating %d actions', $limit, 'action-scheduler' ), number_format_i18n( $limit ) ),
 			$limit
 		);
 
 		for ( $i = 0; $i < $limit; $i++ ) {
-			$start_timestamp = $start->format( 'U' ) + ( $i * $interval );
-			$scheduled = as_schedule_single_action( $start_timestamp, $hook, $args, $group );
-
-			if ( $scheduled ) {
-				$progress_bar->tick();
-				$actions_added++;
-			}
+			$start_timestamp += $i * $interval;
+			$actions_added[] = as_schedule_single_action( $start_timestamp, $hook, $args, $group );
+			$progress_bar->tick();
 		}
 
 		$progress_bar->finish();

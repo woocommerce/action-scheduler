@@ -142,4 +142,82 @@ class ActionScheduler_WPCLI_Scheduler_command extends WP_CLI_Command {
 			)
 		);
 	}
+
+	/**
+	 * Add a task to the Action Scheduler
+	 *
+	 * ## OPTIONS
+	 *
+	 * <hook>
+	 * : The name of the hook to schedule.
+	 *
+	 * <start>
+	 * : String to indicate the start time.
+	 *
+	 * [--args=<args>]
+	 * : A JSON string of the arguments to pass to the action.
+	 *
+	 * [--group=<group>]
+	 * : Add task to specified group.
+	 *
+	 * @param array $args Positional arguments.
+	 * @param array $assoc_args Keyed arguments.
+	 * @throws \WP_CLI\ExitException When an error occurs.
+	 */
+	public function add( $args, $assoc_args ) {
+		// Handle passed arguments.
+		$hook      = $args[0];
+		$start     = $args[1];
+		$hook_args = \WP_CLI\Utils\get_flag_value( $assoc_args, 'args', array() );
+		$group     = \WP_CLI\Utils\get_flag_value( $assoc_args, 'group', '' );
+		$start     = as_get_datetime_object( $start );
+
+		if ( ! empty( $hook_args ) ) {
+			$hook_args = json_decode( $hook_args, true );
+		}
+
+		try {
+			$action_id = as_schedule_single_action( $start->format( 'U' ), $hook, $hook_args, $group );
+		} catch( Exception $e ) {
+			$this->print_add_error( $e );
+		}
+
+		$this->print_add_success( $action_id );
+	}
+
+	/**
+	 * Print a success message with the action ID.
+	 *
+	 * @author Caleb Stauffer
+	 *
+	 * @param int $action_id
+	 */
+	protected function print_add_success( $action_id ) {
+		WP_CLI::success(
+			sprintf(
+				/* translators: %d refers to the ID of the scheduled action */
+				__( 'Task scheduled: %d.', 'action-scheduler' ),
+				$action_id
+			)
+		);
+	}
+
+	/**
+	 * Convert an exception into a WP CLI error.
+	 *
+	 * @author Caleb Stauffer
+	 *
+	 * @param Exception $e The error object.
+	 *
+	 * @throws \WP_CLI\ExitException
+	 */
+	protected function print_add_error( Exception $e ) {
+		WP_CLI::error(
+			sprintf(
+				/* translators: %s refers to the exception error message. */
+				__( 'There was an error adding the task: %s', 'action-scheduler' ),
+				$e->getMessage()
+			)
+		);
+	}
 }

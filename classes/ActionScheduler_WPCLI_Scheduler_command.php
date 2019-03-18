@@ -160,6 +160,12 @@ class ActionScheduler_WPCLI_Scheduler_command extends WP_CLI_Command {
 	 * [--group=<group>]
 	 * : Add task to specified group.
 	 *
+	 * [--interval=<interval>]
+	 * : Number of seconds between recurring events.
+	 *
+	 * [--limit=<limit>]
+	 * : Number of recurring events to schedule.
+	 *
 	 * @param array $args Positional arguments.
 	 * @param array $assoc_args Keyed arguments.
 	 * @throws \WP_CLI\ExitException When an error occurs.
@@ -170,6 +176,8 @@ class ActionScheduler_WPCLI_Scheduler_command extends WP_CLI_Command {
 		$start     = $args[1];
 		$hook_args = \WP_CLI\Utils\get_flag_value( $assoc_args, 'args', array() );
 		$group     = \WP_CLI\Utils\get_flag_value( $assoc_args, 'group', '' );
+		$interval  = absint( \WP_CLI\Utils\get_flag_value( $assoc_args, 'interval', 0 ) );
+		$limit     = absint( \WP_CLI\Utils\get_flag_value( $assoc_args, 'limit', 0 ) );
 		$start     = as_get_datetime_object( $start );
 
 		if ( ! empty( $hook_args ) ) {
@@ -177,12 +185,56 @@ class ActionScheduler_WPCLI_Scheduler_command extends WP_CLI_Command {
 		}
 
 		try {
-			$action_id = as_schedule_single_action( $start->format( 'U' ), $hook, $hook_args, $group );
-		} catch( Exception $e ) {
+			if ( ! empty( $limit ) && ! empty( $interval ) ) {
+				$actions_added = $this->add_multiple_single_actions( $start, $interval, $limit, $hook, $hook_args, $group );
+			} else if ( ! empty( $interval ) ) {
+				$scheduled = as_schedule_recurring_action( $start->format( 'U' ), $interval, $hook, $hook_args, $group );
+			} else {
+				$scheduled = as_schedule_single_action( $start->format( 'U' ), $hook, $hook_args, $group );
+			}
+
+			if ( ! empty( $scheduled ) ) {
+				$actions_added = 1;
+			}
+		} catch ( Exception $e ) {
 			$this->print_add_error( $e );
 		}
 
-		$this->print_add_success( $action_id );
+		$this->print_add_success( $actions_added );
+	}
+
+	/**
+	 * Schedule multiple single actions.
+	 *
+	 * @param ActionScheduler_DateTime $start Starting time of first action.
+	 * @param int $interval How long to wait between runs.
+	 * @param int $limit Limit number of actions to schedule.
+	 * @param string $hook The hook to trigger.
+	 * @param array $args Arguments to pass when the hook triggers.
+	 * @param string $group The group to assign this job to.
+	 *
+	 * @return int Number of actions added.
+	 */
+	protected function add_multiple_single_actions( $start, $interval, $limit, $hook, $args, $group ) {
+		$actions_added = 0;
+		$progress_bar = \WP_CLI\Utils\make_progress_bar(
+			sprintf( _n( 'Creating %d action', 'Creating %d actions', $limit, 'action-scheduler' ), number_format_i18n( $limit ) ),
+			$limit
+		);
+
+		for ( $i = 0; $i < $limit; $i++ ) {
+			$start_timestamp = $start->format( 'U' ) + ( $i * $interval );
+			$scheduled = as_schedule_single_action( $start_timestamp, $hook, $args, $group );
+
+			if ( $scheduled ) {
+				$progress_bar->tick();
+				$actions_added++;
+			}
+		}
+
+		$progress_bar->finish();
+
+		return $actions_added;
 	}
 
 	/**
@@ -190,14 +242,14 @@ class ActionScheduler_WPCLI_Scheduler_command extends WP_CLI_Command {
 	 *
 	 * @author Caleb Stauffer
 	 *
-	 * @param int $action_id
+	 * @param int $action_added
 	 */
-	protected function print_add_success( $action_id ) {
+	protected function print_add_success( $actions_added ) {
 		WP_CLI::success(
 			sprintf(
-				/* translators: %d refers to the ID of the scheduled action */
-				__( 'Task scheduled: %d.', 'action-scheduler' ),
-				$action_id
+				/* translators: %d refers to the total number of taskes added */
+				_n( '%d task scheduled.', '%d tasks scheduled.', $actions_added, 'action-scheduler' ),
+				number_format_i18n( $actions_added )
 			)
 		);
 	}

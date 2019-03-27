@@ -12,11 +12,11 @@ class ActionScheduler_Versions {
 	private $versions = array();
 
 	public function register( $version_string, $initialization_callback ) {
-		if ( isset($this->versions[$version_string]) ) {
-			return FALSE;
+		if ( ! isset($this->versions[$version_string]) ) {
+			$this->versions[$version_string] = array();
 		}
-		$this->versions[$version_string] = $initialization_callback;
-		return TRUE;
+		$this->versions[$version_string][] = $initialization_callback;
+		return count( $this->versions[$version_string] ) < 2;
 	}
 
 	public function get_versions() {
@@ -37,7 +37,7 @@ class ActionScheduler_Versions {
 		if ( empty($latest) || !isset($this->versions[$latest]) ) {
 			return '__return_null';
 		}
-		return $this->versions[$latest];
+		return $this->versions[$latest][0];
 	}
 
 	/**
@@ -59,4 +59,3 @@ class ActionScheduler_Versions {
 		call_user_func($self->latest_version_callback());
 	}
 }
- 

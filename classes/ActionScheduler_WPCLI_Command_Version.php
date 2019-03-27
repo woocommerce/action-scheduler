@@ -6,6 +6,15 @@
 class ActionScheduler_WPCLI_Command_Version extends ActionScheduler_Abstract_WPCLI_Command {
 
 	/**
+	 * @var array
+	 */
+	protected $component_types = array(
+		'mu-plugins' => 'mu-plugin',
+		'plugins' => 'plugin',
+		'themes' => 'theme',
+	);
+
+	/**
 	 * Execute command.
 	 */
 	public function execute() {
@@ -23,18 +32,45 @@ class ActionScheduler_WPCLI_Command_Version extends ActionScheduler_Abstract_WPC
 	 * Print table of versions.
 	 */
 	protected function print_all( $versions ) {
-		$versions = array_keys( $versions );
-		usort( $versions, 'version_compare' );
+		$items = $version_strings = array();
 
-		$items = array();
+		foreach ( $versions as $version => $callbacks ) {
+			foreach ( $callbacks as $callback ) {
+				$reflection = new ReflectionFunction( $callback );
+				$reflection_filepath = $reflection->getFileName();
 
-		foreach ( $versions as $version ) {
-			$items[] = array(
-				'version' => $version
-			);
+				$items[] = array(
+					'version' => $version,
+					'callback' => $callback,
+					'component' => $this->get_component( $reflection_filepath ),
+				);
+
+				$version_strings[] = $version;
+			}
 		}
 
-		$this->table( $items, 'version' );
+		// array_multisort( array_column( $items, 'version' ), $items );
+
+		$this->table( $items, array( 'version', 'component' ) );
+	}
+
+	/**
+	 * Get components of registered versions.
+	 *
+	 * @param string $filepath
+	 * @return string
+	 */
+	protected function get_component( $filepath ) {
+		$filepath = str_replace( trailingslashit( WP_CONTENT_DIR ), '', $filepath );
+		$filepath_pieces = explode( '/', $filepath );
+
+		$type = 'unknown';
+
+		if ( array_key_exists( $filepath_pieces[0], $this->component_types ) ) {
+			$type = $this->component_types[ $filepath_pieces[0] ];
+		}
+
+		return $type . ': ' . $filepath_pieces[1];
 	}
 
 }

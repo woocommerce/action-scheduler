@@ -57,6 +57,14 @@ abstract class ActionScheduler_Abstract_WPCLI_Command {
 		WP_CLI::success( sprintf( '%s%s', $this->output_timestamp(), $message ) );
 	}
 
+	protected function table( $items, $columns ) {
+		\WP_CLI\Utils\format_items( 'table', $items, $columns );
+
+		if ( ! empty( $this->timestamp ) ) {
+			$this->log( sprintf( 'Generated at %s', $this->output_timestamp() ) );
+		}
+	}
+
 	/**
 	 * Print timestamp to CLI, if enabled.
 	 *

@@ -43,4 +43,20 @@ class ActionScheduler_WPCLI extends WP_CLI_Command {
 		$command->execute();
 	}
 
+	/**
+	 * Get Action Scheduler version(s)
+	 *
+	 * ## OPTIONS
+	 *
+	 * [--all]
+	 * : Prints a table of all registered versions.
+	 *
+	 * @param array $args Positional arguments.
+	 * @param array $assoc_args Keyed arguments.
+	 */
+	public function version( $args, $assoc_args ) {
+		$command = new ActionScheduler_WPCLI_Command_Version( $args, $assoc_args );
+		$command->execute();
+	}
+
 }

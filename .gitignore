@@ -1,3 +1,8 @@
 phpunit.xml
 vendor
+docs
+tests
 .idea
+.github
+.travis.yml
+codecov.yml

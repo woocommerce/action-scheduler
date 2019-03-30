@@ -431,6 +431,40 @@ class ActionScheduler_wpPostStore extends ActionScheduler_Store {
 	}
 
 	/**
+	 * Get the oldest and newest action dates by status.
+	 *
+	 * @return array
+	 */
+	public function action_dates() {
+
+		$action_dates_by_status = array();
+		$action_stati = array_keys( $this->get_status_labels() );
+
+		foreach ( $action_stati as $status ) {
+			$action_dates_by_status[ $status ] = array(
+				'oldest' => null,
+				'newest' => null,
+			);
+
+			foreach ( array( 'oldest', 'newest' ) as $point ) {
+				$action = $this->query_actions( array(
+					'claimed'  => false,
+					'status'   => $status,
+					'per_page' => 1,
+					'order'    => ( 'oldest' === $point ? 'ASC' : 'DESC' ),
+				) );
+
+				if ( ! empty( $action ) ) {
+					$date_object = $this->get_date( $action[0] );
+					$action_dates_by_status[ $status ][ $point ] = $date_object->format( 'Y-m-d H:i:s O' );
+				}
+			}
+		}
+
+		return $action_dates_by_status;
+	}
+
+	/**
 	 * @param string $action_id
 	 *
 	 * @throws InvalidArgumentException

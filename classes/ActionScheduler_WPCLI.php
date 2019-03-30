@@ -43,4 +43,23 @@ class ActionScheduler_WPCLI extends WP_CLI_Command {
 		$command->execute();
 	}
 
+	/**
+	 * Get action status counts and dates
+	 *
+	 * ## OPTIONS
+	 *
+	 * [--time]
+	 * : Whether to print timestamp on each line.
+	 *
+	 * [--time-format=<format>]
+	 * : Format for the timestamp. Defaults to Y-m-d H:i:s T.
+	 *
+	 * @param array $args Positional arguments.
+	 * @param array $assoc_args Keyed arguments.
+	 */
+	public function info( $args, $assoc_args ) {
+		$command = new ActionScheduler_WPCLI_Command_Info( $args, $assoc_args );
+		$command->execute();
+	}
+
 }

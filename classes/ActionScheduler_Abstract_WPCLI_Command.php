@@ -58,6 +58,17 @@ abstract class ActionScheduler_Abstract_WPCLI_Command {
 	}
 
 	/**
+	 * Wrapper for WP_CLI_Utils\format_items( 'table' )
+	 */
+	protected function table( $items, $columns ) {
+		\WP_CLI\Utils\format_items( 'table', $items, $columns );
+
+		if ( ! empty( $this->timestamp ) ) {
+			$this->log( sprintf( 'Table generated.', $this->output_timestamp() ) );
+		}
+	}
+
+	/**
 	 * Print timestamp to CLI, if enabled.
 	 *
 	 * @return string

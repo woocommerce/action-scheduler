@@ -48,11 +48,20 @@ class ActionScheduler_WPCLI extends WP_CLI_Command {
 	 *
 	 * ## OPTIONS
 	 *
+	 * [--columns]
+	 * : Table columns to show.
+	 *
+	 * [--hooks]
+	 * : Hooks to show data.
+	 *
 	 * [--time]
 	 * : Whether to print timestamp on each line.
 	 *
 	 * [--time-format=<format>]
 	 * : Format for the timestamp. Defaults to Y-m-d H:i:s T.
+	 *
+	 * [--past-due]
+	 * : Limit data to past due actions.
 	 *
 	 * @param array $args Positional arguments.
 	 * @param array $assoc_args Keyed arguments.

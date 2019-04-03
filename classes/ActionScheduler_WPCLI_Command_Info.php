@@ -28,10 +28,7 @@ class ActionScheduler_WPCLI_Command_Info extends ActionScheduler_Abstract_WPCLI_
 		$columns = explode( ',', \WP_CLI\Utils\get_flag_value( $this->assoc_args, 'columns', 'hook,total' ) );
 
 		if ( true === $hooks ) {
-			global $wpdb;
-
-			$query = $wpdb->prepare( "SELECT DISTINCT( post_title ) FROM $wpdb->posts WHERE post_type = %s", ActionScheduler_wpPostStore::POST_TYPE );
-			$hooks = $wpdb->get_col( $query );
+			$hooks = $store->action_hooks();
 		} else if ( !empty( $hooks ) ) {
 			$hooks = explode( ',', $hooks );
 		}
@@ -44,7 +41,7 @@ class ActionScheduler_WPCLI_Command_Info extends ActionScheduler_Abstract_WPCLI_
 
 		if ( !empty( $hooks ) ) {
 			$rows = array();
-			
+
 			foreach ( $hooks as $hook ) {
 				$args['hook'] = $hook;
 
@@ -74,10 +71,7 @@ class ActionScheduler_WPCLI_Command_Info extends ActionScheduler_Abstract_WPCLI_
 		$rows = array();
 
 		if ( true === $hooks ) {
-			global $wpdb;
-
-			$query = $wpdb->prepare( "SELECT DISTINCT( post_title ) FROM $wpdb->posts WHERE post_type = %s", ActionScheduler_wpPostStore::POST_TYPE );
-			$hooks = $wpdb->get_col( $query );
+			$hooks = $store->action_hooks();
 		} else {
 			$hooks = explode( ',', $hooks );
 		}

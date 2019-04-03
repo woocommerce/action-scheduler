@@ -465,6 +465,20 @@ class ActionScheduler_wpPostStore extends ActionScheduler_Store {
 	}
 
 	/**
+	 * Get all unique action hooks.
+	 *
+	 * @return string[]
+	 */
+	public function action_hooks() {
+		global $wpdb;
+
+		$sql = "SELECT DISTINCT( p.post_title ) FROM {$wpdb->posts} p WHERE p.post_type = %s";
+		$sql = $wpdb->prepare( $sql, self::POST_TYPE );
+
+		return $wpdb->get_col( $sql );
+	}
+
+	/**
 	 * @param string $action_id
 	 *
 	 * @throws InvalidArgumentException

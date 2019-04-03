@@ -36,7 +36,6 @@ class ActionScheduler_WPCLI_Command_Info extends ActionScheduler_Abstract_WPCLI_
 		$args = array(
 			'status' => 'pending',
 			'date' => as_get_datetime_object()->format( 'Y-m-d H:i:s' ),
-			'date_compare' => '<=',
 		);
 
 		if ( !empty( $hooks ) ) {
@@ -44,18 +43,47 @@ class ActionScheduler_WPCLI_Command_Info extends ActionScheduler_Abstract_WPCLI_
 
 			foreach ( $hooks as $hook ) {
 				$args['hook'] = $hook;
+				$count = ( int ) $store->query_actions( $args, 'count' );
 
-				$rows[] = array(
+				if ( 0 === $count )
+					continue;
+
+				$row = array(
 					'hook' => $hook,
-					'total' => $store->query_actions( $args, 'count' ),
+					'total' => $count,
 				);
+
+				if ( count( array_intersect( array( 'oldest', 'newest' ), $columns ) ) ) {
+					foreach ( array( 'oldest', 'newest' ) as $point ) {
+						$actions = $store->query_actions( array(
+							'hook'     => $hook,
+							'status'   => 'pending',
+							'claimed'  => false,
+							'per_page' => 1,
+							'order'    => ( 'oldest' === $point ? 'ASC' : 'DESC' ),
+							'date'     => as_get_datetime_object()->format( 'Y-m-d H:i:s' ),
+						) );
+
+						if ( ! empty( $actions ) ) {
+							$date_object = $store->get_date( $actions[0] );
+							$row[ $point ] = $date_object->format( 'Y-m-d H:i:s O' );
+						}
+					}
+				}
+
+				$rows[] = $row;
 			}
 
 			$this->table( $rows, $columns );
-		}
+		} else {
+			unset( $args['hook'] );
+			$this->log( 'Total past due: ' . $store->query_actions( $args, 'count' ) );
 
-		unset( $args['hook'] );
-		$this->log( 'Total past due: ' . $store->query_actions( $args, 'count' ) );
+			$args['order'] = 'ASC';
+			$actions = $store->query_actions( $args );
+			$date_object = $store->get_date( $actions[0] );
+			$this->log( 'Oldest: ' . $date_object->format( 'Y-m-d H:i:s O' ) );
+		}
 	}
 
 	/**
@@ -80,13 +108,13 @@ class ActionScheduler_WPCLI_Command_Info extends ActionScheduler_Abstract_WPCLI_
 			$row = $args = array( 'hook' => $hook );
 
 			if ( in_array( 'total', $columns ) ) {
-				$row['total'] = $store->query_actions( array( 'hook' => $hook ), 'count' );
+				$row['total'] = ( int ) $store->query_actions( array( 'hook' => $hook ), 'count' );
 			}
 
 			if ( count( array_intersect( $stati, $columns ) ) ) {
 				foreach ( array_intersect( $columns, $stati ) as $status ) {
 					$args['status'] = $status;
-					$count = $store->query_actions( $args, 'count' );;
+					$count = ( int ) $store->query_actions( $args, 'count' );
 					$row[ $status ] = $count;
 				}
 			}

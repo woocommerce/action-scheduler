@@ -5,7 +5,7 @@
  *
  * Retain public API for backwards compatibility.
  */
-class ActionScheduler_WPCLI_Scheduler_command extends ActionScheduler_WPCLI_Command_Run {
+class ActionScheduler_WPCLI_Scheduler_Command extends ActionScheduler_WPCLI_Command_Run {
 
 	/**
 	 * Construct.

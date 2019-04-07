@@ -22,6 +22,11 @@ abstract class ActionScheduler_Abstract_WPCLI_Command {
 	protected $timestamp_format = 'Y-m-d H:i:s T';
 
 	/**
+	 * @var string[] $columns
+	 */
+	protected $columns = array();
+
+	/**
 	 * Construct.
 	 */
 	public function __construct( $args, $assoc_args ) {
@@ -68,6 +73,37 @@ abstract class ActionScheduler_Abstract_WPCLI_Command {
 		}
 
 		return '[' . as_get_datetime_object()->format( $this->timestamp_format ) . '] ';
+	}
+
+	/**
+	 * Wrapper for WP_CLI_Utils\format_items( 'table' )
+	 */
+	protected function table( $items, $columns ) {
+		\WP_CLI\Utils\format_items( 'table', $items, $columns );
+ 		if ( ! empty( $this->timestamp ) ) {
+			$this->log( sprintf( 'Table generated.', $this->output_timestamp() ) );
+		}
+	}
+
+	/**
+	 * Get columns from associate arguments.
+	 *
+	 * @param string[] $defaults
+	 * @return string[]
+	 */
+	protected function get_columns( $defaults = array() ) {
+		if ( ! empty( $this->columns ) ) {
+			return $this->columns;
+		}
+
+		$columns = \WP_CLI\Utils\get_flag_value( $this->assoc_args, 'columns', $defaults );
+
+		if ( ! is_array( $columns ) ) {
+			$columns = explode( ',', $columns );
+		}
+
+		$this->columns = $columns;
+		return $this->columns;
 	}
 
 }

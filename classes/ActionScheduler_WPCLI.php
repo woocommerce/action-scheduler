@@ -43,4 +43,29 @@ class ActionScheduler_WPCLI extends WP_CLI_Command {
 		$command->execute();
 	}
 
+	/**
+	 * Get actions data
+	 *
+	 * ## OPTIONS
+	 *
+	 * <type>
+	 * : Type of data to print.
+	 *
+	 * [<value>]
+	 * : Value/ID of data to print.
+	 *
+	 * [--columns]
+ 	 * : Table columns to show.
+	 *
+	 * [--per_page]
+	 * : Specify number of actions to show.
+	 *
+	 * [--offset]
+	 * : Specify number of actions to skip for selecting actions to show.
+	 */
+	public function get( $args, $assoc_args ) {
+		$command = new ActionScheduler_WPCLI_Command_Get( $args, $assoc_args );
+		$command->execute();
+	}
+
 }

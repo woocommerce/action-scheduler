@@ -27,6 +27,11 @@ abstract class ActionScheduler_Abstract_WPCLI_Command {
 	protected $columns = array();
 
 	/**
+	 * @var ActionScheduler_Store
+	 */
+	protected $store = null;
+
+	/**
 	 * Construct.
 	 */
 	public function __construct( $args, $assoc_args ) {
@@ -34,6 +39,7 @@ abstract class ActionScheduler_Abstract_WPCLI_Command {
 		$this->assoc_args = $assoc_args;
 		$this->timestamp = (bool) \WP_CLI\Utils\get_flag_value( $assoc_args, 'time', false );
 		$this->timestamp_format = \WP_CLI\Utils\get_flag_value( $assoc_args, 'time-format', $this->timestamp_format );
+		$this->store = ActionScheduler::store();
 	}
 
 	/**
@@ -46,6 +52,13 @@ abstract class ActionScheduler_Abstract_WPCLI_Command {
 	 */
 	protected function log( $message ) {
 		WP_CLI::log( sprintf( '%s%s', $this->output_timestamp(), $message ) );
+	}
+
+	/**
+	 * Wrapper for WP_CLI::warning()
+	 */
+	protected function warning( $message ) {
+		WP_CLI::warning( sprintf( '%s%s', $this->output_timestamp(), $message ) );
 	}
 
 	/**
@@ -86,23 +99,40 @@ abstract class ActionScheduler_Abstract_WPCLI_Command {
 	}
 
 	/**
-	 * Get columns from associate arguments.
+	 * Get columns from associate arguments, and limit to available columns.
 	 *
 	 * @param string[] $defaults
+	 * @param string[] $available
+	 * @param bool $include_stati
 	 * @return string[]
 	 */
-	protected function get_columns( $defaults = array() ) {
+	protected function get_columns( $defaults = array(), $available = array(), $include_stati = false ) {
 		if ( ! empty( $this->columns ) ) {
 			return $this->columns;
 		}
 
+		# Get columns from passed associate arguments.
 		$columns = \WP_CLI\Utils\get_flag_value( $this->assoc_args, 'columns', $defaults );
 
 		if ( ! is_array( $columns ) ) {
 			$columns = explode( ',', $columns );
 		}
 
-		$this->columns = $columns;
+		# Include action stati in available columns.
+		if ( false !== $include_stati ) {
+			$available = array_merge( $available, array_keys( $this->store->get_status_labels() ) );
+		}
+
+		# Identify requested columns that are not available.
+		$unavailable = array_diff( $columns, $available );
+
+		# Print warning about unavailable columns.
+		foreach ( $unavailable as $column ) {
+			$this->warning( 'Column \'' . $column . '\' is not available.' );
+		}
+
+		# Set columns that are available.
+		$this->columns = array_intersect( $columns, $available );
 		return $this->columns;
 	}
 

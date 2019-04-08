@@ -6,15 +6,14 @@
 class ActionScheduler_WPCLI_Command_Get extends ActionScheduler_Abstract_WPCLI_Command {
 
 	/**
-	 * @var ActionScheduler_Store
+	 * @var array
 	 */
-	protected $store = null;
+	protected $query_args = array();
 
 	/**
 	 * Execute command.
 	 */
 	public function execute() {
-		$this->store = ActionScheduler::store();
 		$stati = array_keys( $this->store->get_status_labels() );
 
 		if ( in_array( $this->args[0], $stati ) ) {
@@ -61,29 +60,40 @@ class ActionScheduler_WPCLI_Command_Get extends ActionScheduler_Abstract_WPCLI_C
 	 * Available columns: id, hook, date, group, status, args
 	 */
 	protected function execute_ids() {
-		$columns = $this->get_columns( array( 'id', 'hook', 'status', 'date' ) );
+		$available_columns = array( 'id', 'hook', 'date', 'group', 'status', 'args' );
+		$default_columns = array( 'id', 'hook', 'status', 'date' );
+		$columns = $this->get_columns( $default_columns, $available_columns );
+
 		$per_page = (int) \WP_CLI\Utils\get_flag_value( $this->assoc_args, 'per_page', 5 );
 		$offset = (int) \WP_CLI\Utils\get_flag_value( $this->assoc_args, 'offset', 0 );
-		$rows = array();
 
 		if ( empty( $this->args[1] ) ) {
-			$ids = $this->store->query_actions( array( 'per_page' => $per_page, 'offset' => $offset ) );
+			$action_ids = $this->store->query_actions( array( 'per_page' => $per_page, 'offset' => $offset ) );
 		} else {
-			$ids = explode( ',', $this->args[1] );
+			$action_ids = array_unique( explode( ',', $this->args[1] ) );
 		}
 
-		$progress_bar = \WP_CLI\Utils\make_progress_bar( 'Collecting data:', count( $ids ) * count( $columns ) );
+		$progress_bar = \WP_CLI\Utils\make_progress_bar( 'Collecting data:', count( $action_ids ) * count( $columns ) );
+		$rows = array();
 
-		foreach ( $ids as $id ) {
-			$action = $this->store->fetch_action( $id );
+		foreach ( $action_ids as $action_id ) {
+			$action = $this->store->fetch_action( $action_id );
 			$row = array();
+
+			if ( is_a( $action, 'ActionScheduler_NullAction' ) ) {
+				$this->warning( 'Action with ID \'' . $action_id . '\' does not exist.' );
+				foreach ( $columns as $column ) {
+					$progress_bar->tick();
+				}
+				continue;
+			}
 
 			foreach ( $columns as $column ) {
 
 				switch ( $column ) {
 
 					case 'id':
-						$row[ $column ] = $id;
+						$row['id'] = $action_id;
 						break;
 
 					case 'hook':
@@ -91,7 +101,7 @@ class ActionScheduler_WPCLI_Command_Get extends ActionScheduler_Abstract_WPCLI_C
 						break;
 
 					case 'date':
-						$row['date'] = $this->store->get_date_gmt( $id )->format( 'Y-m-d H:i:s T' );
+						$row['date'] = $this->store->get_date_gmt( $action_id )->format( $this->timestamp_format );
 						break;
 
 					case 'group':
@@ -99,7 +109,7 @@ class ActionScheduler_WPCLI_Command_Get extends ActionScheduler_Abstract_WPCLI_C
 						break;
 
 					case 'status':
-						$row['status'] = $this->store->get_status( $id );
+						$row['status'] = $this->store->get_status( $action_id );
 						break;
 
 					case 'args':
@@ -128,30 +138,33 @@ class ActionScheduler_WPCLI_Command_Get extends ActionScheduler_Abstract_WPCLI_C
 	 * - future: count of scheduled actions
 	 * - total: total count of actions
 	 * - oldest: date of oldest action
-	 * - newest: date of newest action
+	 * - latest: date of latest action
 	 * - last-complete: date of last completed action
 	 * - oldest-pending: date of earliest pending action
 	 */
 	protected function execute_hooks() {
-		$columns = $this->get_columns( array( 'hook', 'pending', 'complete' ) );
-		$rows = array();
+		$available_columns = array( 'hook', 'overdue', 'future', 'total', 'oldest', 'latest', 'last-complete', 'oldest-pending' );
+		$default_columns = array( 'hook', 'pending', 'complete' );
+		$columns = $this->get_columns( $default_columns, $available_columns, true );
 
 		if ( empty( $this->args[1] ) ) {
 			$hooks = $this->store->action_hooks();
 		} else {
-			$hooks = explode( ',', $this->args[1] );
+			$hooks = array_unique( explode( ',', $this->args[1] ) );
 		}
 
 		$progress_bar = \WP_CLI\Utils\make_progress_bar( 'Collecting data:', count( $hooks ) * count( $columns ) );
+		$rows = array();
 
 		foreach ( $hooks as $hook ) {
+			$query_args = array( 'hook' => $hook );
 			$row = array();
 
 			foreach ( $columns as $column ) {
 
 				if ( in_array( $column, array_keys( $this->store->get_status_labels() ) ) ) {
 					$status = $column;
-					$column = 'status';
+					$column = '_status';
 				}
 
 				switch ( $column ) {
@@ -160,58 +173,23 @@ class ActionScheduler_WPCLI_Command_Get extends ActionScheduler_Abstract_WPCLI_C
 						$row['hook'] = $hook;
 						break;
 
+					case '_status':
+						$row[ $status ] = $this->column__status( $status, $query_args );
+						break;
+
 					case 'status':
-						$row[ $status ] = $this->store->query_actions( array( 'hook' => $hook, 'status' => $status ), 'count' );
-						unset( $status );
+						$this->warning( 'Column \'status\' is not available.' );
+						$row['status'] = '—';
 						break;
 
-					case 'overdue':
-						$row['overdue'] = $this->store->query_actions( array( 'hook' => $hook, 'status' => $this->store::STATUS_PENDING, 'date' => as_get_datetime_object()->format( 'Y-m-d H:i:s' ) ), 'count' );
-						break;
-
-					case 'future':
-						$row['future'] = $this->store->query_actions( array( 'hook' => $hook, 'status' => $this->store::STATUS_PENDING, 'date' => as_get_datetime_object()->format( 'Y-m-d H:i:s' ), 'date_compare' => '>=' ), 'count' );
-						break;
-
-					case 'total':
-						$row['total'] = $this->store->query_actions( array( 'hook' => $hook ), 'count' );
-						break;
-
-					case 'oldest':
-						$action_ids = $this->store->query_actions( array( 'hook' => $hook, 'per_page' => 1 ) );
-						if ( empty( $action_ids ) ) {
-							$row['oldest'] = '—';
+					default:
+						$callback = array( $this, 'column__' . str_replace( '-', '_', $column ) );
+						if ( is_callable( $callback ) ) {
+							$row[ $column ] = call_user_func_array( $callback, array( $query_args ) );
 						} else {
-							$row['oldest'] = $this->store->get_date_gmt( $action_ids[0] )->format( 'Y-m-d H:i:s T' );
+							$this->warning( 'Column \'' . $column . '\' is not available.' );
+							$row[ $column ] = '—';
 						}
-						break;
-
-					case 'newest':
-						$action_ids = $this->store->query_actions( array( 'hook' => $hook, 'per_page' => 1, 'order' => 'DESC' ) );
-						if ( empty( $action_ids ) ) {
-							$row['newest'] = '—';
-						} else {
-							$row['newest'] = $this->store->get_date_gmt( $action_ids[0] )->format( 'Y-m-d H:i:s T' );
-						}
-						break;
-
-					case 'last-complete':
-						$action_ids = $this->store->query_actions( array( 'hook' => $hook, 'per_page' => 1, 'order' => 'DESC', 'status' => $this->store::STATUS_COMPLETE ) );
-						if ( empty( $action_ids ) ) {
-							$row['last-complete'] = '—';
-						} else {
-							$row['last-complete'] = $this->store->get_date_gmt( $action_ids[0] )->format( 'Y-m-d H:i:s T' );
-						}
-						break;
-
-					case 'oldest-pending':
-						$action_ids = $this->store->query_actions( array( 'hook' => $hook, 'per_page' => 1, 'status' => $this->store::STATUS_PENDING ) );
-						if ( empty( $action_ids ) ) {
-							$row['oldest-pending'] = '—';
-						} else {
-							$row['oldest-pending'] = $this->store->get_date_gmt( $action_ids[0] )->format( 'Y-m-d H:i:s T' );
-						}
-						break;
 
 				}
 
@@ -235,13 +213,14 @@ class ActionScheduler_WPCLI_Command_Get extends ActionScheduler_Abstract_WPCLI_C
 	 * - future: count of scheduled actions
 	 * - total: total count of actions
 	 * - oldest: date of oldest action
-	 * - newest: date of newest action
+	 * - latest: date of latest action
 	 * - last-complete: date of last completed action
 	 * - oldest-pending: date of earliest pending action
 	 */
 	protected function execute_groups() {
-		$columns = $this->get_columns( array( 'group', 'total' ) );
-		$rows = array();
+		$available_columns = array( 'group', 'overdue', 'future', 'total', 'oldest', 'latest', 'last-complete', 'oldest-pending' );
+		$default_columns = array( 'group', 'total' );
+		$columns = $this->get_columns( $default_columns, $available_columns, true );
 
 		if ( empty( $this->args[1] ) ) {
 			$this->error( 'One or more group names are required.' );
@@ -250,15 +229,17 @@ class ActionScheduler_WPCLI_Command_Get extends ActionScheduler_Abstract_WPCLI_C
 		}
 
 		$progress_bar = \WP_CLI\Utils\make_progress_bar( 'Collecting data:', count( $groups ) * count( $columns ) );
+		$rows = array();
 
 		foreach ( $groups as $group ) {
+			$query_args = array( 'group' => $group );
 			$row = array();
 
 			foreach ( $columns as $column ) {
 
 				if ( in_array( $column, array_keys( $this->store->get_status_labels() ) ) ) {
 					$status = $column;
-					$column = 'status';
+					$column = '_status';
 				}
 
 				switch ( $column ) {
@@ -267,58 +248,18 @@ class ActionScheduler_WPCLI_Command_Get extends ActionScheduler_Abstract_WPCLI_C
 						$row['group'] = $group;
 						break;
 
-					case 'status':
-						$row[ $status ] = $this->store->query_actions( array( 'group' => $group, 'status' => $status ), 'count' );
-						unset( $status );
+					case '_status':
+						$row[ $status ] = $this->column__status( $status, $query_args );
 						break;
 
-					case 'overdue':
-						$row['overdue'] = $this->store->query_actions( array( 'group' => $group, 'status' => $this->store::STATUS_PENDING, 'date' => as_get_datetime_object()->format( 'Y-m-d H:i:s' ) ), 'count' );
-						break;
-
-					case 'future':
-						$row['future'] = $this->store->query_actions( array( 'group' => $group, 'status' => $this->store::STATUS_PENDING, 'date' => as_get_datetime_object()->format( 'Y-m-d H:i:s' ), 'date_compare' => '>=' ), 'count' );
-						break;
-
-					case 'total':
-						$row['total'] = $this->store->query_actions( array( 'group' => $group ), 'count' );
-						break;
-
-					case 'oldest':
-						$action_ids = $this->store->query_actions( array( 'group' => $group, 'per_page' => 1 ) );
-						if ( empty( $action_ids ) ) {
-							$row['oldest'] = '—';
+					default:
+						$callback = array( $this, 'column__' . str_replace( '-', '_', $column ) );
+						if ( is_callable( $callback ) ) {
+							$row[ $column ] = call_user_func_array( $callback, array( $query_args ) );
 						} else {
-							$row['oldest'] = $this->store->get_date_gmt( $action_ids[0] )->format( 'Y-m-d H:i:s T' );
+							$this->warning( 'Column \'' . $column . '\' is not available.' );
+							$row[ $column ] = '—';
 						}
-						break;
-
-					case 'newest':
-						$action_ids = $this->store->query_actions( array( 'group' => $group, 'per_page' => 1, 'order' => 'DESC' ) );
-						if ( empty( $action_ids ) ) {
-							$row['newest'] = '—';
-						} else {
-							$row['newest'] = $this->store->get_date_gmt( $action_ids[0] )->format( 'Y-m-d H:i:s T' );
-						}
-						break;
-
-					case 'last-complete':
-						$action_ids = $this->store->query_actions( array( 'group' => $group, 'per_page' => 1, 'order' => 'DESC', 'status' => $this->store::STATUS_COMPLETE ) );
-						if ( empty( $action_ids ) ) {
-							$row['last-complete'] = '—';
-						} else {
-							$row['last-complete'] = $this->store->get_date_gmt( $action_ids[0] )->format( 'Y-m-d H:i:s T' );
-						}
-						break;
-
-					case 'oldest-pending':
-						$action_ids = $this->store->query_actions( array( 'group' => $group, 'per_page' => 1, 'status' => $this->store::STATUS_PENDING ) );
-						if ( empty( $action_ids ) ) {
-							$row['oldest-pending'] = '—';
-						} else {
-							$row['oldest-pending'] = $this->store->get_date_gmt( $action_ids[0] )->format( 'Y-m-d H:i:s T' );
-						}
-						break;
 
 				}
 
@@ -339,11 +280,12 @@ class ActionScheduler_WPCLI_Command_Get extends ActionScheduler_Abstract_WPCLI_C
 	 * - status: action status
 	 * - total: total count of actions with status
 	 * - oldest: oldest date of action with status
-	 * - newest: newest date of action with status
+	 * - latest: latest date of action with status
 	 */
 	protected function execute_stati() {
-		$columns = $this->get_columns( array( 'status', 'total' ) );
-		$rows = array();
+		$available_columns = array( 'status', 'total', 'latest', 'oldest' );
+		$default_columns = array( 'status', 'total' );
+		$columns = $this->get_columns( $default_columns, $available_columns );
 
 		if ( empty( $this->args[1] ) ) {
 			$stati = $this->store->get_status_labels();
@@ -352,6 +294,7 @@ class ActionScheduler_WPCLI_Command_Get extends ActionScheduler_Abstract_WPCLI_C
 		}
 
 		$progress_bar = \WP_CLI\Utils\make_progress_bar( 'Collecting data:', count( $stati ) * count( $columns ) );
+		$rows = array();
 
 		foreach ( $stati as $status => $label ) {
 			$row = array();
@@ -364,26 +307,20 @@ class ActionScheduler_WPCLI_Command_Get extends ActionScheduler_Abstract_WPCLI_C
 						break;
 
 					case 'total':
-						$row['total'] = $this->store->query_actions( array( 'status' => $status ), 'count' );
-						break;
-
+					case 'latest':
 					case 'oldest':
-						$action_ids = $this->store->query_actions( array( 'status' => $status, 'per_page' => 1 ) );
-						if ( empty( $action_ids ) ) {
-							$row['oldest'] = '—';
+						$callback = array( $this, 'column__' . str_replace( '-', '_', $column ) );
+						if ( is_callable( $callback ) ) {
+							$row[ $column ] = call_user_func_array( $callback, array( array( 'status' => $status ) ) );
 						} else {
-							$row['oldest'] = $this->store->get_date_gmt( $action_ids[0] )->format( 'Y-m-d H:i:s T' );
+							$this->error( 'Column \'' . $column . '\' is not available.' );
+							$row[ $column ] = '—';
 						}
 						break;
 
-					case 'newest':
-						$action_ids = $this->store->query_actions( array( 'status' => $status, 'per_page' => 1, 'order' => 'DESC' ) );
-						if ( empty( $action_ids ) ) {
-							$row['newest'] = '—';
-						} else {
-							$row['newest'] = $this->store->get_date_gmt( $action_ids[0] )->format( 'Y-m-d H:i:s T' );
-						}
-						break;
+					default:
+						$this->error( 'Column \'' . $column . '\' is not available.' );
+						$row[ $column ] = '—';
 
 				}
 
@@ -395,6 +332,156 @@ class ActionScheduler_WPCLI_Command_Get extends ActionScheduler_Abstract_WPCLI_C
 
 		$progress_bar->finish();
 		$this->table( $rows, $columns );
+	}
+
+	/**
+	 * Column: status
+	 *
+	 * Display count of actions in status.
+	 *
+	 * @param string $status Action status.
+	 * @param array $query_args Other query arguments.
+	 * @return int
+	 */
+	protected function column__status( $status, $query_args ) {
+		$query_args['status'] = $status;
+		return (int) $this->store->query_actions( $query_args, 'count' );
+	}
+
+	/**
+	 * Column: overdue
+	 *
+	 * Display count of pending actions that are overdue.
+	 *
+	 * @param array $query_args Other query arguments.
+	 * @return int
+	 */
+	protected function column__overdue( $query_args ) {
+		$query_args = array_merge( $query_args, array(
+			'status' => $this->store::STATUS_PENDING,
+			'date' => as_get_datetime_object()->format( 'Y-m-d H:i:s' ),
+		) );
+
+		return (int) $this->store->query_actions( $query_args, 'count' );
+	}
+
+	/**
+	 * Column: future
+	 *
+	 * Display count of actions scheduled in future.
+	 *
+	 * @param array $query_args Other query arguments.
+	 * @return int
+	 */
+	protected function column__future( $query_args ) {
+		$query_args = array_merge( $query_args, array(
+			'status' => $this->store::STATUS_PENDING,
+			'date' => as_get_datetime_object()->format( 'Y-m-d H:i:s' ),
+			'date_compare' => '>=',
+		) );
+
+		return (int) $this->store->query_actions( $query_args, 'count' );
+	}
+
+	/**
+	 * Column: total
+	 *
+	 * Display total number of actions matching query arguments.
+	 *
+	 * @param array $query_args Other query arguments.
+	 * @return int
+	 */
+	protected function column__total( $query_args ) {
+		return (int) $this->store->query_actions( $query_args, 'count' );
+	}
+
+	/**
+	 * Column: oldest
+	 *
+	 * Display oldest action scheduled date.
+	 *
+	 * @param array $query_args
+	 * @return string
+	 */
+	protected function column__oldest( $query_args ) {
+		$query_args['per_page'] = 1;
+		$action_ids = $this->store->query_actions( $query_args );
+
+		if ( ! empty( $action_ids ) ) {
+			return $this->store->get_date_gmt( $action_ids[0] )->format( $this->timestamp_format );
+		}
+
+		return '—';
+	}
+
+	/**
+	 * Column: latest
+	 *
+	 * Display latest action scheduled date.
+	 *
+	 * @param array $query_args Other query args.
+	 * @return string
+	 */
+	protected function column__latest( $query_args ) {
+		$query_args = array_merge( $query_args, array(
+			'per_page' => 1,
+			'order' => 'DESC',
+		) );
+
+		$action_ids = $this->store->query_actions( $query_args );
+
+		if ( !empty( $action_ids ) ) {
+			return $this->store->get_date_gmt( $action_ids[0] )->format( $this->timestamp_format );
+		}
+
+		return '—';
+	}
+
+	/**
+	 * Column: last-complete
+	 *
+	 * Display date of last complete action.
+	 *
+	 * @param array $query_args Other query args.
+	 * @return string
+	 */
+	protected function column__last_complete( $query_args ) {
+		$query_args = array_merge( $query_args, array(
+			'per_page' => 1,
+			'order' => 'DESC',
+			'status' => $this->store::STATUS_COMPLETE,
+		) );
+
+		$action_ids = $this->store->query_actions( $query_args );
+
+		if ( ! empty( $action_ids ) ) {
+			return $this->store->get_date_gmt( $action_ids[0] )->format( $this->timestamp_format );
+		}
+
+		return '—';
+	}
+
+	/**
+	 * Column: oldest-pending
+	 *
+	 * Display date of oldest, pending action.
+	 *
+	 * @param array $query_args Other query args.
+	 * @return string
+	 */
+	protected function column__oldest_pending( $query_args ) {
+		$query_args = array_merge( $query_args, array(
+			'per_page' => 1,
+			'status' => $this->store::STATUS_PENDING,
+		) );
+
+		$action_ids = $this->store->query_actions( $query_args );
+
+		if ( ! empty( $action_ids ) ) {
+			return $this->store->get_date_gmt( $action_ids[0] )->format( $this->timestamp_format );
+		}
+
+		return '—';
 	}
 
 }

@@ -38,11 +38,13 @@ class ActionScheduler_WPCLI_Command_Version extends ActionScheduler_Abstract_WPC
 			foreach ( $callbacks as $callback ) {
 				$reflection = new ReflectionFunction( $callback );
 				$reflection_filepath = $reflection->getFileName();
+				$is_active = dirname( $reflection_filepath ) === ActionScheduler::plugin_path( '' );
 
 				$items[] = array(
 					'version' => $version,
 					'callback' => $callback,
 					'component' => $this->get_component( $reflection_filepath ),
+					'active' => $is_active ? 'X' : '',
 				);
 
 				$version_strings[] = $version;
@@ -51,7 +53,7 @@ class ActionScheduler_WPCLI_Command_Version extends ActionScheduler_Abstract_WPC
 
 		// array_multisort( array_column( $items, 'version' ), $items );
 
-		$this->table( $items, array( 'version', 'component' ) );
+		$this->table( $items, array( 'version', 'component', 'active' ) );
 	}
 
 	/**

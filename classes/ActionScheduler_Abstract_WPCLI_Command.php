@@ -22,11 +22,6 @@ abstract class ActionScheduler_Abstract_WPCLI_Command {
 	protected $timestamp_format = 'Y-m-d H:i:s T';
 
 	/**
-	 * @var ActionScheduler_Store
-	 */
-	protected $store = null;
-
-	/**
 	 * Construct.
 	 */
 	public function __construct( $args, $assoc_args ) {

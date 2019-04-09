@@ -27,11 +27,6 @@ abstract class ActionScheduler_Abstract_WPCLI_Command {
 	protected $columns = array();
 
 	/**
-	 * @var ActionScheduler_Store
-	 */
-	protected $store = null;
-
-	/**
 	 * Construct.
 	 */
 	public function __construct( $args, $assoc_args ) {
@@ -39,7 +34,6 @@ abstract class ActionScheduler_Abstract_WPCLI_Command {
 		$this->assoc_args = $assoc_args;
 		$this->timestamp = (bool) \WP_CLI\Utils\get_flag_value( $assoc_args, 'time', false );
 		$this->timestamp_format = \WP_CLI\Utils\get_flag_value( $assoc_args, 'time-format', $this->timestamp_format );
-		$this->store = ActionScheduler::store();
 	}
 
 	/**

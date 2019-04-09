@@ -11,9 +11,15 @@ class ActionScheduler_WPCLI_Command_Get extends ActionScheduler_Abstract_WPCLI_C
 	protected $query_args = array();
 
 	/**
+	 * @var ActionScheduler_Store
+	 */
+	protected $store = null;
+
+	/**
 	 * Execute command.
 	 */
 	public function execute() {
+		$this->store = ActionScheduler::store();
 		$stati = array_keys( $this->store->get_status_labels() );
 
 		if ( in_array( $this->args[0], $stati ) ) {

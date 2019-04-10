@@ -6,6 +6,26 @@
 class ActionScheduler_WPCLI_Command_Run extends ActionScheduler_Abstract_WPCLI_Command {
 
 	/**
+	 * @var bool Enable printing of timestamp.
+	 */
+	protected $timestamp = false;
+
+	/**
+	 * @var string Format of timestamp.
+	 */
+	protected $timestamp_format = 'Y-m-d H:i:s T';
+
+	/**
+	 * Construct.
+	 */
+	public function __construct( $args, $assoc_args ) {
+		parent::__construct( $args, $assoc_args );
+
+		$this->timestamp = (bool) \WP_CLI\Utils\get_flag_value( $assoc_args, 'time', false );
+		$this->timestamp_format = \WP_CLI\Utils\get_flag_value( $assoc_args, 'time-format', $this->timestamp_format );
+	}
+
+	/**
 	 * Execute command.
 	 */
 	public function execute() {
@@ -57,10 +77,11 @@ class ActionScheduler_WPCLI_Command_Run extends ActionScheduler_Abstract_WPCLI_C
 	 * @param int $total
 	 */
 	protected function print_total_actions( $total ) {
-		$this->log(
+		\WP_CLI::log(
 			sprintf(
 				/* translators: %d refers to how many scheduled taks were found to run */
-				_n( 'Found %d scheduled task', 'Found %d scheduled tasks', $total, 'action-scheduler' ),
+				'%s' . _n( 'Found %d scheduled task', 'Found %d scheduled tasks', $total, 'action-scheduler' ),
+				$this->output_timestamp(),
 				number_format_i18n( $total )
 			)
 		);
@@ -74,10 +95,11 @@ class ActionScheduler_WPCLI_Command_Run extends ActionScheduler_Abstract_WPCLI_C
 	 * @param int $batches_completed
 	 */
 	protected function print_total_batches( $batches_completed ) {
-		$this->log(
+		\WP_CLI::log(
 			sprintf(
 				/* translators: %d refers to the total number of batches executed */
-				_n( '%d batch executed.', '%d batches executed.', $batches_completed, 'action-scheduler' ),
+				'%s' . _n( '%d batch executed.', '%d batches executed.', $batches_completed, 'action-scheduler' ),
+				$this->output_timestamp(),
 				number_format_i18n( $batches_completed )
 			)
 		);
@@ -93,10 +115,11 @@ class ActionScheduler_WPCLI_Command_Run extends ActionScheduler_Abstract_WPCLI_C
 	 * @throws \WP_CLI\ExitException
 	 */
 	protected function print_error( Exception $e ) {
-		$this->error(
+		\WP_CLI::error(
 			sprintf(
 				/* translators: %s refers to the exception error message. */
-				__( 'There was an error running the action scheduler: %s', 'action-scheduler' ),
+				'%s' . __( 'There was an error running the action scheduler: %s', 'action-scheduler' ),
+				$this->output_timestamp(),
 				$e->getMessage()
 			)
 		);
@@ -110,12 +133,26 @@ class ActionScheduler_WPCLI_Command_Run extends ActionScheduler_Abstract_WPCLI_C
 	 * @param int $actions_completed
 	 */
 	protected function print_success( $actions_completed ) {
-		$this->success(
+		\WP_CLI::success(
 			sprintf(
 				/* translators: %d refers to the total number of taskes completed */
-				_n( '%d scheduled task completed.', '%d scheduled tasks completed.', $actions_completed, 'action-scheduler' ),
+				'%s' . _n( '%d scheduled task completed.', '%d scheduled tasks completed.', $actions_completed, 'action-scheduler' ),
+				$this->output_timestamp(),
 				number_format_i18n( $actions_completed )
 			)
 		);
+	}
+
+	/**
+	 * Print timestamp if enabled.
+	 *
+	 * @return string
+	 */
+	protected function output_timestamp() {
+		if ( empty( $this->timestamp ) ) {
+			return '';
+		}
+
+		return '[' . as_get_datetime_object()->format( $this->timestamp_format ) . '] ';
 	}
 }

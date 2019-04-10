@@ -6,6 +6,11 @@
 class ActionScheduler_WPCLI_Command_Get extends ActionScheduler_Abstract_WPCLI_Command {
 
 	/**
+	 * @var string Format of timestamp.
+	 */
+	protected $timestamp_format = 'Y-m-d H:i:s T';
+
+	/**
 	 * @var array
 	 */
 	protected $query_args = array();
@@ -14,6 +19,15 @@ class ActionScheduler_WPCLI_Command_Get extends ActionScheduler_Abstract_WPCLI_C
 	 * @var ActionScheduler_Store
 	 */
 	protected $store = null;
+
+	/**
+	 * Construct.
+	 */
+	public function __construct( $args, $assoc_args ) {
+		parent::__construct( $args, $assoc_args );
+
+		$this->timestamp_format = \WP_CLI\Utils\get_flag_value( $this->assoc_args, 'time-format', $this->timestamp_format );
+	}
 
 	/**
 	 * Execute command.
@@ -87,7 +101,7 @@ class ActionScheduler_WPCLI_Command_Get extends ActionScheduler_Abstract_WPCLI_C
 			$row = array();
 
 			if ( is_a( $action, 'ActionScheduler_NullAction' ) ) {
-				$this->warning( 'Action with ID \'' . $action_id . '\' does not exist.' );
+				\WP_CLI::warning( 'Action with ID \'' . $action_id . '\' does not exist.' );
 				foreach ( $columns as $column ) {
 					$progress_bar->tick();
 				}
@@ -131,7 +145,7 @@ class ActionScheduler_WPCLI_Command_Get extends ActionScheduler_Abstract_WPCLI_C
 		}
 
 		$progress_bar->finish();
-		$this->table( $rows, $columns );
+		\WP_CLI\Utils\format_items( 'table', $rows, $columns );
 	}
 
 	/**
@@ -183,18 +197,10 @@ class ActionScheduler_WPCLI_Command_Get extends ActionScheduler_Abstract_WPCLI_C
 						$row[ $status ] = $this->column__status( $status, $query_args );
 						break;
 
-					case 'status':
-						$this->warning( 'Column \'status\' is not available.' );
-						$row['status'] = '—';
-						break;
-
 					default:
 						$callback = array( $this, 'column__' . str_replace( '-', '_', $column ) );
 						if ( is_callable( $callback ) ) {
 							$row[ $column ] = call_user_func_array( $callback, array( $query_args ) );
-						} else {
-							$this->warning( 'Column \'' . $column . '\' is not available.' );
-							$row[ $column ] = '—';
 						}
 
 				}
@@ -206,7 +212,7 @@ class ActionScheduler_WPCLI_Command_Get extends ActionScheduler_Abstract_WPCLI_C
 		}
 
 		$progress_bar->finish();
-		$this->table( $rows, $columns );
+		\WP_CLI\Utils\format_items( 'table', $rows, $columns );
 	}
 
 	/**
@@ -229,7 +235,7 @@ class ActionScheduler_WPCLI_Command_Get extends ActionScheduler_Abstract_WPCLI_C
 		$columns = $this->get_columns( $default_columns, $available_columns, true );
 
 		if ( empty( $this->args[1] ) ) {
-			$this->error( 'One or more group names are required.' );
+			\WP_CLI::error( 'One or more group names are required.' );
 		} else {
 			$groups = explode( ',', $this->args[1] );
 		}
@@ -262,9 +268,6 @@ class ActionScheduler_WPCLI_Command_Get extends ActionScheduler_Abstract_WPCLI_C
 						$callback = array( $this, 'column__' . str_replace( '-', '_', $column ) );
 						if ( is_callable( $callback ) ) {
 							$row[ $column ] = call_user_func_array( $callback, array( $query_args ) );
-						} else {
-							$this->warning( 'Column \'' . $column . '\' is not available.' );
-							$row[ $column ] = '—';
 						}
 
 				}
@@ -276,7 +279,8 @@ class ActionScheduler_WPCLI_Command_Get extends ActionScheduler_Abstract_WPCLI_C
 		}
 
 		$progress_bar->finish();
-		$this->table( $rows, $columns );
+
+		\WP_CLI\Utils\format_items( 'table', $rows, $columns );
 	}
 
 	/**
@@ -312,21 +316,11 @@ class ActionScheduler_WPCLI_Command_Get extends ActionScheduler_Abstract_WPCLI_C
 						$row['status'] = $label;
 						break;
 
-					case 'total':
-					case 'latest':
-					case 'oldest':
+					default:
 						$callback = array( $this, 'column__' . str_replace( '-', '_', $column ) );
 						if ( is_callable( $callback ) ) {
 							$row[ $column ] = call_user_func_array( $callback, array( array( 'status' => $status ) ) );
-						} else {
-							$this->error( 'Column \'' . $column . '\' is not available.' );
-							$row[ $column ] = '—';
 						}
-						break;
-
-					default:
-						$this->error( 'Column \'' . $column . '\' is not available.' );
-						$row[ $column ] = '—';
 
 				}
 
@@ -337,7 +331,7 @@ class ActionScheduler_WPCLI_Command_Get extends ActionScheduler_Abstract_WPCLI_C
 		}
 
 		$progress_bar->finish();
-		$this->table( $rows, $columns );
+		\WP_CLI\Utils\format_items( 'table', $rows, $columns );
 	}
 
 	/**
@@ -410,6 +404,7 @@ class ActionScheduler_WPCLI_Command_Get extends ActionScheduler_Abstract_WPCLI_C
 	 * @return string
 	 */
 	protected function column__oldest( $query_args ) {
+		error_log( print_r( $query_args, true ) );
 		$query_args['per_page'] = 1;
 		$action_ids = $this->store->query_actions( $query_args );
 

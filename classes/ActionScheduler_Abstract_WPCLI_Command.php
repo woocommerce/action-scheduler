@@ -22,6 +22,11 @@ abstract class ActionScheduler_Abstract_WPCLI_Command {
 	protected $timestamp_format = 'Y-m-d H:i:s T';
 
 	/**
+	 * @var string[] $columns
+	 */
+	protected $columns = array();
+
+	/**
 	 * Construct.
 	 */
 	public function __construct( $args, $assoc_args ) {
@@ -97,6 +102,51 @@ abstract class ActionScheduler_Abstract_WPCLI_Command {
 		}
 
 		return '[' . as_get_datetime_object()->format( $this->timestamp_format ) . '] ';
+	}
+
+	/**
+	 * Get columns from associate arguments, and limit to available columns.
+	 *
+	 * @param string[] $defaults
+	 * @param string[] $available
+	 * @param bool $include_stati
+	 * @return string[]
+	 */
+	protected function get_columns( $defaults = array(), $available = null, $include_stati = false ) {
+		if ( ! empty( $this->columns ) ) {
+			return $this->columns;
+		}
+
+		# Get columns from passed associate arguments.
+		$columns = \WP_CLI\Utils\get_flag_value( $this->assoc_args, 'columns', $defaults );
+
+ 		if ( ! is_array( $columns ) ) {
+			$columns = explode( ',', $columns );
+		}
+
+		$this->columns = $columns;
+
+		if ( is_array( $available ) ) {
+
+			# Include action stati in available columns.
+			if ( false !== $include_stati ) {
+				$available = array_merge( $available, array_keys( $this->store->get_status_labels() ) );
+			}
+
+			# Identify requested columns that are not available.
+			$unavailable = array_diff( $columns, $available );
+
+			# Print warning about unavailable columns.
+			foreach ( $unavailable as $column ) {
+				$this->warning( 'Column \'' . $column . '\' is not available.' );
+			}
+
+			# Set columns that are available.
+			$this->columns = array_intersect( $columns, $available );
+
+		}
+
+		return $this->columns;
 	}
 
 }

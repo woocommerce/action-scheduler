@@ -24,7 +24,7 @@ class ActionScheduler_WPCLI_Command_Version extends ActionScheduler_Abstract_WPC
 		if ( $all ) {
 			$this->print_all( $helper->get_versions() );
 		} else {
-			$this->log( $helper->latest_version() );
+			\WP_CLI::log( $helper->latest_version() );
 		}
 	}
 
@@ -53,7 +53,7 @@ class ActionScheduler_WPCLI_Command_Version extends ActionScheduler_Abstract_WPC
 
 		// array_multisort( array_column( $items, 'version' ), $items );
 
-		$this->table( $items, array( 'version', 'component', 'active' ) );
+		\WP_CLI\Utils\format_items( 'table', $items, array( 'version', 'component', 'active' ) );
 	}
 
 	/**

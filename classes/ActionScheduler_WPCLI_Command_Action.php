@@ -1,25 +1,6 @@
 <?php
 
-class ActionScheduler_WPCLI_Command_Action extends ActionScheduler_Abstract_WPCLI_Command {
-
-	/**
-	 * @var ActionScheduler_Store
-	 */
-	protected $store = null;
-
-	/**
-	 * Identify and run subcommand.
-	 */
-	public function execute() {
-		$this->store = ActionScheduler::store();
-		$callback = array( $this, $this->args[0] );
-
-		if ( !is_callable( $callback ) ) {
-			\WP_CLI::error( 'No ' . $this->args[0] . ' subcommand.' );
-		}
-
-		call_user_func( $callback );
-	}
+class ActionScheduler_WPCLI_Command_Action {
 
 	/**
 	 * Creates an action.
@@ -44,13 +25,20 @@ class ActionScheduler_WPCLI_Command_Action extends ActionScheduler_Abstract_WPCL
 
 	/**
 	 * Verifies whether an action exists.
+	 *
+	 * ## OPTIONS
+	 *
+	 * <action_id>
+	 * : ID of the action to check if exists.
 	 */
-	public function exists() {
-		$action_id = absint( $this->args[1] );
-		$action = $this->store->fetch_action( $action_id );
+	public function exists( $args, $assoc_args ) {
+		$store = ActionScheduler::store();
+
+		$action_id = absint( $args[1] );
+		$action = $store->fetch_action( $action_id );
 
 		if ( !empty( $action ) && !is_a( $action, 'ActionScheduler_NullAction' ) ) {
-			$this->success( 'Action with ID ' . $action_id . ' exists.' );
+			\WP_CLI::success( 'Action with ID ' . $action_id . ' exists.' );
 		}
 	}
 
@@ -63,10 +51,16 @@ class ActionScheduler_WPCLI_Command_Action extends ActionScheduler_Abstract_WPCL
 
 	/**
 	 * Get details about an action.
+	 *
+	 * ## OPTIONS
+	 *
+	 * <action_id>
+	 * : ID of action to get details about.
 	 */
-	public function get() {
-		$action_id = absint( $this->args[1] );
-		$action = $this->store->fetch_action( $action_id );
+	public function get( $args, $assoc_args ) {
+		$store = ActionScheduler::store();
+		$action_id = absint( $args[1] );
+		$action = $store->fetch_action( $action_id );
 
 		if ( empty( $action ) || is_a( $action, 'ActionScheduler_NullAction' ) ) {
 			\WP_CLI::error( $action_id . ' is not an action.' );
@@ -76,7 +70,7 @@ class ActionScheduler_WPCLI_Command_Action extends ActionScheduler_Abstract_WPCL
 			'id'     => $action_id,
 			'hook'   => $action->get_hook(),
 			'args'   => $action->get_args(),
-			'status' => $this->store->get_status( $action_id ),
+			'status' => $store->get_status( $action_id ),
 			'date'   => $action->get_schedule()->next()->format( 'Y-m-d H:i:s T' ),
 			'group'  => $action->get_group(),
 		);

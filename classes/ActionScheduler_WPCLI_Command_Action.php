@@ -43,10 +43,15 @@ class ActionScheduler_WPCLI_Command_Action extends ActionScheduler_Abstract_WPCL
 	}
 
 	/**
-	 * Vertifies whether an action exists.
+	 * Verifies whether an action exists.
 	 */
 	public function exists() {
+		$action_id = absint( $this->args[1] );
+		$action = $this->store->fetch_action( $action_id );
 
+		if ( !empty( $action ) && !is_a( $action, 'ActionScheduler_NullAction' ) ) {
+			$this->success( 'Action with ID ' . $action_id . ' exists.' );
+		}
 	}
 
 	/**

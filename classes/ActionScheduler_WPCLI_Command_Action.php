@@ -60,7 +60,7 @@ class ActionScheduler_WPCLI_Command_Action extends ActionScheduler_Abstract_WPCL
 	 * Get details about an action.
 	 */
 	public function get() {
-		$action_id = $this->args[1];
+		$action_id = absint( $this->args[1] );
 		$action = $this->store->fetch_action( $action_id );
 
 		if ( empty( $action ) || is_a( $action, 'ActionScheduler_NullAction' ) ) {

@@ -34,7 +34,7 @@ class ActionScheduler_WPCLI_Command_Action {
 	public function exists( $args, $assoc_args ) {
 		$store = ActionScheduler::store();
 
-		$action_id = absint( $args[1] );
+		$action_id = absint( $args[0] );
 		$action = $store->fetch_action( $action_id );
 
 		if ( !empty( $action ) && !is_a( $action, 'ActionScheduler_NullAction' ) ) {
@@ -59,7 +59,7 @@ class ActionScheduler_WPCLI_Command_Action {
 	 */
 	public function get( $args, $assoc_args ) {
 		$store = ActionScheduler::store();
-		$action_id = absint( $args[1] );
+		$action_id = absint( $args[0] );
 		$action = $store->fetch_action( $action_id );
 
 		if ( empty( $action ) || is_a( $action, 'ActionScheduler_NullAction' ) ) {
@@ -84,7 +84,7 @@ class ActionScheduler_WPCLI_Command_Action {
 			);
 		}
 
-		\WP_CLI\Utils\format_items( 'table', $rows, $this->get_columns( array( 'field', 'value' ) ) );
+		\WP_CLI\Utils\format_items( 'table', $rows, array( 'field', 'value' ) );
 	}
 
 	/**

@@ -15,7 +15,7 @@ class ActionScheduler_WPCLI_Command_Action extends ActionScheduler_Abstract_WPCL
 		$callback = array( $this, $this->args[0] );
 
 		if ( !is_callable( $callback ) ) {
-			$this->error( 'No ' . $this->args[0] . ' subcommand.' );
+			\WP_CLI::error( 'No ' . $this->args[0] . ' subcommand.' );
 		}
 
 		call_user_func( $callback );
@@ -69,7 +69,7 @@ class ActionScheduler_WPCLI_Command_Action extends ActionScheduler_Abstract_WPCL
 		$action = $this->store->fetch_action( $action_id );
 
 		if ( empty( $action ) || is_a( $action, 'ActionScheduler_NullAction' ) ) {
-			$this->error( $action_id . ' is not an action.' );
+			\WP_CLI::error( $action_id . ' is not an action.' );
 		}
 
 		$fields = array(
@@ -90,7 +90,7 @@ class ActionScheduler_WPCLI_Command_Action extends ActionScheduler_Abstract_WPCL
 			);
 		}
 
-		$this->table( $rows, $this->get_columns( array( 'field', 'value' ) ) );
+		\WP_CLI\Utils\format_items( 'table', $rows, $this->get_columns( array( 'field', 'value' ) ) );
 	}
 
 	/**

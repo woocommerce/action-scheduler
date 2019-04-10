@@ -1,6 +1,20 @@
 <?php
 
-class ActionScheduler_WPCLI_Command_Action {
+class ActionScheduler_WPCLI_Command_Action extends ActionScheduler_Abstract_WPCLI_Command {
+
+	/**
+	 * Identify and run subcommand.
+	 */
+	public function execute() {
+		$this->store = ActionScheduler::store();
+		$callback = array( $this, $this->args[0] );
+
+		if ( !is_callable( $callback ) ) {
+			$this->error( 'No ' . $this->args[0] . ' subcommand.' );
+		}
+
+		call_user_func( $callback );
+	}
 
 	/**
 	 * Creates an action.

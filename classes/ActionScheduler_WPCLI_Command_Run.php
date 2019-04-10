@@ -77,7 +77,7 @@ class ActionScheduler_WPCLI_Command_Run extends ActionScheduler_Abstract_WPCLI_C
 	 * @param int $total
 	 */
 	protected function print_total_actions( $total ) {
-		WP_CLI::log(
+		\WP_CLI::log(
 			sprintf(
 				/* translators: %d refers to how many scheduled taks were found to run */
 				'%s' . _n( 'Found %d scheduled task', 'Found %d scheduled tasks', $total, 'action-scheduler' ),
@@ -95,7 +95,7 @@ class ActionScheduler_WPCLI_Command_Run extends ActionScheduler_Abstract_WPCLI_C
 	 * @param int $batches_completed
 	 */
 	protected function print_total_batches( $batches_completed ) {
-		WP_CLI::log(
+		\WP_CLI::log(
 			sprintf(
 				/* translators: %d refers to the total number of batches executed */
 				'%s' . _n( '%d batch executed.', '%d batches executed.', $batches_completed, 'action-scheduler' ),
@@ -115,7 +115,7 @@ class ActionScheduler_WPCLI_Command_Run extends ActionScheduler_Abstract_WPCLI_C
 	 * @throws \WP_CLI\ExitException
 	 */
 	protected function print_error( Exception $e ) {
-		WP_CLI::error(
+		\WP_CLI::error(
 			sprintf(
 				/* translators: %s refers to the exception error message. */
 				'%s' . __( 'There was an error running the action scheduler: %s', 'action-scheduler' ),
@@ -133,7 +133,7 @@ class ActionScheduler_WPCLI_Command_Run extends ActionScheduler_Abstract_WPCLI_C
 	 * @param int $actions_completed
 	 */
 	protected function print_success( $actions_completed ) {
-		WP_CLI::success(
+		\WP_CLI::success(
 			sprintf(
 				/* translators: %d refers to the total number of taskes completed */
 				'%s' . _n( '%d scheduled task completed.', '%d scheduled tasks completed.', $actions_completed, 'action-scheduler' ),

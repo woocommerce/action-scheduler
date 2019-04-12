@@ -52,6 +52,27 @@ abstract class ActionScheduler_Store {
 	abstract public function action_counts();
 
 	/**
+	 * Get all unique action hooks.
+	 *
+	 * @return string[]
+	 */
+	public function action_hooks() {
+		$all_actions = as_get_scheduled_actions( array(
+			'per_page' => -1,
+		) );
+
+		$unique_hooks = array();
+
+		foreach ( $all_actions as $action ) {
+			if ( !in_array( $action->get_hook(), $unique_hooks ) ) {
+				$unique_hooks[] = $action->get_hook();
+			}
+		}
+
+		return $unique_hooks;
+	}
+
+	/**
 	 * @param string $action_id
 	 */
 	abstract public function cancel_action( $action_id );

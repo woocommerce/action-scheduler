@@ -43,4 +43,51 @@ class ActionScheduler_WPCLI extends WP_CLI_Command {
 		$command->execute();
 	}
 
+	/**
+	 * Get columns from associate arguments, and limit to available columns.
+	 *
+	 * @param mixed[] $assoc_args
+	 * @param string[] $defaults
+	 * @param string[] $available
+	 * @param bool $include_stati
+	 * @return string[]
+	 */
+	public static function get_columns( $assoc_args, $defaults = array(), $available = null, $include_stati = false ) {
+		static $_columns = null;
+
+		if ( ! is_null( $_columns ) ) {
+			return $_columns;
+		}
+
+		# Get columns from passed associate arguments.
+		$columns = \WP_CLI\Utils\get_flag_value( $assoc_args, 'columns', $defaults );
+
+ 		if ( ! is_array( $columns ) ) {
+			$columns = explode( ',', $columns );
+		}
+
+		if ( is_array( $available ) ) {
+
+			# Include action stati in available columns.
+			if ( false !== $include_stati ) {
+				$store = ActionScheduler::store();
+				$available = array_merge( $available, array_keys( $store->get_status_labels() ) );
+			}
+
+			# Identify requested columns that are not available.
+			$unavailable = array_diff( $columns, $available );
+
+			# Print warning about unavailable columns.
+			foreach ( $unavailable as $column ) {
+				\WP_CLI::warning( 'Column \'' . $column . '\' is not available.' );
+			}
+
+			# Set columns that are available.
+			$columns = array_intersect( $columns, $available );
+
+		}
+
+		return ( $_columns = $columns );
+	}
+
 }

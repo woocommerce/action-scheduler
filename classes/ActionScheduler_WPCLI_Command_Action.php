@@ -116,9 +116,84 @@ class ActionScheduler_WPCLI_Command_Action {
 
 	/**
 	 * Gets a list of actions.
+	 *
+	 * @todo phpDoc
 	 */
-	public function list() {
+	public function list( $args, $assoc_args ) {
+		$store = ActionScheduler::store();
+		$total_count = (int) $store->query_actions( array(), 'count' );
 
+		if ( 0 === $total_count ) {
+			\WP_CLI::error( 'No actions to list.' );
+		}
+
+		$available_columns = array( 'id', 'hook', 'date', 'group', 'status', 'args' );
+		$default_columns = array( 'hook', 'args', 'status', 'date' );
+		$columns = ActionScheduler_WPCLI::get_columns( $assoc_args, $default_columns, $available_columns );
+
+		$per_page = absint( \WP_CLI\Utils\get_flag_value( $assoc_args, 'per-page', 20 ) );
+		$offset = absint( \WP_CLI\Utils\get_flag_value( $assoc_args, 'offset', 0 ) );
+
+		if ( empty( $this->args[1] ) ) {
+			$action_ids = $store->query_actions( array( 'per_page' => $per_page, 'offset' => $offset ) );
+		} else {
+			$action_ids = array_unique( array_map( 'absint', explode( ',', $args[1] ) ) );
+		}
+
+		$progress_bar = \WP_CLI\Utils\make_progress_bar( 'Collecting data:', count( $action_ids ) * count( $columns ) );
+		$rows = array();
+
+		foreach ( $action_ids as $action_id ) {
+			$action = $store->fetch_action( $action_id );
+			$row = array();
+
+ 			if ( is_a( $action, 'ActionScheduler_NullAction' ) ) {
+				\WP_CLI::warning( 'Action with ID \'' . $action_id . '\' does not exist.' );
+				foreach ( $columns as $column ) {
+					$progress_bar->tick();
+				}
+				continue;
+			}
+
+ 			foreach ( $columns as $column ) {
+ 				switch ( $column ) {
+
+ 					case 'id':
+						$row['id'] = $action_id;
+						break;
+
+ 					case 'hook':
+						$row['hook'] = $action->get_hook();
+						break;
+
+ 					case 'date':
+						$row['date'] = $store->get_date_gmt( $action_id )->format( 'Y-m-d H:i:s T' );
+						break;
+
+ 					case 'group':
+						$row['group'] = $action->get_group();
+						break;
+
+ 					case 'status':
+						$row['status'] = $store->get_status( $action_id );
+						break;
+
+ 					case 'args':
+						$row['args'] = $action->get_args();
+						break;
+
+ 				}
+
+ 				$progress_bar->tick();
+			}
+
+ 			$rows[] = $row;
+		}
+
+ 		$progress_bar->finish();
+
+		\WP_CLI\Utils\format_items( 'table', $rows, $columns );
+		\WP_CLI::success( 'Listed actions ' . $offset . ' - ' . min( ( $offset + $per_page ), $total_count ) . ' of ' . $total_count . '.' );
 	}
 
 	/**

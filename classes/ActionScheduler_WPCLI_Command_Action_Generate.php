@@ -79,8 +79,7 @@ class ActionScheduler_WPCLI_Command_Action_Generate extends ActionScheduler_Abst
 		);
 
 		for ( $i = 0; $i < $limit; $i++ ) {
-			$start_timestamp += $i * $interval;
-			$actions_added[] = as_schedule_single_action( $start_timestamp, $hook, $args, $group );
+			$actions_added[] = as_schedule_single_action( $start_timestamp + ( $i * $interval ), $hook, $args, $group );
 			$progress_bar->tick();
 		}
 

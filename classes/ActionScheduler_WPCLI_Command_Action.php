@@ -117,7 +117,16 @@ class ActionScheduler_WPCLI_Command_Action {
 	/**
 	 * Gets a list of actions.
 	 *
-	 * @todo phpDoc
+	 * ## OPTIONS
+	 *
+	 * [--columns=<columns>]
+	 * : A comma separated list of columns.
+	 *
+	 * [--per-page]
+	 * : Number of actions to display in the table.
+	 *
+	 * [--offset]
+	 * : Offset to start display of actions.
 	 */
 	public function list( $args, $assoc_args ) {
 		$store = ActionScheduler::store();

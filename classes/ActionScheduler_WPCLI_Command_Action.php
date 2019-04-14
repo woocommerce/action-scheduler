@@ -206,10 +206,26 @@ class ActionScheduler_WPCLI_Command_Action {
 	}
 
 	/**
-	 * Runs the action.
+	 * Runs the specified action.
+	 *
+	 * ## OPTIONS
+	 *
+	 * <action_id>
+	 * : ID of the action to run.
 	 */
-	public function run() {
+	public function run( $args, $assoc_args ) {
+		$store = ActionScheduler::store();
+		$action_id = absint( $args[0] );
+		$action = $store->fetch_action( $action_id );
 
+		$command = new ActionScheduler_WPCLI_QueueRunner();
+		$command->process_action( $action_id );
+
+		if ( did_action( $action->get_hook() ) ) {
+			\WP_CLI::success( 'Executed action ' . $action_id . '.' );
+		} else {
+			\WP_CLI::error( 'Unable to execute action ' . $action_id . '.' );
+		}
 	}
 
 	/**

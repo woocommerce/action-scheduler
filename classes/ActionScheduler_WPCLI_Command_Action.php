@@ -37,9 +37,32 @@ class ActionScheduler_WPCLI_Command_Action {
 
 	/**
 	 * Deletes an existing action.
+	 *
+	 * ## OPTIONS
+	 *
+	 * <action_id>
+	 * : ID of the action to delete.
+	 *
+	 * @param array $args Positional arguments.
+	 * @param array $assoc_args Keyed arguments.
 	 */
-	public function delete() {
+	public function delete( $args, $assoc_args ) {
+		$store = ActionScheduler::store();
+		$action_id = absint( $args[0] );
 
+		try {
+			$store->delete_action( $action_id );
+		} catch ( InvalidArgumentException $e ) {
+			\WP_CLI::error( $e->getMessage() );
+		}
+
+		$action = $store->fetch_action( $action_id );
+
+		if ( !is_a( $action, 'ActionScheduler_NullAction' ) ) {
+			\WP_CLI::error( 'Unable to delete action.' );
+		}
+
+		\WP_CLI::success( sprintf( 'Deleted action %s.', $action_id ) );
 	}
 
 	/**

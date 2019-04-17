@@ -1,5 +1,8 @@
 <?php
 
+/**
+ * WP CLI command for actions.
+ */
 class ActionScheduler_WPCLI_Command_Action {
 
 	/**

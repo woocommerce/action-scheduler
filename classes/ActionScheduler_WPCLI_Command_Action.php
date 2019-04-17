@@ -66,13 +66,6 @@ class ActionScheduler_WPCLI_Command_Action {
 	}
 
 	/**
-	 * Duplicates an existing action.
-	 */
-	public function duplicate() {
-
-	}
-
-	/**
 	 * Verifies whether an action exists.
 	 *
 	 * ## OPTIONS
@@ -275,13 +268,6 @@ class ActionScheduler_WPCLI_Command_Action {
 		} else {
 			\WP_CLI::error( 'Unable to execute action ' . $action_id . '.' );
 		}
-	}
-
-	/**
-	 * Updates one or more existing actions.
-	 */
-	public function update() {
-
 	}
 
 }

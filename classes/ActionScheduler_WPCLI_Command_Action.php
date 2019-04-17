@@ -58,8 +58,8 @@ class ActionScheduler_WPCLI_Command_Action {
 
 		$action = $store->fetch_action( $action_id );
 
-		if ( !is_a( $action, 'ActionScheduler_NullAction' ) ) {
-			\WP_CLI::error( 'Unable to delete action.' );
+		if ( ! is_a( $action, 'ActionScheduler_NullAction' ) ) {
+			\WP_CLI::error( sprintf( 'Unable to delete action %s.', $action_id ) );
 		}
 
 		\WP_CLI::success( sprintf( 'Deleted action %s.', $action_id ) );
@@ -72,6 +72,9 @@ class ActionScheduler_WPCLI_Command_Action {
 	 *
 	 * <action_id>
 	 * : ID of the action to check if exists.
+	 *
+	 * @param array $args Positional arguments.
+	 * @param array $assoc_args Keyed arguments.
 	 */
 	public function exists( $args, $assoc_args ) {
 		$store = ActionScheduler::store();
@@ -79,8 +82,8 @@ class ActionScheduler_WPCLI_Command_Action {
 		$action_id = absint( $args[0] );
 		$action = $store->fetch_action( $action_id );
 
-		if ( !empty( $action ) && !is_a( $action, 'ActionScheduler_NullAction' ) ) {
-			\WP_CLI::success( 'Action with ID ' . $action_id . ' exists.' );
+		if ( ! empty( $action ) && ! is_a( $action, 'ActionScheduler_NullAction' ) ) {
+			\WP_CLI::success( sprintf( 'Action with ID %s exists.', $action_id ) );
 		}
 	}
 
@@ -125,6 +128,9 @@ class ActionScheduler_WPCLI_Command_Action {
 	 *
 	 * <action_id>
 	 * : ID of action to get details about.
+	 *
+	 * @param array $args Positional arguments.
+	 * @param array $assoc_args Keyed arguments.
 	 */
 	public function get( $args, $assoc_args ) {
 		$store = ActionScheduler::store();
@@ -132,7 +138,7 @@ class ActionScheduler_WPCLI_Command_Action {
 		$action = $store->fetch_action( $action_id );
 
 		if ( empty( $action ) || is_a( $action, 'ActionScheduler_NullAction' ) ) {
-			\WP_CLI::error( $action_id . ' is not an action.' );
+			\WP_CLI::error( sprintf( '%s is not an action.', $action_id ) );
 		}
 
 		$fields = array(
@@ -169,6 +175,9 @@ class ActionScheduler_WPCLI_Command_Action {
 	 *
 	 * [--offset]
 	 * : Offset to start display of actions.
+	 *
+	 * @param array $args Positional arguments.
+	 * @param array $assoc_args Keyed arguments.
 	 */
 	public function list( $args, $assoc_args ) {
 		$store = ActionScheduler::store();
@@ -244,7 +253,7 @@ class ActionScheduler_WPCLI_Command_Action {
  		$progress_bar->finish();
 
 		\WP_CLI\Utils\format_items( 'table', $rows, $columns );
-		\WP_CLI::success( 'Listed actions ' . $offset . ' - ' . min( ( $offset + $per_page ), $total_count ) . ' of ' . $total_count . '.' );
+		\WP_CLI::success( sprintf( 'Listed actions %d - %d of %d.', $offset, min( ( $offset + $per_page ), $total_count ), $total_count ) );
 	}
 
 	/**
@@ -254,6 +263,9 @@ class ActionScheduler_WPCLI_Command_Action {
 	 *
 	 * <action_id>
 	 * : ID of the action to run.
+	 *
+	 * @param array $args Positional arguments.
+	 * @param array $assoc_args Keyed arguments.
 	 */
 	public function run( $args, $assoc_args ) {
 		$store = ActionScheduler::store();
@@ -264,9 +276,9 @@ class ActionScheduler_WPCLI_Command_Action {
 		$command->process_action( $action_id );
 
 		if ( did_action( $action->get_hook() ) ) {
-			\WP_CLI::success( 'Executed action ' . $action_id . '.' );
+			\WP_CLI::success( sprintf( 'Executed action %s.', $action_id ) );
 		} else {
-			\WP_CLI::error( 'Unable to execute action ' . $action_id . '.' );
+			\WP_CLI::error( sprintf( 'Unable to execute action %s.', $action_id ) );
 		}
 	}
 

@@ -3,10 +3,36 @@
 class ActionScheduler_WPCLI_Command_Action {
 
 	/**
-	 * Creates an action.
+	 * Creates a single, recurring, or cron action.
+	 *
+	 * Alias for "generate" command, for creating individual actions.
+	 *
+	 * ## OPTIONS
+	 *
+	 * <hook>
+	 * : The name of the hook to schedule.
+	 *
+	 * <start>
+	 * : String to indicate the start time.
+	 *
+	 * [--args=<args>]
+	 * : A JSON string of the arguments to pass to the action.
+	 *
+	 * [--group=<group>]
+	 * : Add task to specified group.
+	 *
+	 * [--interval=<interval>]
+	 * : Number of seconds between recurring events.
+	 *
+	 * [--cron=<cron>]
+	 * : Cron schedule string.
+	 *
+	 * @param array $args Positional arguments.
+	 * @param array $assoc_args Keyed arguments.
 	 */
-	public function create() {
-
+	public function create( $args, $assoc_args ) {
+		$command = new ActionScheduler_WPCLI_Command_Action_Generate( $args, $assoc_args );
+		$command->execute();
 	}
 
 	/**

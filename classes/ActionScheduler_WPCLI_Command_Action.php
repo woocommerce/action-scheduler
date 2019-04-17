@@ -270,4 +270,34 @@ class ActionScheduler_WPCLI_Command_Action {
 		}
 	}
 
+	/**
+	 * Cancel an action.
+	 *
+	 * ## OPTIONS
+	 *
+	 * <action_id>
+	 * : ID of the action to cancel.
+	 *
+	 * @param array $args Positional arguments.
+	 * @param array $assoc_args Keyed arguments.
+	 */
+	public function cancel( $args, $assoc_args ) {
+		$store = ActionScheduler::store();
+		$action_id = absint( $args[0] );
+
+		try {
+			$store->cancel_action( $action_id );
+		} catch ( InvalidArgumentException $e ) {
+			\WP_CLI::error( $e->getMessage() );
+		}
+
+		$action = $store->fetch_action( $action_id );
+
+		if ( ! is_a( $action, 'ActionScheduler_CanceledAction' ) ) {
+			\WP_CLI::error( sprintf( 'Unable to cancel action %s.', $action_id ) );
+		}
+
+		\WP_CLI::success( sprintf( 'Canceled action %s.', $action_id ) );
+	}
+
 }

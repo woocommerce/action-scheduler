@@ -170,8 +170,21 @@ class ActionScheduler_WPCLI_Command_Action {
 	 *
 	 * ## OPTIONS
 	 *
-	 * [--columns=<columns>]
-	 * : A comma separated list of columns.
+	 * [--fields=<fields>]
+	 * : A comma separated list of fields.
+	 *
+	 * [--format=<format>]
+	 * : Render output in a particular format.
+	 * ---
+	 * default: table
+	 * options:
+	 *   - table
+	 *   - csv
+	 *   - ids
+	 *   - json
+	 *   - count
+	 *   - yaml
+	 * ---
 	 *
 	 * [--per-page]
 	 * : Number of actions to display in the table.
@@ -179,10 +192,115 @@ class ActionScheduler_WPCLI_Command_Action {
 	 * [--offset]
 	 * : Offset to start display of actions.
 	 *
+	 * ## AVAILABLE FIELDS
+	 *
+	 * These fields will be displayed by default for each action:
+	 *
+	 * * hook
+	 * * args
+	 * * status
+	 * * date
+	 *
+	 * These fields are optionally available:
+	 *
+	 * * id
+	 * * group
+	 *
 	 * @param array $args Positional arguments.
 	 * @param array $assoc_args Keyed arguments.
 	 */
 	public function list( $args, $assoc_args ) {
+		$store = ActionScheduler::store();
+		$total_count = (int) $store->query_actions( array(), 'count' );
+
+		if ( 0 === $total_count ) {
+			\WP_CLI::error( 'No actions to list.' );
+		}
+
+		$fields   = \WP_CLI\Utils\get_flag_value( $assoc_args, 'fields', array( 'hook', 'args', 'status', 'date' ) );
+		$per_page = \WP_CLI\Utils\get_flag_value( $assoc_args, 'per-page', 10 );
+		$offset   = \WP_CLI\Utils\get_flag_value( $assoc_args, 'offset', 0 );
+
+		if ( is_string( $fields ) ) {
+			$fields = explode( ',', $fields );
+		}
+
+		$formatter = new \WP_CLI\Formatter( $assoc_args, $fields );
+
+		if ( empty( $args[1] ) ) {
+			$action_ids = $store->query_actions( array( 'per_page' => $per_page, 'offset' => $offset ) );
+		} else {
+			$action_ids = array_unique( array_map( 'absint', explode( ',', $args[1] ) ) );
+		}
+
+		if ( 'ids' == $formatter->format ) {
+			echo implode( ' ', $action_ids );
+			return;
+		} else if ( 'count' === $formatter->format ) {
+			$formatter->display_items( $action_ids );
+			return;
+		}
+
+		$progress_bar = \WP_CLI\Utils\make_progress_bar( 'Collecting data:', count( $action_ids ) * count( $fields ) );
+		$rows = array();
+
+		$action_ids = array_map( 'intval', $action_ids );
+
+		foreach ( $action_ids as $action_id ) {
+			$action = $store->fetch_action( $action_id );
+			$row = array();
+
+			if ( is_a( $action, 'ActionScheduler_NullAction' ) ) {
+				\WP_CLI::warning( 'Action with ID \'' . $action_id . '\' does not exist.' );
+				foreach ( $fields as $field ) {
+					$progress_bar->tick();
+				}
+				continue;
+			}
+
+			foreach ( $fields as $field ) {
+				switch ( $field ) {
+
+					case 'id':
+						$row['id'] = $action_id;
+						break;
+
+					case 'hook':
+						$row['hook'] = $action->get_hook();
+						break;
+
+					case 'date':
+						$row['date'] = $store->get_date_gmt( $action_id )->format( 'Y-m-d H:i:s T' );
+						break;
+
+					case 'group':
+						$row['group'] = $action->get_group();
+						break;
+
+					case 'status':
+						$row['status'] = $store->get_status( $action_id );
+						break;
+
+					case 'args':
+						$row['args'] = $action->get_args();
+						break;
+
+				}
+
+				$progress_bar->tick();
+			}
+
+			$rows[] = $row;
+		}
+
+		$progress_bar->finish();
+		$formatter->display_items( $rows );
+
+		if ( 'table' === $formatter->format )
+			\WP_CLI::success( sprintf( 'Displaying %d - %d of %d actions.', $offset, ( $offset + $per_page ), $total_count ) );
+	}
+
+	public function _list( $args, $assoc_args ) {
 		$store = ActionScheduler::store();
 		$total_count = (int) $store->query_actions( array(), 'count' );
 
@@ -197,7 +315,7 @@ class ActionScheduler_WPCLI_Command_Action {
 		$per_page = absint( \WP_CLI\Utils\get_flag_value( $assoc_args, 'per-page', 20 ) );
 		$offset = absint( \WP_CLI\Utils\get_flag_value( $assoc_args, 'offset', 0 ) );
 
-		if ( empty( $this->args[1] ) ) {
+		if ( empty( $args[1] ) ) {
 			$action_ids = $store->query_actions( array( 'per_page' => $per_page, 'offset' => $offset ) );
 		} else {
 			$action_ids = array_unique( array_map( 'absint', explode( ',', $args[1] ) ) );
@@ -210,7 +328,7 @@ class ActionScheduler_WPCLI_Command_Action {
 			$action = $store->fetch_action( $action_id );
 			$row = array();
 
- 			if ( is_a( $action, 'ActionScheduler_NullAction' ) ) {
+			if ( is_a( $action, 'ActionScheduler_NullAction' ) ) {
 				\WP_CLI::warning( 'Action with ID \'' . $action_id . '\' does not exist.' );
 				foreach ( $columns as $column ) {
 					$progress_bar->tick();
@@ -218,42 +336,42 @@ class ActionScheduler_WPCLI_Command_Action {
 				continue;
 			}
 
- 			foreach ( $columns as $column ) {
- 				switch ( $column ) {
+			foreach ( $columns as $column ) {
+				switch ( $column ) {
 
- 					case 'id':
+					case 'id':
 						$row['id'] = $action_id;
 						break;
 
- 					case 'hook':
+					case 'hook':
 						$row['hook'] = $action->get_hook();
 						break;
 
- 					case 'date':
+					case 'date':
 						$row['date'] = $store->get_date_gmt( $action_id )->format( 'Y-m-d H:i:s T' );
 						break;
 
- 					case 'group':
+					case 'group':
 						$row['group'] = $action->get_group();
 						break;
 
- 					case 'status':
+					case 'status':
 						$row['status'] = $store->get_status( $action_id );
 						break;
 
- 					case 'args':
+					case 'args':
 						$row['args'] = $action->get_args();
 						break;
 
- 				}
+				}
 
- 				$progress_bar->tick();
+				$progress_bar->tick();
 			}
 
- 			$rows[] = $row;
+			$rows[] = $row;
 		}
 
- 		$progress_bar->finish();
+		$progress_bar->finish();
 
 		\WP_CLI\Utils\format_items( 'table', $rows, $columns );
 		\WP_CLI::success( sprintf( 'Listed actions %d - %d of %d.', $offset, min( ( $offset + $per_page ), $total_count ), $total_count ) );
@@ -313,6 +431,30 @@ class ActionScheduler_WPCLI_Command_Action {
 		}
 
 		\WP_CLI::success( sprintf( 'Canceled action %s.', $action_id ) );
+	}
+
+	public function test( $args, $assoc_args ) {
+		$formatter = new \WP_CLI\Formatter( $assoc_args, array( 'id', 'title', 'date' ) );
+		$data = array(
+			array(
+				'id' => 1,
+				'title' => 'Hello',
+				'date' => '2019-04-16',
+			),
+			array(
+				'id' => 2,
+				'title' => 'World',
+				'date' => '2019-04-17',
+			),
+		);
+
+		if ( 'ids' == $formatter->format ) {
+			echo implode( ' ', array_column( $data, 'id' ) );
+		} else if ( 'count' === $formatter->format ) {
+			$formatter->display_items( $data );
+		} else {
+			$formatter->display_items( $data );
+		}
 	}
 
 }

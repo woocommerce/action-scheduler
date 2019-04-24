@@ -149,8 +149,8 @@ class ActionScheduler_WPCLI_Command_Action {
 			'hook'   => $action->get_hook(),
 			'args'   => $action->get_args(),
 			'status' => $store->get_status( $action_id ),
-			'date'   => $action->get_schedule()->next()->format( 'Y-m-d H:i:s T' ),
-			'group'  => $action->get_group(),
+			'date'   => ! empty( $action->get_schedule()->next() ) ? $action->get_schedule()->next()->format( 'Y-m-d H:i:s T' ) : '—',
+			'group'  => ! empty( $action->get_group() ) ? $action->get_group() : '—',
 		);
 
 		$rows = array();

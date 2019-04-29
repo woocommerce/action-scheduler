@@ -205,4 +205,15 @@ class ActionScheduler_WPCLI_QueueRunner extends ActionScheduler_Abstract_QueueRu
 			call_user_func( array( $wp_object_cache, '__remoteset' ) ); // important
 		}
 	}
+
+	/**
+	 * Maybe trigger the stop_the_insanity() method to free up memory.
+	 */
+	protected function maybe_stop_the_insanity() {
+		// The value returned by progress_bar->current() might be padded. Remove padding, and convert to int.
+		$current_iteration = intval( trim( $this->progress_bar->current() ) );
+		if ( 0 === $current_iteration % 50 ) {
+			$this->stop_the_insanity();
+		}
+	}
 }

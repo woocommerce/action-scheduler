@@ -21,7 +21,7 @@ class ActionScheduler_wpPostStore extends ActionScheduler_Store {
 			$post_id = $this->save_post_array( $post_array );
 			$schedule = $action->get_schedule();
 
-			if ( ! is_null( $scheduled_date ) && $schedule->is_recurring() ) {
+			if ( ! is_null( $scheduled_date ) && $schedule->is_recurring() && method_exists( $schedule, 'interval_in_seconds' ) ) {
 				$schedule = new ActionScheduler_IntervalSchedule( $scheduled_date, $schedule->interval_in_seconds() );
 			}
 

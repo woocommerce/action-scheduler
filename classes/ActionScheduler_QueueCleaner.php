@@ -31,7 +31,11 @@ class ActionScheduler_QueueCleaner {
 
 	public function delete_old_actions() {
 		$lifespan = apply_filters( 'action_scheduler_retention_period', $this->month_in_seconds );
-		$cutoff = as_get_datetime_object($lifespan.' seconds ago');
+		if ( null === $lifespan ) {
+			return;
+		}
+
+		$cutoff = as_get_datetime_object( $lifespan . ' seconds ago' );
 
 		$statuses_to_purge = array(
 			ActionScheduler_Store::STATUS_COMPLETE,

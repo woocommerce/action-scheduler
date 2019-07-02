@@ -102,6 +102,15 @@ abstract class ActionScheduler_Abstract_QueueRunner extends ActionScheduler_Abst
 	}
 
 	/**
+	 * Get the number of concurrent batches a runner allows.
+	 *
+	 * @return int
+	 */
+	public function has_maximum_allowed_concurrent_batches() {
+		return $this->store->get_claim_count() >= $this->get_allowed_concurrent_batches();
+	}
+
+	/**
 	 * Get the maximum number of seconds a batch can run for.
 	 *
 	 * @return int The number of seconds.

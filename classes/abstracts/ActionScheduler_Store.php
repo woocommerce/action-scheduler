@@ -150,7 +150,7 @@ abstract class ActionScheduler_Store {
 	protected function get_scheduled_date_string( ActionScheduler_Action $action, DateTime $scheduled_date = NULL ) {
 		$next = null === $scheduled_date ? $action->get_schedule()->next() : $scheduled_date;
 		if ( ! $next ) {
-			throw new InvalidArgumentException( __( 'Invalid schedule. Cannot save action.', 'action-scheduler' ) );
+			return '0000-00-00 00:00:00';
 		}
 		$next->setTimezone( new DateTimeZone( 'UTC' ) );
 
@@ -167,6 +167,7 @@ abstract class ActionScheduler_Store {
 	protected function get_scheduled_date_string_local( ActionScheduler_Action $action, DateTime $scheduled_date = NULL ) {
 		$next = null === $scheduled_date ? $action->get_schedule()->next() : $scheduled_date;
 		if ( ! $next ) {
+			return '0000-00-00 00:00:00';
 			throw new InvalidArgumentException( __( 'Invalid schedule. Cannot save action.', 'action-scheduler' ) );
 		}
 

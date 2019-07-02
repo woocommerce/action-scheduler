@@ -47,6 +47,19 @@ class ActionScheduler_ActionFactory {
 	/**
 	 * @param string $hook The hook to trigger when this action runs
 	 * @param array $args Args to pass when the hook is triggered
+	 * @param string $group A group to put the action in
+	 *
+	 * @return string The ID of the stored action
+	 */
+	public function async( $hook, $args = array(), $group = '' ) {
+		$schedule = new ActionScheduler_NullSchedule();
+		$action = new ActionScheduler_Action( $hook, $args, $schedule, $group );
+		return $this->store( $action );
+	}
+
+	/**
+	 * @param string $hook The hook to trigger when this action runs
+	 * @param array $args Args to pass when the hook is triggered
 	 * @param int $when Unix timestamp when the action will run
 	 * @param string $group A group to put the action in
 	 *

@@ -11,6 +11,9 @@ class ActionScheduler_QueueRunner extends ActionScheduler_Abstract_QueueRunner {
 	/** @var ActionScheduler_QueueRunner  */
 	private static $runner = null;
 
+	/** @var WP_Async_Request  */
+	private static $async_request_runner = null;
+
 	/**
 	 * @return ActionScheduler_QueueRunner
 	 * @codeCoverageIgnore
@@ -32,6 +35,7 @@ class ActionScheduler_QueueRunner extends ActionScheduler_Abstract_QueueRunner {
 	 */
 	public function __construct( ActionScheduler_Store $store = null, ActionScheduler_FatalErrorMonitor $monitor = null, ActionScheduler_QueueCleaner $cleaner = null ) {
 		parent::__construct( $store, $monitor, $cleaner );
+		self::$async_request_runner = new ActionScheduler_AsyncRequest_QueueRunner();
 	}
 
 	/**
@@ -47,6 +51,22 @@ class ActionScheduler_QueueRunner extends ActionScheduler_Abstract_QueueRunner {
 		}
 
 		add_action( self::WP_CRON_HOOK, array( self::instance(), 'run' ) );
+
+		add_filter( 'shutdown', array( $this, 'maybe_dispatch_async_runner' ) );
+	}
+
+	public function maybe_dispatch_async_runner() {
+		if ( is_admin() && false === $this->has_maximum_allowed_concurrent_batches() && apply_filters( 'action_scheduler_allow_async_runner', __return_true() ) ) {
+
+			$pending_actions = $this->store->query_actions( array(
+				'date'   => as_get_datetime_object(),
+				'status' => ActionScheduler_Store::STATUS_PENDING,
+			) );
+
+			if ( $pending_actions ) {
+				self::$async_request_runner->dispatch();
+			}
+		}
 	}
 
 	public function run() {

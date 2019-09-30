@@ -108,7 +108,7 @@ class Controller {
 		$source_store  = $this->store_classname ? new $this->store_classname() : new \ActionScheduler_wpPostStore();
 		$source_logger = $this->logger_classname ? new $this->logger_classname() : new \ActionScheduler_wpCommentLogger();
 
-		$config = new Config();
+		$config = Config::instance();
 		$config->set_source_store( $source_store );
 		$config->set_source_logger( $source_logger );
 		$config->set_destination_store( new \ActionScheduler_DBStoreMigrator() );

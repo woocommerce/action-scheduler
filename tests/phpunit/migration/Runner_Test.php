@@ -26,7 +26,7 @@ class Runner_Test extends ActionScheduler_UnitTestCase {
 		$source_logger      = new CommentLogger();
 		$destination_logger = new ActionScheduler_DBLogger();
 
-		$config = new Config();
+		$config = Config::instance();
 		$config->set_source_store( $source_store );
 		$config->set_source_logger( $source_logger );
 		$config->set_destination_store( $destination_store );

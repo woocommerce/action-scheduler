@@ -17,6 +17,9 @@ use ActionScheduler_Store as Store;
  * A config builder for the ActionScheduler\Migration\Runner class
  */
 class Config {
+	/** @var Config */
+	private static $instance;
+
 	/** @var ActionScheduler_Store */
 	private $source_store;
 
@@ -38,7 +41,7 @@ class Config {
 	/**
 	 * Config constructor.
 	 */
-	public function __construct() {
+	private function __construct() {
 
 	}
 
@@ -105,7 +108,9 @@ class Config {
 	 * @param ActionScheduler_Store $store
 	 */
 	public function set_destination_store( Store $store ) {
-		$this->destination_store = $store;
+		if ( null === $this->destination_store ) {
+			$this->destination_store = $store;
+		}
 	}
 
 	/**
@@ -127,7 +132,9 @@ class Config {
 	 * @param ActionScheduler_Logger $logger
 	 */
 	public function set_destination_logger( Logger $logger ) {
-		$this->destination_logger = $logger;
+		if ( null === $this->destination_logger ) {
+			$this->destination_logger = $logger;
+		}
 	}
 
 	/**
@@ -164,5 +171,18 @@ class Config {
 	 */
 	public function set_progress_bar( ProgressBar $progress_bar ) {
 		$this->progress_bar = $progress_bar;
+	}
+
+	/**
+	 * Get the singleton Config object.
+	 *
+	 * @return Config
+	 */
+	public static function instance() {
+		if ( null === self::$instance ) {
+			self::$instance = new Config();
+		}
+
+		return self::$instance;
 	}
 }

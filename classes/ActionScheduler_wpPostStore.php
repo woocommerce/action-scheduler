@@ -401,16 +401,16 @@ class ActionScheduler_wpPostStore extends ActionScheduler_Store {
 						$order_columns_translated[ $index ] = 'DESC';
 					}
 				}
-				// Assemble order clause.
-				$sql   .= ' ORDER BY ';
-				$order = 'DESC';
-				foreach ( $orderby_columns_translated as $index => $orderby ) {
-					// Default to the last supplied order if the order list is shorter.
-					$order = isset( $order_columns_translated[ $index ] ) ? $order_columns_translated[ $index ] : $order;
-					$sql   .= " $orderby_columns_translated[$index] $order";
-					if ( $index < count( $orderby_columns_translated ) - 1 ) {
-						$sql .= ',';
-					}
+			}
+			// Assemble order clause.
+			$sql   .= ' ORDER BY ';
+			$order = 'DESC';
+			foreach ( $orderby_columns_translated as $index => $orderby ) {
+				// Default to the last supplied order if the order list is shorter.
+				$order = isset( $order_columns_translated[ $index ] ) ? $order_columns_translated[ $index ] : $order;
+				$sql   .= " {$orderby_columns_translated[$index]} $order";
+				if ( $index < count( $orderby_columns_translated ) - 1 ) {
+					$sql .= ',';
 				}
 			}
 			if ( $query['per_page'] > 0 ) {

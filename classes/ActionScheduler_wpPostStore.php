@@ -361,34 +361,58 @@ class ActionScheduler_wpPostStore extends ActionScheduler_Store {
 		}
 
 		if ( 'select' === $select_or_count ) {
-			switch ( $query['orderby'] ) {
-				case 'hook':
-					$orderby = 'p.post_title';
-					break;
-				case 'group':
-					$orderby = 't.name';
-					break;
-				case 'status':
-					$orderby = 'p.post_status';
-					break;
-				case 'modified':
-					$orderby = 'p.post_modified';
-					break;
-				case 'claim_id':
-					$orderby = 'p.post_password';
-					break;
-				case 'schedule':
-				case 'date':
-				default:
-					$orderby = 'p.post_date_gmt';
-					break;
-			}
-			if ( 'ASC' === strtoupper( $query['order'] ) ) {
-				$order = 'ASC';
-			} else {
+			$orderby_columns            = explode( ',', $query['orderby'] );
+			$orderby_columns_translated = array();
+			foreach ( $orderby_columns as $index => $column ) {
+				switch ( $column ) {
+					case 'hook':
+						$orderby_columns_translated[ $index ] = 'p.post_title';
+						break;
+					case 'ID':
+					case 'id':
+						$orderby_columns_translated[ $index ] = 'p.ID';
+						break;
+					case 'group':
+						$orderby_columns_translated[ $index ] = 't.name';
+						break;
+					case 'status':
+						$orderby_columns_translated[ $index ] = 'p.post_status';
+						break;
+					case 'modified':
+						$orderby_columns_translated[ $index ] = 'p.post_modified';
+						break;
+					case 'claim_id':
+						$orderby_columns_translated[ $index ] = 'p.post_password';
+						break;
+					case 'schedule':
+					case 'date':
+					default:
+						$orderby_columns_translated[ $index ] = 'p.post_date_gmt';
+						break;
+				}
+
+				// Now derive an order for each 'orderby' clause.
+				$order_columns            = explode( ',', $query['order'] );
+				$order_columns_translated = array();
+				foreach ( $order_columns as $index => $ord ) {
+					if ( 'ASC' === strtoupper( $ord ) ) {
+						$order_columns_translated[ $index ] = 'ASC';
+					} else {
+						$order_columns_translated[ $index ] = 'DESC';
+					}
+				}
+				// Assemble order clause.
+				$sql   .= ' ORDER BY ';
 				$order = 'DESC';
+				foreach ( $orderby_columns_translated as $index => $orderby ) {
+					// Default to the last supplied order if the order list is shorter.
+					$order = isset( $order_columns_translated[ $index ] ) ? $order_columns_translated[ $index ] : $order;
+					$sql   .= " $orderby_columns_translated[$index] $order";
+					if ( $index < count( $orderby_columns_translated ) - 1 ) {
+						$sql .= ',';
+					}
+				}
 			}
-			$sql .= " ORDER BY $orderby $order";
 			if ( $query['per_page'] > 0 ) {
 				$sql .= " LIMIT %d, %d";
 				$sql_params[] = $query['offset'];

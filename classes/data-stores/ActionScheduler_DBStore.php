@@ -36,7 +36,7 @@ class ActionScheduler_DBStore extends ActionScheduler_Store {
 				'status'               => ( $action->is_finished() ? self::STATUS_COMPLETE : self::STATUS_PENDING ),
 				'scheduled_date_gmt'   => $this->get_scheduled_date_string( $action, $date ),
 				'scheduled_date_local' => $this->get_scheduled_date_string_local( $action, $date ),
-				'args'                 => json_encode( $action->get_args() ),
+				'args'                 => $this->json_encode( $action->get_args() ),
 				'schedule'             => serialize( $action->get_schedule() ),
 				'group_id'             => $this->get_group_id( $action->get_group() ),
 			];
@@ -184,7 +184,7 @@ class ActionScheduler_DBStore extends ActionScheduler_Store {
 		$args[] = $hook;
 		if ( ! is_null( $params[ 'args' ] ) ) {
 			$query  .= " AND a.args=%s";
-			$args[] = json_encode( $params[ 'args' ] );
+			$args[] = $this->json_encode( $params[ 'args' ] );
 		}
 
 		$order = 'ASC';
@@ -261,7 +261,7 @@ class ActionScheduler_DBStore extends ActionScheduler_Store {
 		}
 		if ( ! is_null( $query[ 'args' ] ) ) {
 			$sql          .= " AND a.args=%s";
-			$sql_params[] = json_encode( $query[ 'args' ] );
+			$sql_params[] = $this->json_encode( $query[ 'args' ] );
 		}
 
 		if ( $query[ 'status' ] ) {
@@ -793,5 +793,15 @@ class ActionScheduler_DBStore extends ActionScheduler_Store {
 		} else {
 			return $status;
 		}
+	}
+
+	/**
+	 * Get the JSON representation of a value, with multibyte Unicode characters encoded literally.
+	 *
+	 * @param mixed $data
+	 * @return string Returns a string containing the JSON representation of the supplied value.
+	 */
+	protected function json_encode( $value ) {
+		return json_encode( $value, JSON_UNESCAPED_UNICODE );
 	}
 }

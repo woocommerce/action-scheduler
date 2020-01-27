@@ -85,6 +85,24 @@ class ActionScheduler_HybridStore extends Store {
 					'status'    => '',
 				]
 			);
+			// Verify the correct action_id was set.
+			$table_name = $wpdb->{ActionScheduler_StoreSchema::ACTIONS_TABLE};
+			$action_id = $wpdb->get_var( "SELECT MAX(action_id) FROM {$table_name}" ); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+			// If it's lower use an update to set it.
+			if ( $action_id < $this->demarkation_id ) {
+				$wpdb->update(
+					$wpdb->{ActionScheduler_StoreSchema::ACTIONS_TABLE},
+					[
+						'action_id' => $this->demarkation_id,
+					],
+					[
+						'action_id' => $action_id,
+					],
+					'%d',
+					'%d'
+				);
+			}
+
 			$wpdb->delete(
 				$wpdb->{ActionScheduler_StoreSchema::ACTIONS_TABLE},
 				[ 'action_id' => $this->demarkation_id ]

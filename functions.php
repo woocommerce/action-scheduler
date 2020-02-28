@@ -83,12 +83,12 @@ function as_schedule_cron_action( $timestamp, $schedule, $hook, $args = array(),
  * by this method also.
  *
  * @param string $hook The hook that the job will trigger
- * @param array $args Args that would have been passed to the job
+ * @param null|array $args Args that are passed to the job
  * @param string $group
  *
  * @return string The scheduled action ID if a scheduled action was found, or empty string if no matching action found.
  */
-function as_unschedule_action( $hook, $args = array(), $group = '' ) {
+function as_unschedule_action( $hook, $args = null, $group = '' ) {
 	$params = array();
 	if ( is_array($args) ) {
 		$params['args'] = $args;

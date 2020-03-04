@@ -40,7 +40,7 @@ add_action( 'eg_midnight_log', 'eg_log_action_data' );
 
 For more details on all available API functions, and the data they accept, refer to the [API Reference](/api/).
 
-_Note:_ You should ensure that your callbacks are attached to the relevant hook before priority 10 of WordPress' `init` hook is fired. 
+_Note:_ You should ensure that your callbacks are attached to the relevant hook before WordPress' `wp_loaded` hook is fired.
 
 ## Installation
 

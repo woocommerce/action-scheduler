@@ -549,6 +549,29 @@ abstract class ActionScheduler_Abstract_ListTable extends WP_List_Table {
 	}
 
 	/**
+	 * Process table action from $_REQUEST.
+	 */
+	protected function process_table_actions() {
+		$parameters = array( 'table_action', 'nonce' );
+		foreach ( $parameters as $parameter ) {
+			if ( empty( $_REQUEST[ $parameter ] ) ) {
+				return;
+			}
+		}
+		$method = 'table_action_' . $_REQUEST['table_action'];
+
+		if ( $_REQUEST['nonce'] === wp_create_nonce( 'table_action::' . $_REQUEST[ 'table_action' ] ) && method_exists( $this, $method ) ) {
+			$this->$method();
+		}
+
+		wp_redirect( remove_query_arg(
+			array( 'table_action', 'nonce' ),
+			wp_unslash( $_SERVER['REQUEST_URI'] )
+		) );
+		exit;
+	}
+
+	/**
 	 * Default column formatting, it will escape everythig for security.
 	 */
 	public function column_default( $item, $column_name ) {
@@ -641,8 +664,8 @@ abstract class ActionScheduler_Abstract_ListTable extends WP_List_Table {
 	 * Process any pending actions.
 	 */
 	public function process_actions() {
+		$this->process_table_actions();
 		$this->process_bulk_action();
-
 		$this->process_row_actions();
 
 		if ( ! empty( $_REQUEST['_wp_http_referer'] ) ) {

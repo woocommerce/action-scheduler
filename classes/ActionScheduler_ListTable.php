@@ -318,10 +318,41 @@ class ActionScheduler_ListTable extends ActionScheduler_Abstract_ListTable {
 	 * Renders admin notifications
 	 *
 	 * Notifications:
-	 *  1. When the maximum number of tasks are being executed simultaneously
-	 *  2. Notifications when a task is manually executed
+	 *  1. When the maximum number of tasks are being executed simultaneously.
+	 *  2. Notifications when a task is manually executed.
+	 *  3. Tables are missing.
 	 */
 	public function display_admin_notices() {
+		global $wpdb;
+
+		if ( is_a( $this->store, 'ActionScheduler_HybridStore' ) || is_a( $this->store, 'ActionScheduler_DBStore' ) ) {
+			$table_list = array(
+				'actionscheduler_actions',
+				'actionscheduler_logs',
+				'actionscheduler_groups',
+				'actionscheduler_claims',
+			);
+
+			$found_tables = $wpdb->get_col( "SHOW TABLES LIKE '{$wpdb->prefix}actionscheduler%'" ); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+			foreach ( $table_list as $table_name ) {
+				if ( ! in_array( $wpdb->prefix . $table_name, $found_tables ) ) {
+					$create_url = add_query_arg( array( 'table_action' => 'create', 'nonce'  => wp_create_nonce( 'table_action::create' ) ) );
+					$this->admin_notices[] = array(
+						'class'   => 'error',
+						/* translators $1s: open link tag, $2s close link tag. */
+						'message' => sprintf(
+							__( 'It appears one or more database tables are missing. %1$sAdd the missing tables%2$s.' , 'action-scheduler' ),
+							'<a href="' . esc_url( $create_url ) . '">',
+							'</a>'
+						),
+					);
+					parent::display_admin_notices();
+
+					return;
+				}
+			}
+		}
+
 		if ( $this->runner->has_maximum_concurrent_batches() ) {
 			$claim_count           = $this->store->get_claim_count();
 			$this->admin_notices[] = array(
@@ -473,6 +504,24 @@ class ActionScheduler_ListTable extends ActionScheduler_Abstract_ListTable {
 		$this->process_row_action( $action_id, 'run' );
 	}
 
+	/**
+	 * Force the data store schema updates.
+	 */
+	protected function table_action_create() {
+		if ( is_a( $this->store, 'ActionScheduler_HybridStore' ) ) {
+			$store = $this->store;
+		} else {
+			$store = new ActionScheduler_HybridStore();
+		}
+		add_action( 'action_scheduler/created_table', array( $store, 'set_autoincrement' ), 10, 2 );
+
+		$store_schema  = new ActionScheduler_StoreSchema();
+		$logger_schema = new ActionScheduler_StoreSchema();
+		$store_schema->register_tables( 'yes' );
+		$logger_schema->register_tables( 'yes' );
+
+		remove_action( 'action_scheduler/created_table', array( $store, 'set_autoincrement' ), 10 );
+	}
 	/**
 	 * Implements the logic behind processing an action once an action link is clicked on the list table.
 	 *

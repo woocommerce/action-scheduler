@@ -325,7 +325,7 @@ class ActionScheduler_ListTable extends ActionScheduler_Abstract_ListTable {
 	public function display_admin_notices() {
 		global $wpdb;
 
-		if ( is_a( $this->store, 'ActionScheduler_HybridStore' ) || is_a( $this->store, 'ActionScheduler_DBStore' ) ) {
+		if ( ( is_a( $this->store, 'ActionScheduler_HybridStore' ) || is_a( $this->store, 'ActionScheduler_DBStore' ) ) && apply_filters( 'action_scheduler_enable_recreate_data_store', true ) ) {
 			$table_list = array(
 				'actionscheduler_actions',
 				'actionscheduler_logs',
@@ -336,16 +336,11 @@ class ActionScheduler_ListTable extends ActionScheduler_Abstract_ListTable {
 			$found_tables = $wpdb->get_col( "SHOW TABLES LIKE '{$wpdb->prefix}actionscheduler%'" ); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 			foreach ( $table_list as $table_name ) {
 				if ( ! in_array( $wpdb->prefix . $table_name, $found_tables ) ) {
-					$create_url = add_query_arg( array( 'table_action' => 'create', 'nonce'  => wp_create_nonce( 'table_action::create' ) ) );
 					$this->admin_notices[] = array(
 						'class'   => 'error',
-						/* translators $1s: open link tag, $2s close link tag. */
-						'message' => sprintf(
-							__( 'It appears one or more database tables are missing. %1$sAdd the missing tables%2$s.' , 'action-scheduler' ),
-							'<a href="' . esc_url( $create_url ) . '">',
-							'</a>'
-						),
+						'message' => __( 'It appears one or more database tables were missing. Attempting to re-create the missing table(s).' , 'action-scheduler' ),
 					);
+					$this->recreate_tables();
 					parent::display_admin_notices();
 
 					return;
@@ -507,7 +502,7 @@ class ActionScheduler_ListTable extends ActionScheduler_Abstract_ListTable {
 	/**
 	 * Force the data store schema updates.
 	 */
-	protected function table_action_create() {
+	protected function recreate_tables() {
 		if ( is_a( $this->store, 'ActionScheduler_HybridStore' ) ) {
 			$store = $this->store;
 		} else {

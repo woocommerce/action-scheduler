@@ -25,11 +25,11 @@ abstract class ActionScheduler_Abstract_Schema {
 	/**
 	 * Register tables with WordPress, and create them if needed.
 	 *
-	 * @param string $force_update Optional. Default 'no'. Use 'yes' to run the schema update.
+	 * @param bool $force_update Optional. Default false. Use true to always run the schema update.
 	 *
 	 * @return void
 	 */
-	public function register_tables( $force_update = 'no' ) {
+	public function register_tables( $force_update = false ) {
 		global $wpdb;
 
 		// make WP aware of our tables
@@ -40,7 +40,7 @@ abstract class ActionScheduler_Abstract_Schema {
 		}
 
 		// create the tables
-		if ( $this->schema_update_required() || 'yes' === $force_update ) {
+		if ( $this->schema_update_required() || $force_update ) {
 			foreach ( $this->tables as $table ) {
 				$this->update_table( $table );
 			}

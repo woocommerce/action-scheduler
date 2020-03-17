@@ -129,6 +129,13 @@ abstract class ActionScheduler {
 	 * @param string $plugin_file
 	 */
 	public static function init( $plugin_file ) {
+		/**
+		 * Prevent initialization during activation when there is already a version of AS active.
+		 */
+		if (  did_action( 'action_scheduler_pre_init' ) ) {
+			return;
+		}
+
 		self::$plugin_file = $plugin_file;
 		spl_autoload_register( array( __CLASS__, 'autoload' ) );
 

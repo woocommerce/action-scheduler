@@ -14,7 +14,7 @@ class ActionScheduler_AdminView extends ActionScheduler_AdminView_Deprecated {
 	protected $list_table;
 
 	/**
-	 * @var array Notices to display when loading the table. Array of arrays of form array( 'class' => {updated|error}, 'message' => 'This is the notice text display.' ).
+	 * @var array Notices to display on the admin page. Array of arrays of form array( 'class' => {updated|error}, 'message' => 'This is the notice text display.' ).
 	 */
 	protected $admin_notices = array();
 

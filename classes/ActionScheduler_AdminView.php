@@ -42,6 +42,12 @@ class ActionScheduler_AdminView extends ActionScheduler_AdminView_Deprecated {
 			add_action( 'admin_menu', array( $this, 'register_menu' ) );
 
 			add_action( 'current_screen', array( $this, 'add_help_tabs' ) );
+
+			if (
+				   !empty( $_GET['as_bulk_delete_actions'] )
+				|| !empty( $_GET['as_bulk_delete_actions_status'] )
+			)
+				$this->bulk_delete_actions();
 		}
 	}
 
@@ -150,5 +156,11 @@ class ActionScheduler_AdminView extends ActionScheduler_AdminView_Deprecated {
 					'</ul>',
 			)
 		);
+	}
+
+	/**
+	 * Bulk delete actions by hook and/or status.
+	 */
+	public function bulk_delete_actions() {
 	}
 }

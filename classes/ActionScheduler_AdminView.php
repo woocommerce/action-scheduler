@@ -14,6 +14,11 @@ class ActionScheduler_AdminView extends ActionScheduler_AdminView_Deprecated {
 	protected $list_table;
 
 	/**
+	 * @var array Notices to display when loading the table. Array of arrays of form array( 'class' => {updated|error}, 'message' => 'This is the notice text display.' ).
+	 */
+	protected $admin_notices = array();
+
+	/**
 	 * @return ActionScheduler_AdminView
 	 * @codeCoverageIgnore
 	 */
@@ -39,15 +44,11 @@ class ActionScheduler_AdminView extends ActionScheduler_AdminView_Deprecated {
 				add_filter( 'woocommerce_admin_status_tabs', array( $this, 'register_system_status_tab' ) );
 			}
 
+			add_action( 'init', array( $this, 'maybe_bulk_delete_actions' ) );
+
 			add_action( 'admin_menu', array( $this, 'register_menu' ) );
 
 			add_action( 'current_screen', array( $this, 'add_help_tabs' ) );
-
-			if (
-				   !empty( $_GET['as_bulk_delete_actions'] )
-				|| !empty( $_GET['as_bulk_delete_actions_status'] )
-			)
-				$this->bulk_delete_actions();
 		}
 	}
 
@@ -159,8 +160,75 @@ class ActionScheduler_AdminView extends ActionScheduler_AdminView_Deprecated {
 	}
 
 	/**
+	 * Display the admin notices.
+	 */
+	function display_admin_notices() {
+		foreach ( $this->admin_notices as $notice ) {
+			echo '<div id="message" class="' . $notice['class'] . '">';
+			echo '	<p>' . wp_kses_post( $notice['message'] ) . '</p>';
+			echo '</div>';
+		}
+	}
+
+	/**
 	 * Bulk delete actions by hook and/or status.
 	 */
-	public function bulk_delete_actions() {
+	public function maybe_bulk_delete_actions() {
+		$status = !empty( $_GET['as_bulk_delete_actions_status'] ) ? $_GET['as_bulk_delete_actions_status'] : '';
+		$hook   = !empty( $_GET['as_bulk_delete_actions'] ) ? $_GET['as_bulk_delete_actions'] : '';
+
+		if (
+			   empty( $status )
+			&& empty( $hook )
+		)
+			return;
+
+		$store = ActionScheduler_Store::instance();
+
+		$action_ids = $store->query_actions( array(
+			'hook' => $hook,
+			'status' => $status,
+			'per_page' => -1,
+		) );
+
+		add_action( 'admin_notices', array( $this, 'display_admin_notices' ) );
+
+		if ( empty( $action_ids ) ) {
+			$this->admin_notices[] = array(
+				'class' => 'error',
+				'message' => 'No actions with specified hook and/or status.',
+			);
+
+			return;
+		}
+
+		$deleted = 0;
+
+		foreach ( $action_ids as $action_id ) {
+			try {
+				$store->delete_action( $action_id );
+				$deleted++;
+			} catch ( Exception $e ) {
+
+				/**
+				 * Notify 3rd party code of exceptions when deleting actions in bulk
+				 *
+				 * This hook provides a way for 3rd party code to log or otherwise handle exceptions relating to their
+				 * actions.
+				 *
+				 * @since 3.1.4
+				 *
+				 * @param int $action_id The scheduled actions ID in the data store
+				 * @param Exception $e The exception thrown when attempting to delete the action from the data store
+				 * @param int $count_of_actions_to_delete The number of bulk actions being deleted in this batch
+				 */
+				do_action( 'action_scheduler_failed_bulk_action_deletion', $action_id, $e, count( $action_ids ) );
+			}
+		}
+
+		$this->admin_notices[] = array(
+			'class' => 'updated',
+			'message' => sprintf( 'Deleted %d (of %d) actions.', $deleted, count( $action_ids ) )
+		);
 	}
 }

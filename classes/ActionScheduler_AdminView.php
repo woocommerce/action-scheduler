@@ -40,7 +40,7 @@ class ActionScheduler_AdminView extends ActionScheduler_AdminView_Deprecated {
 			}
 
 			add_action( 'admin_menu', array( $this, 'register_menu' ) );
-
+			add_action( 'admin_notices', array( $this, 'maybe_check_past_actions' ) );
 			add_action( 'current_screen', array( $this, 'add_help_tabs' ) );
 		}
 	}
@@ -108,6 +108,65 @@ class ActionScheduler_AdminView extends ActionScheduler_AdminView_Deprecated {
 		}
 
 		return $this->list_table;
+	}
+
+	/**
+	 * Maybe check past actions, and display alert.
+	 *
+	 * @todo break into pieces
+	 * @todo test
+	 * @todo add alert message
+	 * @todo confirm and set seconds past
+	 * @todo confirm and set min past actions count
+	 */
+	public function maybe_check_past_actions() {
+
+		# Filter to prevent checking actions (ex: inappropriate user).
+		if ( apply_filters( 'action_scheduler_check_past_actions', false ) )
+			return;
+
+		# Use transient to prevent checking on every admin page load.
+		$transient_key = 'action_scheduler_last_past_actions_check';
+		$last_check = get_transient( $transient_key );
+
+		# If transient exists, we're inside of the interval, so abort.
+		if ( !empty( $last_check ) )
+			return;
+
+		# Set thresholds.
+		$past_seconds = ( int ) apply_filters( 'action_scheduler_past_actions_seconds', DAY_IN_SECONDS );
+		$min_past_actions = ( int ) apply_filters( 'action_scheduler_alert_past_actions_count', 20 );
+
+		# Allow third-parties to preempt the default check logic.
+		$check = apply_filters( 'action_scheduler_past_action_check_pre', null );
+
+		$query_args = array(
+			'status'   => ActionScheduler_Store::STATUS_PENDING,
+			'per_page' => $min_past_actions,
+			'date'     => time() - $past_seconds,
+		);
+
+		# If no third-party preempted, run default check.
+		if ( is_null( $check ) ) {
+			$num_past_actions = $store->query_actions( $query_args, 'count' );
+			$check = apply_filters( 'action_scheduler_past_actions_check', ( $num_past_actions < $min_past_actions ), $num_past_actions, $past_seconds, $min_past_actions );
+
+			# Set transient to only check on designated interval.
+			$interval = ( int ) apply_filters( 'action_scheduler_check_past_actions_interval', round( $past_seconds / 4 ), $past_seconds );
+			set_transient( $transient_key, 1, $interval );
+		}
+
+		$check = ( bool ) $check;
+
+		# If check failed, do not display notice.
+		if ( !$check )
+			return;
+
+		# Print notice.
+		printf( __( '<div class="%s"><p>%s</p></div>', 'notice notice-warning', '{{ ALERT MESSAGE }}', 'action-scheduler' ) );
+
+		# Facilitate third-parties to evaluate and print notices.
+		do_action( 'action_scheduler_past_actions_notices', $query_args );
 	}
 
 	/**

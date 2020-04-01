@@ -148,9 +148,11 @@ class ActionScheduler_AdminView extends ActionScheduler_AdminView_Deprecated {
 		# Allow third-parties to preempt the default check logic.
 		$check = apply_filters( 'action_scheduler_pastdue_actions_check_pre', null );
 
+		# Scheduled actions query arguments.
 		$query_args = array(
-			'status' => ActionScheduler_Store::STATUS_PENDING,
-			'date'   => as_get_datetime_object( time() - $threshold_seconds ),
+			'date'     => as_get_datetime_object( time() - $threshold_seconds ),
+			'status'   => ActionScheduler_Store::STATUS_PENDING,
+			'per_page' => $threshhold_min,
 		);
 
 		# If no third-party preempted, run default check.
@@ -158,10 +160,8 @@ class ActionScheduler_AdminView extends ActionScheduler_AdminView_Deprecated {
 			$store = ActionScheduler_Store::instance();
 			$num_pastdue_actions = ( int ) $store->query_actions( $query_args, 'count' );
 
-			# Check if actions count is equal to threshold.
+			# Check if past-due actions count is greater than or equal to threshold.
 			$check = ( $num_pastdue_actions >= $threshhold_min );
-
-			# Apply filter.
 			$check = ( bool ) apply_filters( 'action_scheduler_pastdue_actions_check', $check, $num_pastdue_actions, $threshold_seconds, $threshhold_min );
 		}
 

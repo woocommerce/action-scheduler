@@ -118,6 +118,7 @@ class ActionScheduler_AdminView extends ActionScheduler_AdminView_Deprecated {
 	 * @todo add alert message
 	 * @todo confirm and set seconds past
 	 * @todo confirm and set min past actions count
+	 * @todo add error_log() call
 	 */
 	public function maybe_check_past_actions() {
 

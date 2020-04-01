@@ -498,6 +498,14 @@ class ActionScheduler_wpPostStore extends ActionScheduler_Store {
 			}
 		}
 
+		$pastdue_actions_count = $this->query_actions( array(
+			'status' => self::STATUS_PENDING,
+			'date' => as_get_datetime_object(),
+		), 'count' );
+
+		if ( !empty( $pastdue_actions_count ) )
+			$actions_count_by_status['past-due'] = $pastdue_actions_count;
+
 		return $action_counts_by_status;
 	}
 

@@ -587,6 +587,11 @@ class ActionScheduler_ListTable extends ActionScheduler_Abstract_ListTable {
 			'search'   => $this->get_request_search_query(),
 		);
 
+		if ( 'past-due' === $this->get_request_status() ) {
+			$query['status'] = ActionScheduler_Store::STATUS_PENDING;
+			$query['date'] = as_get_datetime_object();
+		}
+
 		$this->items = array();
 
 		$total_items = $this->store->query_actions( $query, 'count' );

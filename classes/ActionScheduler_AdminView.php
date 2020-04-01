@@ -40,7 +40,7 @@ class ActionScheduler_AdminView extends ActionScheduler_AdminView_Deprecated {
 			}
 
 			add_action( 'admin_menu', array( $this, 'register_menu' ) );
-			add_action( 'admin_notices', array( $this, 'maybe_check_past_actions' ) );
+			add_action( 'admin_notices', array( $this, 'maybe_check_pastdue_actions' ) );
 			add_action( 'current_screen', array( $this, 'add_help_tabs' ) );
 		}
 	}
@@ -111,63 +111,73 @@ class ActionScheduler_AdminView extends ActionScheduler_AdminView_Deprecated {
 	}
 
 	/**
-	 * Maybe check past actions, and display alert.
+	 * Action: admin_notices
 	 *
-	 * @todo break into pieces
-	 * @todo test
-	 * @todo add alert message
-	 * @todo confirm and set seconds past
-	 * @todo confirm and set min past actions count
-	 * @todo add error_log() call
+	 * Maybe check past-due actions, and print notice.
+	 *
+	 * @uses $this->check_pastdue_actions()
 	 */
-	public function maybe_check_past_actions() {
+	public function maybe_check_pastdue_actions() {
 
 		# Filter to prevent checking actions (ex: inappropriate user).
-		if ( apply_filters( 'action_scheduler_check_past_actions', false ) )
+		if ( !apply_filters( 'action_scheduler_check_pastdue_actions', true ) )
 			return;
 
-		# Use transient to prevent checking on every admin page load.
-		$transient_key = 'action_scheduler_last_past_actions_check';
-		$last_check = get_transient( $transient_key );
+		# Get last check transient.
+		$last_check = get_transient( 'action_scheduler_last_pastdue_actions_check' );
 
-		# If transient exists, we're inside of the interval, so abort.
+		# If transient exists, we're within interval, so bail.
 		if ( !empty( $last_check ) )
 			return;
 
+		# Perform the check.
+		$this->check_pastdue_actions();
+	}
+
+	/**
+	 * Check past-due actions, and print notice.
+	 *
+	 * @todo set alert message
+	 */
+	protected function check_pastdue_actions() {
+
 		# Set thresholds.
-		$past_seconds = ( int ) apply_filters( 'action_scheduler_past_actions_seconds', DAY_IN_SECONDS );
-		$min_past_actions = ( int ) apply_filters( 'action_scheduler_alert_past_actions_count', 20 );
+		$threshold_seconds = ( int ) apply_filters( 'action_scheduler_pastdue_actions_seconds', DAY_IN_SECONDS );
+		$threshhold_min    = ( int ) apply_filters( 'action_scheduler_pastdue_actions_min', 20 );
 
 		# Allow third-parties to preempt the default check logic.
-		$check = apply_filters( 'action_scheduler_past_action_check_pre', null );
+		$check = apply_filters( 'action_scheduler_pastdue_actions_check_pre', null );
 
 		$query_args = array(
-			'status'   => ActionScheduler_Store::STATUS_PENDING,
-			'per_page' => $min_past_actions,
-			'date'     => time() - $past_seconds,
+			'status' => ActionScheduler_Store::STATUS_PENDING,
+			'date'   => as_get_datetime_object( time() - $threshold_seconds ),
 		);
 
 		# If no third-party preempted, run default check.
 		if ( is_null( $check ) ) {
-			$num_past_actions = $store->query_actions( $query_args, 'count' );
-			$check = apply_filters( 'action_scheduler_past_actions_check', ( $num_past_actions < $min_past_actions ), $num_past_actions, $past_seconds, $min_past_actions );
+			$store = ActionScheduler_Store::instance();
+			$num_pastdue_actions = ( int ) $store->query_actions( $query_args, 'count' );
 
-			# Set transient to only check on designated interval.
-			$interval = ( int ) apply_filters( 'action_scheduler_check_past_actions_interval', round( $past_seconds / 4 ), $past_seconds );
-			set_transient( $transient_key, 1, $interval );
+			# Check if actions count is equal to threshold.
+			$check = ( $num_pastdue_actions >= $threshhold_min );
+
+			# Apply filter.
+			$check = ( bool ) apply_filters( 'action_scheduler_pastdue_actions_check', $check, $num_pastdue_actions, $threshold_seconds, $threshhold_min );
 		}
 
-		$check = ( bool ) $check;
+		# If check failed, set transient and abort.
+		if ( !boolval( $check ) ) {
+			$interval = apply_filters( 'action_scheduler_pastdue_actions_check_interval', round( $threshold_seconds / 4 ), $threshold_seconds );
+			set_transient( 'action_scheduler_last_pastdue_actions_check', time(), $interval );
 
-		# If check failed, do not display notice.
-		if ( !$check )
 			return;
+		}
 
 		# Print notice.
-		printf( __( '<div class="%s"><p>%s</p></div>', 'notice notice-warning', '{{ ALERT MESSAGE }}', 'action-scheduler' ) );
+		printf( __( '<div class="%s"><p>%d past-due actions found; something may be wrong.</p></div>', 'action-scheduler' ), 'notice notice-warning', $num_pastdue_actions );
 
 		# Facilitate third-parties to evaluate and print notices.
-		do_action( 'action_scheduler_past_actions_notices', $query_args );
+		do_action( 'action_scheduler_pastdue_actions_extra_notices', $query_args );
 	}
 
 	/**

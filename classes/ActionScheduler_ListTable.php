@@ -637,7 +637,7 @@ class ActionScheduler_ListTable extends ActionScheduler_Abstract_ListTable {
 	 * Prints the available statuses so the user can click to filter.
 	 */
 	protected function display_filter_by_status() {
-		$this->status_counts = $this->store->action_counts();
+		$this->status_counts = $this->store->action_counts() + $this->store->extra_action_counts();
 		parent::display_filter_by_status();
 	}
 

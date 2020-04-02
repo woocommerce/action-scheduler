@@ -132,6 +132,27 @@ abstract class ActionScheduler_Store extends ActionScheduler_Store_Deprecated {
 	abstract public function action_counts();
 
 	/**
+	 * Get additional action counts.
+	 *
+	 * - add past-due actions
+	 *
+	 * @return array
+	 */
+	public function extra_action_counts() {
+		$extra_actions = array();
+
+		$pastdue_action_counts = ( int ) $this->query_actions( array(
+			'status' => self::STATUS_PENDING,
+			'date'   => as_get_datetime_object(),
+		), 'count' );
+
+		if ( 0 !== $pastdue_action_counts )
+			$extra_actions['past-due'] = $pastdue_action_counts;
+
+		return apply_filters( 'action_scheduler_extra_action_counts', $extra_actions );
+	}
+
+	/**
 	 * @param string $action_id
 	 */
 	abstract public function cancel_action( $action_id );

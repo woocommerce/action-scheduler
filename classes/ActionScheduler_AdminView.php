@@ -137,7 +137,6 @@ class ActionScheduler_AdminView extends ActionScheduler_AdminView_Deprecated {
 	/**
 	 * Check past-due actions, and print notice.
 	 *
-	 * @todo set alert message
 	 */
 	protected function check_pastdue_actions() {
 

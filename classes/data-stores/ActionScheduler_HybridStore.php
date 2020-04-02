@@ -193,9 +193,10 @@ class ActionScheduler_HybridStore extends Store {
 			$actions_count_by_status[ $status_key ] = $count;
 		}
 
+		// Support "Past-due" list table view without registering a post status.
 		$actions_count_by_status['past-due'] = $this->query_actions( array(
 			'status' => self::STATUS_PENDING,
-			'date' => as_get_datetime_object(),
+			'date'   => as_get_datetime_object(),
 		), 'count' );
 
 		$actions_count_by_status = array_filter( $actions_count_by_status );

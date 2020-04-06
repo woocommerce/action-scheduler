@@ -15,6 +15,12 @@ class ActionScheduler_DBStore extends ActionScheduler_Store {
 	/** @var int */
 	protected static $max_index_length = 191;
 
+	/** @var int */
+	protected $action_table;
+
+	/** @var int */
+	protected $group_table;
+
 	/**
 	 * Initialize the data store
 	 *
@@ -23,6 +29,12 @@ class ActionScheduler_DBStore extends ActionScheduler_Store {
 	public function init() {
 		$table_maker = new ActionScheduler_StoreSchema();
 		$table_maker->register_tables();
+	}
+
+	public function __construct() {
+		global $wpdb;
+		$this->action_table = ! empty( $wpdb->actionscheduler_actions ) ? $wpdb->actionscheduler_actions : $wpdb->prefix . 'actionscheduler_actions';
+		$this->group_table  = ! empty( $wpdb->actionscheduler_groups ) ? $wpdb->actionscheduler_groups : $wpdb->prefix . 'actionscheduler_groups';
 	}
 
 	/**
@@ -56,8 +68,7 @@ class ActionScheduler_DBStore extends ActionScheduler_Store {
 				$data['extended_args'] = $args;
 			}
 
-			$table_name = ! empty( $wpdb->actionscheduler_actions ) ? $wpdb->actionscheduler_actions : $wpdb->prefix . 'actionscheduler_actions';
-			$wpdb->insert( $table_name, $data );
+			$wpdb->insert( $action_table, $data );
 			$action_id = $wpdb->insert_id;
 
 			if ( is_wp_error( $action_id ) ) {
@@ -113,7 +124,7 @@ class ActionScheduler_DBStore extends ActionScheduler_Store {
 		}
 		/** @var \wpdb $wpdb */
 		global $wpdb;
-		$group_id = (int) $wpdb->get_var( $wpdb->prepare( "SELECT group_id FROM {$wpdb->actionscheduler_groups} WHERE slug=%s", $slug ) );
+		$group_id = (int) $wpdb->get_var( $wpdb->prepare( "SELECT group_id FROM {$this->group_table} WHERE slug=%s", $slug ) );
 		if ( empty( $group_id ) && $create_if_not_exists ) {
 			$group_id = $this->create_group( $slug );
 		}
@@ -131,7 +142,7 @@ class ActionScheduler_DBStore extends ActionScheduler_Store {
 	protected function create_group( $slug ) {
 		/** @var \wpdb $wpdb */
 		global $wpdb;
-		$wpdb->insert( $wpdb->actionscheduler_groups, [ 'slug' => $slug ] );
+		$wpdb->insert( $this->group_table, [ 'slug' => $slug ] );
 
 		return (int) $wpdb->insert_id;
 	}
@@ -147,7 +158,7 @@ class ActionScheduler_DBStore extends ActionScheduler_Store {
 		/** @var \wpdb $wpdb */
 		global $wpdb;
 		$data = $wpdb->get_row( $wpdb->prepare(
-			"SELECT a.*, g.slug AS `group` FROM {$wpdb->actionscheduler_actions} a LEFT JOIN {$wpdb->actionscheduler_groups} g ON a.group_id=g.group_id WHERE a.action_id=%d",
+			"SELECT a.*, g.slug AS `group` FROM {$this->action_table} a LEFT JOIN {$this->group_table} g ON a.group_id=g.group_id WHERE a.action_id=%d",
 			$action_id
 		) );
 
@@ -220,10 +231,10 @@ class ActionScheduler_DBStore extends ActionScheduler_Store {
 
 		/** @var wpdb $wpdb */
 		global $wpdb;
-		$query = "SELECT a.action_id FROM {$wpdb->actionscheduler_actions} a";
+		$query = "SELECT a.action_id FROM {$this->action_table} a";
 		$args  = [];
 		if ( ! empty( $params[ 'group' ] ) ) {
-			$query  .= " INNER JOIN {$wpdb->actionscheduler_groups} g ON g.group_id=a.group_id AND g.slug=%s";
+			$query  .= " INNER JOIN {$this->group_table} g ON g.group_id=a.group_id AND g.slug=%s";
 			$args[] = $params[ 'group' ];
 		}
 		$query  .= " WHERE a.hook=%s";
@@ -287,11 +298,11 @@ class ActionScheduler_DBStore extends ActionScheduler_Store {
 		/** @var \wpdb $wpdb */
 		global $wpdb;
 		$sql  = ( 'count' === $select_or_count ) ? 'SELECT count(a.action_id)' : 'SELECT a.action_id';
-		$sql .= " FROM {$wpdb->actionscheduler_actions} a";
+		$sql .= " FROM {$this->action_table} a";
 		$sql_params = [];
 
 		if ( ! empty( $query[ 'group' ] ) || 'group' === $query[ 'orderby' ] ) {
-			$sql .= " LEFT JOIN {$wpdb->actionscheduler_groups} g ON g.group_id=a.group_id";
+			$sql .= " LEFT JOIN {$this->group_table} g ON g.group_id=a.group_id";
 		}
 
 		$sql .= " WHERE 1=1";
@@ -419,7 +430,7 @@ class ActionScheduler_DBStore extends ActionScheduler_Store {
 		global $wpdb;
 
 		$sql  = "SELECT a.status, count(a.status) as 'count'";
-		$sql .= " FROM {$wpdb->actionscheduler_actions} a";
+		$sql .= " FROM {$this->action_table} a";
 		$sql .= " GROUP BY a.status";
 
 		$actions_count_by_status = array();
@@ -447,7 +458,7 @@ class ActionScheduler_DBStore extends ActionScheduler_Store {
 		global $wpdb;
 
 		$updated = $wpdb->update(
-			$wpdb->actionscheduler_actions,
+			$this->action_table,
 			[ 'status' => self::STATUS_CANCELED ],
 			[ 'action_id' => $action_id ],
 			[ '%s' ],
@@ -526,7 +537,7 @@ class ActionScheduler_DBStore extends ActionScheduler_Store {
 
 			$wpdb->query(
 				$wpdb->prepare( // wpcs: PreparedSQLPlaceholders replacement count ok.
-					"UPDATE {$wpdb->actionscheduler_actions} SET status = %s WHERE action_id IN {$query_in}",
+					"UPDATE {$this->action_table} SET status = %s WHERE action_id IN {$query_in}",
 					$parameters
 				)
 			);
@@ -543,7 +554,7 @@ class ActionScheduler_DBStore extends ActionScheduler_Store {
 	public function delete_action( $action_id ) {
 		/** @var \wpdb $wpdb */
 		global $wpdb;
-		$deleted = $wpdb->delete( $wpdb->actionscheduler_actions, [ 'action_id' => $action_id ], [ '%d' ] );
+		$deleted = $wpdb->delete( $this->action_table, [ 'action_id' => $action_id ], [ '%d' ] );
 		if ( empty( $deleted ) ) {
 			throw new \InvalidArgumentException( sprintf( __( 'Unidentified action %s', 'action-scheduler' ), $action_id ) );
 		}
@@ -575,7 +586,7 @@ class ActionScheduler_DBStore extends ActionScheduler_Store {
 	protected function get_date_gmt( $action_id ) {
 		/** @var \wpdb $wpdb */
 		global $wpdb;
-		$record = $wpdb->get_row( $wpdb->prepare( "SELECT * FROM {$wpdb->actionscheduler_actions} WHERE action_id=%d", $action_id ) );
+		$record = $wpdb->get_row( $wpdb->prepare( "SELECT * FROM {$this->action_table} WHERE action_id=%d", $action_id ) );
 		if ( empty( $record ) ) {
 			throw new \InvalidArgumentException( sprintf( __( 'Unidentified action %s', 'action-scheduler' ), $action_id ) );
 		}
@@ -634,7 +645,7 @@ class ActionScheduler_DBStore extends ActionScheduler_Store {
 		$date = is_null( $before_date ) ? $now : clone $before_date;
 
 		// can't use $wpdb->update() because of the <= condition
-		$update = "UPDATE {$wpdb->actionscheduler_actions} SET claim_id=%d, last_attempt_gmt=%s, last_attempt_local=%s";
+		$update = "UPDATE {$this->action_table} SET claim_id=%d, last_attempt_gmt=%s, last_attempt_local=%s";
 		$params = array(
 			$claim_id,
 			$now->format( 'Y-m-d H:i:s' ),
@@ -686,7 +697,7 @@ class ActionScheduler_DBStore extends ActionScheduler_Store {
 	public function get_claim_count() {
 		global $wpdb;
 
-		$sql = "SELECT COUNT(DISTINCT claim_id) FROM {$wpdb->actionscheduler_actions} WHERE claim_id != 0 AND status IN ( %s, %s)";
+		$sql = "SELECT COUNT(DISTINCT claim_id) FROM {$this->action_table} WHERE claim_id != 0 AND status IN ( %s, %s)";
 		$sql = $wpdb->prepare( $sql, [ self::STATUS_PENDING, self::STATUS_RUNNING ] );
 
 		return (int) $wpdb->get_var( $sql );
@@ -702,7 +713,7 @@ class ActionScheduler_DBStore extends ActionScheduler_Store {
 		/** @var \wpdb $wpdb */
 		global $wpdb;
 
-		$sql = "SELECT claim_id FROM {$wpdb->actionscheduler_actions} WHERE action_id=%d";
+		$sql = "SELECT claim_id FROM {$this->action_table} WHERE action_id=%d";
 		$sql = $wpdb->prepare( $sql, $action_id );
 
 		return (int) $wpdb->get_var( $sql );
@@ -719,7 +730,7 @@ class ActionScheduler_DBStore extends ActionScheduler_Store {
 		/** @var \wpdb $wpdb */
 		global $wpdb;
 
-		$sql = "SELECT action_id FROM {$wpdb->actionscheduler_actions} WHERE claim_id=%d";
+		$sql = "SELECT action_id FROM {$this->action_table} WHERE claim_id=%d";
 		$sql = $wpdb->prepare( $sql, $claim_id );
 
 		$action_ids = $wpdb->get_col( $sql );
@@ -735,7 +746,7 @@ class ActionScheduler_DBStore extends ActionScheduler_Store {
 	public function release_claim( ActionScheduler_ActionClaim $claim ) {
 		/** @var \wpdb $wpdb */
 		global $wpdb;
-		$wpdb->update( $wpdb->actionscheduler_actions, [ 'claim_id' => 0 ], [ 'claim_id' => $claim->get_id() ], [ '%d' ], [ '%d' ] );
+		$wpdb->update( $this->action_table, [ 'claim_id' => 0 ], [ 'claim_id' => $claim->get_id() ], [ '%d' ], [ '%d' ] );
 		$wpdb->delete( $wpdb->actionscheduler_claims, [ 'claim_id' => $claim->get_id() ], [ '%d' ] );
 	}
 
@@ -750,7 +761,7 @@ class ActionScheduler_DBStore extends ActionScheduler_Store {
 		/** @var \wpdb $wpdb */
 		global $wpdb;
 		$wpdb->update(
-			$wpdb->actionscheduler_actions,
+			$this->action_table,
 			[ 'claim_id' => 0 ],
 			[ 'action_id' => $action_id ],
 			[ '%s' ],
@@ -767,7 +778,7 @@ class ActionScheduler_DBStore extends ActionScheduler_Store {
 		/** @var \wpdb $wpdb */
 		global $wpdb;
 		$updated = $wpdb->update(
-			$wpdb->actionscheduler_actions,
+			$this->action_table,
 			[ 'status' => self::STATUS_FAILED ],
 			[ 'action_id' => $action_id ],
 			[ '%s' ],
@@ -789,7 +800,7 @@ class ActionScheduler_DBStore extends ActionScheduler_Store {
 		/** @var \wpdb $wpdb */
 		global $wpdb;
 
-		$sql = "UPDATE {$wpdb->actionscheduler_actions} SET attempts = attempts+1, status=%s, last_attempt_gmt = %s, last_attempt_local = %s WHERE action_id = %d";
+		$sql = "UPDATE {$this->action_table} SET attempts = attempts+1, status=%s, last_attempt_gmt = %s, last_attempt_local = %s WHERE action_id = %d";
 		$sql = $wpdb->prepare( $sql, self::STATUS_RUNNING, current_time( 'mysql', true ), current_time( 'mysql' ), $action_id );
 		$wpdb->query( $sql );
 	}
@@ -805,7 +816,7 @@ class ActionScheduler_DBStore extends ActionScheduler_Store {
 		/** @var \wpdb $wpdb */
 		global $wpdb;
 		$updated = $wpdb->update(
-			$wpdb->actionscheduler_actions,
+			$this->action_table,
 			[
 				'status'             => self::STATUS_COMPLETE,
 				'last_attempt_gmt'   => current_time( 'mysql', true ),
@@ -830,7 +841,7 @@ class ActionScheduler_DBStore extends ActionScheduler_Store {
 	public function get_status( $action_id ) {
 		/** @var \wpdb $wpdb */
 		global $wpdb;
-		$sql    = "SELECT status FROM {$wpdb->actionscheduler_actions} WHERE action_id=%d";
+		$sql    = "SELECT status FROM {$this->action_table} WHERE action_id=%d";
 		$sql    = $wpdb->prepare( $sql, $action_id );
 		$status = $wpdb->get_var( $sql );
 

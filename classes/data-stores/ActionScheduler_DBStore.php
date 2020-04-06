@@ -15,10 +15,10 @@ class ActionScheduler_DBStore extends ActionScheduler_Store {
 	/** @var int */
 	protected static $max_index_length = 191;
 
-	/** @var int */
+	/** @var string */
 	protected $action_table;
 
-	/** @var int */
+	/** @var string */
 	protected $group_table;
 
 	/**

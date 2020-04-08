@@ -35,8 +35,6 @@ class ActionScheduler_DBStore extends ActionScheduler_Store {
 		global $wpdb;
 		$this->action_table = ! empty( $wpdb->actionscheduler_actions ) ? $wpdb->actionscheduler_actions : $wpdb->prefix . 'actionscheduler_actions';
 		$this->group_table  = ! empty( $wpdb->actionscheduler_groups ) ? $wpdb->actionscheduler_groups : $wpdb->prefix . 'actionscheduler_groups';
-
-		parent::__construct();
 	}
 
 	/**

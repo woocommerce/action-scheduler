@@ -22,7 +22,7 @@ abstract class ActionScheduler_Abstract_Schedule extends ActionScheduler_Schedul
 	/**
 	 * @param DateTime $date The date & time to run the action.
 	 */
-	public function __construct( DateTime $date ) {
+	public function __construct( DateTime $date = null ) {
 		$this->scheduled_date = $date;
 	}
 

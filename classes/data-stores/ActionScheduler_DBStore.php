@@ -269,23 +269,25 @@ class ActionScheduler_DBStore extends ActionScheduler_Store {
 		}
 
 		$query = wp_parse_args( $query, [
-			'hook'             => '',
-			'args'             => null,
-			'date'             => null,
-			'date_compare'     => '<=',
-			'modified'         => null,
-			'modified_compare' => '<=',
-			'group'            => '',
-			'status'           => '',
-			'claimed'          => null,
-			'per_page'         => 5,
-			'offset'           => 0,
-			'orderby'          => 'date',
-			'order'            => 'ASC',
+			'hook'             		=> '',
+			'args'             		=> null,
+			'args_partial_match'	=> false,
+			'date'             		=> null,
+			'date_compare'     		=> '<=',
+			'modified'         		=> null,
+			'modified_compare' 		=> '<=',
+			'group'            		=> '',
+			'status'           		=> '',
+			'claimed'          		=> null,
+			'per_page'         		=> 5,
+			'offset'           		=> 0,
+			'orderby'          		=> 'date',
+			'order'            		=> 'ASC',
 		] );
 
 		/** @var \wpdb $wpdb */
 		global $wpdb;
+		$mysql_version = $wpdb->db_version();
 		$sql  = ( 'count' === $select_or_count ) ? 'SELECT count(a.action_id)' : 'SELECT a.action_id';
 		$sql .= " FROM {$wpdb->actionscheduler_actions} a";
 		$sql_params = [];
@@ -305,9 +307,42 @@ class ActionScheduler_DBStore extends ActionScheduler_Store {
 			$sql          .= " AND a.hook=%s";
 			$sql_params[] = $query[ 'hook' ];
 		}
+
 		if ( ! is_null( $query[ 'args' ] ) ) {
-			$sql          .= " AND a.args=%s";
-			$sql_params[] = $this->get_args_for_query( $query[ 'args' ] );
+			if( isset($query[ 'args_partial_match' ]) && $query[ 'args_partial_match' ] === true && $mysql_version >= '5.7' ) {
+				foreach ( $query[ 'args' ] as $key => $value ) {
+					$supported_types = [ 'integer', 'boolean', 'double', 'string' ];
+					if ( !in_array( gettype( $value ), $supported_types ) ) {
+						continue;
+					}
+					switch ( gettype( $value ) ) {
+						case 'integer':
+							$sql .= ' AND JSON_EXTRACT(a.args, %s)=%d';
+							break;
+						case 'boolean':
+							$value = $value ? 'true' : 'false';
+							$sql .= ' AND JSON_EXTRACT(a.args, %s)=%s';
+							break;
+						case 'double':
+							$sql .= ' AND JSON_EXTRACT(a.args, %s)=%f';
+							break;
+						case 'string':
+							$sql .= ' AND JSON_EXTRACT(a.args, %s)=%s';
+							break;
+					}
+					$sql_params[] = '$.'.$key;
+					$sql_params[] = $value;
+				}
+			} elseif( isset($query[ 'args_partial_match' ]) && $query[ 'args_partial_match' ] === true && $mysql_version < '5.7' ) {
+				foreach ( $query[ 'args' ] as $key => $value ) {
+					$sql .= ' AND a.args LIKE %s';
+					$json_partial = trim( json_encode( array( $key => $value ) ), '{}' );
+					$sql_params[] = "%{$json_partial}%";
+				}
+			} else {
+				$sql .= " AND a.args=%s";
+				$sql_params[] = $this->get_args_for_query( $query[ 'args' ] );
+			}
 		}
 
 		if ( $query[ 'status' ] ) {

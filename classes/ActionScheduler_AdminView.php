@@ -120,7 +120,7 @@ class ActionScheduler_AdminView extends ActionScheduler_AdminView_Deprecated {
 	public function maybe_check_pastdue_actions() {
 
 		# Filter to prevent checking actions (ex: inappropriate user).
-		if ( !apply_filters( 'action_scheduler_check_pastdue_actions', true ) )
+		if ( ! apply_filters( 'action_scheduler_check_pastdue_actions', true ) )
 			return;
 
 		# Get last check transient.
@@ -166,7 +166,7 @@ class ActionScheduler_AdminView extends ActionScheduler_AdminView_Deprecated {
 		}
 
 		# If check failed, set transient and abort.
-		if ( !boolval( $check ) ) {
+		if ( ! boolval( $check ) ) {
 			$interval = apply_filters( 'action_scheduler_pastdue_actions_check_interval', round( $threshold_seconds / 4 ), $threshold_seconds );
 			set_transient( 'action_scheduler_last_pastdue_actions_check', time(), $interval );
 

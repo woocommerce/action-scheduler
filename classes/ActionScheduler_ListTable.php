@@ -445,7 +445,7 @@ class ActionScheduler_ListTable extends ActionScheduler_Abstract_ListTable {
 		$schedule_display_string = '';
 
 		if ( is_a( $schedule, 'ActionScheduler_NullSchedule' ) ) {
-			return 'async';
+			return __( 'async', 'action-scheduler' );
 		}
 
 		if ( ! $schedule->get_date() ) {

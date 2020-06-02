@@ -10,6 +10,9 @@ class ActionScheduler_AdminView extends ActionScheduler_AdminView_Deprecated {
 
 	private static $screen_id = 'tools_page_action-scheduler';
 
+	/** @var ActionScheduler_ListTable */
+	protected $list_table;
+
 	/**
 	 * @return ActionScheduler_AdminView
 	 * @codeCoverageIgnore
@@ -36,7 +39,9 @@ class ActionScheduler_AdminView extends ActionScheduler_AdminView_Deprecated {
 				add_filter( 'woocommerce_admin_status_tabs', array( $this, 'register_system_status_tab' ) );
 			}
 
-			add_action( 'admin_menu', array( $this, 'register_menu' ) );
+			if ( apply_filters( 'action_scheduler_register_submenu', true ) ) {
+				add_action( 'admin_menu', array( $this, 'register_menu' ) );
+			}
 
 			add_action( 'current_screen', array( $this, 'add_help_tabs' ) );
 		}
@@ -82,16 +87,29 @@ class ActionScheduler_AdminView extends ActionScheduler_AdminView_Deprecated {
 	 * Triggers processing of any pending actions.
 	 */
 	public function process_admin_ui() {
-		$table = new ActionScheduler_ListTable( ActionScheduler::store(), ActionScheduler::logger(), ActionScheduler::runner() );
-		$table->process_actions();
+		$this->get_list_table();
 	}
 
 	/**
 	 * Renders the Admin UI
 	 */
 	public function render_admin_ui() {
-		$table = new ActionScheduler_ListTable( ActionScheduler::store(), ActionScheduler::logger(), ActionScheduler::runner() );
+		$table = $this->get_list_table();
 		$table->display_page();
+	}
+
+	/**
+	 * Get the admin UI object and process any requested actions.
+	 *
+	 * @return ActionScheduler_ListTable
+	 */
+	protected function get_list_table() {
+		if ( null === $this->list_table ) {
+			$this->list_table = new ActionScheduler_ListTable( ActionScheduler::store(), ActionScheduler::logger(), ActionScheduler::runner() );
+			$this->list_table->process_actions();
+		}
+
+		return $this->list_table;
 	}
 
 	/**

@@ -54,8 +54,8 @@ abstract class ActionScheduler_TimezoneHelper {
 		}
 
 		// Get UTC offset, if it isn't set then return UTC.
-		$utc_offset = get_option( 'gmt_offset', 0 );
-		if ( ! is_numeric( $utc_offset ) || 0 === $utc_offset ) {
+		$utc_offset = float( get_option( 'gmt_offset', 0 ) );
+		if ( ! is_numeric( $utc_offset ) || 0.0 === $utc_offset ) {
 			return 'UTC';
 		}
 

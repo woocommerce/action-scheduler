@@ -18,17 +18,6 @@ class ActionScheduler_DateTime extends DateTime {
 	protected $utcOffset = 0;
 
 	/**
-	 * Get the unix timestamp of the current object.
-	 *
-	 * Missing in PHP 5.2 so just here so it can be supported consistently.
-	 *
-	 * @return int
-	 */
-	public function getTimestamp() {
-		return method_exists( 'DateTime', 'getTimestamp' ) ? parent::getTimestamp() : $this->format( 'U' );
-	}
-
-	/**
 	 * Set the UTC offset.
 	 *
 	 * This represents a fixed offset instead of a timezone setting.

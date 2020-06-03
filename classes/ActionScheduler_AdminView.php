@@ -46,7 +46,9 @@ class ActionScheduler_AdminView extends ActionScheduler_AdminView_Deprecated {
 
 			add_action( 'init', array( $this, 'maybe_bulk_delete_actions' ) );
 
-			add_action( 'admin_menu', array( $this, 'register_menu' ) );
+			if ( apply_filters( 'action_scheduler_register_submenu', true ) ) {
+				add_action( 'admin_menu', array( $this, 'register_menu' ) );
+			}
 
 			add_action( 'current_screen', array( $this, 'add_help_tabs' ) );
 		}

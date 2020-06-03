@@ -11,6 +11,8 @@ abstract class ActionScheduler {
 	private static $plugin_file = '';
 	/** @var ActionScheduler_ActionFactory */
 	private static $factory = NULL;
+	/** @var bool */
+	private static $data_store_initialized = false;
 
 	public static function factory() {
 		if ( !isset(self::$factory) ) {
@@ -170,6 +172,8 @@ abstract class ActionScheduler {
 			}
 		}
 
+		self::$data_store_initialized = true;
+
 		/**
 		 * Handle WP comment cleanup after migration.
 		 */
@@ -178,6 +182,21 @@ abstract class ActionScheduler {
 		}
 
 		add_action( 'action_scheduler/migration_complete', 'ActionScheduler_WPCommentCleaner::maybe_schedule_cleanup' );
+	}
+
+	/**
+	 * Check whether the AS data store has been initialized.
+	 *
+	 * @param string $function_name The name of the function being called. Optional. Default `null`.
+	 * @return bool
+	 */
+	public static function is_initialized( $function_name = null ) {
+		if ( ! self::$data_store_initialized && ! empty( $function_name ) ) {
+			$message = sprintf( __( '%s() was called before the Action Scheduler data store was initialized', 'action-scheduler' ), esc_attr( $function_name ) );
+			error_log( $message, E_WARNING );
+		}
+
+		return self::$data_store_initialized;
 	}
 
 	/**
@@ -271,5 +290,15 @@ abstract class ActionScheduler {
 	public static function get_datetime_object( $when = null, $timezone = 'UTC' ) {
 		_deprecated_function( __METHOD__, '2.0', 'wcs_add_months()' );
 		return as_get_datetime_object( $when, $timezone );
+	}
+
+	/**
+	 * Issue deprecated warning if an Action Scheduler function is called in the shutdown hook.
+	 *
+	 * @param string $function_name The name of the function being called.
+	 * @deprecated 3.1.6.
+	 */
+	public static function check_shutdown_hook( $function_name ) {
+		_deprecated_function( __FUNCTION__, '3.1.6' );
 	}
 }

@@ -96,7 +96,7 @@ class ActionScheduler_wcSystemStatus {
 
 		$tip = '';
 		if ( function_exists( 'wc_help_tip' ) )
-			$tip = wc_help_tip( esc_html__( 'This section shows scheduled action counts.', 'action-scheduler' ) )
+			$tip = wc_help_tip( esc_html__( 'This section shows scheduled action counts.', 'action-scheduler' ) );
 		?>
 
 		<table class="wc_status_table widefat" cellspacing="0">

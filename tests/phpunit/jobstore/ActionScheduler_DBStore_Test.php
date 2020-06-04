@@ -363,14 +363,22 @@ class ActionScheduler_DBStore_Test extends ActionScheduler_UnitTestCase {
 		$store     = new ActionScheduler_DBStore();
 		$action_id = $store->save_action( $action );
 
-		$this->assertEqualsWithDelta( $time->format( 'U' ), $store->get_date( $action_id )->format( 'U' ), 1 );
+		if ( method_exists( $this, 'assertEqualsWithDelta' ) ) {
+			$this->assertEqualsWithDelta( $time->format( 'U' ), $store->get_date( $action_id )->format( 'U' ), 1 );
+		} else {
+			$this->assertEquals( $time->format( 'U' ), $store->get_date( $action_id )->format( 'U' ) );
+		}
 
 		$action = $store->fetch_action( $action_id );
 		$action->execute();
 		$now = as_get_datetime_object();
 		$store->mark_complete( $action_id );
 
-		$this->assertEqualsWithDelta( $now->format( 'U' ), $store->get_date( $action_id )->format( 'U' ), 1 );
+		if ( method_exists( $this, 'assertEqualsWithDelta' ) ) {
+			$this->assertEqualsWithDelta( $now->format( 'U' ), $store->get_date( $action_id )->format( 'U' ), 1 );
+		} else {
+			$this->assertEquals( $now->format( 'U' ), $store->get_date( $action_id )->format( 'U' ) );
+		}
 
 		$next          = $action->get_schedule()->get_next( $now );
 		$new_action_id = $store->save_action( $action, $next );

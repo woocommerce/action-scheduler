@@ -457,9 +457,15 @@ class ActionScheduler_wpPostStore extends ActionScheduler_Store {
 			throw new InvalidArgumentException( sprintf( __( 'Unidentified action %s', 'action-scheduler' ), $action_id ) );
 		}
 		do_action( 'action_scheduler_canceled_action', $action_id );
-		add_filter( 'pre_wp_unique_post_slug', array( $this, 'set_unique_post_slug' ), 10, 5 );
-		wp_trash_post( $action_id );
-		remove_filter( 'pre_wp_unique_post_slug', array( $this, 'set_unique_post_slug' ), 10 );
+		/** @var wpdb $wpdb */
+		global $wpdb;
+		$sql = "UPDATE {$wpdb->posts} SET post_status = %s WHERE ID = %d AND post_type = %s";
+		$sql = $wpdb->prepare( $sql, self::STATUS_CANCELED, $action_id, self::POST_TYPE );
+		$result = $wpdb->query( $sql );
+		if ( $result === false ) {
+			/* translators: %s: action ID */
+			throw new RuntimeException( sprintf( __( 'Unable to cancel action %s. Database error.', 'action-scheduler' ), $action_id ) );
+		}
 	}
 
 	public function delete_action( $action_id ) {

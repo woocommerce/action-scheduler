@@ -96,8 +96,9 @@ class ActionScheduler_wcSystemStatus {
 		$as_datastore = get_class( ActionScheduler_Store::instance() );
 
 		$tip = '';
-		if ( function_exists( 'wc_help_tip' ) )
+		if ( function_exists( 'wc_help_tip' ) ) {
 			$tip = wc_help_tip( esc_html__( 'This section shows scheduled action counts.', 'action-scheduler' ) );
+		}
 		?>
 
 		<table class="wc_status_table widefat" cellspacing="0">

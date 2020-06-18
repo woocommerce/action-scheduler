@@ -166,10 +166,9 @@ abstract class ActionScheduler {
 
 		if ( defined( 'WP_CLI' ) && WP_CLI ) {
 			WP_CLI::add_command( 'action-scheduler', 'ActionScheduler_WPCLI_Scheduler_command' );
-			if ( ! ActionScheduler_DataController::is_migration_complete() && Controller::instance()->allow_migration() ) {
-				$command = new Migration_Command();
-				$command->register();
-			}
+
+			$command = new Migration_Command();
+			$command->register();
 		}
 
 		self::$data_store_initialized = true;

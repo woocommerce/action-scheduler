@@ -75,6 +75,16 @@ class Migration_Command extends WP_CLI_Command {
 	 * @return void
 	 */
 	public function migrate( $positional_args, $assoc_args ) {
+		if ( \ActionScheduler_DataController::is_migration_complete() ) {
+			WP_CLI::success( sprintf( 'No migration required. Data store is %s.', get_class( \ActionScheduler_Store::instance() ) ) );
+			return;
+		}
+
+		if ( ! Controller::instance()->allow_migration() ) {
+			WP_CLI::error( 'Migration prevented due to missing depdendencies or by current data store.' );
+			return;
+		}
+
 		$this->init_logging();
 
 		$config = $this->get_migration_config( $assoc_args );

@@ -173,6 +173,11 @@ class ActionScheduler_AdminView extends ActionScheduler_AdminView_Deprecated {
 			return;
 		}
 
+		# Allow third-parties to conditionally display notice(s).
+		if ( ! apply_filters( 'action_scheduler_show_pastdue_actions_notice', true ) ) {
+			return;
+		}
+
 		$actions_url = add_query_arg( array(
 			'page'   => 'action-scheduler',
 			'status' => 'pending',

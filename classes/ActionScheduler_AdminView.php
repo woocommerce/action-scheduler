@@ -120,8 +120,9 @@ class ActionScheduler_AdminView extends ActionScheduler_AdminView_Deprecated {
 	public function maybe_check_pastdue_actions() {
 
 		# Filter to prevent checking actions (ex: inappropriate user).
-		if ( ! apply_filters( 'action_scheduler_check_pastdue_actions', true ) )
+		if ( ! apply_filters( 'action_scheduler_check_pastdue_actions', current_user_can( 'manage_options' ) ) ) {
 			return;
+		}
 
 		# Get last check transient.
 		$last_check = get_transient( 'action_scheduler_last_pastdue_actions_check' );

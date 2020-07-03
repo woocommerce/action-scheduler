@@ -311,7 +311,7 @@ class ActionScheduler_DBStore extends ActionScheduler_Store {
 		if ( ! is_null( $query[ 'args' ] ) ) {
 			if ( isset( $query['args_partial_match'] ) && true === $query['args_partial_match'] && $mysql_version >= '5.7' ) {
 				foreach ( $query[ 'args' ] as $key => $value ) {
-					$supported_types = [ 'integer', 'boolean', 'double', 'string' ];
+					$supported_types = array( 'integer', 'boolean', 'double', 'string' );
 					if ( !in_array( gettype( $value ), $supported_types ) ) {
 						continue;
 					}

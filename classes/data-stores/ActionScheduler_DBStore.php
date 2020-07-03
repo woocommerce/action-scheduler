@@ -40,14 +40,14 @@ class ActionScheduler_DBStore extends ActionScheduler_Store {
 
 			/** @var \wpdb $wpdb */
 			global $wpdb;
-			$data = [
+			$data = array(
 				'hook'                 => $action->get_hook(),
 				'status'               => ( $action->is_finished() ? self::STATUS_COMPLETE : self::STATUS_PENDING ),
 				'scheduled_date_gmt'   => $this->get_scheduled_date_string( $action, $date ),
 				'scheduled_date_local' => $this->get_scheduled_date_string_local( $action, $date ),
 				'schedule'             => serialize( $action->get_schedule() ),
 				'group_id'             => $this->get_group_id( $action->get_group() ),
-			];
+			);
 			$args = wp_json_encode( $action->get_args() );
 			if ( strlen( $args ) <= static::$max_index_length ) {
 				$data['args'] = $args;
@@ -131,7 +131,7 @@ class ActionScheduler_DBStore extends ActionScheduler_Store {
 	protected function create_group( $slug ) {
 		/** @var \wpdb $wpdb */
 		global $wpdb;
-		$wpdb->insert( $wpdb->actionscheduler_groups, [ 'slug' => $slug ] );
+		$wpdb->insert( $wpdb->actionscheduler_groups, array( 'slug' => $slug ) );
 
 		return (int) $wpdb->insert_id;
 	}
@@ -211,34 +211,34 @@ class ActionScheduler_DBStore extends ActionScheduler_Store {
 	 *
 	 * @return string|null ID of the next action matching the criteria or NULL if not found.
 	 */
-	public function find_action( $hook, $params = [] ) {
-		$params = wp_parse_args( $params, [
+	public function find_action( $hook, $params = array() ) {
+		$params = wp_parse_args( $params, array(
 			'args'   => null,
 			'status' => self::STATUS_PENDING,
 			'group'  => '',
-		] );
+		 ) );
 
 		/** @var wpdb $wpdb */
 		global $wpdb;
 		$query = "SELECT a.action_id FROM {$wpdb->actionscheduler_actions} a";
-		$args  = [];
-		if ( ! empty( $params[ 'group' ] ) ) {
+		$args  = array();
+		if ( ! empty( $params['group'] ) ) {
 			$query  .= " INNER JOIN {$wpdb->actionscheduler_groups} g ON g.group_id=a.group_id AND g.slug=%s";
-			$args[] = $params[ 'group' ];
+			$args[] = $params['group'];
 		}
 		$query  .= " WHERE a.hook=%s";
 		$args[] = $hook;
-		if ( ! is_null( $params[ 'args' ] ) ) {
+		if ( ! is_null( $params['args'] ) ) {
 			$query  .= " AND a.args=%s";
-			$args[] = $this->get_args_for_query( $params[ 'args' ] );
+			$args[] = $this->get_args_for_query( $params['args'] );
 		}
 
 		$order = 'ASC';
-		if ( ! empty( $params[ 'status' ] ) ) {
+		if ( ! empty( $params['status'] ) ) {
 			$query  .= " AND a.status=%s";
-			$args[] = $params[ 'status' ];
+			$args[] = $params['status'];
 
-			if ( self::STATUS_PENDING == $params[ 'status' ] ) {
+			if ( self::STATUS_PENDING == $params['status'] ) {
 				$order = 'ASC'; // Find the next action that matches.
 			} else {
 				$order = 'DESC'; // Find the most recent action that matches.
@@ -268,7 +268,7 @@ class ActionScheduler_DBStore extends ActionScheduler_Store {
 			throw new InvalidArgumentException( __( 'Invalid value for select or count parameter. Cannot query actions.', 'action-scheduler' ) );
 		}
 
-		$query = wp_parse_args( $query, [
+		$query = wp_parse_args( $query, array(
 			'hook'             		=> '',
 			'args'             		=> null,
 			'args_partial_match'	=> false,
@@ -283,34 +283,34 @@ class ActionScheduler_DBStore extends ActionScheduler_Store {
 			'offset'           		=> 0,
 			'orderby'          		=> 'date',
 			'order'            		=> 'ASC',
-		] );
+		 ) );
 
 		/** @var \wpdb $wpdb */
 		global $wpdb;
 		$mysql_version = $wpdb->db_version();
 		$sql  = ( 'count' === $select_or_count ) ? 'SELECT count(a.action_id)' : 'SELECT a.action_id';
 		$sql .= " FROM {$wpdb->actionscheduler_actions} a";
-		$sql_params = [];
+		$sql_params = array();
 
-		if ( ! empty( $query[ 'group' ] ) || 'group' === $query[ 'orderby' ] ) {
+		if ( ! empty( $query['group'] ) || 'group' === $query['orderby'] ) {
 			$sql .= " LEFT JOIN {$wpdb->actionscheduler_groups} g ON g.group_id=a.group_id";
 		}
 
 		$sql .= " WHERE 1=1";
 
-		if ( ! empty( $query[ 'group' ] ) ) {
+		if ( ! empty( $query['group'] ) ) {
 			$sql          .= " AND g.slug=%s";
-			$sql_params[] = $query[ 'group' ];
+			$sql_params[] = $query['group'];
 		}
 
-		if ( $query[ 'hook' ] ) {
+		if ( $query['hook'] ) {
 			$sql          .= " AND a.hook=%s";
-			$sql_params[] = $query[ 'hook' ];
+			$sql_params[] = $query['hook'];
 		}
 
-		if ( ! is_null( $query[ 'args' ] ) ) {
-			if ( isset( $query[ 'args_partial_match' ] ) && true === $query[ 'args_partial_match' ] && $mysql_version >= '5.7' ) {
-				foreach ( $query[ 'args' ] as $key => $value ) {
+		if ( ! is_null( $query['args'] ) ) {
+			if ( isset( $query['args_partial_match'] ) && true === $query['args_partial_match'] && $mysql_version >= '5.7' ) {
+				foreach ( $query['args'] as $key => $value ) {
 					$supported_types = array( 'integer', 'boolean', 'double', 'string' );
 					if ( ! in_array( gettype( $value ), $supported_types ) ) {
 						continue;
@@ -333,48 +333,48 @@ class ActionScheduler_DBStore extends ActionScheduler_Store {
 					$sql_params[] = '$.'.$key;
 					$sql_params[] = $value;
 				}
-			} elseif ( isset( $query[ 'args_partial_match' ] ) && true === $query[ 'args_partial_match' ] && $mysql_version < '5.7' ) {
-				foreach ( $query[ 'args' ] as $key => $value ) {
+			} elseif ( isset( $query['args_partial_match'] ) && true === $query['args_partial_match'] && $mysql_version < '5.7' ) {
+				foreach ( $query['args'] as $key => $value ) {
 					$sql          .= ' AND a.args LIKE %s';
 					$json_partial = trim( json_encode( array( $key => $value ) ), '{}' );
 					$sql_params[] = "%{$json_partial}%";
 				}
 			} else {
 				$sql          .= " AND a.args=%s";
-				$sql_params[] = $this->get_args_for_query( $query[ 'args' ] );
+				$sql_params[] = $this->get_args_for_query( $query['args'] );
 			}
 		}
 
-		if ( $query[ 'status' ] ) {
+		if ( $query['status'] ) {
 			$sql          .= " AND a.status=%s";
-			$sql_params[] = $query[ 'status' ];
+			$sql_params[] = $query['status'];
 		}
 
-		if ( $query[ 'date' ] instanceof \DateTime ) {
-			$date = clone $query[ 'date' ];
+		if ( $query['date'] instanceof \DateTime ) {
+			$date = clone $query['date'];
 			$date->setTimezone( new \DateTimeZone( 'UTC' ) );
 			$date_string  = $date->format( 'Y-m-d H:i:s' );
-			$comparator   = $this->validate_sql_comparator( $query[ 'date_compare' ] );
+			$comparator   = $this->validate_sql_comparator( $query['date_compare'] );
 			$sql          .= " AND a.scheduled_date_gmt $comparator %s";
 			$sql_params[] = $date_string;
 		}
 
-		if ( $query[ 'modified' ] instanceof \DateTime ) {
-			$modified = clone $query[ 'modified' ];
+		if ( $query['modified'] instanceof \DateTime ) {
+			$modified = clone $query['modified'];
 			$modified->setTimezone( new \DateTimeZone( 'UTC' ) );
 			$date_string  = $modified->format( 'Y-m-d H:i:s' );
-			$comparator   = $this->validate_sql_comparator( $query[ 'modified_compare' ] );
+			$comparator   = $this->validate_sql_comparator( $query['modified_compare'] );
 			$sql          .= " AND a.last_attempt_gmt $comparator %s";
 			$sql_params[] = $date_string;
 		}
 
-		if ( $query[ 'claimed' ] === true ) {
+		if ( true === $query['claimed'] ) {
 			$sql .= " AND a.claim_id != 0";
-		} elseif ( $query[ 'claimed' ] === false ) {
+		} elseif ( false === $query['claimed'] ) {
 			$sql .= " AND a.claim_id = 0";
-		} elseif ( ! is_null( $query[ 'claimed' ] ) ) {
+		} elseif ( ! is_null( $query['claimed'] ) ) {
 			$sql          .= " AND a.claim_id = %d";
-			$sql_params[] = $query[ 'claimed' ];
+			$sql_params[] = $query['claimed'];
 		}
 
 		if ( ! empty( $query['search'] ) ) {
@@ -408,16 +408,16 @@ class ActionScheduler_DBStore extends ActionScheduler_Store {
 					$orderby = 'a.scheduled_date_gmt';
 					break;
 			}
-			if ( strtoupper( $query[ 'order' ] ) == 'ASC' ) {
+			if ( strtoupper( $query['order'] ) == 'ASC' ) {
 				$order = 'ASC';
 			} else {
 				$order = 'DESC';
 			}
 			$sql .= " ORDER BY $orderby $order";
-			if ( $query[ 'per_page' ] > 0 ) {
+			if ( $query['per_page'] > 0 ) {
 				$sql          .= " LIMIT %d, %d";
-				$sql_params[] = $query[ 'offset' ];
-				$sql_params[] = $query[ 'per_page' ];
+				$sql_params[] = $query['offset'];
+				$sql_params[] = $query['per_page'];
 			}
 		}
 
@@ -436,7 +436,7 @@ class ActionScheduler_DBStore extends ActionScheduler_Store {
 	 *
 	 * @return null|string|array The IDs of actions matching the query
 	 */
-	public function query_actions( $query = [], $query_type = 'select' ) {
+	public function query_actions( $query = array(), $query_type = 'select' ) {
 		/** @var wpdb $wpdb */
 		global $wpdb;
 
@@ -483,10 +483,10 @@ class ActionScheduler_DBStore extends ActionScheduler_Store {
 
 		$updated = $wpdb->update(
 			$wpdb->actionscheduler_actions,
-			[ 'status' => self::STATUS_CANCELED ],
-			[ 'action_id' => $action_id ],
-			[ '%s' ],
-			[ '%d' ]
+			array( 'status' => self::STATUS_CANCELED ),
+			array( 'action_id' => $action_id ),
+			array( '%s' ),
+			array( '%d' )
 		);
 		if ( empty( $updated ) ) {
 			/* translators: %s: action ID */
@@ -505,7 +505,7 @@ class ActionScheduler_DBStore extends ActionScheduler_Store {
 	 * @return void
 	 */
 	public function cancel_actions_by_hook( $hook ) {
-		$this->bulk_cancel_actions( [ 'hook' => $hook ] );
+		$this->bulk_cancel_actions( array( 'hook' => $hook ) );
 	}
 
 	/**
@@ -516,7 +516,7 @@ class ActionScheduler_DBStore extends ActionScheduler_Store {
 	 * @return void
 	 */
 	public function cancel_actions_by_group( $group ) {
-		$this->bulk_cancel_actions( [ 'group' => $group ] );
+		$this->bulk_cancel_actions( array( 'group' => $group ) );
 	}
 
 	/**
@@ -542,10 +542,10 @@ class ActionScheduler_DBStore extends ActionScheduler_Store {
 		$action_ids = true;
 		$query_args = wp_parse_args(
 			$query_args,
-			[
-				'per_page' => 1000,
-				'status' => self::STATUS_PENDING,
-			]
+			array(
+				'per_page' 	=> 1000,
+				'status' 	=> self::STATUS_PENDING,
+			)
 		);
 
 		while ( $action_ids ) {
@@ -578,7 +578,7 @@ class ActionScheduler_DBStore extends ActionScheduler_Store {
 	public function delete_action( $action_id ) {
 		/** @var \wpdb $wpdb */
 		global $wpdb;
-		$deleted = $wpdb->delete( $wpdb->actionscheduler_actions, [ 'action_id' => $action_id ], [ '%d' ] );
+		$deleted = $wpdb->delete( $wpdb->actionscheduler_actions, array( 'action_id' => $action_id ), array( '%d' ) );
 		if ( empty( $deleted ) ) {
 			throw new \InvalidArgumentException( sprintf( __( 'Unidentified action %s', 'action-scheduler' ), $action_id ) );
 		}
@@ -646,7 +646,7 @@ class ActionScheduler_DBStore extends ActionScheduler_Store {
 		/** @var \wpdb $wpdb */
 		global $wpdb;
 		$now = as_get_datetime_object();
-		$wpdb->insert( $wpdb->actionscheduler_claims, [ 'date_created_gmt' => $now->format( 'Y-m-d H:i:s' ) ] );
+		$wpdb->insert( $wpdb->actionscheduler_claims, array( 'date_created_gmt' => $now->format( 'Y-m-d H:i:s' ) ) );
 
 		return $wpdb->insert_id;
 	}
@@ -682,7 +682,7 @@ class ActionScheduler_DBStore extends ActionScheduler_Store {
 
 		if ( ! empty( $hooks ) ) {
 			$placeholders = array_fill( 0, count( $hooks ), '%s' );
-			$where       .= ' AND hook IN (' . join( ', ', $placeholders ) . ')';
+			$where        .= ' AND hook IN (' . join( ', ', $placeholders ) . ')';
 			$params       = array_merge( $params, array_values( $hooks ) );
 		}
 
@@ -696,7 +696,7 @@ class ActionScheduler_DBStore extends ActionScheduler_Store {
 				throw new InvalidArgumentException( sprintf( __( 'The group "%s" does not exist.', 'action-scheduler' ), $group ) );
 			}
 
-			$where   .= ' AND group_id = %d';
+			$where    .= ' AND group_id = %d';
 			$params[] = $group_id;
 		}
 
@@ -706,7 +706,7 @@ class ActionScheduler_DBStore extends ActionScheduler_Store {
 		$sql = $wpdb->prepare( "{$update} {$where} {$order}", $params );
 
 		$rows_affected = $wpdb->query( $sql );
-		if ( $rows_affected === false ) {
+		if ( false === $rows_affected ) {
 			throw new \RuntimeException( __( 'Unable to claim actions. Database error.', 'action-scheduler' ) );
 		}
 
@@ -722,7 +722,7 @@ class ActionScheduler_DBStore extends ActionScheduler_Store {
 		global $wpdb;
 
 		$sql = "SELECT COUNT(DISTINCT claim_id) FROM {$wpdb->actionscheduler_actions} WHERE claim_id != 0 AND status IN ( %s, %s)";
-		$sql = $wpdb->prepare( $sql, [ self::STATUS_PENDING, self::STATUS_RUNNING ] );
+		$sql = $wpdb->prepare( $sql, array( self::STATUS_PENDING, self::STATUS_RUNNING ) );
 
 		return (int) $wpdb->get_var( $sql );
 	}
@@ -770,8 +770,8 @@ class ActionScheduler_DBStore extends ActionScheduler_Store {
 	public function release_claim( ActionScheduler_ActionClaim $claim ) {
 		/** @var \wpdb $wpdb */
 		global $wpdb;
-		$wpdb->update( $wpdb->actionscheduler_actions, [ 'claim_id' => 0 ], [ 'claim_id' => $claim->get_id() ], [ '%d' ], [ '%d' ] );
-		$wpdb->delete( $wpdb->actionscheduler_claims, [ 'claim_id' => $claim->get_id() ], [ '%d' ] );
+		$wpdb->update( $wpdb->actionscheduler_actions, array( 'claim_id' => 0 ), array( 'claim_id' => $claim->get_id() ), array( '%d' ), array( '%d' ) );
+		$wpdb->delete( $wpdb->actionscheduler_claims, array( 'claim_id' => $claim->get_id() ), array( '%d' ) );
 	}
 
 	/**
@@ -786,10 +786,10 @@ class ActionScheduler_DBStore extends ActionScheduler_Store {
 		global $wpdb;
 		$wpdb->update(
 			$wpdb->actionscheduler_actions,
-			[ 'claim_id' => 0 ],
-			[ 'action_id' => $action_id ],
-			[ '%s' ],
-			[ '%d' ]
+			array( 'claim_id' => 0 ),
+			array( 'action_id' => $action_id ),
+			array( '%s' ),
+			array( '%d' )
 		);
 	}
 
@@ -803,10 +803,10 @@ class ActionScheduler_DBStore extends ActionScheduler_Store {
 		global $wpdb;
 		$updated = $wpdb->update(
 			$wpdb->actionscheduler_actions,
-			[ 'status' => self::STATUS_FAILED ],
-			[ 'action_id' => $action_id ],
-			[ '%s' ],
-			[ '%d' ]
+			array( 'status' => self::STATUS_FAILED ),
+			array( 'action_id' => $action_id ),
+			array( '%s' ),
+			array( '%d' )
 		);
 		if ( empty( $updated ) ) {
 			throw new \InvalidArgumentException( sprintf( __( 'Unidentified action %s', 'action-scheduler' ), $action_id ) );
@@ -841,14 +841,14 @@ class ActionScheduler_DBStore extends ActionScheduler_Store {
 		global $wpdb;
 		$updated = $wpdb->update(
 			$wpdb->actionscheduler_actions,
-			[
+			array(
 				'status'             => self::STATUS_COMPLETE,
 				'last_attempt_gmt'   => current_time( 'mysql', true ),
 				'last_attempt_local' => current_time( 'mysql' ),
-			],
-			[ 'action_id' => $action_id ],
-			[ '%s' ],
-			[ '%d' ]
+			),
+			array( 'action_id' => $action_id ),
+			array( '%s' ),
+			array( '%d' )
 		);
 		if ( empty( $updated ) ) {
 			throw new \InvalidArgumentException( sprintf( __( 'Unidentified action %s', 'action-scheduler' ), $action_id ) );

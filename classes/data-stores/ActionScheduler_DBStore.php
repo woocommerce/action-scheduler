@@ -309,10 +309,10 @@ class ActionScheduler_DBStore extends ActionScheduler_Store {
 		}
 
 		if ( ! is_null( $query[ 'args' ] ) ) {
-			if ( isset( $query['args_partial_match'] ) && true === $query['args_partial_match'] && $mysql_version >= '5.7' ) {
+			if ( isset( $query[ 'args_partial_match' ] ) && true === $query[ 'args_partial_match' ] && $mysql_version >= '5.7' ) {
 				foreach ( $query[ 'args' ] as $key => $value ) {
 					$supported_types = array( 'integer', 'boolean', 'double', 'string' );
-					if ( !in_array( gettype( $value ), $supported_types ) ) {
+					if ( ! in_array( gettype( $value ), $supported_types ) ) {
 						continue;
 					}
 					switch ( gettype( $value ) ) {
@@ -321,7 +321,7 @@ class ActionScheduler_DBStore extends ActionScheduler_Store {
 							break;
 						case 'boolean':
 							$value = $value ? 'true' : 'false';
-							$sql .= ' AND JSON_EXTRACT(a.args, %s)=%s';
+							$sql   .= ' AND JSON_EXTRACT(a.args, %s)=%s';
 							break;
 						case 'double':
 							$sql .= ' AND JSON_EXTRACT(a.args, %s)=%f';
@@ -333,14 +333,14 @@ class ActionScheduler_DBStore extends ActionScheduler_Store {
 					$sql_params[] = '$.'.$key;
 					$sql_params[] = $value;
 				}
-			} elseif( isset($query[ 'args_partial_match' ]) && $query[ 'args_partial_match' ] === true && $mysql_version < '5.7' ) {
+			} elseif ( isset( $query[ 'args_partial_match' ] ) && true === $query[ 'args_partial_match' ] && $mysql_version < '5.7' ) {
 				foreach ( $query[ 'args' ] as $key => $value ) {
-					$sql .= ' AND a.args LIKE %s';
+					$sql          .= ' AND a.args LIKE %s';
 					$json_partial = trim( json_encode( array( $key => $value ) ), '{}' );
 					$sql_params[] = "%{$json_partial}%";
 				}
 			} else {
-				$sql .= " AND a.args=%s";
+				$sql          .= " AND a.args=%s";
 				$sql_params[] = $this->get_args_for_query( $query[ 'args' ] );
 			}
 		}

@@ -479,6 +479,11 @@ class ActionScheduler_ListTable extends ActionScheduler_Abstract_ListTable {
 	 */
 	protected function bulk_delete( array $ids, $ids_sql ) {
 		foreach ( $ids as $id ) {
+
+			if ( is_a( $this->store->fetch_action( $id ), 'ActionScheduler_NullAction' ) ) {
+				continue;
+			}
+
 			$this->store->delete_action( $id );
 		}
 	}

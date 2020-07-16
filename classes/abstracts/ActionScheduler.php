@@ -1,7 +1,7 @@
 <?php
 
-use Action_Scheduler\WP_CLI\Migration_Command;
 use Action_Scheduler\Migration\Controller;
+use Action_Scheduler\WP_CLI\ActionScheduler_WPCLI;
 
 /**
  * Class ActionScheduler
@@ -165,10 +165,8 @@ abstract class ActionScheduler {
 		}
 
 		if ( defined( 'WP_CLI' ) && WP_CLI ) {
-			WP_CLI::add_command( 'action-scheduler', 'ActionScheduler_WPCLI_Scheduler_command' );
-
-			$command = new Migration_Command();
-			$command->register();
+			WP_CLI::add_command( 'action-scheduler', ActionScheduler_WPCLI::class );
+			require_once( self::plugin_path( 'deprecated/ActionScheduler_WPCLI_Scheduler_command.php' ) );
 		}
 
 		self::$data_store_initialized = true;
@@ -217,6 +215,7 @@ abstract class ActionScheduler {
 			'ActionScheduler_Lock'                       => true,
 			'ActionScheduler_Logger'                     => true,
 			'ActionScheduler_Abstract_Schema'            => true,
+			'ActionScheduler_Abstract_WPCLI_Command'     => true,
 			'ActionScheduler_Store'                      => true,
 			'ActionScheduler_TimezoneHelper'             => true,
 		);

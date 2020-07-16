@@ -8,7 +8,6 @@ use Action_Scheduler\Migration\Runner;
 use Action_Scheduler\Migration\Scheduler;
 use Action_Scheduler\Migration\Controller;
 use WP_CLI;
-use WP_CLI_Command;
 
 /**
  * Class Migration_Command
@@ -19,62 +18,17 @@ use WP_CLI_Command;
  *
  * @codeCoverageIgnore
  */
-class Migration_Command extends WP_CLI_Command {
+class Migration_Command extends \ActionScheduler_Abstract_WPCLI_Command {
 
 	/** @var int */
 	private $total_processed = 0;
 
 	/**
-	 * Register the command with WP-CLI
-	 */
-	public function register() {
-		if ( ! defined( 'WP_CLI' ) || ! WP_CLI ) {
-			return;
-		}
-
-		WP_CLI::add_command( 'action-scheduler migrate', [ $this, 'migrate' ], [
-			'shortdesc' => 'Migrates actions to the DB tables store',
-			'synopsis'  => [
-				[
-					'type'        => 'assoc',
-					'name'        => 'batch-size',
-					'optional'    => true,
-					'default'     => 100,
-					'description' => 'The number of actions to process in each batch',
-				],
-				[
-					'type'        => 'assoc',
-					'name'        => 'free-memory-on',
-					'optional'    => true,
-					'default'     => 50,
-					'description' => 'The number of actions to process between freeing memory. 0 disables freeing memory',
-				],
-				[
-					'type'        => 'assoc',
-					'name'        => 'pause',
-					'optional'    => true,
-					'default'     => 0,
-					'description' => 'The number of seconds to pause when freeing memory',
-				],
-				[
-					'type'        => 'flag',
-					'name'        => 'dry-run',
-					'optional'    => true,
-					'description' => 'Reports on the actions that would have been migrated, but does not change any data',
-				],
-			],
-		] );
-	}
-
-	/**
 	 * Process the data migration.
-	 *
-	 * @param array $positional_args Required for WP CLI. Not used in migration.
-	 * @param array $assoc_args Optional arguments.
 	 *
 	 * @return void
 	 */
-	public function migrate( $positional_args, $assoc_args ) {
+	public function execute() {
 		if ( \ActionScheduler_DataController::is_migration_complete() ) {
 			WP_CLI::success( sprintf( 'No migration required. Data store is %s.', get_class( \ActionScheduler_Store::instance() ) ) );
 			return;

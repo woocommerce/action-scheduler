@@ -25,12 +25,7 @@
  *
  */
 
-if ( ! function_exists( 'action_scheduler_register_3_dot_1_dot_6' ) ) {
-
-	if ( ! function_exists( 'add_action' ) ) {
-		// We are running outside of the context of WordPress.
-		return;
-	}
+if ( ! function_exists( 'action_scheduler_register_3_dot_1_dot_6' ) && function_exists( 'add_action' ) ) {
 
 	if ( ! class_exists( 'ActionScheduler_Versions' ) ) {
 		require_once( 'classes/ActionScheduler_Versions.php' );

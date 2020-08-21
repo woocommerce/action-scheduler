@@ -119,7 +119,7 @@ abstract class ActionScheduler {
 		}
 
 		if ( file_exists( "{$dir}{$class}.php" ) ) {
-			include( dirname( __FILE__ ) . "{$dir}{$class}.php" );
+			include( __DIR__ . DIRECTORY_SEPARATOR . "{$dir}{$class}.php" );
 			return;
 		}
 	}

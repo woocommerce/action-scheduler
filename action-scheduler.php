@@ -26,9 +26,10 @@
  */
 
 if ( ! function_exists( 'action_scheduler_register_3_dot_1_dot_6' ) ) {
+	$dir = __DIR__ . DIRECTORY_SEPARATOR;
 
 	if ( ! class_exists( 'ActionScheduler_Versions' ) ) {
-		require_once( dirname( __FILE__ ) . 'classes/ActionScheduler_Versions.php' );
+		require_once( $dir . 'classes/ActionScheduler_Versions.php' );
 		add_action( 'plugins_loaded', array( 'ActionScheduler_Versions', 'initialize_latest_version' ), 1, 0 );
 	}
 
@@ -40,7 +41,7 @@ if ( ! function_exists( 'action_scheduler_register_3_dot_1_dot_6' ) ) {
 	}
 
 	function action_scheduler_initialize_3_dot_1_dot_6() {
-		require_once( dirname( __FILE__ ) . 'classes/abstracts/ActionScheduler.php' );
+		require_once( $dir . 'classes/abstracts/ActionScheduler.php' );
 		ActionScheduler::init( __FILE__ );
 	}
 

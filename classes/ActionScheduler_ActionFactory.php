@@ -60,27 +60,31 @@ class ActionScheduler_ActionFactory {
 	 * @param string $hook The hook to trigger when this action runs
 	 * @param array $args Args to pass when the hook is triggered
 	 * @param string $group A group to put the action in
+	 * @param array $retry Handle retries in the event of failure.
 	 *
 	 * @return int The ID of the stored action
 	 */
-	public function async( $hook, $args = array(), $group = '' ) {
+	public function async( $hook, $args = array(), $group = '', $retry = array() ) {
 		$schedule = new ActionScheduler_NullSchedule();
-		$action = new ActionScheduler_Action( $hook, $args, $schedule, $group );
+		$action = new ActionScheduler_Action( $hook, $args, $schedule, $group, $retry );
 		return $this->store( $action );
 	}
 
 	/**
+	 * Create a one time action.
+	 *
 	 * @param string $hook The hook to trigger when this action runs
 	 * @param array $args Args to pass when the hook is triggered
 	 * @param int $when Unix timestamp when the action will run
 	 * @param string $group A group to put the action in
+	 * @param array $retry Handle retries in the event of failure
 	 *
 	 * @return int The ID of the stored action
 	 */
-	public function single( $hook, $args = array(), $when = null, $group = '' ) {
+	public function single( $hook, $args = array(), $when = null, $group = '', $retry = array() ) {
 		$date = as_get_datetime_object( $when );
 		$schedule = new ActionScheduler_SimpleSchedule( $date );
-		$action = new ActionScheduler_Action( $hook, $args, $schedule, $group );
+		$action = new ActionScheduler_Action( $hook, $args, $schedule, $group, $retry );
 		return $this->store( $action );
 	}
 
@@ -92,16 +96,17 @@ class ActionScheduler_ActionFactory {
 	 * @param int $first Unix timestamp for the first run
 	 * @param int $interval Seconds between runs
 	 * @param string $group A group to put the action in
+	 * @param array $retry Handle retries in the event of failure
 	 *
 	 * @return int The ID of the stored action
 	 */
-	public function recurring( $hook, $args = array(), $first = null, $interval = null, $group = '' ) {
-		if ( empty($interval) ) {
+	public function recurring( $hook, $args = array(), $first = null, $interval = null, $group = '', $retry = array() ) {
+		if ( empty( $interval ) ) {
 			return $this->single( $hook, $args, $first, $group );
 		}
 		$date = as_get_datetime_object( $first );
 		$schedule = new ActionScheduler_IntervalSchedule( $date, $interval );
-		$action = new ActionScheduler_Action( $hook, $args, $schedule, $group );
+		$action = new ActionScheduler_Action( $hook, $args, $schedule, $group, $retry );
 		return $this->store( $action );
 	}
 
@@ -115,17 +120,18 @@ class ActionScheduler_ActionFactory {
 	 *        expression. This can be used to delay the first instance of the action.
 	 * @param int $schedule A cron definition string
 	 * @param string $group A group to put the action in
+	 * @param array  $retry Handle retries in the event of failure.
 	 *
 	 * @return int The ID of the stored action
 	 */
-	public function cron( $hook, $args = array(), $base_timestamp = null, $schedule = null, $group = '' ) {
-		if ( empty($schedule) ) {
+	public function cron( $hook, $args = array(), $base_timestamp = null, $schedule = null, $group = '', $retry = array() ) {
+		if ( empty( $schedule ) ) {
 			return $this->single( $hook, $args, $base_timestamp, $group );
 		}
 		$date = as_get_datetime_object( $base_timestamp );
 		$cron = CronExpression::factory( $schedule );
 		$schedule = new ActionScheduler_CronSchedule( $date, $cron );
-		$action = new ActionScheduler_Action( $hook, $args, $schedule, $group );
+		$action = new ActionScheduler_Action( $hook, $args, $schedule, $group, $retry );
 		return $this->store( $action );
 	}
 
@@ -163,7 +169,7 @@ class ActionScheduler_ActionFactory {
 
 		$schedule_class = get_class( $schedule );
 		$new_schedule = new $schedule( $next, $schedule->get_recurrence(), $schedule->get_first_date() );
-		$new_action = new ActionScheduler_Action( $action->get_hook(), $action->get_args(), $new_schedule, $action->get_group() );
+		$new_action = new ActionScheduler_Action( $action->get_hook(), $action->get_args(), $new_schedule, $action->get_group(), $action->get_retry() );
 		return $this->store( $new_action );
 	}
 

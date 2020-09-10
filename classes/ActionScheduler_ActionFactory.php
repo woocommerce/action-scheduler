@@ -6,15 +6,18 @@
 class ActionScheduler_ActionFactory {
 
 	/**
+	 * Return action from store.
+	 *
 	 * @param string $status The action's status in the data store
 	 * @param string $hook The hook to trigger when this action runs
 	 * @param array $args Args to pass to callbacks when the hook is triggered
 	 * @param ActionScheduler_Schedule $schedule The action's schedule
 	 * @param string $group A group to put the action in
+	 * @param array  $retry Retry params
 	 *
 	 * @return ActionScheduler_Action An instance of the stored action
 	 */
-	public function get_stored_action( $status, $hook, array $args = array(), ActionScheduler_Schedule $schedule = null, $group = '' ) {
+	public function get_stored_action( $status, $hook, array $args = array(), ActionScheduler_Schedule $schedule = null, $group = '', $retry = array() ) {
 
 		switch ( $status ) {
 			case ActionScheduler_Store::STATUS_PENDING :
@@ -31,9 +34,9 @@ class ActionScheduler_ActionFactory {
 				break;
 		}
 
-		$action_class = apply_filters( 'action_scheduler_stored_action_class', $action_class, $status, $hook, $args, $schedule, $group );
+		$action_class = apply_filters( 'action_scheduler_stored_action_class', $action_class, $status, $hook, $args, $schedule, $group, $retry );
 
-		$action = new $action_class( $hook, $args, $schedule, $group );
+		$action = new $action_class( $hook, $args, $schedule, $group, $retry );
 
 		/**
 		 * Allow 3rd party code to change the instantiated action for a given hook, args, schedule and group.
@@ -44,7 +47,7 @@ class ActionScheduler_ActionFactory {
 		 * @param ActionScheduler_Schedule $schedule The instantiated action's schedule.
 		 * @param string $group The instantiated action's group.
 		 */
-		return apply_filters( 'action_scheduler_stored_action_instance', $action, $hook, $args, $schedule, $group );
+		return apply_filters( 'action_scheduler_stored_action_instance', $action, $hook, $args, $schedule, $group, $retry );
 	}
 
 	/**

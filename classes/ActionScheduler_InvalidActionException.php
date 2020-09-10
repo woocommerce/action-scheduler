@@ -44,4 +44,22 @@ class ActionScheduler_InvalidActionException extends \InvalidArgumentException i
 
 		return new static( $message );
 	}
+
+	/**
+	 * Create a new exception when the action's retry isn't parsed.
+	 *
+	 * @param string $action_id The action ID with bad args.
+	 * @param array  $retry     Retry params.
+	 * @return static
+	 */
+	public static function from_retry( $action_id, $retry ) {
+		$message = sprintf(
+			/* translators: 1: action ID 2: retry */
+			__( 'Action [%1$s] has an invalid retry: %2$s', 'action-scheduler' ),
+			$action_id,
+			var_export( $retry, true )
+		);
+
+		return new static( $message );
+	}
 }

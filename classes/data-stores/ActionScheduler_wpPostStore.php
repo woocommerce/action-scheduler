@@ -159,11 +159,11 @@ class ActionScheduler_wpPostStore extends ActionScheduler_Store {
 		$schedule = get_post_meta( $post->ID, self::SCHEDULE_META_KEY, true );
 		$this->validate_schedule( $schedule, $post->ID );
 
-		$group = wp_get_object_terms( $post->ID, self::GROUP_TAXONOMY, array('fields' => 'names') );
-		$group = empty( $group ) ? '' : reset($group);
+		$group = wp_get_object_terms( $post->ID, self::GROUP_TAXONOMY, array( 'fields' => 'names' ) );
+		$group = empty( $group ) ? '' : reset( $group );
 
-		$retry = get_post_meta( $post->ID, self::RETRY_META_KEY, true);
-		$retry = $this->validate_retry( json_decode( $retry, true ), $post->ID );
+		$retry = json_decode( get_post_meta( $post->ID, self::RETRY_META_KEY, true ), true );
+		$this->validate_retry( $retry, $post->ID );
 
 		return ActionScheduler::factory()->get_stored_action( $this->get_action_status_by_post_status( $post->post_status ), $hook, $args, $schedule, $group, $retry );
 	}

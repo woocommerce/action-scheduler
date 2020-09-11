@@ -29,7 +29,8 @@ class ActionScheduler_DBStore_Test extends ActionScheduler_UnitTestCase {
 	public function test_retrieve_action() {
 		$time      = as_get_datetime_object();
 		$schedule  = new ActionScheduler_SimpleSchedule( $time );
-		$action    = new ActionScheduler_Action( 'my_hook', [], $schedule, 'my_group' );
+		$retry     = array( 'count' => 1 );
+		$action    = new ActionScheduler_Action( 'my_hook', [], $schedule, 'my_group', $retry );
 		$store     = new ActionScheduler_DBStore();
 		$action_id = $store->save_action( $action );
 
@@ -38,6 +39,7 @@ class ActionScheduler_DBStore_Test extends ActionScheduler_UnitTestCase {
 		$this->assertEqualSets( $action->get_args(), $retrieved->get_args() );
 		$this->assertEquals( $action->get_schedule()->get_date()->format( 'U' ), $retrieved->get_schedule()->get_date()->format( 'U' ) );
 		$this->assertEquals( $action->get_group(), $retrieved->get_group() );
+		$this->assertEquals( $action->get_retry(), $retrieved->get_retry() );
 	}
 
 	public function test_cancel_action() {

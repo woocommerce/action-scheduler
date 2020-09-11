@@ -163,7 +163,7 @@ class ActionScheduler_wpPostStore extends ActionScheduler_Store {
 		$group = empty( $group ) ? '' : reset($group);
 
 		$retry = get_post_meta( $post->ID, self::RETRY_META_KEY, true);
-		$retry = $this->validate_retry( json_decode( $retry ), $post->ID );
+		$retry = $this->validate_retry( json_decode( $retry, true ), $post->ID );
 
 		return ActionScheduler::factory()->get_stored_action( $this->get_action_status_by_post_status( $post->post_status ), $hook, $args, $schedule, $group, $retry );
 	}

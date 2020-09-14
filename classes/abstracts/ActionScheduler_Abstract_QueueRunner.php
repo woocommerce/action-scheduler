@@ -68,6 +68,7 @@ abstract class ActionScheduler_Abstract_QueueRunner extends ActionScheduler_Abst
 		} catch ( Exception $e ) {
 			if ( $valid_action ) {
 				$this->store->mark_failure( $action_id );
+				$this->retry_action( $action );
 				do_action( 'action_scheduler_failed_execution', $action_id, $e, $context );
 			} else {
 				do_action( 'action_scheduler_failed_validation', $action_id, $e, $context );
@@ -77,6 +78,50 @@ abstract class ActionScheduler_Abstract_QueueRunner extends ActionScheduler_Abst
 		if ( isset( $action ) && is_a( $action, 'ActionScheduler_Action' ) && $action->get_schedule()->is_recurring() ) {
 			$this->schedule_next_instance( $action, $action_id );
 		}
+	}
+
+	/**
+	 * Determine if action should be retried and requeue if necessary.
+	 *
+	 * The retry logic requires that the action is not recurring, and that the $retry array exists and is not empty. A
+	 * `failures` key keeps track of Action fails. `count` limits the number of retries (i.e. $failures <= $count),
+	 * and can be overridden by filter. Default is 5.
+	 *
+	 * Future work: add key/variables for different backoff algorithms.
+	 *
+	 * @param ActionScheduler_Action $action The action to evaluate.
+	 */
+	protected function retry_action( $action ) {
+		// Don't retry recurring actions.
+		if ( isset( $action ) && is_a( $action, 'ActionScheduler_Action' ) && $action->get_schedule()->is_recurring() ) {
+			return;
+		}
+		// Return when $retry is empty
+		$retry = $action->get_retry();
+		if ( empty( $retry ) ) {
+			return;
+		}
+		// Evaluate attempts vs. failures.
+		$attempt_limit = isset( $retry['count'] ) ? $retry['count'] : 5;
+		$attempt_limit = apply_filters( 'action_scheduler_retry_count_limit', $attempt_limit, $action );
+		$failures = isset( $retry['failures'] ) ? intval( $retry['failures'] ) + 1 : 1;
+		if ( $failures > $attempt_limit ) {
+			return;
+		}
+		$retry['failures'] = $failures;
+
+		// Default backoff algorithm is exponential (2^n * 100).  The backoff value will be added to time() to
+		// schedule when the webhook should be retried (in seconds).  Grabbing the filter return first and using that
+		// unless it is not a number then defaulting to algorithm.
+		$backoff = apply_filters( 'action_scheduler_retry_backoff', null, $failures, $action );
+		$backoff = is_numeric( $backoff ) ? intval( $backoff ) : ( 2 ** $failures ) * 100;
+		return ActionScheduler::factory()->single(
+			$action->get_hook(),
+			$action->get_args(),
+			time() + $backoff,
+			$action->get_group(),
+			$retry
+		);
 	}
 
 	/**

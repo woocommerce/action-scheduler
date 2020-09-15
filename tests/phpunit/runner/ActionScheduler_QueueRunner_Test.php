@@ -327,4 +327,51 @@ class ActionScheduler_QueueRunner_Test extends ActionScheduler_UnitTestCase {
 
 		$runner2->run();
 	}
+
+	/**
+	 * For testing retry need action that will fail.
+	 *
+	 * @throws Exception Generic exception.
+	 */
+	public function throw_retry_exception() {
+		throw new Exception( 'RetryError' );
+	}
+
+	/**
+	 * Test retries.
+	 */
+	public function test_retry() {
+		$store = ActionScheduler::store();
+		$runner = ActionScheduler_Mocker::get_queue_runner( $store );
+		$runner->run(); // Clear any init/migrations.
+
+		$random = md5( rand() );
+		add_action( $random, array( $this, 'throw_retry_exception' ) );
+
+		// Change the retry limit (and verify it was called)
+		$mock = $this->getMockBuilder( 'nonexistent' )
+			->setMockClassName( 'BackoffMock' )
+			->setMethods( array( 'backoff' ) )
+			->getMock();
+		$mock->expects( $this->once() )
+			->method( 'backoff' )
+			->with( null, 1, $this->anything() )
+			->willReturn( 1 );
+		add_action( 'action_scheduler_retry_backoff', array( $mock, 'backoff' ), 10, 3 );
+		$schedule = new ActionScheduler_SimpleSchedule( as_get_datetime_object( '1 day ago' ) );
+
+		$retry = array( 'count' => 1 );
+		$action = new ActionScheduler_Action( $random, array( $random ), $schedule, '', $retry );
+		$store->save_action( $action );
+
+		$actions_run_pre_retry = $runner->run();
+		sleep( 1 );
+		$actions_run_post_retry = $runner->run();
+
+		remove_action( $random, array( $this, 'throw_retry_exception' ) );
+		remove_action( 'action_scheduler_retry_backoff', array( $mock, 'backoff' ) );
+
+		$this->assertEquals( 1, $actions_run_pre_retry );
+		$this->assertEquals( 1, $actions_run_post_retry );
+	}
 }

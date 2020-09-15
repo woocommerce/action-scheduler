@@ -114,7 +114,7 @@ abstract class ActionScheduler_Abstract_QueueRunner extends ActionScheduler_Abst
 		// schedule when the webhook should be retried (in seconds).  Grabbing the filter return first and using that
 		// unless it is not a number then defaulting to algorithm.
 		$backoff = apply_filters( 'action_scheduler_retry_backoff', null, $failures, $action );
-		$backoff = is_numeric( $backoff ) ? intval( $backoff ) : ( 2 ** $failures ) * 100;
+		$backoff = is_numeric( $backoff ) ? intval( $backoff ) : pow( 2, $failures ) * 100;
 		return ActionScheduler::factory()->single(
 			$action->get_hook(),
 			$action->get_args(),

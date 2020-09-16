@@ -68,7 +68,9 @@ abstract class ActionScheduler_Abstract_QueueRunner extends ActionScheduler_Abst
 		} catch ( Exception $e ) {
 			if ( $valid_action ) {
 				$this->store->mark_failure( $action_id );
-				$this->retry_action( $action );
+				if ( isset( $action ) ) {
+					$this->retry_action( $action );
+				}
 				do_action( 'action_scheduler_failed_execution', $action_id, $e, $context );
 			} else {
 				do_action( 'action_scheduler_failed_validation', $action_id, $e, $context );
@@ -96,7 +98,7 @@ abstract class ActionScheduler_Abstract_QueueRunner extends ActionScheduler_Abst
 		if ( isset( $action ) && is_a( $action, 'ActionScheduler_Action' ) && $action->get_schedule()->is_recurring() ) {
 			return;
 		}
-		// Return when $retry is empty
+		// Return when $retry is empty.
 		$retry = $action->get_retry();
 		if ( empty( $retry ) ) {
 			return;

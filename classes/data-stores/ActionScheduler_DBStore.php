@@ -142,6 +142,11 @@ class ActionScheduler_DBStore extends ActionScheduler_Store {
 
 		if ( ! empty( $data->extended_args ) ) {
 			$extended_args = json_decode( $data->extended_args, true );
+			// Stored data from before the extended usage
+			if ( ! is_array( $extended_args ) ) {
+				$data->args = $data->extended_args;
+				$extended_args = array();
+			}
 			if ( array_key_exists( 'args', $extended_args ) ) {
 				$data->args = $extended_args['args'];
 			}

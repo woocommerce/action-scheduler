@@ -95,7 +95,7 @@ abstract class ActionScheduler {
 
 			switch ( $type ) {
 				case 'WPCLI':
-					$dir = $classes_dir . 'WP_CLI' . $d;
+					$dir = $classes_dir . 'WPCLI' . $d;
 					break;
 				case 'DBLogger':
 				case 'DBStore':
@@ -118,8 +118,9 @@ abstract class ActionScheduler {
 			return;
 		}
 
-		if ( file_exists( "{$dir}{$class}.php" ) ) {
-			include( "{$dir}{$class}.php" );
+		$class_file = str_replace( '_', '-', $dir . $class . '.php' );
+		if ( file_exists( $class_file ) ) {
+			include( $class_file );
 			return;
 		}
 	}

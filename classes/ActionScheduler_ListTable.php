@@ -100,6 +100,7 @@ class ActionScheduler_ListTable extends ActionScheduler_Abstract_ListTable {
 			'recurrence'  => __( 'Recurrence', 'action-scheduler' ),
 			'schedule'    => __( 'Scheduled Date', 'action-scheduler' ),
 			'log_entries' => __( 'Log', 'action-scheduler' ),
+			'retry'       => __( 'Retry', 'action-scheduler' ),
 		);
 
 		$this->sort_by = array(
@@ -585,6 +586,7 @@ class ActionScheduler_ListTable extends ActionScheduler_Abstract_ListTable {
 				'claim_id'    => $this->store->get_claim_id( $action_id ),
 				'recurrence'  => $this->get_recurrence( $action ),
 				'schedule'    => $action->get_schedule(),
+				'retry'       => $action->get_retry(),
 			);
 		}
 
@@ -608,5 +610,24 @@ class ActionScheduler_ListTable extends ActionScheduler_Abstract_ListTable {
 	 */
 	protected function get_search_box_button_text() {
 		return __( 'Search hook, args and claim ID', 'action-scheduler' );
+	}
+
+	/**
+	 * Serializes the argument of an action to render it in a human friendly format.
+	 *
+	 * @param array $row The array representation of the current row of the table
+	 *
+	 * @return string
+	 */
+	public function column_retry( array $row ) {
+		if ( empty( $row['retry'] ) ) {
+			return apply_filters( 'action_scheduler_list_table_column_retry', __( 'Not enabled', 'action-scheduler' ), $row );
+		}
+		$count = isset( $row['retry']['count'] ) ? $row['retry']['count'] : 5;
+		$failures = isset( $row['retry']['failures'] ) ? $row['retry']['failures'] : 0;
+		$row_html = sprintf( "<strong>%s</strong>: %s<br>", __( 'Count', 'action-scheduler' ), $count );
+		$row_html .= sprintf( "<strong>%s</strong>: %s", __( 'Failures', 'action-scheduler' ), $failures );
+
+		return apply_filters( 'action_scheduler_list_table_column_args', $row_html, $row );
 	}
 }

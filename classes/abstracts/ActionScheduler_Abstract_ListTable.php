@@ -549,7 +549,7 @@ abstract class ActionScheduler_Abstract_ListTable extends WP_List_Table {
 	}
 
 	/**
-	 * Default column formatting, it will escape everythig for security.
+	 * Default column formatting, it will escape everything for security.
 	 */
 	public function column_default( $item, $column_name ) {
 		$column_html = esc_html( $item[ $column_name ] );

@@ -50,11 +50,11 @@ function as_schedule_single_action( $timestamp, $hook, $args = array(), $group =
  *
  * @return int The action ID.
  */
-function as_schedule_recurring_action( $timestamp, $interval_in_seconds, $hook, $args = array(), $group = '', $retry = array() ) {
+function as_schedule_recurring_action( $timestamp, $interval_in_seconds, $hook, $args = array(), $group = '' ) {
 	if ( ! ActionScheduler::is_initialized( __FUNCTION__ ) ) {
 		return 0;
 	}
-	return ActionScheduler::factory()->recurring( $hook, $args, $timestamp, $interval_in_seconds, $group, $retry );
+	return ActionScheduler::factory()->recurring( $hook, $args, $timestamp, $interval_in_seconds, $group );
 }
 
 /**

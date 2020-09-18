@@ -543,6 +543,7 @@ class ActionScheduler_DBStore extends ActionScheduler_Store {
 	public function delete_action( $action_id ) {
 		/** @var \wpdb $wpdb */
 		global $wpdb;
+		do_action( 'action_scheduler_delete_action', $action_id );
 		$deleted = $wpdb->delete( $wpdb->actionscheduler_actions, [ 'action_id' => $action_id ], [ '%d' ] );
 		if ( empty( $deleted ) ) {
 			throw new \InvalidArgumentException( sprintf( __( 'Unidentified action %s', 'action-scheduler' ), $action_id ) );

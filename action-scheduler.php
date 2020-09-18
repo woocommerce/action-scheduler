@@ -25,8 +25,7 @@
  *
  */
 
-if ( ! function_exists( 'action_scheduler_register_3_dot_1_dot_6' ) ) {
-	$dir = __DIR__ . '/';
+if ( ! function_exists( 'action_scheduler_register_3_dot_1_dot_6' ) && function_exists( 'add_action' ) ) {
 
 	if ( ! class_exists( 'ActionScheduler_Versions' ) ) {
 		require_once( $dir . 'classes/ActionScheduler_Versions.php' );

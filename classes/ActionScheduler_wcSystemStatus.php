@@ -94,12 +94,17 @@ class ActionScheduler_wcSystemStatus {
 	protected function get_template( $status_labels, $action_counts, $oldest_and_newest ) {
 		$as_version = ActionScheduler_Versions::instance()->latest_version();
 		$as_datastore = get_class( ActionScheduler_Store::instance() );
+
+		$tip = '';
+		if ( function_exists( 'wc_help_tip' ) ) {
+			$tip = wc_help_tip( esc_html__( 'This section shows scheduled action counts.', 'action-scheduler' ) );
+		}
 		?>
 
 		<table class="wc_status_table widefat" cellspacing="0">
 			<thead>
 				<tr>
-					<th colspan="5" data-export-label="Action Scheduler"><h2><?php esc_html_e( 'Action Scheduler', 'action-scheduler' ); ?><?php echo wc_help_tip( esc_html__( 'This section shows details of Action Scheduler.', 'action-scheduler' ) ); ?></h2></th>
+					<th colspan="5" data-export-label="Action Scheduler"><h2><?php esc_html_e( 'Action Scheduler', 'action-scheduler' ); ?><?php echo $tip; ?></h2></th>
 				</tr>
 				<tr>
 					<td colspan="2" data-export-label="Version"><?php esc_html_e( 'Version:', 'action-scheduler' ); ?></td>

@@ -161,6 +161,19 @@ class ActionScheduler_DBStore extends ActionScheduler_Store {
 			unset( $data->extended_args );
 		}
 
+		// Convert NULL dates to zero dates.
+		$date_fields = [
+			'scheduled_date_gmt',
+			'scheduled_date_local',
+			'last_attempt_gmt',
+			'last_attempt_gmt'
+		];
+		foreach( $date_fields as $date_field ) {
+			if ( is_null( $data->$date_field ) ) {
+				$data->$date_field = ActionScheduler_StoreSchema::DEFAULT_DATE;
+			}
+		}
+
 		try {
 			$action = $this->make_action_from_db_record( $data );
 		} catch ( ActionScheduler_InvalidActionException $exception ) {
@@ -579,16 +592,17 @@ class ActionScheduler_DBStore extends ActionScheduler_Store {
 		}
 
 		// phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-		$table_name = $wpdb->prefix . 'actionscheduler_actions';
-		$table_list = $wpdb->get_col( "SHOW TABLES LIKE '{$table_name}'" );
+		$table_name   = $wpdb->prefix . 'actionscheduler_actions';
+		$table_list   = $wpdb->get_col( "SHOW TABLES LIKE '${table_name}'" );
+		$default_date = ActionScheduler_StoreSchema::DEFAULT_DATE;
 		if ( ! empty( $table_list ) ) {
-			$query = "ALTER TABLE
-				MODIFY COLUMN scheduled_date_gmt datetime NULL default '0000-00-00 00:00:00',
-				MODIFY COLUMN scheduled_date_local datetime NULL default '0000-00-00 00:00:00',
-				MODIFY COLUMN last_attempt_gmt datetime NULL default '0000-00-00 00:00:00',
-				MODIFY COLUMN last_attempt_local datetime NULL default '0000-00-00 00:00:00'
+			$query = "ALTER TABLE ${table_name}
+				MODIFY COLUMN scheduled_date_gmt datetime NULL default '${default_date}',
+				MODIFY COLUMN scheduled_date_local datetime NULL default '${default_date}',
+				MODIFY COLUMN last_attempt_gmt datetime NULL default '${default_date}',
+				MODIFY COLUMN last_attempt_local datetime NULL default '${default_date}'
 			";
-			$wpdb->query($query);
+			$wpdb->query( $query );
 		}
 		// phpcs:enable WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 	}

@@ -87,13 +87,15 @@ class ActionScheduler_QueueRunner extends ActionScheduler_Abstract_QueueRunner {
 	 * This method is attached to 'shutdown', so is called frequently. To avoid slowing down
 	 * the site, it mitigates the work performed in each request by:
 	 * 1. checking if it's in the admin context and then
-	 * 2. haven't run on the 'shutdown' hook within the lock time (60 seconds by default)
-	 * 3. haven't exceeded the number of allowed batches.
+	 * 2. if not in admin context check whether non-admin async runner requests should be allowed via a filter
+	 * 3. haven't run on the 'shutdown' hook within the lock time (60 seconds by default)
+	 * 4. haven't exceeded the number of allowed batches.
 	 *
 	 * The order of these checks is important, because they run from a check on a value:
 	 * 1. in memory - is_admin() maps to $GLOBALS or the WP_ADMIN constant
-	 * 2. in memory - transients use autoloaded options by default
-	 * 3. from a database query - has_maximum_concurrent_batches() run the query
+	 * 2. filter - 'action_scheduler_allow_non_admin_async_runner_request' value
+	 * 3. in memory - transients use autoloaded options by default
+	 * 4. from a database query - has_maximum_concurrent_batches() run the query
 	 *    $this->store->get_claim_count() to find the current number of claims in the DB.
 	 *
 	 * If all of these conditions are met, then we request an async runner check whether it

@@ -100,11 +100,35 @@ class ActionScheduler_QueueRunner extends ActionScheduler_Abstract_QueueRunner {
 	 * should dispatch a request to process pending actions.
 	 */
 	public function maybe_dispatch_async_request() {
-		if ( is_admin() && ! ActionScheduler::lock()->is_locked( 'async-request-runner' ) ) {
+		if (
+			( is_admin() || $this->allow_non_admin_async_request() )
+			&& ! ActionScheduler::lock()->is_locked( 'async-request-runner' )
+		) {
 			// Only start an async queue at most once every 60 seconds
 			ActionScheduler::lock()->set( 'async-request-runner' );
 			$this->async_request->maybe_dispatch();
 		}
+	}
+
+	/**
+	 * Check if an async runner request should be allowed outside of the admin context.
+	 *
+	 * @since 3.2.0
+	 *
+	 * @return bool
+	 */
+	protected function allow_non_admin_async_request() {
+		/**
+		 * This filter allows custom code to allow a non-admin async runner request.
+		 *
+		 * Non-admin async runner requests are disabled by default.
+		 *
+		 * Performance note: This filter is evaluated at 'shutdown' on every non-admin request.
+		 * Avoid attaching database queries or intensive work to this filter.
+		 *
+		 * @since 3.2.0
+		 */
+		return (bool) apply_filters( 'action_scheduler_allow_non_admin_async_runner_request', false );
 	}
 
 	/**

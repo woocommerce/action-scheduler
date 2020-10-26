@@ -67,7 +67,7 @@ abstract class ActionScheduler {
 	}
 
 	public static function autoload( $class ) {
-		$d           = DIRECTORY_SEPARATOR;
+		$d           = '/';
 		$classes_dir = self::plugin_path( 'classes' . $d );
 		$separator   = strrpos( $class, '\\' );
 		if ( false !== $separator ) {

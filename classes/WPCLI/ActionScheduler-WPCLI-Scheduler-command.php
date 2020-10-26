@@ -87,6 +87,27 @@ class ActionScheduler_WPCLI_Scheduler_command extends WP_CLI_Command {
 	}
 
 	/**
+	 * Print Action Scheduler version
+	 *
+	 * ## OPTIONS
+	 *
+	 * [--which]
+	 * : The path of the active version.
+	 *
+	 * @param array $args Positional arguments.
+	 * @param array $assoc_args Keyed arguments.
+	 *
+	 * @subcommand version
+	 */
+	public function version( $args, $assoc_args ) {
+		$message = ActionScheduler_Versions::instance()->latest_version();
+		if ( \WP_CLI\Utils\get_flag_value( $assoc_args, 'which', false ) ) {
+			$message .= ':' . ActionScheduler::plugin_path( '' );
+		}
+		WP_CLI::line( $message );
+	}
+
+	/**
 	 * Print WP CLI message about how many actions are about to be processed.
 	 *
 	 * @author Jeremy Pry

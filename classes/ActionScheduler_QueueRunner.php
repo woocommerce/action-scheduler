@@ -121,7 +121,7 @@ class ActionScheduler_QueueRunner extends ActionScheduler_Abstract_QueueRunner {
 	 */
 	protected function allow_non_admin_async_request() {
 		/**
-		 * This filter allows custom code to allow a non-admin async runner request.
+		 * Filter whether an async runner request is allowed outside of the admin context.
 		 *
 		 * Non-admin async runner requests are disabled by default.
 		 *

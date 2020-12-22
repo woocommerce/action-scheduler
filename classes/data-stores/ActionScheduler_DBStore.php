@@ -311,8 +311,21 @@ class ActionScheduler_DBStore extends ActionScheduler_Store {
 		}
 
 		if ( $query[ 'status' ] ) {
-			$sql          .= " AND a.status=%s";
-			$sql_params[] = $query[ 'status' ];
+			if( is_array( $query[ 'status' ] ) ) {
+				$sql  .= " AND a.status IN (";
+				$last = end( $query[ 'status' ] );
+				foreach( $query[ 'status' ] as $status ) {
+					$sql .= "%s";
+					if( $status != $last ) {
+						$sql .= ",";
+					}
+					$sql_params[] = $status;
+				}
+				$sql .= ")";
+			} else {
+				$sql          .= " AND a.status=%s";
+				$sql_params[] = $query[ 'status' ];
+			}
 		}
 
 		if ( $query[ 'date' ] instanceof \DateTime ) {

@@ -20,11 +20,12 @@ class ActionScheduler_wpPostStore extends ActionScheduler_Store {
 			$post_id = $this->save_post_array( $post_array );
 			$this->save_post_schedule( $post_id, $action->get_schedule() );
 			$this->save_action_group( $post_id, $action->get_group() );
-			$retry = empty( $action->get_retry() )
+			$retry = $action->get_retry();
+			$retry = empty( $retry )
 				? array()
 				: array(
-					'limit' => $action->get_retry()->get_limit(),
-					'fails' => $action->get_retry()->get_fails(),
+					'limit' => $retry->get_limit(),
+					'fails' => $retry->get_fails(),
 				);
 			$this->save_action_retry( $post_id, $retry );
 			do_action( 'action_scheduler_stored_action', $post_id );
@@ -173,7 +174,7 @@ class ActionScheduler_wpPostStore extends ActionScheduler_Store {
 			? null
 			: new ActionScheduler_Retry(
 				isset( $retry->limit ) ? $retry->limit : 0,
-				isset( $retry->fails ) ? $retry->fails : 0,
+				isset( $retry->fails ) ? $retry->fails : 0
 			);
 
 		return ActionScheduler::factory()->get_stored_action( $this->get_action_status_by_post_status( $post->post_status ), $hook, $args, $schedule, $group, $retry );

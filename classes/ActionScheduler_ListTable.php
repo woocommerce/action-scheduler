@@ -623,9 +623,9 @@ class ActionScheduler_ListTable extends ActionScheduler_Abstract_ListTable {
 		if ( empty( $row['retry'] ) ) {
 			return apply_filters( 'action_scheduler_list_table_column_retry', __( 'Not enabled', 'action-scheduler' ), $row );
 		}
-		$count = isset( $row['retry']['count'] ) ? $row['retry']['count'] : 5;
-		$failures = isset( $row['retry']['failures'] ) ? $row['retry']['failures'] : 0;
-		$row_html = sprintf( "<strong>%s</strong>: %s<br>", __( 'Count', 'action-scheduler' ), $count );
+		$count = $row['retry']->get_limit();
+		$failures = $row['retry']->get_fails();
+		$row_html = sprintf( "<strong>%s</strong>: %s<br>", __( 'Retry count', 'action-scheduler' ), $count );
 		$row_html .= sprintf( "<strong>%s</strong>: %s", __( 'Failures', 'action-scheduler' ), $failures );
 
 		return apply_filters( 'action_scheduler_list_table_column_args', $row_html, $row );

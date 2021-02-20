@@ -29,7 +29,7 @@ class ActionScheduler_DBStore extends ActionScheduler_Store {
 	 * Save an action.
 	 *
 	 * @param ActionScheduler_Action $action Action object.
-	 * @param \DateTime              $date Optional schedule date. Default null.
+	 * @param DateTime               $date Optional schedule date. Default null.
 	 *
 	 * @return int Action ID.
 	 */
@@ -40,7 +40,24 @@ class ActionScheduler_DBStore extends ActionScheduler_Store {
 
 			/** @var \wpdb $wpdb */
 			global $wpdb;
-			$data = $this->convert_action_to_db_format( $action, $date );
+			$retry = $action->get_retry();
+			$data = [
+				'hook'                 => $action->get_hook(),
+				'status'               => ( $action->is_finished() ? self::STATUS_COMPLETE : self::STATUS_PENDING ),
+				'scheduled_date_gmt'   => $this->get_scheduled_date_string( $action, $date ),
+				'scheduled_date_local' => $this->get_scheduled_date_string_local( $action, $date ),
+				'schedule'             => serialize( $action->get_schedule() ),
+				'group_id'             => $this->get_group_id( $action->get_group() ),
+				'retry_limit'          => isset( $retry ) ? $retry->get_limit() : null,
+				'retry_fails'          => isset( $retry ) ? $retry->get_fails() : null,
+			];
+			$args = wp_json_encode( $action->get_args() );
+			if ( strlen( $args ) <= static::$max_index_length ) {
+				$data['args'] = $args;
+			} else {
+				$data['args']          = $this->hash_args( $args );
+				$data['extended_args'] = $args;
+			}
 
 			$table_name = ! empty( $wpdb->actionscheduler_actions ) ? $wpdb->actionscheduler_actions : $wpdb->prefix . 'actionscheduler_actions';
 			$wpdb->insert( $table_name, $data );
@@ -141,18 +158,7 @@ class ActionScheduler_DBStore extends ActionScheduler_Store {
 		}
 
 		if ( ! empty( $data->extended_args ) ) {
-			$extended_args = json_decode( $data->extended_args, true );
-			// Stored data from before the extended usage
-			if ( ! is_array( $extended_args ) ) {
-				$data->args = $data->extended_args;
-				$extended_args = array();
-			}
-			if ( array_key_exists( 'args', $extended_args ) ) {
-				$data->args = $extended_args['args'];
-			}
-			if ( array_key_exists( 'retry', $extended_args ) ) {
-				$data->retry = $extended_args['retry'];
-			}
+			$data->args = $data->extended_args;
 			unset( $data->extended_args );
 		}
 
@@ -184,14 +190,14 @@ class ActionScheduler_DBStore extends ActionScheduler_Store {
 	 */
 	protected function make_action_from_db_record( $data ) {
 
-		$hook     = $data->hook;
 		$args     = json_decode( $data->args, true );
 		$schedule = unserialize( $data->schedule );
-		$retry    = isset( $data->retry ) ? $data->retry : array();
+		$retry    = isset( $data->retry_limit ) && isset( $data->retry_fails )
+			? new ActionScheduler_Retry( $data->retry_limit, $data->retry_fails )
+			: null;
 
 		$this->validate_args( $args, $data->action_id );
 		$this->validate_schedule( $schedule, $data->action_id );
-		$this->validate_retry( $retry, $data->action_id );
 
 		if ( empty( $schedule ) ) {
 			$schedule = new ActionScheduler_NullSchedule();
@@ -839,40 +845,5 @@ class ActionScheduler_DBStore extends ActionScheduler_Store {
 		} else {
 			return $status;
 		}
-	}
-
-	/**
-	 * Convert an action to an array used by $wpdb.
-	 *
-	 * @param ActionScheduler_Action $action The Action.
-	 * @param DateTime|null          $date   The date.
-	 *
-	 * @return array
-	 */
-	private function convert_action_to_db_format( ActionScheduler_Action $action, \DateTime $date = null ) {
-		$data = array(
-			'hook'                 => $action->get_hook(),
-			'status'               => ( $action->is_finished() ? self::STATUS_COMPLETE : self::STATUS_PENDING ),
-			'scheduled_date_gmt'   => $this->get_scheduled_date_string( $action, $date ),
-			'scheduled_date_local' => $this->get_scheduled_date_string_local( $action, $date ),
-			'schedule'             => serialize( $action->get_schedule() ),
-			'group_id'             => $this->get_group_id( $action->get_group() ),
-		);
-		$args = wp_json_encode( $action->get_args() );
-		if ( strlen( $args ) <= static::$max_index_length ) {
-			$data['args'] = $args;
-		} else {
-			$data['args']          = $this->hash_args( $args );
-			$data['extended_args'] = wp_json_encode(
-				array(
-					'args' => $args,
-					'retry' => $action->get_retry(),
-				)
-			);
-		}
-		if ( empty( $data['extended_args'] ) ) {
-			$data['extended_args'] = wp_json_encode( array( 'retry' => $action->get_retry() ) );
-		}
-		return $data;
 	}
 }

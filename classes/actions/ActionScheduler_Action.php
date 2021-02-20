@@ -9,8 +9,10 @@ class ActionScheduler_Action {
 	/** @var ActionScheduler_Schedule */
 	protected $schedule = NULL;
 	protected $group = '';
+	/** @var ActionScheduler_Retry */
+	protected $retry = NULL;
 
-	public function __construct( $hook, array $args = array(), ActionScheduler_Schedule $schedule = NULL, $group = '', $retry = array() ) {
+	public function __construct( $hook, array $args = array(), ActionScheduler_Schedule $schedule = NULL, $group = '', $retry = NULL ) {
 		$schedule = empty( $schedule ) ? new ActionScheduler_NullSchedule() : $schedule;
 		$this->set_hook($hook);
 		$this->set_schedule($schedule);
@@ -75,16 +77,14 @@ class ActionScheduler_Action {
 	}
 
 	/**
-	 * @param array $retry
+	 * @param ActionScheduler_Retry $retry
 	 */
 	protected function set_retry( $retry ) {
-		if ( is_array( $retry ) ) {
-			$this->retry = $retry;
-		}
+		$this->retry = $retry;
 	}
 
 	/**
-	 * @return array
+	 * @return ActionScheduler_Retry
 	 */
 	public function get_retry() {
 		return $this->retry;

@@ -48,6 +48,8 @@ class ActionScheduler_StoreSchema extends ActionScheduler_Abstract_Schema {
 				        last_attempt_local datetime NOT NULL default '0000-00-00 00:00:00',
 				        claim_id bigint(20) unsigned NOT NULL default '0',
 				        extended_args varchar(8000) DEFAULT NULL,
+				        retry_limit int(11) unsigned DEFAULT NULL,
+				        retry_fails int(11) unsigned DEFAULT NULL,
 				        PRIMARY KEY  (action_id),
 				        KEY hook (hook($max_index_length)),
 				        KEY status (status),

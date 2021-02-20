@@ -95,35 +95,28 @@ abstract class ActionScheduler_Abstract_QueueRunner extends ActionScheduler_Abst
 	 */
 	protected function retry_action( $action ) {
 		// Don't retry recurring actions.
-		if ( isset( $action ) && is_a( $action, 'ActionScheduler_Action' ) && $action->get_schedule()->is_recurring() ) {
+		if ( ! isset( $action ) || ! is_a( $action, 'ActionScheduler_Action' ) || $action->get_schedule()->is_recurring() ) {
 			return;
 		}
 		// Return when $retry is empty.
 		$retry = $action->get_retry();
-		if ( empty( $retry ) ) {
+		if ( empty( $retry ) || ! $retry->is_valid_after_fail() ) {
 			return;
 		}
-		// Evaluate attempts vs. failures.
-		$attempt_limit = isset( $retry['count'] ) ? $retry['count'] : 5;
-		$attempt_limit = apply_filters( 'action_scheduler_retry_count_limit', $attempt_limit, $action );
-		$failures = isset( $retry['failures'] ) ? intval( $retry['failures'] ) + 1 : 1;
-		if ( $failures > $attempt_limit ) {
-			return;
-		}
-		$retry['failures'] = $failures;
 
 		// Default backoff algorithm is exponential (2^n * 100).  The backoff value will be added to time() to
-		// schedule when the webhook should be retried (in seconds).  Grabbing the filter return first and using that
-		// unless it is not a number then defaulting to algorithm.
-		$backoff = apply_filters( 'action_scheduler_retry_backoff', null, $failures, $action );
-		$backoff = is_numeric( $backoff ) ? intval( $backoff ) : pow( 2, $failures ) * 100;
-		return ActionScheduler::factory()->single(
-			$action->get_hook(),
-			$action->get_args(),
-			time() + $backoff,
-			$action->get_group(),
-			$retry
-		);
+		// schedule when the webhook should be retried (in seconds).  If an invalid value (not numeric) is returned
+		// DON'T schedule the retry.
+		$backoff = pow( 2, $retry->get_fails() ) * 100;
+		$backoff = apply_filters( 'action_scheduler_retry_backoff', $backoff, $action );
+		if ( empty( $backoff ) || ! is_numeric( $backoff ) ) {
+			return;
+		}
+
+		$date = as_get_datetime_object( time() + abs( (int) $backoff ) );
+		$schedule = new ActionScheduler_SimpleSchedule( $date );
+		$new_action = new ActionScheduler_Action( $action->get_hook(), $action->get_args(), $schedule, $action->get_group(), $retry );
+		return $this->store->save_action( $new_action );
 	}
 
 	/**

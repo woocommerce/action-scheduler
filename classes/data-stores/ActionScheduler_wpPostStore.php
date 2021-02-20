@@ -20,7 +20,13 @@ class ActionScheduler_wpPostStore extends ActionScheduler_Store {
 			$post_id = $this->save_post_array( $post_array );
 			$this->save_post_schedule( $post_id, $action->get_schedule() );
 			$this->save_action_group( $post_id, $action->get_group() );
-			$this->save_action_retry( $post_id, $action->get_retry() );
+			$retry = empty( $action->get_retry() )
+				? array()
+				: array(
+					'limit' => $action->get_retry()->get_limit(),
+					'fails' => $action->get_retry()->get_fails(),
+				);
+			$this->save_action_retry( $post_id, $retry );
 			do_action( 'action_scheduler_stored_action', $post_id );
 			return $post_id;
 		} catch ( Exception $e ) {
@@ -162,8 +168,13 @@ class ActionScheduler_wpPostStore extends ActionScheduler_Store {
 		$group = wp_get_object_terms( $post->ID, self::GROUP_TAXONOMY, array( 'fields' => 'names' ) );
 		$group = empty( $group ) ? '' : reset( $group );
 
-		$retry = json_decode( get_post_meta( $post->ID, self::RETRY_META_KEY, true ), true );
-		$this->validate_retry( $retry, $post->ID );
+		$retry = json_decode( get_post_meta( $post->ID, self::RETRY_META_KEY, true ), false );
+		$retry = empty( $retry )
+			? null
+			: new ActionScheduler_Retry(
+				isset( $retry->limit ) ? $retry->limit : 0,
+				isset( $retry->fails ) ? $retry->fails : 0,
+			);
 
 		return ActionScheduler::factory()->get_stored_action( $this->get_action_status_by_post_status( $post->post_status ), $hook, $args, $schedule, $group, $retry );
 	}

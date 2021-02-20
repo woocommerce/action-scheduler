@@ -13,11 +13,11 @@ class ActionScheduler_ActionFactory {
 	 * @param array $args Args to pass to callbacks when the hook is triggered
 	 * @param ActionScheduler_Schedule $schedule The action's schedule
 	 * @param string $group A group to put the action in
-	 * @param array  $retry Retry params
+	 * @param ActionScheduler_Retry $retry Retry params
 	 *
 	 * @return ActionScheduler_Action An instance of the stored action
 	 */
-	public function get_stored_action( $status, $hook, array $args = array(), ActionScheduler_Schedule $schedule = null, $group = '', $retry = array() ) {
+	public function get_stored_action( $status, $hook, array $args = array(), ActionScheduler_Schedule $schedule = null, $group = '', $retry = null ) {
 
 		switch ( $status ) {
 			case ActionScheduler_Store::STATUS_PENDING :
@@ -46,6 +46,7 @@ class ActionScheduler_ActionFactory {
 		 * @param array $args The instantiated action's args.
 		 * @param ActionScheduler_Schedule $schedule The instantiated action's schedule.
 		 * @param string $group The instantiated action's group.
+		 * @param ActionScheduler_Retry $retry The retry parameters.
 		 */
 		return apply_filters( 'action_scheduler_stored_action_instance', $action, $hook, $args, $schedule, $group, $retry );
 	}
@@ -63,12 +64,13 @@ class ActionScheduler_ActionFactory {
 	 * @param string $hook The hook to trigger when this action runs
 	 * @param array $args Args to pass when the hook is triggered
 	 * @param string $group A group to put the action in
-	 * @param array $retry Handle retries in the event of failure.
+	 * @param int $retry How many retries to attempt in the event of failure.
 	 *
 	 * @return int The ID of the stored action
 	 */
-	public function async( $hook, $args = array(), $group = '', $retry = array() ) {
+	public function async( $hook, $args = array(), $group = '', $retry = null ) {
 		$schedule = new ActionScheduler_NullSchedule();
+		$retry = empty( $retry ) ? null : new ActionScheduler_Retry( $retry );
 		$action = new ActionScheduler_Action( $hook, $args, $schedule, $group, $retry );
 		return $this->store( $action );
 	}
@@ -80,13 +82,14 @@ class ActionScheduler_ActionFactory {
 	 * @param array $args Args to pass when the hook is triggered
 	 * @param int $when Unix timestamp when the action will run
 	 * @param string $group A group to put the action in
-	 * @param array $retry Handle retries in the event of failure
+	 * @param int $retry How many retries to attempt in the event of failure
 	 *
 	 * @return int The ID of the stored action
 	 */
-	public function single( $hook, $args = array(), $when = null, $group = '', $retry = array() ) {
+	public function single( $hook, $args = array(), $when = null, $group = '', $retry = null ) {
 		$date = as_get_datetime_object( $when );
 		$schedule = new ActionScheduler_SimpleSchedule( $date );
+		$retry = empty( $retry ) ? null : new ActionScheduler_Retry( $retry );
 		$action = new ActionScheduler_Action( $hook, $args, $schedule, $group, $retry );
 		return $this->store( $action );
 	}
@@ -99,17 +102,16 @@ class ActionScheduler_ActionFactory {
 	 * @param int $first Unix timestamp for the first run
 	 * @param int $interval Seconds between runs
 	 * @param string $group A group to put the action in
-	 * @param array $retry Handle retries in the event of failure
 	 *
 	 * @return int The ID of the stored action
 	 */
-	public function recurring( $hook, $args = array(), $first = null, $interval = null, $group = '', $retry = array() ) {
+	public function recurring( $hook, $args = array(), $first = null, $interval = null, $group = '' ) {
 		if ( empty( $interval ) ) {
 			return $this->single( $hook, $args, $first, $group );
 		}
 		$date = as_get_datetime_object( $first );
 		$schedule = new ActionScheduler_IntervalSchedule( $date, $interval );
-		$action = new ActionScheduler_Action( $hook, $args, $schedule, $group, $retry );
+		$action = new ActionScheduler_Action( $hook, $args, $schedule, $group );
 		return $this->store( $action );
 	}
 
@@ -123,18 +125,17 @@ class ActionScheduler_ActionFactory {
 	 *        expression. This can be used to delay the first instance of the action.
 	 * @param int $schedule A cron definition string
 	 * @param string $group A group to put the action in
-	 * @param array  $retry Handle retries in the event of failure.
 	 *
 	 * @return int The ID of the stored action
 	 */
-	public function cron( $hook, $args = array(), $base_timestamp = null, $schedule = null, $group = '', $retry = array() ) {
+	public function cron( $hook, $args = array(), $base_timestamp = null, $schedule = null, $group = '' ) {
 		if ( empty( $schedule ) ) {
 			return $this->single( $hook, $args, $base_timestamp, $group );
 		}
 		$date = as_get_datetime_object( $base_timestamp );
 		$cron = CronExpression::factory( $schedule );
 		$schedule = new ActionScheduler_CronSchedule( $date, $cron );
-		$action = new ActionScheduler_Action( $hook, $args, $schedule, $group, $retry );
+		$action = new ActionScheduler_Action( $hook, $args, $schedule, $group );
 		return $this->store( $action );
 	}
 
@@ -172,7 +173,7 @@ class ActionScheduler_ActionFactory {
 
 		$schedule_class = get_class( $schedule );
 		$new_schedule = new $schedule( $next, $schedule->get_recurrence(), $schedule->get_first_date() );
-		$new_action = new ActionScheduler_Action( $action->get_hook(), $action->get_args(), $new_schedule, $action->get_group(), $action->get_retry() );
+		$new_action = new ActionScheduler_Action( $action->get_hook(), $action->get_args(), $new_schedule, $action->get_group() );
 		return $this->store( $new_action );
 	}
 

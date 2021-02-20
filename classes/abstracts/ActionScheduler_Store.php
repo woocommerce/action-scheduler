@@ -214,20 +214,6 @@ abstract class ActionScheduler_Store extends ActionScheduler_Store_Deprecated {
 	}
 
 	/**
-	 * Validate a ActionScheduler_Action retry parameter.
-	 *
-	 * @param array $retry Retry parameters.
-	 * @param int   $action_id The action ID.
-	 *
-	 * @throws ActionScheduler_InvalidActionException When the schedule is invalid.
-	 */
-	protected function validate_retry( $retry, $action_id ) {
-		if ( ! is_array( $retry ) ) {
-			throw ActionScheduler_InvalidActionException::from_retry( $action_id, $retry );
-		}
-	}
-
-	/**
 	 * InnoDB indexes have a maximum size of 767 bytes by default, which is only 191 characters with utf8mb4.
 	 *
 	 * Previously, AS wasn't concerned about args length, as we used the (unindex) post_content column. However,

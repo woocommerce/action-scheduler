@@ -10,10 +10,10 @@
  * @param string $hook The hook to trigger.
  * @param array  $args Arguments to pass when the hook triggers.
  * @param string $group The group to assign this job to.
- * @param array  $retry Handle retries in the event of failure.
+ * @param int    $retry How many retries to attempt in the event of failure.
  * @return int The action ID.
  */
-function as_enqueue_async_action( $hook, $args = array(), $group = '', $retry = array() ) {
+function as_enqueue_async_action( $hook, $args = array(), $group = '', $retry = null ) {
 	if ( ! ActionScheduler::is_initialized( __FUNCTION__ ) ) {
 		return 0;
 	}
@@ -27,11 +27,11 @@ function as_enqueue_async_action( $hook, $args = array(), $group = '', $retry = 
  * @param string $hook The hook to trigger.
  * @param array $args Arguments to pass when the hook triggers.
  * @param string $group The group to assign this job to.
- * @param array  $retry Handle retries in the event of failure.
+ * @param int $retry How many retries to attempt in the event of failure.
  *
  * @return int The action ID.
  */
-function as_schedule_single_action( $timestamp, $hook, $args = array(), $group = '', $retry = array() ) {
+function as_schedule_single_action( $timestamp, $hook, $args = array(), $group = '', $retry = null ) {
 	if ( ! ActionScheduler::is_initialized( __FUNCTION__ ) ) {
 		return 0;
 	}
@@ -46,7 +46,6 @@ function as_schedule_single_action( $timestamp, $hook, $args = array(), $group =
  * @param string $hook The hook to trigger.
  * @param array $args Arguments to pass when the hook triggers.
  * @param string $group The group to assign this job to.
- * @param array  $retry Handle retries in the event of failure.
  *
  * @return int The action ID.
  */
@@ -77,15 +76,14 @@ function as_schedule_recurring_action( $timestamp, $interval_in_seconds, $hook, 
  * @param string $hook The hook to trigger.
  * @param array $args Arguments to pass when the hook triggers.
  * @param string $group The group to assign this job to.
- * @param array  $retry Handle retries in the event of failure.
  *
  * @return int The action ID.
  */
-function as_schedule_cron_action( $timestamp, $schedule, $hook, $args = array(), $group = '', $retry = array() ) {
+function as_schedule_cron_action( $timestamp, $schedule, $hook, $args = array(), $group = '' ) {
 	if ( ! ActionScheduler::is_initialized( __FUNCTION__ ) ) {
 		return 0;
 	}
-	return ActionScheduler::factory()->cron( $hook, $args, $timestamp, $schedule, $group, $retry );
+	return ActionScheduler::factory()->cron( $hook, $args, $timestamp, $schedule, $group );
 }
 
 /**

@@ -355,12 +355,11 @@ class ActionScheduler_QueueRunner_Test extends ActionScheduler_UnitTestCase {
 			->getMock();
 		$mock->expects( $this->once() )
 			->method( 'backoff' )
-			->with( null, 1, $this->anything() )
+			->with(  200, $this->anything() )
 			->willReturn( 1 );
-		add_action( 'action_scheduler_retry_backoff', array( $mock, 'backoff' ), 10, 3 );
+		add_action( 'action_scheduler_retry_backoff', array( $mock, 'backoff' ), 10, 2 );
 		$schedule = new ActionScheduler_SimpleSchedule( as_get_datetime_object( '1 day ago' ) );
-
-		$retry = array( 'count' => 1 );
+		$retry = new ActionScheduler_Retry( 1 );
 		$action = new ActionScheduler_Action( $random, array( $random ), $schedule, '', $retry );
 		$store->save_action( $action );
 

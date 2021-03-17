@@ -6,6 +6,37 @@
 class ActionScheduler_WPCLI_Scheduler_command extends WP_CLI_Command {
 
 	/**
+	 * Force tables schema creation for Action Scheduler
+	 *
+	 * ## OPTIONS
+	 *
+	 * @param array $args Positional arguments.
+	 * @param array $assoc_args Keyed arguments.
+	 * @throws \WP_CLI\ExitException When an error occurs.
+	 *
+	 * @subcommand fix-schema
+	 */
+	public function fix_schema( $args, $assoc_args ) {
+		$classes                 = get_declared_classes();
+		$action_scheduler_schema = array();
+
+		foreach ( $classes as $classname ) {
+			if ( is_subclass_of( $classname, 'ActionScheduler_Abstract_Schema' ) ) {
+				$obj = new $classname();
+				$obj->register_tables( true );
+
+				WP_CLI::success(
+					sprintf(
+						/* translators: %d refers to the total number of taskes completed */
+						__( 'Registered schema for %s', 'action-sheduler' ),
+						$classname
+					)
+				);
+			}
+		}
+	}
+
+	/**
 	 * Run the Action Scheduler
 	 *
 	 * ## OPTIONS

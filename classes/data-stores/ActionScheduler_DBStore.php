@@ -683,6 +683,14 @@ class ActionScheduler_DBStore extends ActionScheduler_Store {
 		$order    = "ORDER BY attempts ASC, scheduled_date_gmt ASC, action_id ASC LIMIT %d";
 		$params[] = $limit;
 
+		// Optimization for faster claiming of actions---use better upper bound for scheduled_date_gmt based on LIMIT.
+		$upper_bound_scheduled_date = $this->get_earliest_scheduled_date( $where, $params );
+		if ( '' !== $upper_bound_scheduled_date ) {
+			// This might seem superfluous, but MySQL optimizer will fix it.
+			$where .= ' AND scheduled_date_gmt <= %s';
+			array_splice( $params, count( $params ) - 1, 0, $upper_bound_scheduled_date );
+		}
+
 		$sql = $wpdb->prepare( "{$update} {$where} {$order}", $params );
 
 		$rows_affected = $wpdb->query( $sql );
@@ -691,6 +699,46 @@ class ActionScheduler_DBStore extends ActionScheduler_Store {
 		}
 
 		return (int) $rows_affected;
+	}
+
+	/**
+	 * Find upper bound for scheduled date when claiming actions.
+	 *
+	 * @param string    $where WHERE clause from the claim_actions function.
+	 * @param array     $params Parameters for SQL query from claim_actions function.
+	 *
+	 * @return string Upper bound for scheduled_date, or empty string if not successful.
+	 * @see claim_actions
+	 */
+	protected function get_earliest_scheduled_date( $where, $params ) {
+		global $wpdb;
+		$query  = 'SELECT MAX(scheduled_date_gmt) FROM (';
+		$query .= " SELECT scheduled_date_gmt FROM {$wpdb->actionscheduler_actions} a ";
+		$query .= $where;
+		$query .= ' ORDER BY scheduled_date_gmt ASC';
+		$query .= ' LIMIT %d ) as sq';
+
+		/**
+		 * Remove first 3 elements from the array (that are used in the UPDATE ... SET) and leave
+		 * the rest used for filtering:
+		 *
+		 * - scheduled_date_gmt
+		 * - status (equal to pending status)
+		 * - hook_1
+		 * - hook_n
+		 * - group_id
+		 * - limit
+		 */
+		$params_select = array_slice( $params, 3 );
+
+		$sql = $wpdb->prepare( $query, $params_select );
+
+		$scheduled_date_gmt = $wpdb->get_var( $sql );
+		if ( false === $scheduled_date_gmt ) {
+			return '';
+		}
+
+		return (string) $scheduled_date_gmt;
 	}
 
 	/**

@@ -29,14 +29,20 @@ class Scheduler_Test extends ActionScheduler_UnitTestCase {
 	}
 
 	public function test_migration_is_scheduled() {
-		$scheduler = new Scheduler();
-		$scheduler->schedule_migration();
-		$this->assertTrue( $scheduler->is_migration_scheduled() );
-	}
+		// Clear the any existing migration hooks that have already been setup.
+		as_unschedule_all_actions( Scheduler::HOOK );
 
-	public function test_migration_is_not_scheduled() {
 		$scheduler = new Scheduler();
-		$this->assertFalse( $scheduler->is_migration_scheduled() );
+		$this->assertFalse(
+			$scheduler->is_migration_scheduled(),
+			'Migration is not automatically scheduled when a new ' . Scheduler::class . ' instance is created.'
+		);
+
+		$scheduler->schedule_migration();
+		$this->assertTrue(
+			$scheduler->is_migration_scheduled(),
+			'Migration is scheduled only after schedule_migration() has been called.'
+		);
 	}
 
 	public function test_scheduler_runs_migration() {
@@ -69,13 +75,14 @@ class Scheduler_Test extends ActionScheduler_UnitTestCase {
 		$this->assertCount( 20, $source_store->query_actions( [ 'per_page' => 0 ] ) );
 
 		$scheduler = new Scheduler();
-		$scheduler->schedule_migration();
+		$scheduler->unschedule_migration();
+		$scheduler->schedule_migration( time() - 1 );
 
 		$queue_runner = ActionScheduler_Mocker::get_queue_runner( $destination_store );
 		$queue_runner->run();
 
 		// 5 actions should have moved from the source store when the queue runner triggered the migration action
-		$this->assertCount( 15, $source_store->query_actions( [ 'per_page' => 0 ] ) );
+		$this->assertCount( 15, $source_store->query_actions( [ 'per_page' => 0, 'hook' => 'my_hook' ] ) );
 
 		remove_filter( 'action_scheduler/migration_batch_size', $return_5 );
 		remove_filter( 'action_scheduler/migration_interval', $return_60 );
@@ -95,17 +102,18 @@ class Scheduler_Test extends ActionScheduler_UnitTestCase {
 		$this->assertCount( 5, $source_store->query_actions( [ 'per_page' => 0 ] ) );
 
 		$scheduler = new Scheduler();
-		$scheduler->schedule_migration();
+		$scheduler->unschedule_migration();
+		$scheduler->schedule_migration( time() - 1 );
 
 		$queue_runner = ActionScheduler_Mocker::get_queue_runner( $destination_store );
 		$queue_runner->run();
 
 		// All actions should have moved from the source store when the queue runner triggered the migration action
-		$this->assertCount( 0, $source_store->query_actions( [ 'per_page' => 0 ] ) );
+		$this->assertCount( 0, $source_store->query_actions( [ 'per_page' => 0, 'hook' => 'my_hook' ] ) );
 
 		// schedule another so we can get it to run immediately
 		$scheduler->unschedule_migration();
-		$scheduler->schedule_migration();
+		$scheduler->schedule_migration( time() - 1 );
 
 		// run again so it knows that there's nothing left to process
 		$queue_runner->run();

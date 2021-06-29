@@ -73,4 +73,6 @@ jobs:
         run: ./tests/bin/install.sh woo_test root root 127.0.0.1 ${{ matrix.wp }}
 
       - name: Run tests
-        run: ./vendor/bin/phpunit -c ./tests/phpunit.xml.dist
+        run: |
+          ./vendor/bin/phpunit --version
+          ./vendor/bin/phpunit -c ./tests/phpunit.xml.dist

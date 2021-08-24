@@ -698,7 +698,7 @@ class ActionScheduler_DBStore extends ActionScheduler_Store {
 			$params[] = $group_id;
 		}
 
-		$order    = "ORDER BY attempts ASC, scheduled_date_gmt ASC, action_id ASC LIMIT %d";
+		$order    = "LIMIT %d";
 		$params[] = $limit;
 
 		$sql = $wpdb->prepare( "{$update} {$where} {$order}", $params );

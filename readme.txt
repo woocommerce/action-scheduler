@@ -11,6 +11,8 @@ Action Scheduler - Job Queue for WordPress
 
 == Description ==
 
+**This is a test branch, for observation of GH Action-based tests only.**
+
 Action Scheduler is a scalable, traceable job queue for background processing large sets of actions in WordPress. It's specially designed to be distributed in WordPress plugins.
 
 Action Scheduler works by triggering an action hook to run at some time in the future. Each hook can be scheduled with unique data, to allow callbacks to perform operations on that data. The hook can also be scheduled to run on one or more occassions.

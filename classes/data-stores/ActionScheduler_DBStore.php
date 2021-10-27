@@ -696,8 +696,6 @@ class ActionScheduler_DBStore extends ActionScheduler_Store {
 			$params[] = implode( ',', $ignore_group_ids );
 		}
 
-		echo $where;
-		print_r($params);
 		/**
 		 * Sets the order-by clause used in the action claim query.
 		 *

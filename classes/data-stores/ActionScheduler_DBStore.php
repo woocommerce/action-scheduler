@@ -145,7 +145,7 @@ class ActionScheduler_DBStore extends ActionScheduler_Store {
 		global $wpdb;
 
 		if ( self::group_has_ignore_prefix( $slug ) ) {
-			// translators: %s: excluded group name prefix.
+			// translators: %s: ignored group name prefix.
 			throw new InvalidArgumentException( sprintf( __( 'Group names cannot start with %s.', 'action-scheduler' ), self::IGNORE_GROUP_FLAG ) );
 		}
 
@@ -629,7 +629,7 @@ class ActionScheduler_DBStore extends ActionScheduler_Store {
 	 * @param int       $limit Number of action to include in claim.
 	 * @param \DateTime $before_date Should use UTC timezone.
 	 * @param array     $hooks Hooks to filter for.
-	 * @param string    $group Group to filter for, adding -- in front of the group will have it excluded.
+	 * @param string    $group Group to filter for, adding -- in front of the group will have it ignored.
 	 *
 	 * @return int The number of actions that were claimed.
 	 * @throws \InvalidArgumentException Throws InvalidArgumentException if group doesn't exist.

@@ -666,12 +666,13 @@ class ActionScheduler_DBStore extends ActionScheduler_Store {
 
 			foreach ( $group_array as $group ) {
 
-				$group_id = $this->get_group_id( self::sanitize_group_name( $group ) );
+				$sanitized_group_name = self::sanitize_group_name( $group );
+				$group_id             = $this->get_group_id( $sanitized_group_name, false );
 
 				// throw exception if no matching group found, this matches ActionScheduler_wpPostStore's behaviour.
 				if ( empty( $group_id ) ) {
 					/* translators: %s: group name */
-					throw new InvalidArgumentException( sprintf( __( 'The group "%s" does not exist.', 'action-scheduler' ), $group ) );
+					throw new InvalidArgumentException( sprintf( __( 'The group "%s" does not exist.', 'action-scheduler' ), $sanitized_group_name ) );
 				}
 
 				$where   .= ' AND group_id ' . ( self::group_has_ignore_prefix( $group ) ? '!= %d' : '= %d' );

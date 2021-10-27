@@ -25,7 +25,7 @@ class ActionScheduler_WPCLI_Scheduler_command extends WP_CLI_Command {
 	 * [--group=<group>]
 	 * : Only run actions from the specified group. Omitting this option runs actions from all groups.
 	 *
-	 * [--exclude-group=<group>]
+	 * [--ignore-group=<group>]
 	 * : Run actions by omiting the specified group. Omitting this option runs actions from all groups.
 	 *
 	 * [--free-memory-on=<count>]
@@ -51,7 +51,7 @@ class ActionScheduler_WPCLI_Scheduler_command extends WP_CLI_Command {
 		$hooks         = explode( ',', WP_CLI\Utils\get_flag_value( $assoc_args, 'hooks', '' ) );
 		$hooks         = array_filter( array_map( 'trim', $hooks ) );
 		$group         = \WP_CLI\Utils\get_flag_value( $assoc_args, 'group', '' );
-		$exclude_group = \WP_CLI\Utils\get_flag_value( $assoc_args, 'exclude-group', '' );
+		$ignore_group  = \WP_CLI\Utils\get_flag_value( $assoc_args, 'ignore-group', '' );
 		$free_on       = \WP_CLI\Utils\get_flag_value( $assoc_args, 'free-memory-on', 50 );
 		$sleep         = \WP_CLI\Utils\get_flag_value( $assoc_args, 'pause', 0 );
 		$force         = \WP_CLI\Utils\get_flag_value( $assoc_args, 'force', false );
@@ -63,18 +63,18 @@ class ActionScheduler_WPCLI_Scheduler_command extends WP_CLI_Command {
 		$actions_completed = 0;
 		$unlimited         = $batches === 0;
 
-		if ( $exclude_group ) {
-			$exclude_group_array = explode( ',', $exclude_group );
+		if ( $ignore_group ) {
+			$ignore_group_array = explode( ',', $ignore_group );
 
-			$exclude_group_array = array_map(
+			$ignore_group_array = array_map(
 				function ( $val ) {
 					return ( $val ) ? ActionScheduler_DBStore::mark_group_for_exclussion( $val ) : '';
 				},
-				$exclude_group_array
+				$ignore_group_array
 			);
 
-			if ( count( $exclude_group_array ) ) {
-				$group .= ',' . implode( ',', $exclude_group_array );
+			if ( count( $ignore_group_array ) ) {
+				$group .= ',' . implode( ',', $ignore_group_array );
 			}
 		}
 

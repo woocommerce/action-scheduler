@@ -144,9 +144,9 @@ class ActionScheduler_DBStore extends ActionScheduler_Store {
 		/** @var \wpdb $wpdb */
 		global $wpdb;
 
-		if ( self::group_has_excluded_prefix( $slug ) ) {
+		if ( self::group_has_ignore_prefix( $slug ) ) {
 			// translators: %s: excluded group name prefix.
-			throw new InvalidArgumentException( sprintf( __( 'Group names cannot start with %s.', 'action-scheduler' ), self::EXCLUDE_GROUP_FLAG ) );
+			throw new InvalidArgumentException( sprintf( __( 'Group names cannot start with %s.', 'action-scheduler' ), self::IGNORE_GROUP_FLAG ) );
 		}
 
 		$wpdb->insert( $wpdb->actionscheduler_groups, array( 'slug' => $slug ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
@@ -675,7 +675,7 @@ class ActionScheduler_DBStore extends ActionScheduler_Store {
 					throw new InvalidArgumentException( sprintf( __( 'The group "%s" does not exist.', 'action-scheduler' ), $group ) );
 				}
 
-				if ( self::group_has_excluded_prefix( $group ) ) {
+				if ( self::group_has_ignore_prefix( $group ) ) {
 					$where .= ' AND group_id != %d';
 				} else {
 					$where .= ' AND group_id = %d';

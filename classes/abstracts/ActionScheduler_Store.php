@@ -11,7 +11,7 @@ abstract class ActionScheduler_Store extends ActionScheduler_Store_Deprecated {
 	const STATUS_FAILED         = 'failed';
 	const STATUS_CANCELED       = 'canceled';
 	const DEFAULT_CLASS         = 'ActionScheduler_wpPostStore';
-	const EXCLUDED_GROUP_PREFIX = '--';
+	const IGNORE_GROUP_FLAG    = '--';
 
 	/** @var ActionScheduler_Store */
 	private static $store = NULL;
@@ -215,8 +215,8 @@ abstract class ActionScheduler_Store extends ActionScheduler_Store_Deprecated {
 	 * @param string $slug Group slug name.
 	 * @return boolean
 	 */
-	protected static function group_has_excluded_prefix( $slug ) {
-		return self::EXCLUDED_GROUP_PREFIX === substr( $slug, 0, strlen( self::EXCLUDED_GROUP_PREFIX ) );
+	protected static function group_has_ignore_prefix( $slug ) {
+		return self::IGNORE_GROUP_FLAG === substr( $slug, 0, strlen( self::IGNORE_GROUP_FLAG ) );
 	}
 
 	/**
@@ -226,7 +226,7 @@ abstract class ActionScheduler_Store extends ActionScheduler_Store_Deprecated {
 	 * @return string
 	 */
 	public static function mark_group_for_exclussion( $slug ) {
-		return self::EXCLUDED_GROUP_PREFIX . $slug;
+		return self::IGNORE_GROUP_FLAG . $slug;
 	}
 
 	/**
@@ -236,8 +236,8 @@ abstract class ActionScheduler_Store extends ActionScheduler_Store_Deprecated {
 	 * @return string
 	 */
 	public static function sanitize_group_name( $slug ) {
-		// removing the excluded group prefix from slug if present.
-		$slug = preg_replace( '/(' . preg_quote( self::EXCLUDED_GROUP_PREFIX, null ) . ')?(.*)/m', '$2', $slug );
+		// removing the ignored group prefix from slug if present.
+		$slug = preg_replace( '/(' . preg_quote( self::IGNORE_GROUP_FLAG, null ) . ')?(.*)/m', '$2', $slug );
 		return $slug;
 	}
 

@@ -63,7 +63,8 @@ class ActionScheduler_WPCLI_Scheduler_command extends WP_CLI_Command {
 		$actions_completed = 0;
 		$unlimited         = $batches === 0;
 
-		if ( $ignore_group ) {
+		if ( ! $group && $ignore_group ) { // there is no need to proceed with the ignore code if $group is set.
+
 			$ignore_group_array = array_map(
 				function ( $val ) {
 					return ActionScheduler_DBStore::mark_group_for_exclussion( $val );

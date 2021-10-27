@@ -5,12 +5,13 @@
  * @codeCoverageIgnore
  */
 abstract class ActionScheduler_Store extends ActionScheduler_Store_Deprecated {
-	const STATUS_COMPLETE = 'complete';
-	const STATUS_PENDING  = 'pending';
-	const STATUS_RUNNING  = 'in-progress';
-	const STATUS_FAILED   = 'failed';
-	const STATUS_CANCELED = 'canceled';
-	const DEFAULT_CLASS   = 'ActionScheduler_wpPostStore';
+	const STATUS_COMPLETE       = 'complete';
+	const STATUS_PENDING        = 'pending';
+	const STATUS_RUNNING        = 'in-progress';
+	const STATUS_FAILED         = 'failed';
+	const STATUS_CANCELED       = 'canceled';
+	const DEFAULT_CLASS         = 'ActionScheduler_wpPostStore';
+	const EXCLUDED_GROUP_PREFIX = '--';
 
 	/** @var ActionScheduler_Store */
 	private static $store = NULL;
@@ -207,6 +208,38 @@ abstract class ActionScheduler_Store extends ActionScheduler_Store_Deprecated {
 	 * @return array
 	 */
 	abstract public function find_actions_by_claim_id( $claim_id );
+
+	/**
+	 * Check if group name is prefixed for exclussion.
+	 *
+	 * @param string $slug Group slug name.
+	 * @return boolean
+	 */
+	protected static function group_has_excluded_prefix( $slug ) {
+		return self::EXCLUDED_GROUP_PREFIX === substr( $slug, 0, strlen( self::EXCLUDED_GROUP_PREFIX ) );
+	}
+
+	/**
+	 * Mark group for exclussion by prefixing with '-'.
+	 *
+	 * @param string $slug Group slug name.
+	 * @return string
+	 */
+	public static function mark_group_for_exclussion( $slug ) {
+		return self::EXCLUDED_GROUP_PREFIX . $slug;
+	}
+
+	/**
+	 * Sanitize group name.
+	 *
+	 * @param string $slug Group slug name.
+	 * @return string
+	 */
+	public static function sanitize_group_name( $slug ) {
+		// removing the excluded group prefix from slug if present.
+		$slug = preg_replace( '/(' . preg_quote( self::EXCLUDED_GROUP_PREFIX, null ) . ')?(.*)/m', '$2', $slug );
+		return $slug;
+	}
 
 	/**
 	 * @param string $comparison_operator

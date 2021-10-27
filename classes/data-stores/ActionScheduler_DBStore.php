@@ -40,7 +40,7 @@ class ActionScheduler_DBStore extends ActionScheduler_Store {
 	 * Save an action.
 	 *
 	 * @param ActionScheduler_Action $action Action object.
-	 * @param DateTime              $date Optional schedule date. Default null.
+	 * @param DateTime               $date Optional schedule date. Default null.
 	 *
 	 * @return int Action ID.
 	 * @throws RuntimeException     Throws exception when saving the action fails.
@@ -138,11 +138,18 @@ class ActionScheduler_DBStore extends ActionScheduler_Store {
 	 * @param string $slug Group slug.
 	 *
 	 * @return int Group ID.
+	 * @throws \InvalidArgumentException Throws exception when the group slug starts with '-'.
 	 */
 	protected function create_group( $slug ) {
 		/** @var \wpdb $wpdb */
 		global $wpdb;
-		$wpdb->insert( $wpdb->actionscheduler_groups, array( 'slug' => $slug ) );
+
+		if ( self::group_has_excluded_prefix( $slug ) ) {
+			// translators: %s: excluded group name prefix.
+			throw new InvalidArgumentException( sprintf( __( 'Group names cannot start with %s.', 'action-scheduler' ), self::EXCLUDED_GROUP_PREFIX ) );
+		}
+
+		$wpdb->insert( $wpdb->actionscheduler_groups, array( 'slug' => $slug ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
 
 		return (int) $wpdb->insert_id;
 	}
@@ -622,7 +629,7 @@ class ActionScheduler_DBStore extends ActionScheduler_Store {
 	 * @param int       $limit Number of action to include in claim.
 	 * @param \DateTime $before_date Should use UTC timezone.
 	 * @param array     $hooks Hooks to filter for.
-	 * @param string    $group Group to filter for.
+	 * @param string    $group Group to filter for, adding -- in front of the group will have it excluded.
 	 *
 	 * @return int The number of actions that were claimed.
 	 * @throws \InvalidArgumentException Throws InvalidArgumentException if group doesn't exist.
@@ -653,18 +660,28 @@ class ActionScheduler_DBStore extends ActionScheduler_Store {
 			$params       = array_merge( $params, array_values( $hooks ) );
 		}
 
-		if ( ! empty( $group ) ) {
+		$group_array = explode( ',', $group );
 
-			$group_id = $this->get_group_id( $group, false );
+		if ( is_array( $group_array ) && count( $group_array ) ) {
 
-			// throw exception if no matching group found, this matches ActionScheduler_wpPostStore's behaviour.
-			if ( empty( $group_id ) ) {
-				/* translators: %s: group name */
-				throw new InvalidArgumentException( sprintf( __( 'The group "%s" does not exist.', 'action-scheduler' ), $group ) );
+			foreach ( $group_array as $group ) {
+
+				$group    = self::sanitize_group_name( $group );
+				$group_id = $this->get_group_id( $group );
+
+				// throw exception if no matching group found, this matches ActionScheduler_wpPostStore's behaviour.
+				if ( empty( $group_id ) ) {
+					/* translators: %s: group name */
+					throw new InvalidArgumentException( sprintf( __( 'The group "%s" does not exist.', 'action-scheduler' ), $group ) );
+				}
+
+				if ( self::group_has_excluded_prefix( $group ) ) {
+					$where .= ' AND group_id != %d';
+				} else {
+					$where .= ' AND group_id = %d';
+				}
+				$params[] = $group_id;
 			}
-
-			$where   .= ' AND group_id = %d';
-			$params[] = $group_id;
 		}
 
 		/**

@@ -238,6 +238,8 @@ abstract class ActionScheduler_Store extends ActionScheduler_Store_Deprecated {
 	public static function sanitize_group_name( $slug ) {
 		// removing the ignored group prefix from slug if present.
 		$slug = preg_replace( '/(' . preg_quote( self::IGNORE_GROUP_FLAG, null ) . ')?(.*)/m', '$2', $slug );
+
+		// further sanitisation here with `sanitize_title` maybe?
 		return $slug;
 	}
 

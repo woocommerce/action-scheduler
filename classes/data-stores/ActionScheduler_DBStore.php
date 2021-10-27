@@ -660,7 +660,7 @@ class ActionScheduler_DBStore extends ActionScheduler_Store {
 			$params       = array_merge( $params, array_values( $hooks ) );
 		}
 
-		$group_array = explode( ',', $group );
+		$group_array = array_filter( explode( ',', $group ) );
 
 		if ( is_array( $group_array ) && count( $group_array ) ) {
 

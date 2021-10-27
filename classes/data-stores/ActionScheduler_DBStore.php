@@ -666,8 +666,7 @@ class ActionScheduler_DBStore extends ActionScheduler_Store {
 
 			foreach ( $group_array as $group ) {
 
-				$group    = self::sanitize_group_name( $group );
-				$group_id = $this->get_group_id( $group );
+				$group_id = $this->get_group_id( self::sanitize_group_name( $group ) );
 
 				// throw exception if no matching group found, this matches ActionScheduler_wpPostStore's behaviour.
 				if ( empty( $group_id ) ) {
@@ -675,7 +674,7 @@ class ActionScheduler_DBStore extends ActionScheduler_Store {
 					throw new InvalidArgumentException( sprintf( __( 'The group "%s" does not exist.', 'action-scheduler' ), $group ) );
 				}
 
-				$where   .= ( self::group_has_ignore_prefix( $group ) ? ' AND group_id != %d' : ' AND group_id = %d' );
+				$where   .= ' AND group_id ' . ( self::group_has_ignore_prefix( $group ) ? '!= %d' : '= %d' );
 				$params[] = $group_id;
 			}
 		}

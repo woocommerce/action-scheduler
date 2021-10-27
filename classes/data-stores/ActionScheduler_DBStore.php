@@ -662,6 +662,9 @@ class ActionScheduler_DBStore extends ActionScheduler_Store {
 
 		$group_array = array_filter( explode( ',', $group ) );
 
+		$ignore_group_ids  = array();
+		$include_group_ids = array();
+
 		if ( is_array( $group_array ) && count( $group_array ) ) {
 
 			foreach ( $group_array as $group ) {
@@ -675,11 +678,26 @@ class ActionScheduler_DBStore extends ActionScheduler_Store {
 					throw new InvalidArgumentException( sprintf( __( 'The group "%s" does not exist.', 'action-scheduler' ), $sanitized_group_name ) );
 				}
 
-				$where   .= ' AND group_id ' . ( self::group_has_ignore_prefix( $group ) ? '!= %d' : '= %d' );
-				$params[] = $group_id;
+				if ( self::group_has_ignore_prefix( $group ) ) {
+					$ignore_group_ids[] = $group_id;
+				} else {
+					$include_group_ids[] = $group_id;
+				}
 			}
 		}
 
+		if ( count( $include_group_ids ) ) {
+			$where   .= ' AND group_id IN (%s)';
+			$params[] = implode( ',', $include_group_ids );
+		}
+
+		if ( count( $ignore_group_ids ) ) {
+			$where   .= ' AND group_id NOT IN (%s)';
+			$params[] = implode( ',', $ignore_group_ids );
+		}
+
+		echo $where;
+		print_r($params);
 		/**
 		 * Sets the order-by clause used in the action claim query.
 		 *

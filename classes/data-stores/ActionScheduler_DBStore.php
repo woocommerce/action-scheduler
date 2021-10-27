@@ -675,11 +675,7 @@ class ActionScheduler_DBStore extends ActionScheduler_Store {
 					throw new InvalidArgumentException( sprintf( __( 'The group "%s" does not exist.', 'action-scheduler' ), $group ) );
 				}
 
-				if ( self::group_has_ignore_prefix( $group ) ) {
-					$where .= ' AND group_id != %d';
-				} else {
-					$where .= ' AND group_id = %d';
-				}
+				$where   .= ( self::group_has_ignore_prefix( $group ) ? ' AND group_id != %d' : ' AND group_id = %d' );
 				$params[] = $group_id;
 			}
 		}

@@ -55,7 +55,7 @@ class ActionScheduler_WPCLI_Scheduler_command extends WP_CLI_Command {
 		$sleep   = \WP_CLI\Utils\get_flag_value( $assoc_args, 'pause', 0 );
 		$force   = \WP_CLI\Utils\get_flag_value( $assoc_args, 'force', false );
 
-		$ignore_group  = \WP_CLI\Utils\get_flag_value( $assoc_args, 'ignore-group', '' );
+		$ignore_group = \WP_CLI\Utils\get_flag_value( $assoc_args, 'ignore-group', '' );
 
 		ActionScheduler_DataController::set_free_ticks( $free_on );
 		ActionScheduler_DataController::set_sleep_time( $sleep );

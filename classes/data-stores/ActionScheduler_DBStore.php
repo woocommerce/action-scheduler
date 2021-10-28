@@ -689,9 +689,7 @@ class ActionScheduler_DBStore extends ActionScheduler_Store {
 		if ( count( $include_group_ids ) ) {
 			$where   .= ' AND group_id IN (%s)';
 			$params[] = implode( ',', $include_group_ids );
-		}
-
-		if ( count( $ignore_group_ids ) ) {
+		} elseif ( count( $ignore_group_ids ) ) {
 			$where   .= ' AND group_id NOT IN (%s)';
 			$params[] = implode( ',', $ignore_group_ids );
 		}

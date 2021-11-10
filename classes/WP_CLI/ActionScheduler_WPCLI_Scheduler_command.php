@@ -17,17 +17,17 @@ class ActionScheduler_WPCLI_Scheduler_command extends WP_CLI_Command {
 	 * @subcommand fix-schema
 	 */
 	public function fix_schema( $args, $assoc_args ) {
-		$classes                 = get_declared_classes();
-		$action_scheduler_schema = array();
+		$schema_classes = array( 'ActionScheduler_LoggerSchema', 'ActionScheduler_StoreSchema' );
 
-		foreach ( $classes as $classname ) {
+		foreach ( $schema_classes as $classname ) {
 			if ( is_subclass_of( $classname, 'ActionScheduler_Abstract_Schema' ) ) {
 				$obj = new $classname();
+				$obj->init();
 				$obj->register_tables( true );
 
 				WP_CLI::success(
 					sprintf(
-						/* translators: %d refers to the total number of taskes completed */
+						/* translators: %s refers to the schema name*/
 						__( 'Registered schema for %s', 'action-sheduler' ),
 						$classname
 					)

@@ -27,7 +27,7 @@ class ActionScheduler_WPCLI_Scheduler_command extends WP_CLI_Command {
 				WP_CLI::success(
 					sprintf(
 						/* translators: %s refers to the schema name*/
-						__( 'Registered schema for %s', 'action-sheduler' ),
+						__( 'Registered schema for %s', 'action-scheduler' ),
 						$classname
 					)
 				);

@@ -12,7 +12,6 @@ class ActionScheduler_WPCLI_Scheduler_command extends WP_CLI_Command {
 	 *
 	 * @param array $args Positional arguments.
 	 * @param array $assoc_args Keyed arguments.
-	 * @throws \WP_CLI\ExitException When an error occurs.
 	 *
 	 * @subcommand fix-schema
 	 */

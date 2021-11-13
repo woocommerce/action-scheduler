@@ -16,10 +16,10 @@ class ActionScheduler_WPCLI_Scheduler_command extends WP_CLI_Command {
 	 * @subcommand fix-schema
 	 */
 	public function fix_schema( $args, $assoc_args ) {
-		$schema_classes = array( 'ActionScheduler_LoggerSchema', 'ActionScheduler_StoreSchema' );
+		$schema_classes = array( ActionScheduler_LoggerSchema::class, ActionScheduler_StoreSchema::class );
 
 		foreach ( $schema_classes as $classname ) {
-			if ( is_subclass_of( $classname, 'ActionScheduler_Abstract_Schema' ) ) {
+			if ( is_subclass_of( $classname, ActionScheduler_Abstract_Schema::class ) ) {
 				$obj = new $classname();
 				$obj->init();
 				$obj->register_tables( true );

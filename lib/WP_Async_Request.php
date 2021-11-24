@@ -4,6 +4,7 @@
  *
  * @package WP-Background-Processing
  */
+
 /*
 Library URI: https://github.com/deliciousbrains/wp-background-processing/blob/fbbc56f2480910d7959972ec9ec0819a13c6150a/classes/wp-async-request.php
 Author: Delicious Brains Inc.
@@ -133,12 +134,15 @@ if ( ! class_exists( 'WP_Async_Request' ) ) {
 				return $this->post_args;
 			}
 
+			$versions = ActionScheduler_Versions::instance();
+
 			return array(
-				'timeout'   => 0.01,
-				'blocking'  => false,
-				'body'      => $this->data,
-				'cookies'   => $_COOKIE,
-				'sslverify' => apply_filters( 'https_local_ssl_verify', false ),
+				'timeout'    => 0.01,
+				'blocking'   => false,
+				'body'       => $this->data,
+				'cookies'    => $_COOKIE,
+				'user-agent' => apply_filters( 'action_scheduler_user_agent', 'Action Scheduler/' . $versions->latest_version() ),
+				'sslverify'  => apply_filters( 'https_local_ssl_verify', false ),
 			);
 		}
 
@@ -148,7 +152,7 @@ if ( ! class_exists( 'WP_Async_Request' ) ) {
 		 * Check for correct nonce and pass to handler.
 		 */
 		public function maybe_handle() {
-			// Don't lock up other requests while processing
+			// Don't lock up other requests while processing.
 			session_write_close();
 
 			check_ajax_referer( $this->identifier, 'nonce' );

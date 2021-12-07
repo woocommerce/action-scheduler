@@ -313,7 +313,7 @@ function as_get_datetime_object( $date_string = null, $timezone = 'UTC' ) {
 	} elseif ( is_numeric( $date_string ) ) {
 		$date = new ActionScheduler_DateTime( '@' . $date_string, new DateTimeZone( $timezone ) );
 	} else {
-		$date = new ActionScheduler_DateTime( $date_string, new DateTimeZone( $timezone ) );
+		$date = new ActionScheduler_DateTime( null === $date_string ? 'now' : $date_string, new DateTimeZone( $timezone ) );
 	}
 	return $date;
 }

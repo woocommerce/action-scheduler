@@ -89,6 +89,8 @@ abstract class ActionScheduler {
 			$dir = $classes_dir . 'actions' . $d;
 		} elseif ( 'Schema' === substr( $class, -6 ) ) {
 			$dir = $classes_dir . 'schema' . $d;
+		} elseif ( 'Pipeline' === substr( $class, 16, 8 ) ) {
+			$dir = $classes_dir . 'pipeline' . $d;
 		} elseif ( strpos( $class, 'ActionScheduler' ) === 0 ) {
 			$segments = explode( '_', $class );
 			$type = isset( $segments[ 1 ] ) ? $segments[ 1 ] : '';

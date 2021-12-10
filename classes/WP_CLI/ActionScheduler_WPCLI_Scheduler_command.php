@@ -117,6 +117,55 @@ class ActionScheduler_WPCLI_Scheduler_command extends WP_CLI_Command {
 	}
 
 	/**
+	 * Manages the experimental processing super-pipeline.
+	 *
+	 * ## OPTIONS
+	 *
+	 * [--create-server]
+	 * : Creates the pipeline server, used to manage the job queue.
+	 *
+	 * [--create-client]
+	 * : Creates a client to process individual jobs.
+	 *
+	 * [--kill-server=<int>]
+	 * : Kills the specified pipeline server.
+	 *
+	 * @param array $args
+	 * @param array $assoc_args
+	 *
+	 * @return void
+	 */
+	public function pipeline( array $args, array $assoc_args ) {
+		try {
+			if ( empty( $assoc_args ) ) {
+				WP_CLI::error( __( 'You must indicate what you wish to do.', 'action-scheduler' ) );
+			}
+
+			if ( count( $assoc_args ) > 1 ) {
+				WP_CLI::error( __( 'You can only perform one action.', 'action-scheduler' ) );
+			}
+
+			try {
+				if ( isset( $assoc_args['create-server'] ) ) {
+					( new ActionScheduler_Pipeline_Server() )->init()->start();
+				} elseif ( isset( $assoc_args['create-client'] ) ) {
+					( new ActionScheduler_Pipeline_Client() )->init()->start();
+				}
+			} catch ( Exception $e ) {
+				WP_CLI::error(
+					sprintf(
+						/* translator: %s is the message supplied by the exception. */
+						_x( 'Something went wrong: %s', 'pipeline command', 'action-scheduler' ),
+						$e->getMessage()
+					)
+				);
+			}
+		} catch ( Exception $e ) {
+			exit( _x( 'Unexpected failure.', 'pipeline command', 'action-scheduler' ) );
+		}
+	}
+
+	/**
 	 * Print WP CLI message about how many actions are about to be processed.
 	 *
 	 * @author Jeremy Pry

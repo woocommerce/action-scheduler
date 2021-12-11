@@ -156,7 +156,6 @@ class ActionScheduler_Pipeline_Client extends ActionScheduler_Abstract_QueueRunn
 		do {
 			$delay->wait();
 			$this->get_next_action_request();
-			// @todo fix this loop, it cannot release control!
 		} while ( $this->next_action_id === 0 );
 	}
 

@@ -29,12 +29,11 @@ class ActionScheduler_Pipeline_LoopDelay {
 	private $next_delay = 0;
 
 	/**
+	 * @throws ActionScheduler_Pipeline_Exception
+	 *
 	 * @param int $change_calculation
 	 * @param int $increment_block
 	 * @param int $max_delay
-	 *
-	 *@throws ActionScheduler_Pipeline_Exception
-	 *
 	 */
 	public function __construct( int $change_calculation = self::DELAY_DOUBLES, int $increment_block = 50000, int $max_delay = 1000000 ) {
 		if ( $change_calculation < 0 || $change_calculation > 2 ) {

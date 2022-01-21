@@ -114,8 +114,8 @@ The User-Agent parameter is just one of them and can be adjusted as:
 
 ```
 function eg_define_custom_user_agent( $args ) {
-    $versions           = ActionScheduler_Versions::instance();
-    $args['user-agent'] = 'Action Scheduler/' . $versions->latest_version();
+	$versions           = ActionScheduler_Versions::instance();
+	$args['user-agent'] = 'Action Scheduler/' . $versions->latest_version();
 
 	return $args;
 }

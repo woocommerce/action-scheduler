@@ -13,6 +13,7 @@ License URI: https://github.com/deliciousbrains/wp-background-processing/commit/
 */
 
 if ( ! class_exists( 'WP_Async_Request' ) ) {
+
 	/**
 	 * Abstract WP_Async_Request class.
 	 *

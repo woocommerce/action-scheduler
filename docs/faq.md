@@ -105,3 +105,19 @@ It requires no setup, and won't override any WordPress APIs (unless you want it 
 Action Scheduler is designed to manage the scheduled actions on a single site. It has no special handling for running queues across multiple sites in a multisite network. That said, because its storage and Queue Runner are completely swappable, it would be possible to write multisite handling classes to use with it.
 
 If you'd like to create a multisite plugin to do this and release it publicly to help others, [open a new issue to let us know](https://github.com/woocommerce/action-scheduler/issues/new), we'd love to help you with it.
+
+### How can I change the Action Scheduler User-Agent to better identify its requests?
+
+Action Scheduler has a filter available named `as_async_request_queue_runner_post_args` which can be used to filter the arguments that are being sent to the `wp_remote_post` call.
+
+The User-Agent parameter is just one of them and can be adjusted as follows:
+
+```
+function eg_define_custom_user_agent( $args ) {
+	$versions           = ActionScheduler_Versions::instance();
+	$args['user-agent'] = 'Action Scheduler/' . $versions->latest_version();
+
+	return $args;
+}
+add_filter( 'as_async_request_queue_runner_post_args', 'eg_define_custom_user_agent', 10, 1 );
+```

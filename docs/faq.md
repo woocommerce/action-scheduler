@@ -110,7 +110,7 @@ If you'd like to create a multisite plugin to do this and release it publicly to
 
 Action Scheduler has a filter available named `as_async_request_queue_runner_post_args` which can be used to filter the arguments that are being sent to the `wp_remote_post` call.
 
-The User-Agent parameter is just one of them and can be adjusted as:
+The User-Agent parameter is just one of them and can be adjusted as follows:
 
 ```
 function eg_define_custom_user_agent( $args ) {

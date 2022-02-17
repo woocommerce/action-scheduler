@@ -116,8 +116,22 @@ function as_unschedule_action( $hook, $args = array(), $group = '' ) {
 	}
 
 	$action_id = ActionScheduler::store()->query_action( $params );
+
 	if ( $action_id ) {
-		ActionScheduler::store()->cancel_action( $action_id );
+		try {
+			ActionScheduler::store()->cancel_action( $action_id );
+		} catch ( Exception $exception ) {
+			ActionScheduler::logger()->log(
+				$action_id,
+				sprintf(
+					/* translators: %s is the name of the hook to be cancelled. */
+					__( 'Caught exception while cancelling action: %s', 'action-scheduler' ),
+					esc_attr( $hook )
+				)
+			);
+
+			$action_id = null;
+		}
 	}
 
 	return $action_id;

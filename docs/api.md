@@ -102,7 +102,7 @@ as_schedule_recurring_action( $timestamp, $interval_in_seconds, $hook, $args, $g
 
 ### Description
 
-Schedule an action that recurs on a cron-like schedule.
+Schedule an action that recurs on a cron-like schedule. Use this function instead of `as_schedule_recurring_action()` when you need to recur a function at the same time like "2022-02-20 00:00:00 +0000" because using `as_schedule_recurring_action()` may be delayed for execution every time it running so the next schedule will be delayed also.
 
 ### Usage
 

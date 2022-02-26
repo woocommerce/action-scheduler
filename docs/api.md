@@ -102,7 +102,9 @@ as_schedule_recurring_action( $timestamp, $interval_in_seconds, $hook, $args, $g
 
 ### Description
 
-Schedule an action that recurs on a cron-like schedule.
+Schedule an action that recurs on a cron-like schedule. 
+
+If execution of a cron-like action is delayed, the next attempt will still be scheduled according to the provided cron expression.
 
 ### Usage
 

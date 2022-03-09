@@ -119,7 +119,7 @@ class ActionScheduler_wpCommentLogger_Test extends ActionScheduler_UnitTestCase 
 		try {
 			$this->_a_hook_callback_that_throws_an_exception();
 		} catch ( Exception $e ) {
-			do_action( 'action_scheduler_failed_to_schedule_next_instance', $action_id, $e, new ActionScheduler_Action('my_hook') );
+			do_action( 'action_scheduler_failed_to_schedule_next_instance', $action_id, $e, new ActionScheduler_Action( self::HOOK_WITH_CALLBACK ) );
 		}
 
 		$logs = $logger->get_logs( $action_id );

@@ -80,7 +80,7 @@ class ActionScheduler_wpCommentLogger_Test extends ActionScheduler_UnitTestCase 
 	}
 
 	public function test_execution_comments() {
-		$action_id = as_schedule_single_action( time(), 'a hook' );
+		$action_id = as_schedule_single_action( time(), self::HOOK_WITH_CALLBACK );
 		$logger = ActionScheduler::logger();
 		$started = new ActionScheduler_LogEntry( $action_id, 'action started via Unit Tests' );
 		$finished = new ActionScheduler_LogEntry( $action_id, 'action complete via Unit Tests' );

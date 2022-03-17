@@ -98,7 +98,7 @@ function as_schedule_cron_action( $timestamp, $schedule, $hook, $args = array(),
  * @param array $args Args that would have been passed to the job.
  * @param string $group The group the job is assigned to.
  *
- * @return string|null The scheduled action ID if a scheduled action was found, or null if no matching action found.
+ * @return int|null The scheduled action ID if a scheduled action was found, or null if no matching action found.
  */
 function as_unschedule_action( $hook, $args = array(), $group = '' ) {
 	if ( ! ActionScheduler::is_initialized( __FUNCTION__ ) ) {

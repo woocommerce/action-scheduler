@@ -839,6 +839,7 @@ class ActionScheduler_DBStore extends ActionScheduler_Store {
 		if ( empty( $updated ) ) {
 			throw new \InvalidArgumentException( sprintf( __( 'Unidentified action %s', 'action-scheduler' ), $action_id ) ); //phpcs:ignore WordPress.WP.I18n.MissingTranslatorsComment
 		}
+		do_action( 'action_scheduler_completed_action', $action_id );
 	}
 
 	/**

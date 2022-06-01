@@ -989,7 +989,7 @@ class ActionScheduler_wpPostStore extends ActionScheduler_Store {
 		}
 
 		/**
-		 * Fires after an action schedule is being completed.
+		 * Fires after a scheduled action has been completed.
 		 *
 		 * @since 3.4.2
 		 *

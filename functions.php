@@ -223,7 +223,7 @@ function as_next_scheduled_action( $hook, $args = null, $group = '' ) {
  * It's recommended to use this function when you need to know whether a specific action is currently scheduled
  * (pending or in-progress).
  *
- * @since x.x.x
+ * @since 3.3.0
  *
  * @param string $hook  The hook of the action.
  * @param array  $args  Args that have been passed to the action. Null will matches any args.

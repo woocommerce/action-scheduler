@@ -86,11 +86,80 @@ abstract class ActionScheduler_Abstract_QueueRunner extends ActionScheduler_Abst
 	 * @param int $action_id
 	 */
 	protected function schedule_next_instance( ActionScheduler_Action $action, $action_id ) {
+		// If a recurring action has been consistently failing, we may wish to stop rescheduling it.
+		if (
+			ActionScheduler_Store::STATUS_FAILED === $this->store->get_status( $action_id )
+			&& $this->recurring_action_is_consistently_failing( $action, $action_id )
+		) {
+			ActionScheduler_Logger::instance()->log(
+				$action_id,
+				__( 'This action appears to be consistently failing. A new instance will not be scheduled.', 'action-scheduler' )
+			);
+
+			return;
+		}
+
 		try {
 			ActionScheduler::factory()->repeat( $action );
 		} catch ( Exception $e ) {
 			do_action( 'action_scheduler_failed_to_schedule_next_instance', $action_id, $e, $action );
 		}
+	}
+
+	/**
+	 * Determine if the specified recurring action has been consistently failing.
+	 *
+	 * @param ActionScheduler_Action $action    The recurring action to be rescheduled.
+	 * @param int                    $action_id The ID of the recurring action.
+	 *
+	 * @return bool
+	 */
+	private function recurring_action_is_consistently_failing( ActionScheduler_Action $action, $action_id ) {
+		// Fetch the most recent historic actions having the same hook and argument set.
+		$previous_action_ids = $this->store->query_actions(
+			array(
+				'hook'         => $action->get_hook(),
+				'args'         => $action->get_args(),
+				'date'         => date_create( 'now', timezone_open( 'UTC' ) )->format( 'Y-m-d H:i:s' ),
+				'date_compare' => '<',
+				'per_page'     => 10,
+			)
+		);
+
+		/**
+		 * The number of failed actions to count when determining if a recurring action has been consistently failing.
+		 *
+		 * @param int $threshold
+		 */
+		$consistent_failure_threshold = (int) apply_filters( 'action_scheduler_recurring_action_failure_threshold', 5 );
+		$failed_actions               = 0;
+
+		foreach ( $previous_action_ids as $previous_action_id ) {
+			$previous_action = $this->store->fetch_action( $previous_action_id );
+
+			// Ignore the action being considered for renewal.
+			if ( $previous_action_id === $action_id ) {
+				continue;
+			}
+
+			// If the previous action has a different schedule we consider it to be part of an unrelated series of
+			// recurring actions.
+			if ( $previous_action->get_schedule() !== $action->get_schedule() ) {
+				continue;
+			}
+
+			// If we encounter a single non-failed action before our threshold is met, then we do not consider the
+			// action to be consistently failing.
+			if ( ActionScheduler_Store::STATUS_FAILED !== $this->store->get_status( $previous_action_id ) ) {
+				return false;
+			}
+
+			if ( ++$failed_actions === $consistent_failure_threshold ) {
+				return true;
+			}
+		}
+
+		return false;
 	}
 
 	/**

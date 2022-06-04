@@ -180,6 +180,45 @@ class ActionScheduler_QueueRunner_Test extends ActionScheduler_UnitTestCase {
 		$this->assertEquals( $date->getTimestamp(), $fetched_action->get_schedule()->get_date()->getTimestamp(), '', 1 );
 	}
 
+	public function test_failing_recurring_actions_when_threshold_not_met() {
+		$args       = array( 'foo' => 'bar' );
+		$store      = ActionScheduler_Store::instance();
+		$runner     = ActionScheduler_Mocker::get_queue_runner( $store );
+
+		// Create 4 failing actions (one below the threshold of what counts as 'consistently failing'). Each will have
+		// the same signature (identical hook, schedule, args).
+		for ( $i = 0; $i < 4; $i++ ) {
+			$hook      = 'will-fail';
+			$date      = as_get_datetime_object( 12 - $i . ' hours ago' );
+			$action_id = as_schedule_recurring_action( $date->getTimestamp(), HOUR_IN_SECONDS, $hook, $args );
+			$store->mark_failure( $action_id );
+		}
+
+		// Create a fifth failing action, except with modified args (therefore, technically not part of the same series
+		// despite having the same hook).
+		$date      = as_get_datetime_object( '7 hours ago' );
+		$action_id = as_schedule_recurring_action( $date->getTimestamp(), HOUR_IN_SECONDS, $hook, array( 'foo' => 'bar2' ) );
+		$store->mark_failure( $action_id );
+
+		// Create one pending action that *is* a part of the series.
+		$pending_action_id = as_schedule_recurring_action( time(), HOUR_IN_SECONDS, $hook, $args );
+
+		// Process the queue!
+		$runner->run();
+		$pending_actions = $store->query_actions(
+			array(
+				'hook'   => $hook,
+				'args'   => $args,
+				'status' => ActionScheduler_Store::STATUS_PENDING,
+			)
+		);
+
+		$this->assertCount( 1, $pending_actions, 'If the threshold for consistent failure has not been met, a further action should have been scheduled.' );
+		$this->assertNotEquals( $pending_action_id, current( $pending_actions ), 'A new instance of the recurring action was successfully scheduled.' );
+
+		// @todo at least one further test case needed to verify behavior when the failure threshold is met.
+	}
+
 	public function test_hooked_into_wp_cron() {
 		$next = wp_next_scheduled( ActionScheduler_QueueRunner::WP_CRON_HOOK, array( 'WP Cron' ) );
 		$this->assertNotEmpty($next);

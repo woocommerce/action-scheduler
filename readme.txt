@@ -47,6 +47,10 @@ Collaboration is cool. We'd love to work with you to improve Action Scheduler. [
 
 == Changelog ==
 
+= 3.4.2 - 2022-06-08 =
+* Fix - Change the include for better linting.
+* Fix - update: Added Action scheduler completed action hook.
+
 = 3.4.1 - 2022-05-24 =
 * Fix - Change the include for better linting.
 * Fix - Fix the documented return type.

@@ -180,28 +180,43 @@ class ActionScheduler_QueueRunner_Test extends ActionScheduler_UnitTestCase {
 		$this->assertEquals( $date->getTimestamp(), $fetched_action->get_schedule()->get_date()->getTimestamp(), '', 1 );
 	}
 
-	public function test_failing_recurring_actions_when_threshold_not_met() {
-		$args       = array( 'foo' => 'bar' );
-		$store      = ActionScheduler_Store::instance();
-		$runner     = ActionScheduler_Mocker::get_queue_runner( $store );
+	/**
+	 * As soon as one recurring action has been executed its replacement will be scheduled.
+	 *
+	 * This is true even if the current action fails. This makes sense, since a failure may be temporary in nature.
+	 * However, if the same recurring action consistently fails then it is likely that there is a problem and we should
+	 * stop creating new instances. This test outlines the expected behavior in this regard.
+	 *
+	 * @return void
+	 */
+	public function test_failing_recurring_actions_are_not_rescheduled_when_threshold_met() {
+		$args            = array( 'foo' => 'bar' );
+		$store           = ActionScheduler_Store::instance();
+		$runner          = ActionScheduler_Mocker::get_queue_runner( $store );
+		$created_actions = array();
 
-		// Create 4 failing actions (one below the threshold of what counts as 'consistently failing'). Each will have
-		// the same signature (identical hook, schedule, args).
-		for ( $i = 0; $i < 4; $i++ ) {
+		// Create 3 failed actions (two below the threshold of what counts as 'consistently failing'). Each has the same
+		// signature (same hook, schedule, args).
+		for ( $i = 0; $i < 3; $i++ ) {
 			$hook      = 'will-fail';
 			$date      = as_get_datetime_object( 12 - $i . ' hours ago' );
 			$action_id = as_schedule_recurring_action( $date->getTimestamp(), HOUR_IN_SECONDS, $hook, $args );
 			$store->mark_failure( $action_id );
+			$created_actions[] = $action_id;
 		}
 
-		// Create a fifth failing action, except with modified args (therefore, technically not part of the same series
-		// despite having the same hook).
+		// Create a further action that has the same hook, but different args (therefore, for our purposes here, is not
+		// considered to be in the same sequence as the 3 earlier actions).
 		$date      = as_get_datetime_object( '7 hours ago' );
 		$action_id = as_schedule_recurring_action( $date->getTimestamp(), HOUR_IN_SECONDS, $hook, array( 'foo' => 'bar2' ) );
 		$store->mark_failure( $action_id );
+		$created_actions[] = $action_id;
 
-		// Create one pending action that *is* a part of the series.
-		$pending_action_id = as_schedule_recurring_action( time(), HOUR_IN_SECONDS, $hook, $args );
+		// Finally, create a further action that *is* part of the original series (same signature as the first four),
+		// and is destined to fail.
+		$date              = as_get_datetime_object( '6 hours ago' );
+		$pending_action_id = as_schedule_recurring_action( $date->getTimestamp(), HOUR_IN_SECONDS, $hook, $args );
+		$created_actions[] = $pending_action_id;
 
 		// Process the queue!
 		$runner->run();
@@ -212,11 +227,26 @@ class ActionScheduler_QueueRunner_Test extends ActionScheduler_UnitTestCase {
 				'status' => ActionScheduler_Store::STATUS_PENDING,
 			)
 		);
+		$new_pending_action_id = current( $pending_actions );
 
-		$this->assertCount( 1, $pending_actions, 'If the threshold for consistent failure has not been met, a further action should have been scheduled.' );
-		$this->assertNotEquals( $pending_action_id, current( $pending_actions ), 'A new instance of the recurring action was successfully scheduled.' );
+		// We now have 5 instances of the same recurring action. 4 have already failed, one is pending.
+		$this->assertCount( 1, $pending_actions, 'If the threshold for consistent failure has not been met, a replacement action should have been scheduled.' );
+		$this->assertNotContains( $new_pending_action_id, $created_actions, 'Confirm that the replacement action is new, and not one of those we created manually earlier in the test.' );
 
-		// @todo at least one further test case needed to verify behavior when the failure threshold is met.
+		// Process the pending action (we do this directly instead of via `$runner->run()` because it won't actually
+		// become due for another hour).
+		$runner->process_action( $new_pending_action_id );
+		$pending_actions = $store->query_actions(
+			array(
+				'hook'   => $hook,
+				'args'   => $args,
+				'status' => ActionScheduler_Store::STATUS_PENDING,
+			)
+		);
+
+		// Now 5 instances of the same recurring action have all failed ... a fresh action should not have been
+		// rescheduled.
+		$this->assertCount( 0, $pending_actions, 'The failure threshold (5 consecutive fails for recurring actions with the same signature) having been met, no further actions were scheduled.' );
 	}
 
 	public function test_hooked_into_wp_cron() {

@@ -137,14 +137,8 @@ abstract class ActionScheduler_Abstract_QueueRunner extends ActionScheduler_Abst
 		foreach ( $previous_action_ids as $previous_action_id ) {
 			$previous_action = $this->store->fetch_action( $previous_action_id );
 
-			// Ignore the action being considered for renewal.
-			if ( $previous_action_id === $action_id ) {
-				continue;
-			}
-
-			// If the previous action has a different schedule we consider it to be part of an unrelated series of
-			// recurring actions.
-			if ( $previous_action->get_schedule() !== $action->get_schedule() ) {
+			// Check if the schedules match one another.
+			if ( ! $this->schedules_match( $previous_action->get_schedule(), $action->get_schedule() ) ) {
 				continue;
 			}
 
@@ -160,6 +154,24 @@ abstract class ActionScheduler_Abstract_QueueRunner extends ActionScheduler_Abst
 		}
 
 		return false;
+	}
+
+	/**
+	 * Specifically intended for use with recurring actions, this method assesses if they are of the same type
+	 * (for instance, they are both CronSchedule objects) and if the recurrence patterns are the same.
+	 *
+	 * @param ActionScheduler_Schedule $schedule_a
+	 * @param ActionScheduler_Schedule $schedule_b
+	 *
+	 * @return bool
+	 */
+	private function schedules_match( ActionScheduler_Schedule $schedule_a, ActionScheduler_Schedule $schedule_b ) {
+		return (
+			get_class( $schedule_a ) === get_class( $schedule_b )
+			&& method_exists( $schedule_a, 'get_recurrence' )
+			&& method_exists( $schedule_b, 'get_recurrence' )
+			&& $schedule_a->get_recurrence() === $schedule_b->get_recurrence()
+		);
 	}
 
 	/**

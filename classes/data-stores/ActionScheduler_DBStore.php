@@ -232,7 +232,7 @@ class ActionScheduler_DBStore extends ActionScheduler_Store {
 	/**
 	 * Returns the SQL statement to query (or count) actions.
 	 *
-	 * @since x.x.x $query['status'] accepts array of statuses instead of a single status.
+	 * @since 3.3.0 $query['status'] accepts array of statuses instead of a single status.
 	 *
 	 * @param array  $query Filtering options.
 	 * @param string $select_or_count  Whether the SQL should select and return the IDs or just the row count.
@@ -384,7 +384,7 @@ class ActionScheduler_DBStore extends ActionScheduler_Store {
 	/**
 	 * Query for action count or list of action IDs.
 	 *
-	 * @since x.x.x $query['status'] accepts array of statuses instead of a single status.
+	 * @since 3.3.0 $query['status'] accepts array of statuses instead of a single status.
 	 *
 	 * @see ActionScheduler_Store::query_actions for $query arg usage.
 	 *
@@ -670,7 +670,7 @@ class ActionScheduler_DBStore extends ActionScheduler_Store {
 		/**
 		 * Sets the order-by clause used in the action claim query.
 		 *
-		 * @since x.x.x
+		 * @since 3.4.0
 		 *
 		 * @param string $order_by_sql
 		 */

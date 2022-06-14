@@ -76,7 +76,7 @@ abstract class ActionScheduler_Store extends ActionScheduler_Store_Deprecated {
 	/**
 	 * Query for action count or list of action IDs.
 	 *
-	 * @since x.x.x $query['status'] accepts array of statuses instead of a single status.
+	 * @since 3.3.0 $query['status'] accepts array of statuses instead of a single status.
 	 *
 	 * @param array  $query {
 	 *      Query filtering options.
@@ -104,7 +104,7 @@ abstract class ActionScheduler_Store extends ActionScheduler_Store_Deprecated {
 	/**
 	 * Run query to get a single action ID.
 	 *
-	 * @since x.x.x
+	 * @since 3.3.0
 	 *
 	 * @see ActionScheduler_Store::query_actions for $query arg usage but 'per_page' and 'offset' can't be used.
 	 *

@@ -465,4 +465,28 @@ class ActionScheduler_DBStore_Test extends AbstractStoreTest {
 		$this->assertEquals( 0, $action_id_duplicate );
 	}
 
+	/**
+	 * Test saving unique actions across different groups. Different groups should be saved, same groups shouldn't.
+	 */
+	public function test_create_action_unique_with_different_groups() {
+		$time     = as_get_datetime_object();
+		$hook    = md5( rand() );
+		$schedule = new ActionScheduler_SimpleSchedule( $time );
+		$store    = new ActionScheduler_DBStore();
+		$action   = new ActionScheduler_Action( $hook, array(), $schedule, 'group1' );
+
+		$action_id = $store->save_action( $action );
+		$action_from_db = $store->fetch_action( $action_id );
+		$this->assertTrue( is_a( $action_from_db, ActionScheduler_Action::class ) );
+
+		$action2 = new ActionScheduler_Action( $hook, array(), $schedule, 'group2' );
+		$action_id_group2 = $store->save_unique_action( $action2 );
+		$action_2_from_db = $store->fetch_action( $action_id_group2 );
+		$this->assertTrue( is_a( $action_2_from_db, ActionScheduler_Action::class ) );
+
+		$action3 = new ActionScheduler_Action( $hook, array(), $schedule, 'group2' );
+		$action_id_group2_double = $store->save_unique_action( $action3 );
+		$this->assertEquals( 0, $action_id_group2_double );
+	}
+
 }

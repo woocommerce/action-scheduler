@@ -104,6 +104,9 @@ class ActionScheduler_DBStore extends ActionScheduler_Store {
 			if ( is_wp_error( $action_id ) ) {
 				throw new \RuntimeException( $action_id->get_error_message() );
 			} elseif ( empty( $action_id ) ) {
+				if ( $unique ) {
+					return 0;
+				}
 				throw new \RuntimeException( $wpdb->last_error ? $wpdb->last_error : __( 'Database error.', 'action-scheduler' ) );
 			}
 
@@ -175,13 +178,13 @@ WHERE ( $where_clause ) IS NULL",
 SELECT action_id FROM $table_name
 WHERE status IN ( $pending_status_placeholders )
 AND hook = %s
-AND `group` = %s
+AND `group_id` = %s
 ",
 			array_merge(
 				$pending_statuses,
 				array(
 					$data['hook'],
-					$data['group'],
+					$data['group_id'],
 				)
 			)
 		);

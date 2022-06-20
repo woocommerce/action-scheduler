@@ -80,7 +80,7 @@ class ActionScheduler_ActionFactory {
 	 * @return int The ID of the stored action.
 	 */
 	public function single( $hook, $args = array(), $when = null, $group = '' ) {
-		return $this->single_with_unique( $hook, false, $args, $when, $group );
+		return $this->single_unique( $hook, false, $args, $when, $group );
 	}
 
 	/**

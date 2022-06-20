@@ -446,4 +446,23 @@ class ActionScheduler_DBStore_Test extends AbstractStoreTest {
 		$this->assertEquals( (int) ( $now->format( 'U' ) ) + HOUR_IN_SECONDS, $store->get_date( $new_action_id )->format( 'U' ) );
 	}
 
+	/**
+	 * Test creating a unique action.
+	 */
+	public function test_create_action_unique() {
+		$time     = as_get_datetime_object();
+		$hook     = md5( rand() );
+		$schedule = new ActionScheduler_SimpleSchedule( $time );
+		$store    = new ActionScheduler_DBStore();
+		$action   = new ActionScheduler_Action( $hook, array(), $schedule );
+
+		$action_id = $store->save_action( $action );
+		$this->assertNotEquals( 0, $action_id );
+		$action_from_db = $store->fetch_action( $action_id );
+		$this->assertTrue( is_a( $action_from_db, ActionScheduler_Action::class ) );
+
+		$action_id_duplicate = $store->save_unique_action( $action );
+		$this->assertEquals( 0, $action_id_duplicate );
+	}
+
 }

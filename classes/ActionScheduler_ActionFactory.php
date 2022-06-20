@@ -70,18 +70,35 @@ class ActionScheduler_ActionFactory {
 	}
 
 	/**
-	 * @param string $hook The hook to trigger when this action runs
-	 * @param array $args Args to pass when the hook is triggered
-	 * @param int $when Unix timestamp when the action will run
-	 * @param string $group A group to put the action in
+	 * Create single action.
 	 *
-	 * @return int The ID of the stored action
+	 * @param string $hook  The hook to trigger when this action runs.
+	 * @param array  $args  Args to pass when the hook is triggered.
+	 * @param int    $when  Unix timestamp when the action will run.
+	 * @param string $group A group to put the action in.
+	 *
+	 * @return int The ID of the stored action.
 	 */
 	public function single( $hook, $args = array(), $when = null, $group = '' ) {
+		return $this->single_with_unique( $hook, false, $args, $when, $group );
+	}
+
+	/**
+	 * Create single action only if there is no pending or running action with same name and params.
+	 *
+	 * @param string $hook The hook to trigger when this action runs.
+	 * @param bool   $unique Whether action scheduled should be unique.
+	 * @param array  $args Args to pass when the hook is triggered.
+	 * @param int    $when Unix timestamp when the action will run.
+	 * @param string $group A group to put the action in.
+	 *
+	 * @return int The ID of the stored action.
+	 */
+	public function single_unique( $hook, $unique, $args = array(), $when = null, $group = '' ) {
 		$date = as_get_datetime_object( $when );
 		$schedule = new ActionScheduler_SimpleSchedule( $date );
 		$action = new ActionScheduler_Action( $hook, $args, $schedule, $group );
-		return $this->store( $action );
+		return $unique ? $this->store_unique_action( $action ) : $this->store( $action );
 	}
 
 	/**
@@ -175,5 +192,18 @@ class ActionScheduler_ActionFactory {
 	protected function store( ActionScheduler_Action $action ) {
 		$store = ActionScheduler_Store::instance();
 		return $store->save_action( $action );
+	}
+
+	/**
+	 * Store action if it's unique.
+	 *
+	 * @param ActionScheduler_Action $action Action object to store.
+	 *
+	 * @return int ID of the created action. Will be 0 if action was not created.
+	 */
+	protected function store_unique_action( ActionScheduler_Action $action ) {
+		$store = ActionScheduler_Store::instance();
+		return method_exists( $store, 'save_unique_action' ) ?
+			$store->save_unique_action( $action ) : $store->save_action( $action );
 	}
 }

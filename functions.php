@@ -26,14 +26,15 @@ function as_enqueue_async_action( $hook, $args = array(), $group = '' ) {
  * @param string $hook The hook to trigger.
  * @param array $args Arguments to pass when the hook triggers.
  * @param string $group The group to assign this job to.
+ * @param bool $unique Whether the action should be unique.
  *
  * @return int The action ID.
  */
-function as_schedule_single_action( $timestamp, $hook, $args = array(), $group = '' ) {
+function as_schedule_single_action( $timestamp, $hook, $args = array(), $group = '', $unique = false ) {
 	if ( ! ActionScheduler::is_initialized( __FUNCTION__ ) ) {
 		return 0;
 	}
-	return ActionScheduler::factory()->single( $hook, $args, $timestamp, $group );
+	return ActionScheduler::factory()->single_unique( $hook, $unique, $args, $timestamp, $group );
 }
 
 /**
@@ -44,10 +45,11 @@ function as_schedule_single_action( $timestamp, $hook, $args = array(), $group =
  * @param string $hook The hook to trigger.
  * @param array $args Arguments to pass when the hook triggers.
  * @param string $group The group to assign this job to.
+ * @param bool $unique Whether the action should be unique.
  *
  * @return int The action ID.
  */
-function as_schedule_recurring_action( $timestamp, $interval_in_seconds, $hook, $args = array(), $group = '' ) {
+function as_schedule_recurring_action( $timestamp, $interval_in_seconds, $hook, $args = array(), $group = '', $unique = false ) {
 	if ( ! ActionScheduler::is_initialized( __FUNCTION__ ) ) {
 		return 0;
 	}
@@ -74,10 +76,11 @@ function as_schedule_recurring_action( $timestamp, $interval_in_seconds, $hook, 
  * @param string $hook The hook to trigger.
  * @param array $args Arguments to pass when the hook triggers.
  * @param string $group The group to assign this job to.
+ * @param bool $unique Whether the action should be unique.
  *
  * @return int The action ID.
  */
-function as_schedule_cron_action( $timestamp, $schedule, $hook, $args = array(), $group = '' ) {
+function as_schedule_cron_action( $timestamp, $schedule, $hook, $args = array(), $group = '', $unique = false ) {
 	if ( ! ActionScheduler::is_initialized( __FUNCTION__ ) ) {
 		return 0;
 	}

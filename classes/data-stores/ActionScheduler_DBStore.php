@@ -178,7 +178,7 @@ WHERE ( $where_clause ) IS NULL",
 SELECT action_id FROM $table_name
 WHERE status IN ( $pending_status_placeholders )
 AND hook = %s
-AND `group_id` = %s
+AND `group_id` = %d
 ",
 			array_merge(
 				$pending_statuses,

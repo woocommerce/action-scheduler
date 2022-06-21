@@ -461,6 +461,7 @@ class ActionScheduler_DBStore_Test extends AbstractStoreTest {
 		$action_from_db = $store->fetch_action( $action_id );
 		$this->assertTrue( is_a( $action_from_db, ActionScheduler_Action::class ) );
 
+		$action = new ActionScheduler_Action( $hook, array(), $schedule );
 		$action_id_duplicate = $store->save_unique_action( $action );
 		$this->assertEquals( 0, $action_id_duplicate );
 	}
@@ -489,4 +490,25 @@ class ActionScheduler_DBStore_Test extends AbstractStoreTest {
 		$this->assertEquals( 0, $action_id_group2_double );
 	}
 
+	/**
+	 * Test saving a unique action first, and then successfully scheduling a non-unique action.
+	 */
+	public function test_create_action_unique_and_then_non_unique() {
+		$time     = as_get_datetime_object();
+		$hook     = md5( rand() );
+		$schedule = new ActionScheduler_SimpleSchedule( $time );
+		$store    = new ActionScheduler_DBStore();
+		$action   = new ActionScheduler_Action( $hook, array(), $schedule );
+
+		$action_id = $store->save_unique_action( $action );
+		$this->assertNotEquals( 0, $action_id );
+		$action_from_db = $store->fetch_action( $action_id );
+		$this->assertTrue( is_a( $action_from_db, ActionScheduler_Action::class ) );
+
+		// Non unique action is scheduled even if the previous one was unique.
+		$action = new ActionScheduler_Action( $hook, array(), $schedule );
+		$action_id_duplicate = $store->save_action( $action );
+		$action_from_db_duplicate = $store->fetch_action( $action_id_duplicate );
+		$this->assertTrue( is_a( $action_from_db_duplicate, ActionScheduler_Action::class ) );
+	}
 }

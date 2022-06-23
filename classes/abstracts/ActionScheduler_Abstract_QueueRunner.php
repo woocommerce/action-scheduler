@@ -115,45 +115,40 @@ abstract class ActionScheduler_Abstract_QueueRunner extends ActionScheduler_Abst
 	 * @return bool
 	 */
 	private function recurring_action_is_consistently_failing( ActionScheduler_Action $action, $action_id ) {
-		// Fetch the most recent historic actions having the same hook and argument set.
-		$previous_action_ids = $this->store->query_actions(
-			array(
-				'hook'         => $action->get_hook(),
-				'args'         => $action->get_args(),
-				'date'         => date_create( 'now', timezone_open( 'UTC' ) )->format( 'Y-m-d H:i:s' ),
-				'date_compare' => '<',
-				'per_page'     => 10,
-			)
-		);
-
 		/**
-		 * The number of failed actions to count when determining if a recurring action has been consistently failing.
+		 * Controls the failure threshold for recurring actions.
 		 *
-		 * @param int $threshold
+		 * Before rescheduling a recurring action, we look at its status. If it failed, we then check if all of the most
+		 * recent instances (upto the threshold set by the filter) have also failed, in which case we will not log a
+		 * further action.
+		 *
+		 * @param int $failure_threshold Number of actions of the same hook to examine for failure. Defaults to 5.
 		 */
 		$consistent_failure_threshold = (int) apply_filters( 'action_scheduler_recurring_action_failure_threshold', 5 );
-		$failed_actions               = 0;
 
-		foreach ( $previous_action_ids as $previous_action_id ) {
-			$previous_action = $this->store->fetch_action( $previous_action_id );
+		// This query should find the earliest *failing* action (for the hook we are interested in) within our threshold.
+		$query_args = array(
+			'hook'         => $action->get_hook(),
+			'status'       => ActionScheduler_Store::STATUS_FAILED,
+			'date'         => date_create( 'now', timezone_open( 'UTC' ) )->format( 'Y-m-d H:i:s' ),
+			'date_compare' => '<',
+			'per_page'     => 1,
+			'offset'       => $consistent_failure_threshold
+		);
 
-			// Check if the schedules match one another.
-			if ( ! $this->schedules_match( $previous_action->get_schedule(), $action->get_schedule() ) ) {
-				continue;
-			}
+		$first_failing_action_id = $this->store->query_actions( $query_args );
 
-			// If we encounter a single non-failed action before our threshold is met, then we do not consider the
-			// action to be consistently failing.
-			if ( ActionScheduler_Store::STATUS_FAILED !== $this->store->get_status( $previous_action_id ) ) {
-				return false;
-			}
-
-			if ( ++$failed_actions === $consistent_failure_threshold ) {
-				return true;
-			}
+		// If we didn't retrieve an action ID, then there haven't been enough failures for us to worry about.
+		if ( empty( $first_failing_action_id ) ) {
+			return false;
 		}
 
-		return false;
+		// Now let's fetch the first action (having the same hook) of *any status*ithin the same window.
+		unset( $query_args['status'] );
+		$first_action_id_with_the_same_hook = $this->store->query_actions( $query_args );
+
+		// If the IDs match, then actions for this hook must be consistently failing.
+		return $first_action_id_with_the_same_hook === $first_failing_action_id;
 	}
 
 	/**

@@ -360,7 +360,8 @@ class Procedural_API_Test extends ActionScheduler_UnitTestCase {
 		$store_factory_setter = function() use ( $store ) {
 			self::$store = $store;
 		};
-		Closure::bind( $store_factory_setter, null, ActionScheduler_Store::class )();
+		$binded_store_factory_setter = Closure::bind( $store_factory_setter, null, ActionScheduler_Store::class );
+		$binded_store_factory_setter();
 	}
 
 	/**

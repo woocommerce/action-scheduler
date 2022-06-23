@@ -152,24 +152,6 @@ abstract class ActionScheduler_Abstract_QueueRunner extends ActionScheduler_Abst
 	}
 
 	/**
-	 * Specifically intended for use with recurring actions, this method assesses if they are of the same type
-	 * (for instance, they are both CronSchedule objects) and if the recurrence patterns are the same.
-	 *
-	 * @param ActionScheduler_Schedule $schedule_a
-	 * @param ActionScheduler_Schedule $schedule_b
-	 *
-	 * @return bool
-	 */
-	private function schedules_match( ActionScheduler_Schedule $schedule_a, ActionScheduler_Schedule $schedule_b ) {
-		return (
-			get_class( $schedule_a ) === get_class( $schedule_b )
-			&& method_exists( $schedule_a, 'get_recurrence' )
-			&& method_exists( $schedule_b, 'get_recurrence' )
-			&& $schedule_a->get_recurrence() === $schedule_b->get_recurrence()
-		);
-	}
-
-	/**
 	 * Run the queue cleaner.
 	 *
 	 * @author Jeremy Pry

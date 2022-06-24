@@ -29,7 +29,7 @@ class ActionScheduler_DBStore_Test extends AbstractStoreTest {
 	public function test_create_action() {
 		$time      = as_get_datetime_object();
 		$schedule  = new ActionScheduler_SimpleSchedule( $time );
-		$action    = new ActionScheduler_Action( 'my_hook', [], $schedule );
+		$action    = new ActionScheduler_Action( ActionScheduler_Callbacks::HOOK_WITH_CALLBACK, [], $schedule );
 		$store     = new ActionScheduler_DBStore();
 		$action_id = $store->save_action( $action );
 
@@ -38,7 +38,7 @@ class ActionScheduler_DBStore_Test extends AbstractStoreTest {
 
 	public function test_create_action_with_scheduled_date() {
 		$time        = as_get_datetime_object( strtotime( '-1 week' ) );
-		$action      = new ActionScheduler_Action( 'my_hook', [], new ActionScheduler_SimpleSchedule( $time ) );
+		$action      = new ActionScheduler_Action( ActionScheduler_Callbacks::HOOK_WITH_CALLBACK, [], new ActionScheduler_SimpleSchedule( $time ) );
 		$store       = new ActionScheduler_DBStore();
 		$action_id   = $store->save_action( $action, $time );
 		$action_date = $store->get_date( $action_id );
@@ -49,7 +49,7 @@ class ActionScheduler_DBStore_Test extends AbstractStoreTest {
 	public function test_retrieve_action() {
 		$time      = as_get_datetime_object();
 		$schedule  = new ActionScheduler_SimpleSchedule( $time );
-		$action    = new ActionScheduler_Action( 'my_hook', [], $schedule, 'my_group' );
+		$action    = new ActionScheduler_Action( ActionScheduler_Callbacks::HOOK_WITH_CALLBACK, [], $schedule, 'my_group' );
 		$store     = new ActionScheduler_DBStore();
 		$action_id = $store->save_action( $action );
 
@@ -63,7 +63,7 @@ class ActionScheduler_DBStore_Test extends AbstractStoreTest {
 	public function test_cancel_action() {
 		$time      = as_get_datetime_object();
 		$schedule  = new ActionScheduler_SimpleSchedule( $time );
-		$action    = new ActionScheduler_Action( 'my_hook', [], $schedule, 'my_group' );
+		$action    = new ActionScheduler_Action( ActionScheduler_Callbacks::HOOK_WITH_CALLBACK, [], $schedule, 'my_group' );
 		$store     = new ActionScheduler_DBStore();
 		$action_id = $store->save_action( $action );
 		$store->cancel_action( $action_id );
@@ -99,7 +99,7 @@ class ActionScheduler_DBStore_Test extends AbstractStoreTest {
 			$delta     = sprintf( '+%d day', $day );
 			$time      = as_get_datetime_object( $delta );
 			$schedule  = new ActionScheduler_SimpleSchedule( $time );
-			$action    = new ActionScheduler_Action( 'my_hook', [], $schedule, $group );
+			$action    = new ActionScheduler_Action( ActionScheduler_Callbacks::HOOK_WITH_CALLBACK, [], $schedule, $group );
 			$actions[] = $store->save_action( $action );
 		}
 		$store->cancel_actions_by_group( $group );
@@ -116,7 +116,7 @@ class ActionScheduler_DBStore_Test extends AbstractStoreTest {
 		for ( $i = 3; $i > - 3; $i -- ) {
 			$time     = as_get_datetime_object( $i . ' hours' );
 			$schedule = new ActionScheduler_SimpleSchedule( $time );
-			$action   = new ActionScheduler_Action( 'my_hook', [ $i ], $schedule, 'my_group' );
+			$action   = new ActionScheduler_Action( ActionScheduler_Callbacks::HOOK_WITH_CALLBACK, [ $i ], $schedule, 'my_group' );
 
 			$created_actions[] = $store->save_action( $action );
 		}
@@ -133,8 +133,8 @@ class ActionScheduler_DBStore_Test extends AbstractStoreTest {
 		$store           = new ActionScheduler_DBStore();
 		$schedule        = new ActionScheduler_SimpleSchedule( as_get_datetime_object( '-1 hour' ) );
 		$created_actions = array(
-			$store->save_action( new ActionScheduler_Action( 'my_hook', array( 1 ), $schedule, 'my_group' ) ),
-			$store->save_action( new ActionScheduler_Action( 'my_hook', array( 1 ), $schedule, 'my_group' ) ),
+			$store->save_action( new ActionScheduler_Action( ActionScheduler_Callbacks::HOOK_WITH_CALLBACK, array( 1 ), $schedule, 'my_group' ) ),
+			$store->save_action( new ActionScheduler_Action( ActionScheduler_Callbacks::HOOK_WITH_CALLBACK, array( 1 ), $schedule, 'my_group' ) ),
 		);
 
 		$claim = $store->stake_claim();
@@ -208,7 +208,7 @@ class ActionScheduler_DBStore_Test extends AbstractStoreTest {
 			foreach ( $unique_groups as $unique_group ) {
 				$time     = as_get_datetime_object( $i . ' hours' );
 				$schedule = new ActionScheduler_SimpleSchedule( $time );
-				$action   = new ActionScheduler_Action( 'my_hook', [ $i ], $schedule, $unique_group );
+				$action   = new ActionScheduler_Action( ActionScheduler_Callbacks::HOOK_WITH_CALLBACK, [ $i ], $schedule, $unique_group );
 
 				$created_actions[ $unique_group ][] = $store->save_action( $action );
 			}
@@ -360,7 +360,7 @@ class ActionScheduler_DBStore_Test extends AbstractStoreTest {
 		for ( $i = 0; $i > - 3; $i -- ) {
 			$time     = as_get_datetime_object( $i . ' hours' );
 			$schedule = new ActionScheduler_SimpleSchedule( $time );
-			$action   = new ActionScheduler_Action( 'my_hook', [ $i ], $schedule, 'my_group' );
+			$action   = new ActionScheduler_Action( ActionScheduler_Callbacks::HOOK_WITH_CALLBACK, [ $i ], $schedule, 'my_group' );
 
 			$created_actions[] = $store->save_action( $action );
 		}
@@ -377,7 +377,7 @@ class ActionScheduler_DBStore_Test extends AbstractStoreTest {
 		for ( $i = 0; $i > - 3; $i -- ) {
 			$time     = as_get_datetime_object( $i . ' hours' );
 			$schedule = new ActionScheduler_SimpleSchedule( $time );
-			$action   = new ActionScheduler_Action( 'my_hook', [ $i ], $schedule, 'my_group' );
+			$action   = new ActionScheduler_Action( ActionScheduler_Callbacks::HOOK_WITH_CALLBACK, [ $i ], $schedule, 'my_group' );
 
 			$created_actions[] = $store->save_action( $action );
 		}
@@ -396,18 +396,18 @@ class ActionScheduler_DBStore_Test extends AbstractStoreTest {
 		for ( $i = - 3; $i <= 3; $i ++ ) {
 			$time     = as_get_datetime_object( $i . ' hours' );
 			$schedule = new ActionScheduler_SimpleSchedule( $time );
-			$action   = new ActionScheduler_Action( 'my_hook', [ $i ], $schedule, 'my_group' );
+			$action   = new ActionScheduler_Action( ActionScheduler_Callbacks::HOOK_WITH_CALLBACK, [ $i ], $schedule, 'my_group' );
 
 			$created_actions[] = $store->save_action( $action );
 		}
 
-		$next_no_args = $store->find_action( 'my_hook' );
+		$next_no_args = $store->find_action( ActionScheduler_Callbacks::HOOK_WITH_CALLBACK );
 		$this->assertEquals( $created_actions[ 0 ], $next_no_args );
 
-		$next_with_args = $store->find_action( 'my_hook', [ 'args' => [ 1 ] ] );
+		$next_with_args = $store->find_action( ActionScheduler_Callbacks::HOOK_WITH_CALLBACK, [ 'args' => [ 1 ] ] );
 		$this->assertEquals( $created_actions[ 4 ], $next_with_args );
 
-		$non_existent = $store->find_action( 'my_hook', [ 'args' => [ 17 ] ] );
+		$non_existent = $store->find_action( ActionScheduler_Callbacks::HOOK_WITH_CALLBACK, [ 'args' => [ 17 ] ] );
 		$this->assertNull( $non_existent );
 	}
 
@@ -415,19 +415,19 @@ class ActionScheduler_DBStore_Test extends AbstractStoreTest {
 		$store    = new ActionScheduler_DBStore();
 		$schedule = new ActionScheduler_SimpleSchedule( as_get_datetime_object( 'tomorrow' ) );
 
-		$abc = $store->save_action( new ActionScheduler_Action( 'my_hook', [ 1 ], $schedule, 'abc' ) );
-		$def = $store->save_action( new ActionScheduler_Action( 'my_hook', [ 1 ], $schedule, 'def' ) );
-		$ghi = $store->save_action( new ActionScheduler_Action( 'my_hook', [ 1 ], $schedule, 'ghi' ) );
+		$abc = $store->save_action( new ActionScheduler_Action( ActionScheduler_Callbacks::HOOK_WITH_CALLBACK, [ 1 ], $schedule, 'abc' ) );
+		$def = $store->save_action( new ActionScheduler_Action( ActionScheduler_Callbacks::HOOK_WITH_CALLBACK, [ 1 ], $schedule, 'def' ) );
+		$ghi = $store->save_action( new ActionScheduler_Action( ActionScheduler_Callbacks::HOOK_WITH_CALLBACK, [ 1 ], $schedule, 'ghi' ) );
 
-		$this->assertEquals( $abc, $store->find_action( 'my_hook', [ 'group' => 'abc' ] ) );
-		$this->assertEquals( $def, $store->find_action( 'my_hook', [ 'group' => 'def' ] ) );
-		$this->assertEquals( $ghi, $store->find_action( 'my_hook', [ 'group' => 'ghi' ] ) );
+		$this->assertEquals( $abc, $store->find_action( ActionScheduler_Callbacks::HOOK_WITH_CALLBACK, [ 'group' => 'abc' ] ) );
+		$this->assertEquals( $def, $store->find_action( ActionScheduler_Callbacks::HOOK_WITH_CALLBACK, [ 'group' => 'def' ] ) );
+		$this->assertEquals( $ghi, $store->find_action( ActionScheduler_Callbacks::HOOK_WITH_CALLBACK, [ 'group' => 'ghi' ] ) );
 	}
 
 	public function test_get_run_date() {
 		$time      = as_get_datetime_object( '-10 minutes' );
 		$schedule  = new ActionScheduler_IntervalSchedule( $time, HOUR_IN_SECONDS );
-		$action    = new ActionScheduler_Action( 'my_hook', [], $schedule );
+		$action    = new ActionScheduler_Action( ActionScheduler_Callbacks::HOOK_WITH_CALLBACK, [], $schedule );
 		$store     = new ActionScheduler_DBStore();
 		$action_id = $store->save_action( $action );
 

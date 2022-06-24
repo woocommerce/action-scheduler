@@ -3,6 +3,7 @@
 namespace Action_Scheduler\Tests\DataStores;
 
 use ActionScheduler_Action;
+use ActionScheduler_Callbacks;
 use ActionScheduler_IntervalSchedule;
 use ActionScheduler_SimpleSchedule;
 use ActionScheduler_Store;
@@ -27,7 +28,7 @@ abstract class AbstractStoreTest extends ActionScheduler_UnitTestCase {
 	public function test_get_status() {
 		$time = as_get_datetime_object('-10 minutes');
 		$schedule = new ActionScheduler_IntervalSchedule($time, HOUR_IN_SECONDS);
-		$action = new ActionScheduler_Action('my_hook', array(), $schedule);
+		$action = new ActionScheduler_Action( ActionScheduler_Callbacks::HOOK_WITH_CALLBACK, array(), $schedule);
 		$store = $this->get_store();
 		$action_id = $store->save_action($action);
 
@@ -44,18 +45,18 @@ abstract class AbstractStoreTest extends ActionScheduler_UnitTestCase {
 
 	public function test_query_actions_query_type_arg_invalid_option() {
 		$this->expectException( InvalidArgumentException::class );
-		$this->get_store()->query_actions( array( 'hook' => 'my_hook' ), 'invalid' );
+		$this->get_store()->query_actions( array( 'hook' => ActionScheduler_Callbacks::HOOK_WITH_CALLBACK ), 'invalid' );
 	}
 
 	public function test_query_actions_query_type_arg_valid_options() {
 		$store = $this->get_store();
 		$schedule = new ActionScheduler_SimpleSchedule( as_get_datetime_object( 'tomorrow' ) );
 
-		$action_id_1 = $store->save_action( new ActionScheduler_Action( 'my_hook', array( 1 ), $schedule ) );
-		$action_id_2 = $store->save_action( new ActionScheduler_Action( 'my_hook', array( 1 ), $schedule ) );
+		$action_id_1 = $store->save_action( new ActionScheduler_Action( ActionScheduler_Callbacks::HOOK_WITH_CALLBACK, array( 1 ), $schedule ) );
+		$action_id_2 = $store->save_action( new ActionScheduler_Action( ActionScheduler_Callbacks::HOOK_WITH_CALLBACK, array( 1 ), $schedule ) );
 
-		$this->assertEquals( array( $action_id_1, $action_id_2 ), $store->query_actions( array( 'hook' => 'my_hook' ) ) );
-		$this->assertEquals( 2, $store->query_actions( array( 'hook' => 'my_hook' ), 'count' ) );
+		$this->assertEquals( array( $action_id_1, $action_id_2 ), $store->query_actions( array( 'hook' => ActionScheduler_Callbacks::HOOK_WITH_CALLBACK ) ) );
+		$this->assertEquals( 2, $store->query_actions( array( 'hook' => ActionScheduler_Callbacks::HOOK_WITH_CALLBACK ), 'count' ) );
 	}
 
 	public function test_query_actions_by_single_status() {

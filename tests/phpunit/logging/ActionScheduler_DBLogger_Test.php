@@ -34,7 +34,7 @@ class ActionScheduler_DBLogger_Test extends ActionScheduler_UnitTestCase {
 	}
 
 	public function test_execution_logs() {
-		$action_id = as_schedule_single_action( time(), __METHOD__ );
+		$action_id = as_schedule_single_action( time(), ActionScheduler_Callbacks::HOOK_WITH_CALLBACK );
 		$logger = ActionScheduler::logger();
 		$started = new ActionScheduler_LogEntry( $action_id, 'action started via Unit Tests' );
 		$finished = new ActionScheduler_LogEntry( $action_id, 'action complete via Unit Tests' );
@@ -113,7 +113,7 @@ class ActionScheduler_DBLogger_Test extends ActionScheduler_UnitTestCase {
 	public function test_deleted_action_cleanup() {
 		$time = as_get_datetime_object('-10 minutes');
 		$schedule = new \ActionScheduler_SimpleSchedule($time);
-		$action = new \ActionScheduler_Action('my_hook', array(), $schedule);
+		$action = new \ActionScheduler_Action( ActionScheduler_Callbacks::HOOK_WITH_CALLBACK, array(), $schedule);
 		$store = new ActionScheduler_DBStore();
 		$action_id = $store->save_action($action);
 

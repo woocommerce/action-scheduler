@@ -80,7 +80,7 @@ class ActionScheduler_wpCommentLogger_Test extends ActionScheduler_UnitTestCase 
 	}
 
 	public function test_execution_comments() {
-		$action_id = as_schedule_single_action( time(), 'a hook' );
+		$action_id = as_schedule_single_action( time(), ActionScheduler_Callbacks::HOOK_WITH_CALLBACK );
 		$logger = ActionScheduler::logger();
 		$started = new ActionScheduler_LogEntry( $action_id, 'action started via Unit Tests' );
 		$finished = new ActionScheduler_LogEntry( $action_id, 'action complete via Unit Tests' );
@@ -119,7 +119,7 @@ class ActionScheduler_wpCommentLogger_Test extends ActionScheduler_UnitTestCase 
 		try {
 			$this->_a_hook_callback_that_throws_an_exception();
 		} catch ( Exception $e ) {
-			do_action( 'action_scheduler_failed_to_schedule_next_instance', $action_id, $e, new ActionScheduler_Action('my_hook') );
+			do_action( 'action_scheduler_failed_to_schedule_next_instance', $action_id, $e, new ActionScheduler_Action( ActionScheduler_Callbacks::HOOK_WITH_CALLBACK ) );
 		}
 
 		$logs = $logger->get_logs( $action_id );

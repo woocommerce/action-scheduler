@@ -20,7 +20,7 @@ class ActionScheduler_wpPostStore_Test extends AbstractStoreTest {
 	public function test_create_action() {
 		$time = as_get_datetime_object();
 		$schedule = new ActionScheduler_SimpleSchedule($time);
-		$action = new ActionScheduler_Action('my_hook', array(), $schedule);
+		$action = new ActionScheduler_Action( ActionScheduler_Callbacks::HOOK_WITH_CALLBACK, array(), $schedule );
 		$store = new ActionScheduler_wpPostStore();
 		$action_id = $store->save_action($action);
 
@@ -29,7 +29,7 @@ class ActionScheduler_wpPostStore_Test extends AbstractStoreTest {
 
 	public function test_create_action_with_scheduled_date() {
 		$time   = as_get_datetime_object( strtotime( '-1 week' ) );
-		$action = new ActionScheduler_Action( 'my_hook', array(), new ActionScheduler_SimpleSchedule( $time ) );
+		$action = new ActionScheduler_Action( ActionScheduler_Callbacks::HOOK_WITH_CALLBACK, array(), new ActionScheduler_SimpleSchedule( $time ) );
 		$store  = new ActionScheduler_wpPostStore();
 
 		$action_id   = $store->save_action( $action, $time );
@@ -41,7 +41,7 @@ class ActionScheduler_wpPostStore_Test extends AbstractStoreTest {
 	public function test_retrieve_action() {
 		$time = as_get_datetime_object();
 		$schedule = new ActionScheduler_SimpleSchedule($time);
-		$action = new ActionScheduler_Action('my_hook', array(), $schedule, 'my_group');
+		$action = new ActionScheduler_Action( ActionScheduler_Callbacks::HOOK_WITH_CALLBACK, array(), $schedule, 'my_group' );
 		$store = new ActionScheduler_wpPostStore();
 		$action_id = $store->save_action($action);
 
@@ -78,7 +78,7 @@ class ActionScheduler_wpPostStore_Test extends AbstractStoreTest {
 	public function test_cancel_action() {
 		$time = as_get_datetime_object();
 		$schedule = new ActionScheduler_SimpleSchedule($time);
-		$action = new ActionScheduler_Action('my_hook', array(), $schedule, 'my_group');
+		$action = new ActionScheduler_Action( ActionScheduler_Callbacks::HOOK_WITH_CALLBACK, array(), $schedule, 'my_group' );
 		$store = new ActionScheduler_wpPostStore();
 		$action_id = $store->save_action($action);
 		$store->cancel_action( $action_id );
@@ -115,7 +115,7 @@ class ActionScheduler_wpPostStore_Test extends AbstractStoreTest {
 			$delta     = sprintf( '+%d day', $day );
 			$time      = as_get_datetime_object( $delta );
 			$schedule  = new ActionScheduler_SimpleSchedule( $time );
-			$action    = new ActionScheduler_Action( 'my_hook', array(), $schedule, $group );
+			$action    = new ActionScheduler_Action( ActionScheduler_Callbacks::HOOK_WITH_CALLBACK, array(), $schedule, $group );
 			$actions[] = $store->save_action( $action );
 		}
 		$store->cancel_actions_by_group( $group );
@@ -132,7 +132,7 @@ class ActionScheduler_wpPostStore_Test extends AbstractStoreTest {
 		for ( $i = 3 ; $i > -3 ; $i-- ) {
 			$time = as_get_datetime_object($i.' hours');
 			$schedule = new ActionScheduler_SimpleSchedule($time);
-			$action = new ActionScheduler_Action('my_hook', array($i), $schedule, 'my_group');
+			$action = new ActionScheduler_Action( ActionScheduler_Callbacks::HOOK_WITH_CALLBACK, array($i), $schedule, 'my_group' );
 			$created_actions[] = $store->save_action($action);
 		}
 
@@ -147,8 +147,8 @@ class ActionScheduler_wpPostStore_Test extends AbstractStoreTest {
 		$store           = new ActionScheduler_wpPostStore();
 		$schedule        = new ActionScheduler_SimpleSchedule( as_get_datetime_object( '-1 hour' ) );
 		$created_actions = array(
-			$store->save_action( new ActionScheduler_Action( 'my_hook', array( 1 ), $schedule, 'my_group' ) ),
-			$store->save_action( new ActionScheduler_Action( 'my_hook', array( 1 ), $schedule, 'my_group' ) ),
+			$store->save_action( new ActionScheduler_Action( ActionScheduler_Callbacks::HOOK_WITH_CALLBACK, array( 1 ), $schedule, 'my_group' ) ),
+			$store->save_action( new ActionScheduler_Action( ActionScheduler_Callbacks::HOOK_WITH_CALLBACK, array( 1 ), $schedule, 'my_group' ) ),
 		);
 
 		$claim = $store->stake_claim();
@@ -173,7 +173,7 @@ class ActionScheduler_wpPostStore_Test extends AbstractStoreTest {
 		for ( $i = 0 ; $i > -3 ; $i-- ) {
 			$time = as_get_datetime_object($i.' hours');
 			$schedule = new ActionScheduler_SimpleSchedule($time);
-			$action = new ActionScheduler_Action('my_hook', array($i), $schedule, 'my_group');
+			$action = new ActionScheduler_Action( ActionScheduler_Callbacks::HOOK_WITH_CALLBACK, array($i), $schedule, 'my_group' );
 			$created_actions[] = $store->save_action($action);
 		}
 
@@ -189,7 +189,7 @@ class ActionScheduler_wpPostStore_Test extends AbstractStoreTest {
 		for ( $i = 0 ; $i > -3 ; $i-- ) {
 			$time = as_get_datetime_object($i.' hours');
 			$schedule = new ActionScheduler_SimpleSchedule($time);
-			$action = new ActionScheduler_Action('my_hook', array($i), $schedule, 'my_group');
+			$action = new ActionScheduler_Action( ActionScheduler_Callbacks::HOOK_WITH_CALLBACK, array($i), $schedule, 'my_group' );
 			$created_actions[] = $store->save_action($action);
 		}
 
@@ -207,30 +207,30 @@ class ActionScheduler_wpPostStore_Test extends AbstractStoreTest {
 		for ( $i = -3 ; $i <= 3 ; $i++ ) {
 			$time = as_get_datetime_object($i.' hours');
 			$schedule = new ActionScheduler_SimpleSchedule($time);
-			$action = new ActionScheduler_Action('my_hook', array($i), $schedule, 'my_group');
+			$action = new ActionScheduler_Action( ActionScheduler_Callbacks::HOOK_WITH_CALLBACK, array($i), $schedule, 'my_group' );
 			$created_actions[] = $store->save_action($action);
 		}
 
-		$next_no_args = $store->find_action( 'my_hook' );
+		$next_no_args = $store->find_action( ActionScheduler_Callbacks::HOOK_WITH_CALLBACK );
 		$this->assertEquals( $created_actions[0], $next_no_args );
 
-		$next_with_args = $store->find_action( 'my_hook', array( 'args' => array( 1 ) ) );
+		$next_with_args = $store->find_action( ActionScheduler_Callbacks::HOOK_WITH_CALLBACK, array( 'args' => array( 1 ) ) );
 		$this->assertEquals( $created_actions[4], $next_with_args );
 
-		$non_existent = $store->find_action( 'my_hook', array( 'args' => array( 17 ) ) );
+		$non_existent = $store->find_action( ActionScheduler_Callbacks::HOOK_WITH_CALLBACK, array( 'args' => array( 17 ) ) );
 		$this->assertNull( $non_existent );
 	}
 
 	public function test_search_by_group() {
 		$store = new ActionScheduler_wpPostStore();
 		$schedule = new ActionScheduler_SimpleSchedule(as_get_datetime_object('tomorrow'));
-		$abc = $store->save_action(new ActionScheduler_Action('my_hook', array(1), $schedule, 'abc'));
-		$def = $store->save_action(new ActionScheduler_Action('my_hook', array(1), $schedule, 'def'));
-		$ghi = $store->save_action(new ActionScheduler_Action('my_hook', array(1), $schedule, 'ghi'));
+		$abc = $store->save_action( new ActionScheduler_Action( ActionScheduler_Callbacks::HOOK_WITH_CALLBACK, array( 1 ), $schedule, 'abc' ) );
+		$def = $store->save_action( new ActionScheduler_Action( ActionScheduler_Callbacks::HOOK_WITH_CALLBACK, array( 1 ), $schedule, 'def' ) );
+		$ghi = $store->save_action( new ActionScheduler_Action( ActionScheduler_Callbacks::HOOK_WITH_CALLBACK, array( 1 ), $schedule, 'ghi' ) );
 
-		$this->assertEquals( $abc, $store->find_action('my_hook', array('group' => 'abc')));
-		$this->assertEquals( $def, $store->find_action('my_hook', array('group' => 'def')));
-		$this->assertEquals( $ghi, $store->find_action('my_hook', array('group' => 'ghi')));
+		$this->assertEquals( $abc, $store->find_action( ActionScheduler_Callbacks::HOOK_WITH_CALLBACK, array( 'group' => 'abc' ) ) );
+		$this->assertEquals( $def, $store->find_action( ActionScheduler_Callbacks::HOOK_WITH_CALLBACK, array( 'group' => 'def' ) ) );
+		$this->assertEquals( $ghi, $store->find_action( ActionScheduler_Callbacks::HOOK_WITH_CALLBACK, array( 'group' => 'ghi' ) ) );
 	}
 
 	public function test_post_author() {
@@ -238,7 +238,7 @@ class ActionScheduler_wpPostStore_Test extends AbstractStoreTest {
 
 		$time = as_get_datetime_object();
 		$schedule = new ActionScheduler_SimpleSchedule($time);
-		$action = new ActionScheduler_Action('my_hook', array(), $schedule);
+		$action = new ActionScheduler_Action( ActionScheduler_Callbacks::HOOK_WITH_CALLBACK, array(), $schedule );
 		$store = new ActionScheduler_wpPostStore();
 		$action_id = $store->save_action($action);
 
@@ -253,7 +253,7 @@ class ActionScheduler_wpPostStore_Test extends AbstractStoreTest {
 
 
 		$schedule = new ActionScheduler_SimpleSchedule($time);
-		$action = new ActionScheduler_Action('my_hook', array(), $schedule);
+		$action = new ActionScheduler_Action( ActionScheduler_Callbacks::HOOK_WITH_CALLBACK, array(), $schedule );
 		$action_id = $store->save_action($action);
 		$post = get_post($action_id);
 		$this->assertEquals(0, $post->post_author);
@@ -267,7 +267,7 @@ class ActionScheduler_wpPostStore_Test extends AbstractStoreTest {
 	public function test_post_status_for_recurring_action() {
 		$time = as_get_datetime_object('10 minutes');
 		$schedule = new ActionScheduler_IntervalSchedule($time, HOUR_IN_SECONDS);
-		$action = new ActionScheduler_Action('my_hook', array(), $schedule);
+		$action = new ActionScheduler_Action( ActionScheduler_Callbacks::HOOK_WITH_CALLBACK, array(), $schedule );
 		$store = new ActionScheduler_wpPostStore();
 		$action_id = $store->save_action($action);
 
@@ -285,7 +285,7 @@ class ActionScheduler_wpPostStore_Test extends AbstractStoreTest {
 	public function test_get_run_date() {
 		$time = as_get_datetime_object('-10 minutes');
 		$schedule = new ActionScheduler_IntervalSchedule($time, HOUR_IN_SECONDS);
-		$action = new ActionScheduler_Action('my_hook', array(), $schedule);
+		$action = new ActionScheduler_Action( ActionScheduler_Callbacks::HOOK_WITH_CALLBACK, array(), $schedule );
 		$store = new ActionScheduler_wpPostStore();
 		$action_id = $store->save_action($action);
 

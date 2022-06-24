@@ -190,7 +190,7 @@ AND `group_id` = %d
 		);
 		// phpcs:enable
 
-		if ( $data['args'] ) {
+		if ( ! empty( $data['args'] ) && wp_json_encode( array() ) !== $data['args'] ) {
 			$where_clause .= $wpdb->prepare( 'AND args = %s', $data['args'] );
 		}
 

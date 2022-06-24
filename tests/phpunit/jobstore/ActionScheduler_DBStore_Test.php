@@ -511,4 +511,29 @@ class ActionScheduler_DBStore_Test extends AbstractStoreTest {
 		$action_from_db_duplicate = $store->fetch_action( $action_id_duplicate );
 		$this->assertTrue( is_a( $action_from_db_duplicate, ActionScheduler_Action::class ) );
 	}
+
+	/**
+	 * Test asserting that action when an action is created with empty args, it matches with actions created with args for uniqueness.
+	 */
+	public function test_create_action_unique_with_empty_array() {
+		$time     = as_get_datetime_object();
+		$hook     = md5( rand() );
+		$schedule = new ActionScheduler_SimpleSchedule( $time );
+		$store    = new ActionScheduler_DBStore();
+		$action   = new ActionScheduler_Action( $hook, array( 'foo' => 'bar' ), $schedule );
+
+		$action_id = $store->save_unique_action( $action );
+		$this->assertNotEquals( 0, $action_id );
+		$action_from_db = $store->fetch_action( $action_id );
+		$this->assertTrue( is_a( $action_from_db, ActionScheduler_Action::class ) );
+
+		$action_with_empty_args = new ActionScheduler_Action( $hook, array(), $schedule );
+		$action_id_duplicate = $store->save_unique_action( $action_with_empty_args );
+		$this->assertEquals( 0, $action_id_duplicate );
+
+		$action_with_different_args = new ActionScheduler_Action( $hook, array( 'foo' => 'bazz' ), $schedule );
+		$action_id_duplicate = $store->save_unique_action( $action_with_different_args );
+		$action_from_db = $store->fetch_action( $action_id_duplicate );
+		$this->assertTrue( is_a( $action_from_db, ActionScheduler_Action::class ) );
+	}
 }

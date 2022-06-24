@@ -19,7 +19,7 @@ function as_enqueue_async_action( $hook, $args = array(), $group = '', $unique =
 	if ( ! ActionScheduler::is_initialized( __FUNCTION__ ) ) {
 		return 0;
 	}
-	return ActionScheduler::factory()->async_unique( $hook, $unique, $args, $group );
+	return ActionScheduler::factory()->async_unique( $hook, $args, $group, $unique );
 }
 
 /**
@@ -37,7 +37,7 @@ function as_schedule_single_action( $timestamp, $hook, $args = array(), $group =
 	if ( ! ActionScheduler::is_initialized( __FUNCTION__ ) ) {
 		return 0;
 	}
-	return ActionScheduler::factory()->single_unique( $hook, $unique, $args, $timestamp, $group );
+	return ActionScheduler::factory()->single_unique( $hook, $args, $timestamp, $group, $unique );
 }
 
 /**
@@ -56,7 +56,7 @@ function as_schedule_recurring_action( $timestamp, $interval_in_seconds, $hook, 
 	if ( ! ActionScheduler::is_initialized( __FUNCTION__ ) ) {
 		return 0;
 	}
-	return ActionScheduler::factory()->recurring_unique( $hook, $unique, $args, $timestamp, $interval_in_seconds, $group );
+	return ActionScheduler::factory()->recurring_unique( $hook, $args, $timestamp, $interval_in_seconds, $group, $unique );
 }
 
 /**
@@ -87,7 +87,7 @@ function as_schedule_cron_action( $timestamp, $schedule, $hook, $args = array(),
 	if ( ! ActionScheduler::is_initialized( __FUNCTION__ ) ) {
 		return 0;
 	}
-	return ActionScheduler::factory()->cron_unique( $hook, $unique, $args, $timestamp, $schedule, $group );
+	return ActionScheduler::factory()->cron_unique( $hook, $args, $timestamp, $schedule, $group, $unique );
 }
 
 /**

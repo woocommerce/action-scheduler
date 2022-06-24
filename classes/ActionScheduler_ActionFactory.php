@@ -66,20 +66,20 @@ class ActionScheduler_ActionFactory {
 	 * @return int The ID of the stored action.
 	 */
 	public function async( $hook, $args = array(), $group = '' ) {
-		return $this->async_unique( $hook, false, $args, $group );
+		return $this->async_unique( $hook, $args, $group, false );
 	}
 
 	/**
 	 * Same as async, but also supports $unique param.
 	 *
 	 * @param string $hook The hook to trigger when this action runs.
-	 * @param bool   $unique Whether to ensure the action is unique.
 	 * @param array  $args Args to pass when the hook is triggered.
 	 * @param string $group A group to put the action in.
+	 * @param bool   $unique Whether to ensure the action is unique.
 	 *
 	 * @return int The ID of the stored action.
 	 */
-	public function async_unique( $hook, $unique, $args = array(), $group = '' ) {
+	public function async_unique( $hook, $args = array(), $group = '', $unique = true ) {
 		$schedule = new ActionScheduler_NullSchedule();
 		$action   = new ActionScheduler_Action( $hook, $args, $schedule, $group );
 		return $unique ? $this->store_unique_action( $action, $unique ) : $this->store( $action );
@@ -96,21 +96,21 @@ class ActionScheduler_ActionFactory {
 	 * @return int The ID of the stored action.
 	 */
 	public function single( $hook, $args = array(), $when = null, $group = '' ) {
-		return $this->single_unique( $hook, false, $args, $when, $group );
+		return $this->single_unique( $hook, $args, $when, $group, false );
 	}
 
 	/**
 	 * Create single action only if there is no pending or running action with same name and params.
 	 *
 	 * @param string $hook The hook to trigger when this action runs.
-	 * @param bool   $unique Whether action scheduled should be unique.
 	 * @param array  $args Args to pass when the hook is triggered.
 	 * @param int    $when Unix timestamp when the action will run.
 	 * @param string $group A group to put the action in.
+	 * @param bool   $unique Whether action scheduled should be unique.
 	 *
 	 * @return int The ID of the stored action.
 	 */
-	public function single_unique( $hook, $unique, $args = array(), $when = null, $group = '' ) {
+	public function single_unique( $hook, $args = array(), $when = null, $group = '', $unique = true ) {
 		$date     = as_get_datetime_object( $when );
 		$schedule = new ActionScheduler_SimpleSchedule( $date );
 		$action   = new ActionScheduler_Action( $hook, $args, $schedule, $group );
@@ -129,22 +129,22 @@ class ActionScheduler_ActionFactory {
 	 * @return int The ID of the stored action.
 	 */
 	public function recurring( $hook, $args = array(), $first = null, $interval = null, $group = '' ) {
-		return $this->recurring_unique( $hook, false, $args, $first, $interval, $group );
+		return $this->recurring_unique( $hook, $args, $first, $interval, $group, false );
 	}
 
 	/**
 	 * Create the first instance of an action recurring on a given interval only if there is no pending or running action with same name and params.
 	 *
 	 * @param string $hook The hook to trigger when this action runs.
-	 * @param bool   $unique Whether action scheduled should be unique.
 	 * @param array  $args Args to pass when the hook is triggered.
 	 * @param int    $first Unix timestamp for the first run.
 	 * @param int    $interval Seconds between runs.
 	 * @param string $group A group to put the action in.
+	 * @param bool   $unique Whether action scheduled should be unique.
 	 *
 	 * @return int The ID of the stored action.
 	 */
-	public function recurring_unique( $hook, $unique, $args = array(), $first = null, $interval = null, $group = '' ) {
+	public function recurring_unique( $hook, $args = array(), $first = null, $interval = null, $group = '', $unique = true ) {
 		if ( empty( $interval ) ) {
 			return $this->single_unique( $hook, $unique, $args, $first, $group );
 		}
@@ -168,24 +168,25 @@ class ActionScheduler_ActionFactory {
 	 * @return int The ID of the stored action.
 	 */
 	public function cron( $hook, $args = array(), $base_timestamp = null, $schedule = null, $group = '' ) {
-		return $this->cron_unique( $hook, false, $args, $base_timestamp, $schedule, $group );
+		return $this->cron_unique( $hook, $args, $base_timestamp, $schedule, $group, false );
 	}
+
 
 	/**
 	 * Create the first instance of an action recurring on a Cron schedule only if there is no pending or running action with same name and params.
 	 *
 	 * @param string $hook The hook to trigger when this action runs.
-	 * @param bool   $unique Whether action scheduled should be unique.
 	 * @param array  $args Args to pass when the hook is triggered.
 	 * @param int    $base_timestamp The first instance of the action will be scheduled
 	 *        to run at a time calculated after this timestamp matching the cron
 	 *        expression. This can be used to delay the first instance of the action.
 	 * @param int    $schedule A cron definition string.
 	 * @param string $group A group to put the action in.
+	 * @param bool   $unique Whether action scheduled should be unique.
 	 *
 	 * @return int The ID of the stored action.
 	 **/
-	public function cron_unique( $hook, $unique, $args = array(), $base_timestamp = null, $schedule = null, $group = '' ) {
+	public function cron_unique( $hook, $args = array(), $base_timestamp = null, $schedule = null, $group = '', $unique = true ) {
 		if ( empty( $schedule ) ) {
 			return $this->single_unique( $hook, $unique, $args, $base_timestamp, $group );
 		}

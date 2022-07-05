@@ -370,6 +370,7 @@ class Procedural_API_Test extends ActionScheduler_UnitTestCase {
 	 * @param int $action_id Action ID to assert.
 	 */
 	private function assertValidAction( $action_id ) {
+		$this->assertNotEquals( 0, $action_id );
 		$action = ActionScheduler::store()->fetch_action( $action_id );
 		$this->assertInstanceOf( 'ActionScheduler_Action', $action );
 	}

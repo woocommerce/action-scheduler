@@ -478,10 +478,12 @@ class ActionScheduler_DBStore_Test extends AbstractStoreTest {
 
 		$action_id = $store->save_action( $action );
 		$action_from_db = $store->fetch_action( $action_id );
+		$this->assertNotEquals( 0, $action_id );
 		$this->assertTrue( is_a( $action_from_db, ActionScheduler_Action::class ) );
 
 		$action2 = new ActionScheduler_Action( $hook, array(), $schedule, 'group2' );
 		$action_id_group2 = $store->save_unique_action( $action2 );
+		$this->assertNotEquals( 0, $action_id_group2 );
 		$action_2_from_db = $store->fetch_action( $action_id_group2 );
 		$this->assertTrue( is_a( $action_2_from_db, ActionScheduler_Action::class ) );
 
@@ -508,6 +510,7 @@ class ActionScheduler_DBStore_Test extends AbstractStoreTest {
 		// Non unique action is scheduled even if the previous one was unique.
 		$action = new ActionScheduler_Action( $hook, array(), $schedule );
 		$action_id_duplicate = $store->save_action( $action );
+		$this->assertNotEquals( 0, $action_id_duplicate );
 		$action_from_db_duplicate = $store->fetch_action( $action_id_duplicate );
 		$this->assertTrue( is_a( $action_from_db_duplicate, ActionScheduler_Action::class ) );
 	}
@@ -530,10 +533,25 @@ class ActionScheduler_DBStore_Test extends AbstractStoreTest {
 		$action_with_empty_args = new ActionScheduler_Action( $hook, array(), $schedule );
 		$action_id_duplicate = $store->save_unique_action( $action_with_empty_args );
 		$this->assertEquals( 0, $action_id_duplicate );
+	}
 
-		$action_with_different_args = new ActionScheduler_Action( $hook, array( 'foo' => 'bazz' ), $schedule );
-		$action_id_duplicate = $store->save_unique_action( $action_with_different_args );
-		$action_from_db = $store->fetch_action( $action_id_duplicate );
+	/**
+	 * Uniqueness does not check for args, so actions with different args can't be scheduled when unique is true.
+	 */
+	public function test_create_action_unique_with_different_args_still_fail() {
+		$time     = as_get_datetime_object();
+		$hook     = md5( rand() );
+		$schedule = new ActionScheduler_SimpleSchedule( $time );
+		$store    = new ActionScheduler_DBStore();
+		$action   = new ActionScheduler_Action( $hook, array( 'foo' => 'bar' ), $schedule );
+
+		$action_id = $store->save_unique_action( $action );
+		$this->assertNotEquals( 0, $action_id );
+		$action_from_db = $store->fetch_action( $action_id );
 		$this->assertTrue( is_a( $action_from_db, ActionScheduler_Action::class ) );
+
+		$action_with_diff_args = new ActionScheduler_Action( $hook, array( 'foo' => 'bazz' ), $schedule );
+		$action_id_duplicate = $store->save_unique_action( $action_with_diff_args );
+		$this->assertEquals( 0, $action_id_duplicate );
 	}
 }

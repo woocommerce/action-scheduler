@@ -66,13 +66,13 @@ class ActionScheduler_DBStore extends ActionScheduler_Store {
 	 * Save an action.
 	 *
 	 * @param ActionScheduler_Action $action Action object.
-	 * @param \DateTime              $date Optional schedule date. Default null.
+	 * @param ?DateTime              $date Optional schedule date. Default null.
 	 * @param bool                   $unique Whether the action should be unique.
 	 *
 	 * @return int Action ID.
-	 * @throws \RuntimeException     Throws exception when saving the action fails.
+	 * @throws RuntimeException     Throws exception when saving the action fails.
 	 */
-	private function save_action_to_db( ActionScheduler_Action $action, \DateTime $date = null, $unique = false ) {
+	private function save_action_to_db( ActionScheduler_Action $action, DateTime $date = null, $unique = false ) {
 		global $wpdb;
 
 		try {
@@ -135,11 +135,11 @@ class ActionScheduler_DBStore extends ActionScheduler_Store {
 
 		$table_name = ! empty( $wpdb->actionscheduler_actions ) ? $wpdb->actionscheduler_actions : $wpdb->prefix . 'actionscheduler_actions';
 
-		$column_sql                  = '`' . implode( '`, `', $columns ) . '`';
-		$placeholder_sql             = implode( ', ', $placeholders );
-		$where_clause = $this->build_where_clause_for_insert( $data, $table_name, $unique );
+		$column_sql      = '`' . implode( '`, `', $columns ) . '`';
+		$placeholder_sql = implode( ', ', $placeholders );
+		$where_clause    = $this->build_where_clause_for_insert( $data, $table_name, $unique );
 		// phpcs:disable WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- $column_sql and $where_clause are already prepared. $placeholder_sql is hardcoded.
-		$insert_query                = $wpdb->prepare(
+		$insert_query    = $wpdb->prepare(
 			"
 INSERT INTO $table_name ( $column_sql )
 SELECT $placeholder_sql FROM DUAL

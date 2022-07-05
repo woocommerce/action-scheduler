@@ -471,7 +471,7 @@ class ActionScheduler_DBStore_Test extends AbstractStoreTest {
 	 */
 	public function test_create_action_unique_with_different_groups() {
 		$time     = as_get_datetime_object();
-		$hook    = md5( rand() );
+		$hook     = md5( rand() );
 		$schedule = new ActionScheduler_SimpleSchedule( $time );
 		$store    = new ActionScheduler_DBStore();
 		$action   = new ActionScheduler_Action( $hook, array(), $schedule, 'group1' );

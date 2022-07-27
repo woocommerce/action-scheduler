@@ -22,9 +22,7 @@ abstract class ActionScheduler_TimezoneHelper {
 			$date = as_get_datetime_object( $date->format( 'U' ) );
 		}
 
-		if ( function_exists( 'wp_timezone_string' ) ) {
-			$date->setTimezone( new DateTimeZone( wp_timezone_string() ) );
-		} elseif ( get_option( 'timezone_string' ) ) {
+		if ( get_option( 'timezone_string' ) ) {
 			$date->setTimezone( new DateTimeZone( self::get_local_timezone_string() ) );
 		} else {
 			$date->setUtcOffset( self::get_local_timezone_offset() );
@@ -54,13 +52,13 @@ abstract class ActionScheduler_TimezoneHelper {
 		}
 
 		// Get UTC offset, if it isn't set then return UTC.
-		$utc_offset = float( get_option( 'gmt_offset', 0 ) );
-		if ( ! is_numeric( $utc_offset ) || 0.0 === $utc_offset ) {
+		$utc_offset = intval( get_option( 'gmt_offset', 0 ) );
+		if ( 0 === $utc_offset ) {
 			return 'UTC';
 		}
 
 		// Adjust UTC offset from hours to seconds.
-		$utc_offset = (int) ( $utc_offset * 3600 );
+		$utc_offset *= 3600;
 
 		// Attempt to guess the timezone string from the UTC offset.
 		$timezone = timezone_name_from_abbr( '', $utc_offset );

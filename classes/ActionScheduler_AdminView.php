@@ -128,8 +128,9 @@ class ActionScheduler_AdminView extends ActionScheduler_AdminView_Deprecated {
 		$last_check = get_transient( 'action_scheduler_last_pastdue_actions_check' );
 
 		# If transient exists, we're within interval, so bail.
-		if ( !empty( $last_check ) )
+		if ( ! empty( $last_check ) ) {
 			return;
+		}
 
 		# Perform the check.
 		$this->check_pastdue_actions();

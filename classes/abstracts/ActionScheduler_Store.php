@@ -146,8 +146,9 @@ abstract class ActionScheduler_Store extends ActionScheduler_Store_Deprecated {
 			'date'   => as_get_datetime_object(),
 		), 'count' );
 
-		if ( 0 !== $pastdue_action_counts )
+		if ( $pastdue_action_counts ) {
 			$extra_actions['past-due'] = $pastdue_action_counts;
+		}
 
 		return apply_filters( 'action_scheduler_extra_action_counts', $extra_actions );
 	}

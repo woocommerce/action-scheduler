@@ -176,19 +176,24 @@ class ActionScheduler_AdminView extends ActionScheduler_AdminView_Deprecated {
 
 		$actions_url = add_query_arg( array(
 			'page'   => 'action-scheduler',
-			'status' => 'pending',
+			'status' => 'past-due',
 			'order'  => 'asc',
 		), admin_url( 'tools.php' ) );
 
-		$faq_url = 'https://actionscheduler.org/faq/#' . sanitize_title_with_dashes( 'My site has past-due actions; what can I do?' );
-
 		# Print notice.
-		printf( __( '<div class="%s"><p><strong>Action Scheduler:</strong> %d <a href="%s">past-due actions</a> found; something may be wrong. <a href="%s" target="_blank" rel="noopener noreferer">Read documentation &raquo;</a></p></div>', 'action-scheduler' ),
-			'notice notice-warning',
+		echo '<div class="notice notice-warning"><p>';
+		printf(
+			_n(
+				// translators: 1) is the number of affected actions, 2) is a link to an admin screen.
+				'<strong>Action Scheduler:</strong> %1$d <a href="%2$s">past-due action</a> found; something may be wrong. <a href="https://actionscheduler.org/faq/#my-site-has-past-due-actions-what-can-i-do" target="_blank">Read documentation &raquo;</a>',
+				'<strong>Action Scheduler:</strong> %1$d <a href="%2$s">past-due actions</a> found; something may be wrong. <a href="https://actionscheduler.org/faq/#my-site-has-past-due-actions-what-can-i-do" target="_blank">Read documentation &raquo;</a>',
+				$num_pastdue_actions,
+				'action-scheduler'
+			),
 			$num_pastdue_actions,
-			esc_attr( esc_url( $actions_url ) ),
-			esc_attr( esc_url( $faq_url ) )
+			esc_attr( esc_url( $actions_url ) )
 		);
+		echo '</p></div>';
 
 		# Facilitate third-parties to evaluate and print notices.
 		do_action( 'action_scheduler_pastdue_actions_extra_notices', $query_args );

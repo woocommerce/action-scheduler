@@ -150,6 +150,12 @@ abstract class ActionScheduler_Store extends ActionScheduler_Store_Deprecated {
 			$extra_actions['past-due'] = $pastdue_action_counts;
 		}
 
+		/**
+		 * Allows 3rd party code to add extra action counts (used in filters in the list table).
+		 *
+		 * @since 3.5.0
+		 * @param $extra_actions array Array with format action_count_identifier => action count.
+		 */
 		return apply_filters( 'action_scheduler_extra_action_counts', $extra_actions );
 	}
 

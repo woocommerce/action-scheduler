@@ -587,6 +587,16 @@ class ActionScheduler_ListTable extends ActionScheduler_Abstract_ListTable {
 			'search'   => $this->get_request_search_query(),
 		);
 
+		/**
+		 * Change query arguments to query for past-due actions.
+		 * Past-due actions have the 'pending' status and are in the past.
+		 * This is needed because registering 'past-due' as a status is overkill.
+		 */
+		if ( 'past-due' === $this->get_request_status() ) {
+			$query['status'] = ActionScheduler_Store::STATUS_PENDING;
+			$query['date']   = as_get_datetime_object();
+		}
+
 		$this->items = array();
 
 		$total_items = $this->store->query_actions( $query, 'count' );
@@ -627,7 +637,7 @@ class ActionScheduler_ListTable extends ActionScheduler_Abstract_ListTable {
 	 * Prints the available statuses so the user can click to filter.
 	 */
 	protected function display_filter_by_status() {
-		$this->status_counts = $this->store->action_counts();
+		$this->status_counts = $this->store->action_counts() + $this->store->extra_action_counts();
 		parent::display_filter_by_status();
 	}
 

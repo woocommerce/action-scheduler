@@ -1,6 +1,6 @@
 *** Changelog ***
 
-= 3.5.0 - 2022-XX-XX =
+= 3.5.0 - 2022-08-25 =
 * Add - The active view link within the "Tools > Scheduled Actions" screen is now clickable.
 * Add - A warning when there are past-due actions.
 * Enhancement - Added the ability to schedule unique actions via an atomic operation.

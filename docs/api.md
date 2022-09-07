@@ -194,7 +194,7 @@ as_next_scheduled_action( $hook, $args, $group );
 
 ### Return value
 
-`(integer|boolean)` The timestamp for the next occurrence, or false if nothing was found.
+`(integer|boolean)` The timestamp for the next occurrence of a pending scheduled action, true for an async or in-progress action or false if there is no matching action.
 
 
 ## Function Reference / `as_has_scheduled_action()`

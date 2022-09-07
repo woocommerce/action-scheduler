@@ -109,7 +109,7 @@ require_once( plugin_dir_path( __FILE__ ) . '/libraries/action-scheduler/action-
  */
 function eg_schedule_midnight_log() {
 	if ( false === as_has_scheduled_action( 'eg_midnight_log' ) ) {
-		as_schedule_recurring_action( strtotime( 'tomorrow' ), DAY_IN_SECONDS, 'eg_midnight_log' );
+		as_schedule_recurring_action( strtotime( 'tomorrow' ), DAY_IN_SECONDS, 'eg_midnight_log', array(), '', true );
 	}
 }
 add_action( 'init', 'eg_schedule_midnight_log' );

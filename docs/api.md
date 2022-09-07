@@ -43,6 +43,7 @@ as_enqueue_async_action( $hook, $args, $group );
 - **$hook** (string)(required) Name of the action hook.
 - **$args** (array) Arguments to pass to callbacks when the hook triggers. Default: _`array()`_.
 - **$group** (string) The group to assign this job to. Default: _''_.
+- **$unique** (boolean) Whether the action should be unique. Default: _`false`_.
 
 ### Return value
 
@@ -67,6 +68,7 @@ as_schedule_single_action( $timestamp, $hook, $args, $group );
 - **$hook** (string)(required) Name of the action hook.
 - **$args** (array) Arguments to pass to callbacks when the hook triggers. Default: _`array()`_.
 - **$group** (string) The group to assign this job to. Default: _''_.
+- **$unique** (boolean) Whether the action should be unique. Default: _`false`_.
 
 ### Return value
 
@@ -92,6 +94,7 @@ as_schedule_recurring_action( $timestamp, $interval_in_seconds, $hook, $args, $g
 - **$hook** (string)(required) Name of the action hook.
 - **$args** (array) Arguments to pass to callbacks when the hook triggers. Default: _`array()`_.
 - **$group** (string) The group to assign this job to. Default: _''_.
+- **$unique** (boolean) Whether the action should be unique. Default: _`false`_.
 
 ### Return value
 
@@ -119,6 +122,7 @@ as_schedule_cron_action( $timestamp, $schedule, $hook, $args, $group );
 - **$hook** (string)(required) Name of the action hook.
 - **$args** (array) Arguments to pass to callbacks when the hook triggers. Default: _`array()`_.
 - **$group** (string) The group to assign this job to. Default: _''_.
+- **$unique** (boolean) Whether the action should be unique. Default: _`false`_.
 
 ### Return value
 

@@ -43,10 +43,11 @@ as_enqueue_async_action( $hook, $args, $group );
 - **$hook** (string)(required) Name of the action hook.
 - **$args** (array) Arguments to pass to callbacks when the hook triggers. Default: _`array()`_.
 - **$group** (string) The group to assign this job to. Default: _''_.
+- **$unique** (boolean) Whether the action should be unique. Default: _`false`_.
 
 ### Return value
 
-(integer) the action's ID.
+`(integer)` the action's ID.
 
 
 ## Function Reference / `as_schedule_single_action()`
@@ -67,10 +68,11 @@ as_schedule_single_action( $timestamp, $hook, $args, $group );
 - **$hook** (string)(required) Name of the action hook.
 - **$args** (array) Arguments to pass to callbacks when the hook triggers. Default: _`array()`_.
 - **$group** (string) The group to assign this job to. Default: _''_.
+- **$unique** (boolean) Whether the action should be unique. Default: _`false`_.
 
 ### Return value
 
-(integer) the action's ID.
+`(integer)` the action's ID.
 
 
 ## Function Reference / `as_schedule_recurring_action()`
@@ -92,10 +94,11 @@ as_schedule_recurring_action( $timestamp, $interval_in_seconds, $hook, $args, $g
 - **$hook** (string)(required) Name of the action hook.
 - **$args** (array) Arguments to pass to callbacks when the hook triggers. Default: _`array()`_.
 - **$group** (string) The group to assign this job to. Default: _''_.
+- **$unique** (boolean) Whether the action should be unique. Default: _`false`_.
 
 ### Return value
 
-(integer) the action's ID.
+`(integer)` the action's ID.
 
 
 ## Function Reference / `as_schedule_cron_action()`
@@ -119,10 +122,11 @@ as_schedule_cron_action( $timestamp, $schedule, $hook, $args, $group );
 - **$hook** (string)(required) Name of the action hook.
 - **$args** (array) Arguments to pass to callbacks when the hook triggers. Default: _`array()`_.
 - **$group** (string) The group to assign this job to. Default: _''_.
+- **$unique** (boolean) Whether the action should be unique. Default: _`false`_.
 
 ### Return value
 
-(integer) the action's ID.
+`(integer)` the action's ID.
 
 
 ## Function Reference / `as_unschedule_action()`
@@ -145,7 +149,7 @@ as_unschedule_action( $hook, $args, $group );
 
 ### Return value
 
-(null)
+`(null)`
 
 ## Function Reference / `as_unschedule_all_actions()`
 
@@ -167,7 +171,7 @@ as_unschedule_all_actions( $hook, $args, $group )
 
 ### Return value
 
-(string|null) The scheduled action ID if a scheduled action was found, or null if no matching action found.
+`(string|null)` The scheduled action ID if a scheduled action was found, or null if no matching action found.
 
 
 ## Function Reference / `as_next_scheduled_action()`
@@ -190,7 +194,7 @@ as_next_scheduled_action( $hook, $args, $group );
 
 ### Return value
 
-(integer|boolean) The timestamp for the next occurrence, or false if nothing was found.
+`(integer|boolean)` The timestamp for the next occurrence of a pending scheduled action, true for an async or in-progress action or false if there is no matching action.
 
 
 ## Function Reference / `as_has_scheduled_action()`
@@ -213,7 +217,7 @@ as_has_scheduled_action( $hook, $args, $group );
 
 ### Return value
 
-(boolean) True if a matching action is pending or in-progress, false otherwise.
+`(boolean)` True if a matching action is pending or in-progress, false otherwise.
 
 
 ## Function Reference / `as_get_scheduled_actions()`
@@ -248,4 +252,4 @@ as_get_scheduled_actions( $args, $return_format );
 
 ### Return value
 
-(array) Array of action rows matching the criteria specified with `$args`.
+`(array)` Array of action rows matching the criteria specified with `$args`.

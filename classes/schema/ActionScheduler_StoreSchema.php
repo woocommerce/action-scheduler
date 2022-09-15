@@ -56,7 +56,7 @@ class ActionScheduler_StoreSchema extends ActionScheduler_Abstract_Schema {
 				        last_attempt_gmt datetime NULL default '${default_date}',
 				        last_attempt_local datetime NULL default '${default_date}',
 				        claim_id bigint(20) unsigned NOT NULL default '0',
-				        extended_args varchar(8000) DEFAULT NULL,
+				        extended_args longtext,
 				        PRIMARY KEY  (action_id),
 				        KEY hook (hook($max_index_length)),
 				        KEY status (status),

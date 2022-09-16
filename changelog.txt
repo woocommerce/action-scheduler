@@ -1,5 +1,8 @@
 *** Changelog ***
 
+= 3.5.2 - 2022-09-16 =
+* Fix - erroneous 3.5.1 release.
+
 = 3.5.1 - 2022-09-13 =
 * Maintenance on A/S docs.
 * fix: PHP 8.2 deprecated notice.

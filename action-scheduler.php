@@ -40,7 +40,7 @@ if ( ! function_exists( 'action_scheduler_register_3_dot_5_dot_2' ) && function_
 	 */
 	function action_scheduler_register_3_dot_5_dot_2() {
 		$versions = ActionScheduler_Versions::instance();
-		$versions->register( '3.5.0', 'action_scheduler_initialize_3_dot_5_dot_2' );
+		$versions->register( '3.5.2', 'action_scheduler_initialize_3_dot_5_dot_2' );
 	}
 
 	/**

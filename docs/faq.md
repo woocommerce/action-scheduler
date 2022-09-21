@@ -6,6 +6,14 @@ Action Scheduler is designed to be used and released in plugins. It avoids redec
 
 To use it in your plugin (or theme), simply require the `action-scheduler/action-scheduler.php` file. Action Scheduler will take care of the rest. __Note:__ Action Scheduler is only loaded from a theme if it is not included in any active plugins.
 
+### How to disable Action Scheduler?
+
+Disabled it is helpful for automated testing and it is enough to add a constant in your `wp-config.php` as:
+
+```
+define( 'AS_DISABLE_QUEUE_RUNNERS', true );
+```
+
 ### I don't want to use WP-Cron. Does Action Scheduler depend on WP-Cron?
 
 By default, Action Scheduler is initiated by WP-Cron (and the `'shutdown'` hook on admin requests). However, it has no dependency on the WP-Cron system. You can initiate the Action Scheduler queue in other ways with just one or two lines of code.

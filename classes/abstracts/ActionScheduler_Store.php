@@ -2,6 +2,7 @@
 
 /**
  * Class ActionScheduler_Store
+ *
  * @codeCoverageIgnore
  */
 abstract class ActionScheduler_Store extends ActionScheduler_Store_Deprecated {
@@ -12,24 +13,34 @@ abstract class ActionScheduler_Store extends ActionScheduler_Store_Deprecated {
 	const STATUS_CANCELED = 'canceled';
 	const DEFAULT_CLASS   = 'ActionScheduler_wpPostStore';
 
-	/** @var ActionScheduler_Store */
-	private static $store = NULL;
+	/**
+	 * Current Store single instance.
+	 *
+	 * @var ActionScheduler_Store
+	 */
+	private static $store = null;
 
-	/** @var int */
+	/**
+	 * Maximum length for arguments.
+	 *
+	 * @var int
+	 */
 	protected static $max_args_length = 191;
 
 	/**
-	 * @param ActionScheduler_Action $action
-	 * @param DateTime $scheduled_date Optional Date of the first instance
-	 *        to store. Otherwise uses the first date of the action's
-	 *        schedule.
+	 * Save an action. Can save duplicate action as well, prefer using `save_unique_action` instead.
 	 *
-	 * @return int The action ID
+	 * @param ActionScheduler_Action $action Action object.
+	 * @param DateTime|null          $scheduled_date Optional schedule date. Default null.
+	 *
+	 * @return int Action ID.
 	 */
-	abstract public function save_action( ActionScheduler_Action $action, DateTime $scheduled_date = NULL );
+	abstract public function save_action( ActionScheduler_Action $action, DateTime $scheduled_date = null );
 
 	/**
-	 * @param string $action_id
+	 * Retrieve an action.
+	 *
+	 * @param int $action_id Action ID.
 	 *
 	 * @return ActionScheduler_Action
 	 */
@@ -141,10 +152,14 @@ abstract class ActionScheduler_Store extends ActionScheduler_Store_Deprecated {
 	public function extra_action_counts() {
 		$extra_actions = array();
 
-		$pastdue_action_counts = ( int ) $this->query_actions( array(
-			'status' => self::STATUS_PENDING,
-			'date'   => as_get_datetime_object(),
-		), 'count' );
+		$pastdue_action_counts = (int) $this->query_actions(
+			array(
+				'status'                => self::STATUS_PENDING,
+				'date'                  => as_get_datetime_object(),
+				'include_async_actions' => false,
+			),
+			'count'
+		);
 
 		if ( $pastdue_action_counts ) {
 			$extra_actions['past-due'] = $pastdue_action_counts;
@@ -160,17 +175,23 @@ abstract class ActionScheduler_Store extends ActionScheduler_Store_Deprecated {
 	}
 
 	/**
-	 * @param string $action_id
+	 * Cancel an action.
+	 *
+	 * @param int $action_id Action ID.
 	 */
 	abstract public function cancel_action( $action_id );
 
 	/**
-	 * @param string $action_id
+	 * Delete an action.
+	 *
+	 * @param int $action_id Action ID.
 	 */
 	abstract public function delete_action( $action_id );
 
 	/**
-	 * @param string $action_id
+	 * Get the schedule date for an action.
+	 *
+	 * @param string $action_id Action ID.
 	 *
 	 * @return DateTime The date the action is schedule to run, or the date that it ran.
 	 */
@@ -178,7 +199,9 @@ abstract class ActionScheduler_Store extends ActionScheduler_Store_Deprecated {
 
 
 	/**
-	 * @param int      $max_actions
+	 * Stake a claim on actions.
+	 *
+	 * @param int      $max_actions Maximum number of action to include in claim.
 	 * @param DateTime $before_date Claim only actions schedule before the given date. Defaults to now.
 	 * @param array    $hooks       Claim only actions with a hook or hooks.
 	 * @param string   $group       Claim only actions in the given group.
@@ -188,60 +211,87 @@ abstract class ActionScheduler_Store extends ActionScheduler_Store_Deprecated {
 	abstract public function stake_claim( $max_actions = 10, DateTime $before_date = null, $hooks = array(), $group = '' );
 
 	/**
+	 * Get the number of active claims.
+	 *
 	 * @return int
 	 */
 	abstract public function get_claim_count();
 
 	/**
-	 * @param ActionScheduler_ActionClaim $claim
+	 * Release actions from a claim and delete the claim.
+	 *
+	 * @param ActionScheduler_ActionClaim $claim Claim object.
 	 */
 	abstract public function release_claim( ActionScheduler_ActionClaim $claim );
 
 	/**
-	 * @param string $action_id
+	 * Remove the claim from an action.
+	 *
+	 * @param int $action_id Action ID.
 	 */
 	abstract public function unclaim_action( $action_id );
 
 	/**
-	 * @param string $action_id
+	 * Mark an action as failed.
+	 *
+	 * @param int $action_id Action ID.
 	 */
 	abstract public function mark_failure( $action_id );
 
 	/**
-	 * @param string $action_id
+	 * Add execution message to action log.
+	 *
+	 * @param int $action_id Action ID.
+	 *
+	 * @return void
 	 */
 	abstract public function log_execution( $action_id );
 
 	/**
-	 * @param string $action_id
+	 * Mark an action as complete.
+	 *
+	 * @param int $action_id Action ID.
+	 *
+	 * @return void
 	 */
 	abstract public function mark_complete( $action_id );
 
 	/**
-	 * @param string $action_id
+	 * Get an action's status.
+	 *
+	 * @param int $action_id Action ID.
 	 *
 	 * @return string
 	 */
 	abstract public function get_status( $action_id );
 
 	/**
-	 * @param string $action_id
+	 * Return an action's claim ID.
+	 *
+	 * @param string $action_id Action ID.
+	 *
 	 * @return mixed
 	 */
 	abstract public function get_claim_id( $action_id );
 
 	/**
-	 * @param string $claim_id
+	 * Retrieve the action IDs of action in a claim.
+	 *
+	 * @param  int $claim_id Claim ID.
+	 *
 	 * @return array
 	 */
 	abstract public function find_actions_by_claim_id( $claim_id );
 
 	/**
-	 * @param string $comparison_operator
+	 * Validate comparison comparator for sql.
+	 *
+	 * @param string $comparison_operator Comparison operator to check.
+	 *
 	 * @return string
 	 */
 	protected function validate_sql_comparator( $comparison_operator ) {
-		if ( in_array( $comparison_operator, array('!=', '>', '>=', '<', '<=', '=') ) ) {
+		if ( in_array( $comparison_operator, array( '!=', '>', '>=', '<', '<=', '=' ) ) ) {
 			return $comparison_operator;
 		}
 		return '=';
@@ -250,11 +300,12 @@ abstract class ActionScheduler_Store extends ActionScheduler_Store_Deprecated {
 	/**
 	 * Get the time MySQL formated date/time string for an action's (next) scheduled date.
 	 *
-	 * @param ActionScheduler_Action $action
-	 * @param DateTime $scheduled_date (optional)
+	 * @param ActionScheduler_Action $action Action to work with.
+	 * @param DateTime|null          $scheduled_date (optional) Scheduled date.
+	 *
 	 * @return string
 	 */
-	protected function get_scheduled_date_string( ActionScheduler_Action $action, DateTime $scheduled_date = NULL ) {
+	protected function get_scheduled_date_string( ActionScheduler_Action $action, DateTime $scheduled_date = null ) {
 		$next = null === $scheduled_date ? $action->get_schedule()->get_date() : $scheduled_date;
 		if ( ! $next ) {
 			return '0000-00-00 00:00:00';
@@ -267,11 +318,12 @@ abstract class ActionScheduler_Store extends ActionScheduler_Store_Deprecated {
 	/**
 	 * Get the time MySQL formated date/time string for an action's (next) scheduled date.
 	 *
-	 * @param ActionScheduler_Action $action
-	 * @param DateTime $scheduled_date (optional)
+	 * @param ActionScheduler_Action $action Action to work with.
+	 * @param DateTime|null          $scheduled_date (optional) Scheduled date.
+	 *
 	 * @return string
 	 */
-	protected function get_scheduled_date_string_local( ActionScheduler_Action $action, DateTime $scheduled_date = NULL ) {
+	protected function get_scheduled_date_string_local( ActionScheduler_Action $action, DateTime $scheduled_date = null ) {
 		$next = null === $scheduled_date ? $action->get_schedule()->get_date() : $scheduled_date;
 		if ( ! $next ) {
 			return '0000-00-00 00:00:00';
@@ -326,7 +378,13 @@ abstract class ActionScheduler_Store extends ActionScheduler_Store_Deprecated {
 	 */
 	protected function validate_action( ActionScheduler_Action $action ) {
 		if ( strlen( json_encode( $action->get_args() ) ) > static::$max_args_length ) {
-			throw new InvalidArgumentException( sprintf( __( 'ActionScheduler_Action::$args too long. To ensure the args column can be indexed, action args should not be more than %d characters when encoded as JSON.', 'action-scheduler' ), static::$max_args_length ) );
+			throw new InvalidArgumentException(
+				sprintf(
+					/* translators: %d: Maximum length for arguments */
+					__( 'ActionScheduler_Action::$args too long. To ensure the args column can be indexed, action args should not be more than %d characters when encoded as JSON.', 'action-scheduler' ),
+					static::$max_args_length
+				)
+			);
 		}
 	}
 
@@ -398,6 +456,8 @@ abstract class ActionScheduler_Store extends ActionScheduler_Store_Deprecated {
 	}
 
 	/**
+	 * Get status labels.
+	 *
 	 * @return array
 	 */
 	public function get_status_labels() {
@@ -413,16 +473,16 @@ abstract class ActionScheduler_Store extends ActionScheduler_Store_Deprecated {
 	/**
 	 * Check if there are any pending scheduled actions due to run.
 	 *
-	 * @param ActionScheduler_Action $action
-	 * @param DateTime $scheduled_date (optional)
 	 * @return string
 	 */
 	public function has_pending_actions_due() {
-		$pending_actions = $this->query_actions( array(
-			'date'    => as_get_datetime_object(),
-			'status'  => ActionScheduler_Store::STATUS_PENDING,
-			'orderby' => 'none',
-		) );
+		$pending_actions = $this->query_actions(
+			array(
+				'date'    => as_get_datetime_object(),
+				'status'  => self::STATUS_PENDING,
+				'orderby' => 'none',
+			)
+		);
 
 		return ! empty( $pending_actions );
 	}
@@ -434,10 +494,14 @@ abstract class ActionScheduler_Store extends ActionScheduler_Store_Deprecated {
 
 	/**
 	 * Callable function to mark an action as migrated optionally overridden in derived classes.
+	 *
+	 * @param int $action_id Action ID.
 	 */
 	public function mark_migrated( $action_id ) {}
 
 	/**
+	 * Get single instance of store.
+	 *
 	 * @return ActionScheduler_Store
 	 */
 	public static function instance() {

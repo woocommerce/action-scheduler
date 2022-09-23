@@ -19,10 +19,18 @@ class ActionScheduler_DBStore extends ActionScheduler_Store {
 	 */
 	private $claim_before_date = null;
 
-	/** @var int */
+	/**
+	 * Maximum length for arguments.
+	 *
+	 * @var int
+	 */
 	protected static $max_args_length = 8000;
 
-	/** @var int */
+	/**
+	 * Maximum database index length.
+	 *
+	 * @var int
+	 */
 	protected static $max_index_length = 191;
 
 	/**
@@ -70,7 +78,7 @@ class ActionScheduler_DBStore extends ActionScheduler_Store {
 	 * @param bool                   $unique Whether the action should be unique.
 	 *
 	 * @return int Action ID.
-	 * @throws RuntimeException     Throws exception when saving the action fails.
+	 * @throws \RuntimeException     Throws exception when saving the action fails.
 	 */
 	private function save_action_to_db( ActionScheduler_Action $action, DateTime $date = null, $unique = false ) {
 		global $wpdb;
@@ -251,7 +259,11 @@ AND `group_id` = %d
 		if ( empty( $slug ) ) {
 			return 0;
 		}
-		/** @var \wpdb $wpdb */
+		/**
+		 * Global object of wpdb.
+		 *
+		 * @var \wpdb $wpdb
+		 */
 		global $wpdb;
 		$group_id = (int) $wpdb->get_var( $wpdb->prepare( "SELECT group_id FROM {$wpdb->actionscheduler_groups} WHERE slug=%s", $slug ) );
 		if ( empty( $group_id ) && $create_if_not_exists ) {
@@ -269,7 +281,11 @@ AND `group_id` = %d
 	 * @return int Group ID.
 	 */
 	protected function create_group( $slug ) {
-		/** @var \wpdb $wpdb */
+		/**
+		 * Global object of wpdb.
+		 *
+		 * @var \wpdb $wpdb
+		 */
 		global $wpdb;
 		$wpdb->insert( $wpdb->actionscheduler_groups, array( 'slug' => $slug ) );
 
@@ -284,7 +300,11 @@ AND `group_id` = %d
 	 * @return ActionScheduler_Action
 	 */
 	public function fetch_action( $action_id ) {
-		/** @var \wpdb $wpdb */
+		/**
+		 * Global object of wpdb.
+		 *
+		 * @var \wpdb $wpdb
+		 */
 		global $wpdb;
 		$data = $wpdb->get_row(
 			$wpdb->prepare(
@@ -378,23 +398,28 @@ AND `group_id` = %d
 		$query = wp_parse_args(
 			$query,
 			array(
-				'hook'             => '',
-				'args'             => null,
-				'date'             => null,
-				'date_compare'     => '<=',
-				'modified'         => null,
-				'modified_compare' => '<=',
-				'group'            => '',
-				'status'           => '',
-				'claimed'          => null,
-				'per_page'         => 5,
-				'offset'           => 0,
-				'orderby'          => 'date',
-				'order'            => 'ASC',
+				'hook'                  => '',
+				'args'                  => null,
+				'date'                  => null,
+				'date_compare'          => '<=',
+				'modified'              => null,
+				'modified_compare'      => '<=',
+				'group'                 => '',
+				'status'                => '',
+				'claimed'               => null,
+				'per_page'              => 5,
+				'offset'                => 0,
+				'orderby'               => 'date',
+				'order'                 => 'ASC',
+				'include_async_actions' => true,
 			)
 		);
 
-		/** @var \wpdb $wpdb */
+		/**
+		 * Global object of wpdb.
+		 *
+		 * @var \wpdb $wpdb
+		 */
 		global $wpdb;
 		$sql        = ( 'count' === $select_or_count ) ? 'SELECT count(a.action_id)' : 'SELECT a.action_id';
 		$sql       .= " FROM {$wpdb->actionscheduler_actions} a";
@@ -443,6 +468,10 @@ AND `group_id` = %d
 			$comparator   = $this->validate_sql_comparator( $query['modified_compare'] );
 			$sql         .= " AND a.last_attempt_gmt $comparator %s";
 			$sql_params[] = $date_string;
+		}
+
+		if ( ! $query['include_async_actions'] ) {
+			$sql .= ' AND a.scheduled_date_gmt != 0 ';
 		}
 
 		if ( true === $query['claimed'] ) {
@@ -523,7 +552,11 @@ AND `group_id` = %d
 	 * @return string|array|null The IDs of actions matching the query. Null on failure.
 	 */
 	public function query_actions( $query = array(), $query_type = 'select' ) {
-		/** @var wpdb $wpdb */
+		/**
+		 * Global object of wpdb.
+		 *
+		 * @var \wpdb $wpdb
+		 */
 		global $wpdb;
 
 		$sql = $this->get_query_actions_sql( $query, $query_type );
@@ -565,7 +598,11 @@ AND `group_id` = %d
 	 * @throws \InvalidArgumentException If the action update failed.
 	 */
 	public function cancel_action( $action_id ) {
-		/** @var \wpdb $wpdb */
+		/**
+		 * Global object of wpdb.
+		 *
+		 * @var \wpdb $wpdb
+		 */
 		global $wpdb;
 
 		$updated = $wpdb->update(
@@ -614,7 +651,11 @@ AND `group_id` = %d
 	 * @param array $query_args Query parameters.
 	 */
 	protected function bulk_cancel_actions( $query_args ) {
-		/** @var \wpdb $wpdb */
+		/**
+		 * Global object of wpdb.
+		 *
+		 * @var \wpdb $wpdb
+		 */
 		global $wpdb;
 
 		if ( ! is_array( $query_args ) ) {
@@ -665,7 +706,11 @@ AND `group_id` = %d
 	 * @throws \InvalidArgumentException If the action deletion failed.
 	 */
 	public function delete_action( $action_id ) {
-		/** @var \wpdb $wpdb */
+		/**
+		 * Global object of wpdb.
+		 *
+		 * @var \wpdb $wpdb
+		 */
 		global $wpdb;
 		$deleted = $wpdb->delete( $wpdb->actionscheduler_actions, array( 'action_id' => $action_id ), array( '%d' ) );
 		if ( empty( $deleted ) ) {
@@ -696,7 +741,11 @@ AND `group_id` = %d
 	 * @return \DateTime The GMT date the action is scheduled to run, or the date that it ran.
 	 */
 	protected function get_date_gmt( $action_id ) {
-		/** @var \wpdb $wpdb */
+		/**
+		 * Global object of wpdb.
+		 *
+		 * @var \wpdb $wpdb
+		 */
 		global $wpdb;
 		$record = $wpdb->get_row( $wpdb->prepare( "SELECT * FROM {$wpdb->actionscheduler_actions} WHERE action_id=%d", $action_id ) );
 		if ( empty( $record ) ) {
@@ -736,7 +785,11 @@ AND `group_id` = %d
 	 * @return int Claim ID.
 	 */
 	protected function generate_claim_id() {
-		/** @var \wpdb $wpdb */
+		/**
+		 * Global object of wpdb.
+		 *
+		 * @var \wpdb $wpdb
+		 */
 		global $wpdb;
 		$now = as_get_datetime_object();
 		$wpdb->insert( $wpdb->actionscheduler_claims, array( 'date_created_gmt' => $now->format( 'Y-m-d H:i:s' ) ) );
@@ -758,7 +811,11 @@ AND `group_id` = %d
 	 * @throws \RuntimeException Throws RuntimeException if unable to claim action.
 	 */
 	protected function claim_actions( $claim_id, $limit, \DateTime $before_date = null, $hooks = array(), $group = '' ) {
-		/** @var \wpdb $wpdb */
+		/**
+		 * Global object of wpdb.
+		 *
+		 * @var \wpdb $wpdb
+		 */
 		global $wpdb;
 
 		$now  = as_get_datetime_object();
@@ -821,6 +878,11 @@ AND `group_id` = %d
 	 * @return int
 	 */
 	public function get_claim_count() {
+		/**
+		 * Global object of wpdb.
+		 *
+		 * @var \wpdb $wpdb
+		 */
 		global $wpdb;
 
 		$sql = "SELECT COUNT(DISTINCT claim_id) FROM {$wpdb->actionscheduler_actions} WHERE claim_id != 0 AND status IN ( %s, %s)";
@@ -836,7 +898,11 @@ AND `group_id` = %d
 	 * @return mixed
 	 */
 	public function get_claim_id( $action_id ) {
-		/** @var \wpdb $wpdb */
+		/**
+		 * Global object of wpdb.
+		 *
+		 * @var \wpdb $wpdb
+		 */
 		global $wpdb;
 
 		$sql = "SELECT claim_id FROM {$wpdb->actionscheduler_actions} WHERE action_id=%d";
@@ -852,7 +918,11 @@ AND `group_id` = %d
 	 * @return int[]
 	 */
 	public function find_actions_by_claim_id( $claim_id ) {
-		/** @var \wpdb $wpdb */
+		/**
+		 * Global object of wpdb.
+		 *
+		 * @var \wpdb $wpdb
+		 */
 		global $wpdb;
 
 		$action_ids  = array();
@@ -881,7 +951,11 @@ AND `group_id` = %d
 	 * @param ActionScheduler_ActionClaim $claim Claim object.
 	 */
 	public function release_claim( ActionScheduler_ActionClaim $claim ) {
-		/** @var \wpdb $wpdb */
+		/**
+		 * Global object of wpdb.
+		 *
+		 * @var \wpdb $wpdb
+		 */
 		global $wpdb;
 		$wpdb->update( $wpdb->actionscheduler_actions, array( 'claim_id' => 0 ), array( 'claim_id' => $claim->get_id() ), array( '%d' ), array( '%d' ) );
 		$wpdb->delete( $wpdb->actionscheduler_claims, array( 'claim_id' => $claim->get_id() ), array( '%d' ) );
@@ -895,7 +969,11 @@ AND `group_id` = %d
 	 * @return void
 	 */
 	public function unclaim_action( $action_id ) {
-		/** @var \wpdb $wpdb */
+		/**
+		 * Global object of wpdb.
+		 *
+		 * @var \wpdb $wpdb
+		 */
 		global $wpdb;
 		$wpdb->update(
 			$wpdb->actionscheduler_actions,
@@ -913,7 +991,11 @@ AND `group_id` = %d
 	 * @throws \InvalidArgumentException Throw an exception if action was not updated.
 	 */
 	public function mark_failure( $action_id ) {
-		/** @var \wpdb $wpdb */
+		/**
+		 * Global object of wpdb.
+		 *
+		 * @var \wpdb $wpdb
+		 */
 		global $wpdb;
 		$updated = $wpdb->update(
 			$wpdb->actionscheduler_actions,
@@ -935,7 +1017,11 @@ AND `group_id` = %d
 	 * @return void
 	 */
 	public function log_execution( $action_id ) {
-		/** @var \wpdb $wpdb */
+		/**
+		 * Global object of wpdb.
+		 *
+		 * @var \wpdb $wpdb
+		 */
 		global $wpdb;
 
 		$sql = "UPDATE {$wpdb->actionscheduler_actions} SET attempts = attempts+1, status=%s, last_attempt_gmt = %s, last_attempt_local = %s WHERE action_id = %d";
@@ -952,7 +1038,11 @@ AND `group_id` = %d
 	 * @throws \InvalidArgumentException Throw an exception if action was not updated.
 	 */
 	public function mark_complete( $action_id ) {
-		/** @var \wpdb $wpdb */
+		/**
+		 * Global object of wpdb.
+		 *
+		 * @var \wpdb $wpdb
+		 */
 		global $wpdb;
 		$updated = $wpdb->update(
 			$wpdb->actionscheduler_actions,
@@ -989,7 +1079,11 @@ AND `group_id` = %d
 	 * @throws \RuntimeException Throw an exception if action status could not be retrieved.
 	 */
 	public function get_status( $action_id ) {
-		/** @var \wpdb $wpdb */
+		/**
+		 * Global object of wpdb.
+		 *
+		 * @var \wpdb $wpdb
+		 */
 		global $wpdb;
 		$sql    = "SELECT status FROM {$wpdb->actionscheduler_actions} WHERE action_id=%d";
 		$sql    = $wpdb->prepare( $sql, $action_id ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared

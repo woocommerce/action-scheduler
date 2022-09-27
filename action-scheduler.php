@@ -28,6 +28,8 @@
 
 if ( ! function_exists( 'action_scheduler_register_3_dot_5_dot_2' ) && function_exists( 'add_action' ) ) { // WRCS: DEFINED_VERSION.
 
+	define( 'ACTION_SCHEDULER_VERSION', '3.5.2' ); // WRCS: DEFINED_VERSION.
+
 	if ( ! class_exists( 'ActionScheduler_Versions', false ) ) {
 		require_once __DIR__ . '/classes/ActionScheduler_Versions.php';
 		add_action( 'plugins_loaded', array( 'ActionScheduler_Versions', 'initialize_latest_version' ), 1, 0 );
@@ -40,7 +42,7 @@ if ( ! function_exists( 'action_scheduler_register_3_dot_5_dot_2' ) && function_
 	 */
 	function action_scheduler_register_3_dot_5_dot_2() { // WRCS: DEFINED_VERSION.
 		$versions = ActionScheduler_Versions::instance();
-		$versions->register( '3.5.2', 'action_scheduler_initialize_3_dot_5_dot_2' ); // WRCS: DEFINED_VERSION.
+		$versions->register( ACTION_SCHEDULER_VERSION, 'action_scheduler_initialize_3_dot_5_dot_2' ); // WRCS: DEFINED_VERSION.
 	}
 
 	/**

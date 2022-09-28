@@ -8,6 +8,22 @@ class ActionScheduler_UnitTestCase extends WP_UnitTestCase {
 	protected $existing_timezone;
 
 	/**
+	 * Perform test set-up work.
+	 */
+	public function set_up() {
+		ActionScheduler_Callbacks::add_callbacks();
+		parent::set_up();
+	}
+
+	/**
+	 * Perform test tear-down work.
+	 */
+	public function tear_down() {
+		ActionScheduler_Callbacks::remove_callbacks();
+		parent::tear_down();
+	}
+
+	/**
 	 * Counts the number of test cases executed by run(TestResult result).
 	 *
 	 * @return int

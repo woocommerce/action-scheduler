@@ -8,30 +8,30 @@ class ActionScheduler_Action_Test extends ActionScheduler_UnitTestCase {
 	public function test_set_schedule() {
 		$time = as_get_datetime_object();
 		$schedule = new ActionScheduler_SimpleSchedule($time);
-		$action = new ActionScheduler_Action('my_hook', array(), $schedule);
+		$action = new ActionScheduler_Action( ActionScheduler_Callbacks::HOOK_WITH_CALLBACK, array(), $schedule );
 		$this->assertEquals( $schedule, $action->get_schedule() );
 	}
 
 	public function test_null_schedule() {
-		$action = new ActionScheduler_Action('my_hook');
+		$action = new ActionScheduler_Action( ActionScheduler_Callbacks::HOOK_WITH_CALLBACK );
 		$this->assertInstanceOf( 'ActionScheduler_NullSchedule', $action->get_schedule() );
 	}
 
 	public function test_set_hook() {
-		$action = new ActionScheduler_Action('my_hook');
-		$this->assertEquals( 'my_hook', $action->get_hook() );
+		$action = new ActionScheduler_Action( ActionScheduler_Callbacks::HOOK_WITH_CALLBACK );
+		$this->assertEquals( ActionScheduler_Callbacks::HOOK_WITH_CALLBACK, $action->get_hook() );
 	}
 
 	public function test_args() {
-		$action = new ActionScheduler_Action('my_hook');
+		$action = new ActionScheduler_Action( ActionScheduler_Callbacks::HOOK_WITH_CALLBACK );
 		$this->assertEmpty($action->get_args());
 
-		$action = new ActionScheduler_Action('my_hook', array(5,10,15));
+		$action = new ActionScheduler_Action( ActionScheduler_Callbacks::HOOK_WITH_CALLBACK, array( 5, 10, 15 ) );
 		$this->assertEqualSets(array(5,10,15), $action->get_args());
 	}
 
 	public function test_set_group() {
-		$action = new ActionScheduler_Action('my_hook', array(), NULL, 'my_group');
+		$action = new ActionScheduler_Action( ActionScheduler_Callbacks::HOOK_WITH_CALLBACK, array(), NULL, 'my_group' );
 		$this->assertEquals('my_group', $action->get_group());
 	}
 
@@ -52,4 +52,3 @@ class ActionScheduler_Action_Test extends ActionScheduler_UnitTestCase {
 		$this->assertEquals( $random, reset($event['args']) );
 	}
 }
- 

@@ -14,7 +14,7 @@ class ActionScheduler_QueueCleaner_Test extends ActionScheduler_UnitTestCase {
 
 		$created_actions = array();
 		for ( $i = 0 ; $i < 5 ; $i++ ) {
-			$action = new ActionScheduler_Action( $random, array($random), $schedule );
+			$action = new ActionScheduler_Action( ActionScheduler_Callbacks::HOOK_WITH_CALLBACK, array($random), $schedule );
 			$created_actions[] = $store->save_action( $action );
 		}
 
@@ -56,7 +56,11 @@ class ActionScheduler_QueueCleaner_Test extends ActionScheduler_UnitTestCase {
 		remove_filter( 'action_scheduler_retention_period', '__return_zero' );
 		remove_action( 'action_scheduler_deleted_action', array( $mock_action, 'action' ), 10 );
 
-		$deleted_actions = array_map( 'reset', $mock_action->get_args() );
+		$deleted_actions = array();
+		foreach ( $mock_action->get_args() as $action ) {
+			$deleted_actions[] = reset( $action );
+		}
+
 		$this->assertEqualSets( $created_actions, $deleted_actions );
 	}
 
@@ -148,4 +152,3 @@ class ActionScheduler_QueueCleaner_Test extends ActionScheduler_UnitTestCase {
 
 	}
 }
- 

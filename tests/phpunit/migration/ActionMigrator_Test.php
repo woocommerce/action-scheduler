@@ -24,7 +24,7 @@ class ActionMigrator_Test extends ActionScheduler_UnitTestCase {
 
 		$time      = as_get_datetime_object();
 		$schedule  = new ActionScheduler_SimpleSchedule( $time );
-		$action    = new ActionScheduler_Action( 'my_hook', [], $schedule, 'my_group' );
+		$action    = new ActionScheduler_Action( ActionScheduler_Callbacks::HOOK_WITH_CALLBACK, [], $schedule, 'my_group' );
 		$action_id = $source->save_action( $action );
 
 		$new_id = $migrator->migrate( $action_id );
@@ -65,7 +65,7 @@ class ActionMigrator_Test extends ActionScheduler_UnitTestCase {
 
 		$time      = as_get_datetime_object();
 		$schedule  = new ActionScheduler_SimpleSchedule( $time );
-		$action    = new ActionScheduler_Action( 'my_hook', [], $schedule, 'my_group' );
+		$action    = new ActionScheduler_Action( ActionScheduler_Callbacks::HOOK_WITH_CALLBACK, [], $schedule, 'my_group' );
 		$action_id = $source->save_action( $action );
 		$source->mark_complete( $action_id );
 
@@ -92,7 +92,7 @@ class ActionMigrator_Test extends ActionScheduler_UnitTestCase {
 
 		$time      = as_get_datetime_object();
 		$schedule  = new ActionScheduler_SimpleSchedule( $time );
-		$action    = new ActionScheduler_Action( 'my_hook', [], $schedule, 'my_group' );
+		$action    = new ActionScheduler_Action( ActionScheduler_Callbacks::HOOK_WITH_CALLBACK, [], $schedule, 'my_group' );
 		$action_id = $source->save_action( $action );
 		$source->mark_failure( $action_id );
 
@@ -119,7 +119,7 @@ class ActionMigrator_Test extends ActionScheduler_UnitTestCase {
 
 		$time      = as_get_datetime_object();
 		$schedule  = new ActionScheduler_SimpleSchedule( $time );
-		$action    = new ActionScheduler_Action( 'my_hook', [], $schedule, 'my_group' );
+		$action    = new ActionScheduler_Action( ActionScheduler_Callbacks::HOOK_WITH_CALLBACK, [], $schedule, 'my_group' );
 		$action_id = $source->save_action( $action );
 		$source->cancel_action( $action_id );
 

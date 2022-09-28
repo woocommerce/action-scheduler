@@ -11,18 +11,18 @@ foreach ( array('WP_CONTENT_DIR', 'WP_CONTENT_URL', 'WP_PLUGIN_DIR', 'WP_PLUGIN_
 	}
 }
 
-// If the wordpress-tests repo location has been customized (and specified
-// with WP_TESTS_DIR), use that location. This will most commonly be the case
-// when configured for use with Travis CI.
-
-// Otherwise, we'll just assume that this plugin is installed in the WordPress
-// SVN external checkout configured in the wordpress-tests repo.
-
-if( false !== getenv( 'WP_TESTS_DIR' ) ) {
-	require getenv( 'WP_TESTS_DIR' ) . '/includes/bootstrap.php';
-} else {
-	require dirname( dirname( dirname( dirname( dirname( dirname( __FILE__ ) ) ) ) ) ) . '/tests/phpunit/includes/bootstrap.php';
+if ( ! defined( 'WP_PLUGIN_DIR' ) ) {
+	define( 'WP_PLUGIN_DIR', dirname( dirname( dirname( __FILE__ ) ) ) );
 }
+
+// PHPUnit polyfills as required by the core WP test framework.
+require_once __DIR__ . '/../vendor/yoast/phpunit-polyfills/phpunitpolyfills-autoload.php';
+
+$wordpress_tests_dir = getenv( 'WP_TESTS_DIR' ) ? getenv( 'WP_TESTS_DIR' ) : sys_get_temp_dir() . '/wordpress-tests-lib';
+require_once $wordpress_tests_dir . '/includes/functions.php';
+require $wordpress_tests_dir . '/includes/bootstrap.php';
+
+require_once dirname(dirname( __FILE__ ) ) .'/action-scheduler.php';
 
 if ( class_exists( 'PHPUnit\Framework\TestResult' ) ) { // PHPUnit 6.0 or newer
 	include_once('ActionScheduler_UnitTestCase.php');
@@ -30,5 +30,7 @@ if ( class_exists( 'PHPUnit\Framework\TestResult' ) ) { // PHPUnit 6.0 or newer
 	include_once('phpunit/deprecated/ActionScheduler_UnitTestCase.php');
 }
 
+include_once 'phpunit/helpers/ActionScheduler_Callbacks.php';
 include_once('phpunit/ActionScheduler_Mocker.php');
 include_once('phpunit/ActionScheduler_Mock_Async_Request_QueueRunner.php');
+include_once('phpunit/jobstore/AbstractStoreTest.php');

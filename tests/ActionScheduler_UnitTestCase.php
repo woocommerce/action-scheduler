@@ -8,11 +8,27 @@ class ActionScheduler_UnitTestCase extends WP_UnitTestCase {
 	protected $existing_timezone;
 
 	/**
+	 * Perform test set-up work.
+	 */
+	public function set_up() {
+		ActionScheduler_Callbacks::add_callbacks();
+		parent::set_up();
+	}
+
+	/**
+	 * Perform test tear-down work.
+	 */
+	public function tear_down() {
+		ActionScheduler_Callbacks::remove_callbacks();
+		parent::tear_down();
+	}
+
+	/**
 	 * Counts the number of test cases executed by run(TestResult result).
 	 *
 	 * @return int
 	 */
-	public function count() {
+	public function count(): int {
 		return 'UTC' == date_default_timezone_get() ? 2 : 3;
 	}
 
@@ -20,7 +36,7 @@ class ActionScheduler_UnitTestCase extends WP_UnitTestCase {
 	 * We want to run every test multiple times using a different timezone to make sure
 	 * that they are unaffected by changes to PHP's timezone.
 	 */
-	public function run( PHPUnit\Framework\TestResult $result = NULL ){
+	public function run( PHPUnit\Framework\TestResult $result = NULL ): \PHPUnit\Framework\TestResult {
 
 		if ($result === NULL) {
 			$result = $this->createResult();

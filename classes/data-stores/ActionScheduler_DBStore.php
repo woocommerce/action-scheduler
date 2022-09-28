@@ -376,20 +376,20 @@ AND `group_id` = %d
 		}
 
 		$query = wp_parse_args( $query, array(
-			'hook'             		=> '',
-			'args'             		=> null,
-			'args_partial_match'	=> false,
-			'date'             		=> null,
-			'date_compare'     		=> '<=',
-			'modified'         		=> null,
-			'modified_compare' 		=> '<=',
-			'group'            		=> '',
-			'status'           		=> '',
-			'claimed'          		=> null,
-			'per_page'         		=> 5,
-			'offset'           		=> 0,
-			'orderby'          		=> 'date',
-			'order'            		=> 'ASC',
+			'hook'               => '',
+			'args'               => null,
+			'args_partial_match' => false,
+			'date'               => null,
+			'date_compare'       => '<=',
+			'modified'           => null,
+			'modified_compare'   => '<=',
+			'group'              => '',
+			'status'             => '',
+			'claimed'            => null,
+			'per_page'           => 5,
+			'offset'             => 0,
+			'orderby'            => 'date',
+			'order'              => 'ASC',
 		 ) );
 
 		/** @var \wpdb $wpdb */

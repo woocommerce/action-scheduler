@@ -2,7 +2,9 @@
 
 namespace Action_Scheduler\Migration;
 
-use Action_Scheduler\WP_CLI\Migration_Command;
+use ActionScheduler_DataController;
+use ActionScheduler_LoggerSchema;
+use ActionScheduler_StoreSchema;
 use Action_Scheduler\WP_CLI\ProgressBar;
 
 /**
@@ -87,12 +89,30 @@ class Controller {
 	}
 
 	/**
-	 * Set up the background migration process
+	 * Set up the background migration process.
 	 *
 	 * @return void
 	 */
 	public function schedule_migration() {
-		if ( \ActionScheduler_DataController::is_migration_complete() || $this->migration_scheduler->is_migration_scheduled() ) {
+		$logging_tables = new ActionScheduler_LoggerSchema();
+		$store_tables   = new ActionScheduler_StoreSchema();
+
+		/*
+		 * In some unusual cases, the expected tables may not have been created. In such cases
+		 * we do not schedule a migration as doing so will lead to fatal error conditions.
+		 *
+		 * In such cases the user will likely visit the Tools > Scheduled Actions screen to
+		 * investigate, and will see appropriate messaging (this step also triggers an attempt
+		 * to rebuild any missing tables).
+		 *
+		 * @see https://github.com/woocommerce/action-scheduler/issues/653
+		 */
+		if (
+			ActionScheduler_DataController::is_migration_complete()
+			|| $this->migration_scheduler->is_migration_scheduled()
+			|| ! $store_tables->tables_exist()
+			|| ! $logging_tables->tables_exist()
+		) {
 			return;
 		}
 
@@ -139,7 +159,7 @@ class Controller {
 	 * Show a dashboard notice that migration is in progress.
 	 */
 	public function display_migration_notice() {
-		printf( '<div class="notice notice-warning"><p>%s</p></div>', __( 'Action Scheduler migration in progress. The list of scheduled actions may be incomplete.', 'action-scheduler' ) );
+		printf( '<div class="notice notice-warning"><p>%s</p></div>', esc_html__( 'Action Scheduler migration in progress. The list of scheduled actions may be incomplete.', 'action-scheduler' ) );
 	}
 
 	/**

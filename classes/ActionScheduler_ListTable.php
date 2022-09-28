@@ -175,13 +175,36 @@ class ActionScheduler_ListTable extends ActionScheduler_Abstract_ListTable {
 			),
 		);
 
-		parent::__construct( array(
-			'singular' => 'action-scheduler',
-			'plural'   => 'action-scheduler',
-			'ajax'     => false,
-		) );
+		parent::__construct(
+			array(
+				'singular' => 'action-scheduler',
+				'plural'   => 'action-scheduler',
+				'ajax'     => false,
+			)
+		);
+
+		add_screen_option(
+			'per_page',
+			array(
+				'default' => $this->items_per_page,
+			)
+		);
+
+		add_filter( 'set_screen_option_' . $this->get_per_page_option_name(), array( $this, 'set_items_per_page_option' ), 10, 3 );
+		set_screen_options();
 	}
 
+	/**
+	 * Handles setting the items_per_page option for this screen.
+	 *
+	 * @param mixed  $status Default false (to skip saving the current option).
+	 * @param string $option Screen option name.
+	 * @param int    $value  Screen option value.
+	 * @return int
+	 */
+	public function set_items_per_page_option( $status, $option, $value ) {
+		return $value;
+	}
 	/**
 	 * Convert an interval of seconds into a two part human friendly string.
 	 *
@@ -444,6 +467,10 @@ class ActionScheduler_ListTable extends ActionScheduler_Abstract_ListTable {
 
 		$schedule_display_string = '';
 
+		if ( is_a( $schedule, 'ActionScheduler_NullSchedule' ) ) {
+			return __( 'async', 'action-scheduler' );
+		}
+
 		if ( ! $schedule->get_date() ) {
 			return '0000-00-00 00:00:00';
 		}
@@ -549,7 +576,8 @@ class ActionScheduler_ListTable extends ActionScheduler_Abstract_ListTable {
 	public function prepare_items() {
 		$this->prepare_column_headers();
 
-		$per_page = $this->get_items_per_page( $this->package . '_items_per_page', $this->items_per_page );
+		$per_page = $this->get_items_per_page( $this->get_per_page_option_name(), $this->items_per_page );
+
 		$query = array(
 			'per_page' => $per_page,
 			'offset'   => $this->get_items_offset(),
@@ -558,6 +586,16 @@ class ActionScheduler_ListTable extends ActionScheduler_Abstract_ListTable {
 			'order'    => $this->get_request_order(),
 			'search'   => $this->get_request_search_query(),
 		);
+
+		/**
+		 * Change query arguments to query for past-due actions.
+		 * Past-due actions have the 'pending' status and are in the past.
+		 * This is needed because registering 'past-due' as a status is overkill.
+		 */
+		if ( 'past-due' === $this->get_request_status() ) {
+			$query['status'] = ActionScheduler_Store::STATUS_PENDING;
+			$query['date']   = as_get_datetime_object();
+		}
 
 		$this->items = array();
 
@@ -599,7 +637,7 @@ class ActionScheduler_ListTable extends ActionScheduler_Abstract_ListTable {
 	 * Prints the available statuses so the user can click to filter.
 	 */
 	protected function display_filter_by_status() {
-		$this->status_counts = $this->store->action_counts();
+		$this->status_counts = $this->store->action_counts() + $this->store->extra_action_counts();
 		parent::display_filter_by_status();
 	}
 
@@ -608,5 +646,12 @@ class ActionScheduler_ListTable extends ActionScheduler_Abstract_ListTable {
 	 */
 	protected function get_search_box_button_text() {
 		return __( 'Search hook, args and claim ID', 'action-scheduler' );
+	}
+
+	/**
+	 * {@inheritDoc}
+	 */
+	protected function get_per_page_option_name() {
+		return str_replace( '-', '_', $this->screen->id ) . '_per_page';
 	}
 }

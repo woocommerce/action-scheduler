@@ -33,12 +33,12 @@ class BatchFetcher_Test extends ActionScheduler_UnitTestCase {
 		for ( $i = 0; $i < 5; $i ++ ) {
 			$time     = as_get_datetime_object( $i + 1 . ' minutes' );
 			$schedule = new ActionScheduler_SimpleSchedule( $time );
-			$action   = new ActionScheduler_Action( 'my_hook', [], $schedule );
+			$action   = new ActionScheduler_Action( ActionScheduler_Callbacks::HOOK_WITH_CALLBACK, [], $schedule );
 			$future[] = $store->save_action( $action );
 
 			$time     = as_get_datetime_object( $i + 1 . ' minutes ago' );
 			$schedule = new ActionScheduler_SimpleSchedule( $time );
-			$action   = new ActionScheduler_Action( 'my_hook', [], $schedule );
+			$action   = new ActionScheduler_Action( ActionScheduler_Callbacks::HOOK_WITH_CALLBACK, [], $schedule );
 			$due[]    = $store->save_action( $action );
 		}
 
@@ -58,12 +58,12 @@ class BatchFetcher_Test extends ActionScheduler_UnitTestCase {
 		for ( $i = 0; $i < 5; $i ++ ) {
 			$time     = as_get_datetime_object( $i + 1 . ' minutes' );
 			$schedule = new ActionScheduler_SimpleSchedule( $time );
-			$action   = new ActionScheduler_Action( 'my_hook', [], $schedule );
+			$action   = new ActionScheduler_Action( ActionScheduler_Callbacks::HOOK_WITH_CALLBACK, [], $schedule );
 			$future[] = $store->save_action( $action );
 
 			$time       = as_get_datetime_object( $i + 1 . ' minutes ago' );
 			$schedule   = new ActionScheduler_SimpleSchedule( $time );
-			$action     = new ActionScheduler_FinishedAction( 'my_hook', [], $schedule );
+			$action     = new ActionScheduler_FinishedAction( ActionScheduler_Callbacks::HOOK_WITH_CALLBACK, [], $schedule );
 			$complete[] = $store->save_action( $action );
 		}
 

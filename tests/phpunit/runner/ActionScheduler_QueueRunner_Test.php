@@ -165,7 +165,7 @@ class ActionScheduler_QueueRunner_Test extends ActionScheduler_UnitTestCase {
 		$store->release_claim( $claim );
 
 		// Make sure the 3rd instance of the cron action is scheduled for 24 hours from now, as the action was run early, ahead of schedule
-		$runner->process_action( $action_id );
+		$runner->process_action( $fetched_action_id );
 		$date = as_get_datetime_object( '+1 day' );
 
 		$claim = $store->stake_claim( 10, $date );
@@ -178,6 +178,68 @@ class ActionScheduler_QueueRunner_Test extends ActionScheduler_UnitTestCase {
 		$this->assertNotEquals( $fetched_action_id, $action_id );
 		$this->assertEquals( $random, $fetched_action->get_hook() );
 		$this->assertEquals( $date->getTimestamp(), $fetched_action->get_schedule()->get_date()->getTimestamp(), '', 1 );
+	}
+
+	/**
+	 * As soon as one recurring action has been executed its replacement will be scheduled.
+	 *
+	 * This is true even if the current action fails. This makes sense, since a failure may be temporary in nature.
+	 * However, if the same recurring action consistently fails then it is likely that there is a problem and we should
+	 * stop creating new instances. This test outlines the expected behavior in this regard.
+	 *
+	 * @return void
+	 */
+	public function test_failing_recurring_actions_are_not_rescheduled_when_threshold_met() {
+		$store           = ActionScheduler_Store::instance();
+		$runner          = ActionScheduler_Mocker::get_queue_runner( $store );
+		$created_actions = array();
+
+		// Create 4 failed actions (one below the threshold of what counts as 'consistently failing').
+		for ( $i = 0; $i < 3; $i++ ) {
+			// We give each action a unique set of args, this illustrates that in the context of determining consistent
+			// failure we care only about the hook and not other properties of the action.
+			$args      = array( 'unique-' . $i => hash( 'md5', $i ) );
+			$hook      = 'will-fail';
+			$date      = as_get_datetime_object( 12 - $i . ' hours ago' );
+			$action_id = as_schedule_recurring_action( $date->getTimestamp(), HOUR_IN_SECONDS, $hook, $args );
+			$store->mark_failure( $action_id );
+			$created_actions[] = $action_id;
+		}
+
+		// Now create a further action using the same hook, that is also destined to fail.
+		$date              = as_get_datetime_object( '6 hours ago' );
+		$pending_action_id = as_schedule_recurring_action( $date->getTimestamp(), HOUR_IN_SECONDS, $hook, $args );
+		$created_actions[] = $pending_action_id;
+
+		// Process the queue!
+		$runner->run();
+		$pending_actions = $store->query_actions(
+			array(
+				'hook'   => $hook,
+				'args'   => $args,
+				'status' => ActionScheduler_Store::STATUS_PENDING,
+			)
+		);
+		$new_pending_action_id = current( $pending_actions );
+
+		// We now have 5 instances of the same recurring action. 4 have already failed, one is pending.
+		$this->assertCount( 1, $pending_actions, 'If the threshold for consistent failure has not been met, a replacement action should have been scheduled.' );
+		$this->assertNotContains( $new_pending_action_id, $created_actions, 'Confirm that the replacement action is new, and not one of those we created manually earlier in the test.' );
+
+		// Process the pending action (we do this directly instead of via `$runner->run()` because it won't actually
+		// become due for another hour).
+		$runner->process_action( $new_pending_action_id );
+		$pending_actions = $store->query_actions(
+			array(
+				'hook'   => $hook,
+				'args'   => $args,
+				'status' => ActionScheduler_Store::STATUS_PENDING,
+			)
+		);
+
+		// Now 5 instances of the same recurring action have all failed, therefore the threshold for consistent failure
+		// has been met and, this time, a new action should *not* have been scheduled.
+		$this->assertCount( 0, $pending_actions, 'The failure threshold (5 consecutive fails for recurring actions with the same signature) having been met, no further actions were scheduled.' );
 	}
 
 	public function test_hooked_into_wp_cron() {
@@ -288,7 +350,7 @@ class ActionScheduler_QueueRunner_Test extends ActionScheduler_UnitTestCase {
 					->getMock();
 		$store
 			->method( 'fetch_action' )
-			->with( $action_id )
+			->with( array( $action_id ) )
 			->will( $this->throwException( new Exception() ) );
 
 		// Set up a mock queue runner to verify that schedule_next_instance()
@@ -311,7 +373,7 @@ class ActionScheduler_QueueRunner_Test extends ActionScheduler_UnitTestCase {
 					->getMock();
 		$store2
 			->method( 'fetch_action' )
-			->with( $action_id )
+			->with( array( $action_id ) )
 			->willReturn( null );
 
 		// Set up a mock queue runner to verify that schedule_next_instance()

@@ -147,6 +147,11 @@ class ActionScheduler_AdminView extends ActionScheduler_AdminView_Deprecated {
 		$threshold_seconds = ( int ) apply_filters( 'action_scheduler_pastdue_actions_seconds', DAY_IN_SECONDS );
 		$threshhold_min    = ( int ) apply_filters( 'action_scheduler_pastdue_actions_min', 1 );
 
+		# Set fallback value for past-due actions count.
+		if ( ! isset( $num_pastdue_actions ) ) {
+			$num_pastdue_actions = 0;
+		}
+
 		# Allow third-parties to preempt the default check logic.
 		$check = apply_filters( 'action_scheduler_pastdue_actions_check_pre', null );
 

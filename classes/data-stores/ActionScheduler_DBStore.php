@@ -415,7 +415,7 @@ AND `group_id` = %d
 			$sql_params[] = $query['hook'];
 		}
 
-		if ( ! is_null( $query['args'] ) ) {
+		if ( ! is_null( $query['args'] ) && isset( $query['partial_args_matching'] ) ) {
 			switch ( $query['partial_args_matching'] ) {
 				case 'json':
 					if ( $mysql_version < '5.7' ) {

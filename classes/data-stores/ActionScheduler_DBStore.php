@@ -395,9 +395,9 @@ AND `group_id` = %d
 		/** @var \wpdb $wpdb */
 		global $wpdb;
 		$mysql_version = $wpdb->db_version();
-		$sql  = ( 'count' === $select_or_count ) ? 'SELECT count(a.action_id)' : 'SELECT a.action_id';
-		$sql .= " FROM {$wpdb->actionscheduler_actions} a";
-		$sql_params = array();
+		$sql           = ( 'count' === $select_or_count ) ? 'SELECT count(a.action_id)' : 'SELECT a.action_id';
+		$sql           .= " FROM {$wpdb->actionscheduler_actions} a";
+		$sql_params    = array();
 
 		if ( ! empty( $query['group'] ) || 'group' === $query['orderby'] ) {
 			$sql .= " LEFT JOIN {$wpdb->actionscheduler_groups} g ON g.group_id=a.group_id";
@@ -410,12 +410,12 @@ AND `group_id` = %d
 			$sql_params[] = $query['group'];
 		}
 
-		if ( $query['hook'] ) {
+		if ( ! empty( $query['hook'] ) ) {
 			$sql          .= " AND a.hook=%s";
 			$sql_params[] = $query['hook'];
 		}
 
-		if ( ! is_null( $query['args'] ) && isset( $query['partial_args_matching'] ) ) {
+		if ( ! is_null( $query['args'] ) && ! empty( $query['partial_args_matching'] ) ) {
 			switch ( $query['partial_args_matching'] ) {
 				case 'json':
 					if ( $mysql_version < '5.7' ) {
@@ -429,8 +429,8 @@ AND `group_id` = %d
 							'string'  => '%s',
 						);
 						foreach ( $supported_types as $type => $placeholder ) {
-							if ( gettype( $value ) == $type ) {
-								if ( $type == 'boolean' ) {
+							if ( gettype( $value ) === $type ) {
+								if ( 'boolean' === $type ) {
 									$value = $value ? 'true' : 'false';
 								}
 								$sql .= ' AND JSON_EXTRACT(a.args, %s)='.$placeholder;
@@ -443,8 +443,8 @@ AND `group_id` = %d
 				case 'like':
 					foreach ( $query['args'] as $key => $value ) {
 						$sql          .= ' AND a.args LIKE %s';
-						$json_partial  = trim( json_encode( array( $key => $value ) ), '{}' );
-						$sql_params[]  = "%{$json_partial}%";
+						$json_partial = trim( json_encode( array( $key => $value ) ), '{}' );
+						$sql_params[] = "%{$json_partial}%";
 					}
 					break;
 				case 'off':
@@ -456,7 +456,7 @@ AND `group_id` = %d
 			}
 		}
 
-		if ( $query[ 'status' ] ) {
+		if ( ! empty( $query[ 'status' ] ) ) {
 			if( is_array( $query[ 'status' ] ) ) {
 				$sql  .= " AND a.status IN (";
 				$last = end( $query[ 'status' ] );

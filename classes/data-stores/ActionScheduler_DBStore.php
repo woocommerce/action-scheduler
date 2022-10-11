@@ -376,20 +376,20 @@ AND `group_id` = %d
 		}
 
 		$query = wp_parse_args( $query, array(
-			'hook'               => '',
-			'args'               => null,
-			'args_partial_match' => false,
-			'date'               => null,
-			'date_compare'       => '<=',
-			'modified'           => null,
-			'modified_compare'   => '<=',
-			'group'              => '',
-			'status'             => '',
-			'claimed'            => null,
-			'per_page'           => 5,
-			'offset'             => 0,
-			'orderby'            => 'date',
-			'order'              => 'ASC',
+			'hook'                  => '',
+			'args'                  => null,
+			'partial_args_matching' => 'off', // can be 'like' or 'json'
+			'date'                  => null,
+			'date_compare'          => '<=',
+			'modified'              => null,
+			'modified_compare'      => '<=',
+			'group'                 => '',
+			'status'                => '',
+			'claimed'               => null,
+			'per_page'              => 5,
+			'offset'                => 0,
+			'orderby'               => 'date',
+			'order'                 => 'ASC',
 		 ) );
 
 		/** @var \wpdb $wpdb */
@@ -415,40 +415,44 @@ AND `group_id` = %d
 			$sql_params[] = $query['hook'];
 		}
 
-		if ( ! is_null( $query['args'] ) ) {
-			if ( isset( $query['args_partial_match'] ) && true === $query['args_partial_match'] && $mysql_version >= '5.7' ) {
-				foreach ( $query['args'] as $key => $value ) {
-					$supported_types = array( 'integer', 'boolean', 'double', 'string' );
-					if ( ! in_array( gettype( $value ), $supported_types ) ) {
-						continue;
+		if ( ! is_null( $query['args'] ) && isset( $query['partial_args_matching'] ) ) {
+			switch ( $query['partial_args_matching'] ) {
+				case 'json':
+					if ( $mysql_version < '5.7' ) {
+						throw new \RuntimeException( __( 'JSON partial matching requires MySQL 5.7+.', 'action-scheduler' ) );
 					}
-					switch ( gettype( $value ) ) {
-						case 'integer':
-							$sql .= ' AND JSON_EXTRACT(a.args, %s)=%d';
-							break;
-						case 'boolean':
-							$value = $value ? 'true' : 'false';
-							$sql   .= ' AND JSON_EXTRACT(a.args, %s)=%s';
-							break;
-						case 'double':
-							$sql .= ' AND JSON_EXTRACT(a.args, %s)=%f';
-							break;
-						case 'string':
-							$sql .= ' AND JSON_EXTRACT(a.args, %s)=%s';
-							break;
+					foreach ( $query['args'] as $key => $value ) {
+						$supported_types = array(
+							'integer' => '%d',
+							'boolean' => '%s',
+							'double'  => '%f',
+							'string'  => '%s',
+						);
+						foreach ( $supported_types as $type => $placeholder ) {
+							if ( gettype( $value ) == $type ) {
+								if ( $type == 'boolean' ) {
+									$value = $value ? 'true' : 'false';
+								}
+								$sql .= ' AND JSON_EXTRACT(a.args, %s)='.$placeholder;
+							}
+						}
+						$sql_params[] = '$.'.$key;
+						$sql_params[] = $value;
 					}
-					$sql_params[] = '$.'.$key;
-					$sql_params[] = $value;
-				}
-			} elseif ( isset( $query['args_partial_match'] ) && true === $query['args_partial_match'] && $mysql_version < '5.7' ) {
-				foreach ( $query['args'] as $key => $value ) {
-					$sql          .= ' AND a.args LIKE %s';
-					$json_partial = trim( json_encode( array( $key => $value ) ), '{}' );
-					$sql_params[] = "%{$json_partial}%";
-				}
-			} else {
-				$sql          .= " AND a.args=%s";
-				$sql_params[] = $this->get_args_for_query( $query['args'] );
+					break;
+				case 'like':
+					foreach ( $query['args'] as $key => $value ) {
+						$sql          .= ' AND a.args LIKE %s';
+						$json_partial  = trim( json_encode( array( $key => $value ) ), '{}' );
+						$sql_params[]  = "%{$json_partial}%";
+					}
+					break;
+				case 'off':
+					$sql          .= " AND a.args=%s";
+					$sql_params[] = $this->get_args_for_query( $query['args'] );
+					break;
+				default:
+					throw new \RuntimeException( __( 'Unknown partial args matching value.', 'action-scheduler' ) );
 			}
 		}
 

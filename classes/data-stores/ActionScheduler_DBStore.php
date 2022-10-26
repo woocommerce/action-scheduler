@@ -394,7 +394,17 @@ AND `group_id` = %d
 
 		/** @var \wpdb $wpdb */
 		global $wpdb;
-		$mysql_version = $wpdb->db_version();
+
+		if ( str_contains( $wpdb->db_server_info(), 'MariaDB' ) ) {
+			$supports_json = version_compare(
+				PHP_VERSION_ID >= 80016 ? $wpdb->db_version() : preg_replace( '/[^0-9.].*/', '', str_replace( '5.5.5-', '', $wpdb->db_server_info() ) ),
+				'10.2',
+				'>='
+			);
+		} else {
+			$supports_json = version_compare( $wpdb->db_version(), '5.7', '>=' );
+		}
+
 		$sql           = ( 'count' === $select_or_count ) ? 'SELECT count(a.action_id)' : 'SELECT a.action_id';
 		$sql           .= " FROM {$wpdb->actionscheduler_actions} a";
 		$sql_params    = array();
@@ -415,27 +425,32 @@ AND `group_id` = %d
 			$sql_params[] = $query['hook'];
 		}
 
-		if ( ! is_null( $query['args'] ) && isset( $query['partial_args_matching'] ) ) {
+		if ( ! is_null( $query['args'] ) ) {
 			switch ( $query['partial_args_matching'] ) {
 				case 'json':
-					if ( $mysql_version < '5.7' ) {
-						throw new \RuntimeException( __( 'JSON partial matching requires MySQL 5.7+.', 'action-scheduler' ) );
+					if ( ! $supports_json ) {
+						throw new \RuntimeException( __( 'JSON partial matching not supported in your environment. Please check your MySQL/MariaDB version.', 'action-scheduler' ) );
 					}
+					$supported_types = array(
+						'integer' => '%d',
+						'boolean' => '%s',
+						'double'  => '%f',
+						'string'  => '%s',
+					);
 					foreach ( $query['args'] as $key => $value ) {
-						$supported_types = array(
-							'integer' => '%d',
-							'boolean' => '%s',
-							'double'  => '%f',
-							'string'  => '%s',
-						);
-						foreach ( $supported_types as $type => $placeholder ) {
-							if ( gettype( $value ) === $type ) {
-								if ( 'boolean' === $type ) {
-									$value = $value ? 'true' : 'false';
-								}
-								$sql .= ' AND JSON_EXTRACT(a.args, %s)='.$placeholder;
-							}
+						$value_type = gettype( $value );
+						if ( 'boolean' === $value_type ) {
+							$value = $value ? 'true' : 'false';
 						}
+						$placeholder = isset( $supported_types[ $value_type ] ) ? $supported_types[ $value_type ] : false;
+						if ( ! $placeholder ) {
+							throw new \RuntimeException( sprintf(
+								/* translators: %s: provided value type */
+								__( 'The value type for the JSON partial matching is not supported. Must be either integer, boolean, double or string. %s type provided.', 'action-scheduler' ),
+								$value_type
+							) );
+						}
+						$sql          .= ' AND JSON_EXTRACT(a.args, %s)='.$placeholder;
 						$sql_params[] = '$.'.$key;
 						$sql_params[] = $value;
 					}
@@ -456,22 +471,11 @@ AND `group_id` = %d
 			}
 		}
 
-		if ( ! empty( $query[ 'status' ] ) ) {
-			if( is_array( $query[ 'status' ] ) ) {
-				$sql  .= " AND a.status IN (";
-				$last = end( $query[ 'status' ] );
-				foreach( $query[ 'status' ] as $status ) {
-					$sql .= "%s";
-					if( $status != $last ) {
-						$sql .= ",";
-					}
-					$sql_params[] = $status;
-				}
-				$sql .= ")";
-			} else {
-				$sql          .= " AND a.status=%s";
-				$sql_params[] = $query[ 'status' ];
-			}
+		if ( $query['status'] ) {
+			$statuses     = (array) $query['status'];
+			$placeholders = array_fill( 0, count( $statuses ), '%s' );
+			$sql         .= ' AND a.status IN (' . join( ', ', $placeholders ) . ')';
+			$sql_params   = array_merge( $sql_params, array_values( $statuses ) );
 		}
 
 		if ( $query['date'] instanceof \DateTime ) {

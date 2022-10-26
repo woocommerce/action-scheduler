@@ -405,9 +405,9 @@ AND `group_id` = %d
 			$supports_json = version_compare( $wpdb->db_version(), '5.7', '>=' );
 		}
 
-		$sql           = ( 'count' === $select_or_count ) ? 'SELECT count(a.action_id)' : 'SELECT a.action_id';
-		$sql           .= " FROM {$wpdb->actionscheduler_actions} a";
-		$sql_params    = array();
+		$sql        = ( 'count' === $select_or_count ) ? 'SELECT count(a.action_id)' : 'SELECT a.action_id';
+		$sql        .= " FROM {$wpdb->actionscheduler_actions} a";
+		$sql_params = array();
 
 		if ( ! empty( $query['group'] ) || 'group' === $query['orderby'] ) {
 			$sql .= " LEFT JOIN {$wpdb->actionscheduler_groups} g ON g.group_id=a.group_id";

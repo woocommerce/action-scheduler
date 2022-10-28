@@ -122,6 +122,11 @@ function as_schedule_recurring_action( $timestamp, $interval_in_seconds, $hook, 
 		return 0;
 	}
 
+	// if you pass a string by mistake, it causes a flood of scheduled actions, recurring almost every minute or less
+	if ( ! is_int( $interval_in_seconds ) ) {
+		throw new Exception( "Interval parameter should be of type integer, received" . gettype( $interval_in_seconds ) );
+	}
+
 	/**
 	 * Provides an opportunity to short-circuit the default process for enqueuing recurring
 	 * actions.

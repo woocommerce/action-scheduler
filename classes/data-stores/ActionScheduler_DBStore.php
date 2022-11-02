@@ -395,9 +395,10 @@ AND `group_id` = %d
 		/** @var \wpdb $wpdb */
 		global $wpdb;
 
-		if ( str_contains( $wpdb->db_server_info(), 'MariaDB' ) ) {
+		$db_server_info = is_callable( array( $wpdb, 'db_server_info' ) ) ? $wpdb->db_server_info() : $wpdb->db_version();
+		if ( false !== strpos( $db_server_info, 'MariaDB' ) ) {
 			$supports_json = version_compare(
-				PHP_VERSION_ID >= 80016 ? $wpdb->db_version() : preg_replace( '/[^0-9.].*/', '', str_replace( '5.5.5-', '', $wpdb->db_server_info() ) ),
+				PHP_VERSION_ID >= 80016 ? $wpdb->db_version() : preg_replace( '/[^0-9.].*/', '', str_replace( '5.5.5-', '', $db_server_info ) ),
 				'10.2',
 				'>='
 			);

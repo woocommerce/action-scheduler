@@ -458,7 +458,7 @@ AND `group_id` = %d
 				case 'like':
 					foreach ( $query['args'] as $key => $value ) {
 						$sql          .= ' AND a.args LIKE %s';
-						$json_partial = trim( json_encode( array( $key => $value ) ), '{}' );
+						$json_partial = $wpdb->esc_like( trim( json_encode( array( $key => $value ) ), '{}' ) );
 						$sql_params[] = "%{$json_partial}%";
 					}
 					break;

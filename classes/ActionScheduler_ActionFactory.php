@@ -146,7 +146,7 @@ class ActionScheduler_ActionFactory {
 	 */
 	public function recurring_unique( $hook, $args = array(), $first = null, $interval = null, $group = '', $unique = true ) {
 		if ( empty( $interval ) ) {
-			return $this->single_unique( $hook, $unique, $args, $first, $group );
+			return $this->single_unique( $hook, $args, $first, $group, $unique );
 		}
 		$date     = as_get_datetime_object( $first );
 		$schedule = new ActionScheduler_IntervalSchedule( $date, $interval );
@@ -188,7 +188,7 @@ class ActionScheduler_ActionFactory {
 	 **/
 	public function cron_unique( $hook, $args = array(), $base_timestamp = null, $schedule = null, $group = '', $unique = true ) {
 		if ( empty( $schedule ) ) {
-			return $this->single_unique( $hook, $unique, $args, $base_timestamp, $group );
+			return $this->single_unique( $hook, $args, $base_timestamp, $group, $unique );
 		}
 		$date     = as_get_datetime_object( $base_timestamp );
 		$cron     = CronExpression::factory( $schedule );

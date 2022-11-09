@@ -9,14 +9,14 @@
  */
 class ActionScheduler_StoreSchema extends ActionScheduler_Abstract_Schema {
 	const ACTIONS_TABLE = 'actionscheduler_actions';
-	const CLAIMS_TABLE  = 'actionscheduler_claims';
-	const GROUPS_TABLE  = 'actionscheduler_groups';
-	const DEFAULT_DATE  = '0000-00-00 00:00:00';
+	const CLAIMS_TABLE = 'actionscheduler_claims';
+	const GROUPS_TABLE = 'actionscheduler_groups';
+	const DEFAULT_DATE = '0000-00-00 00:00:00';
 
 	/**
 	 * @var int Increment this value to trigger a schema update.
 	 */
-	protected $schema_version = 6;
+	protected $schema_version = 7;
 
 	public function __construct() {
 		$this->tables = [
@@ -31,6 +31,7 @@ class ActionScheduler_StoreSchema extends ActionScheduler_Abstract_Schema {
 	 */
 	public function init() {
 		add_action( 'action_scheduler_before_schema_update', array( $this, 'update_schema_5_0' ), 10, 2 );
+		add_action( 'action_scheduler_before_schema_update', array( $this, 'update_schema_7_0' ), 10, 2 );
 	}
 
 	protected function get_table_definition( $table ) {
@@ -115,6 +116,43 @@ class ActionScheduler_StoreSchema extends ActionScheduler_Abstract_Schema {
 		$default_date = self::DEFAULT_DATE;
 
 		if ( ! empty( $table_list ) ) {
+			$query = "
+				ALTER TABLE ${table_name}
+				MODIFY COLUMN scheduled_date_gmt datetime NULL default '${default_date}',
+				MODIFY COLUMN scheduled_date_local datetime NULL default '${default_date}',
+				MODIFY COLUMN last_attempt_gmt datetime NULL default '${default_date}',
+				MODIFY COLUMN last_attempt_local datetime NULL default '${default_date}'
+		";
+			$wpdb->query( $query ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
+		}
+		// phpcs:enable WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+	}
+
+	/**
+	 * Update the actions table schema, allowing $args fields to be longtext.
+	 *
+	 * This is needed because the NOT NULL constraint causes a conflict with some versions of MySQL
+	 * configured with sql_mode=NO_ZERO_DATE, which can for instance lead to tables not being created.
+	 *
+	 * Most other schema updates happen via ActionScheduler_Abstract_Schema::update_table(), however
+	 * that method relies on dbDelta() and this change is not possible when using that function.
+	 *
+	 * @param string $table Name of table being updated.
+	 * @param string $db_version The existing schema version of the table.
+	 */
+	public function update_schema_7_0( $table, $db_version ) {
+		global $wpdb;
+
+		if ( 'actionscheduler_actions' !== $table || version_compare( $db_version, '7', '>=' ) ) {
+			return;
+		}
+
+		// phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		$table_name   = $wpdb->prefix . 'actionscheduler_actions';
+		$table_list   = $wpdb->get_col( "SHOW TABLES LIKE '${table_name}'" );
+		$default_date = self::DEFAULT_DATE;
+		if ( ! empty( $table_list ) ) {
+			// Keeping _date_ keys, in case the user is migrating from a very old AS version
 			$query = "
 				ALTER TABLE ${table_name}
 				MODIFY COLUMN scheduled_date_gmt datetime NULL default '${default_date}',

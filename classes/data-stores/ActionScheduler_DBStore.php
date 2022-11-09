@@ -19,8 +19,13 @@ class ActionScheduler_DBStore extends ActionScheduler_Store {
 	 */
 	private $claim_before_date = null;
 
-	/** @var int */
-	protected static $max_args_length = 4294967295; // longtext length (4GB)
+	/**
+	 * The "longtext" field type can store up to 4,294,967,295 (4GB) characters.
+	 * For sanity, allow up to half the length of 4GB (2GB) in the field.
+	 *
+	 * @var int
+	 */
+	protected static $max_args_length = 2147483647; // longtext length (4GB)
 
 	/** @var int */
 	protected static $max_index_length = 191;

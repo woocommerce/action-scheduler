@@ -129,13 +129,7 @@ class ActionScheduler_StoreSchema extends ActionScheduler_Abstract_Schema {
 	}
 
 	/**
-	 * Update the actions table schema, allowing $args fields to be longtext.
-	 *
-	 * This is needed because the NOT NULL constraint causes a conflict with some versions of MySQL
-	 * configured with sql_mode=NO_ZERO_DATE, which can for instance lead to tables not being created.
-	 *
-	 * Most other schema updates happen via ActionScheduler_Abstract_Schema::update_table(), however
-	 * that method relies on dbDelta() and this change is not possible when using that function.
+	 * Update the actions table schema, changing `$extended_args` fields to be longtext.
 	 *
 	 * @param string $table Name of table being updated.
 	 * @param string $db_version The existing schema version of the table.
@@ -147,22 +141,10 @@ class ActionScheduler_StoreSchema extends ActionScheduler_Abstract_Schema {
 			return;
 		}
 
-		// phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 		$table_name   = $wpdb->prefix . 'actionscheduler_actions';
 		$table_list   = $wpdb->get_col( "SHOW TABLES LIKE '${table_name}'" );
-		$default_date = self::DEFAULT_DATE;
 		if ( ! empty( $table_list ) ) {
-			// Keeping _date_ keys, in case the user is migrating from a very old AS version
-			$query = "
-				ALTER TABLE ${table_name}
-				MODIFY COLUMN scheduled_date_gmt datetime NULL default '${default_date}',
-				MODIFY COLUMN scheduled_date_local datetime NULL default '${default_date}',
-				MODIFY COLUMN last_attempt_gmt datetime NULL default '${default_date}',
-				MODIFY COLUMN last_attempt_local datetime NULL default '${default_date}',
-				MODIFY COLUMN extended_args longtext
-		";
-			$wpdb->query( $query ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
+			$wpdb->query( "ALTER TABLE ${table_name} MODIFY COLUMN extended_args longtext" ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
 		}
-		// phpcs:enable WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 	}
 }

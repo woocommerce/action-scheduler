@@ -47,6 +47,9 @@ Collaboration is cool. We'd love to work with you to improve Action Scheduler. [
 
 == Changelog ==
 
+= 3.5.3 - 2022-11-09 =
+* Query actions with partial match.
+
 = 3.5.2 - 2022-09-16 =
 * Fix - erroneous 3.5.1 release.
 

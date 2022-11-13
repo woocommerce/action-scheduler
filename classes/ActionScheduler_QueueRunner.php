@@ -47,6 +47,9 @@ class ActionScheduler_QueueRunner extends ActionScheduler_Abstract_QueueRunner {
 	 * @codeCoverageIgnore
 	 */
 	public function init() {
+		if ( defined( 'AS_DISABLE_QUEUE_RUNNERS' ) && AS_DISABLE_QUEUE_RUNNERS ) {
+			return;
+		}
 
 		add_filter( 'cron_schedules', array( self::instance(), 'add_wp_cron_schedule' ) );
 

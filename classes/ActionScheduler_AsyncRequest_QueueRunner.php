@@ -49,7 +49,9 @@ class ActionScheduler_AsyncRequest_QueueRunner extends WP_Async_Request {
 	 * if there are still pending actions after completing a queue in this request.
 	 */
 	protected function handle() {
-		do_action( 'action_scheduler_run_queue', 'Async Request' ); // run a queue in the same way as WP Cron, but declare the Async Request context
+		if ( ! defined( 'AS_DISABLE_QUEUE_RUNNERS' ) || ! AS_DISABLE_QUEUE_RUNNERS ) {
+			do_action( 'action_scheduler_run_queue', 'Async Request' ); // run a queue in the same way as WP Cron, but declare the Async Request context
+		}
 
 		$sleep_seconds = $this->get_sleep_seconds();
 
@@ -79,7 +81,7 @@ class ActionScheduler_AsyncRequest_QueueRunner extends WP_Async_Request {
 	 */
 	protected function allow() {
 
-		if ( ! has_action( 'action_scheduler_run_queue' ) || ActionScheduler::runner()->has_maximum_concurrent_batches() || ! $this->store->has_pending_actions_due() ) {
+		if ( defined( 'AS_DISABLE_QUEUE_RUNNERS' ) && AS_DISABLE_QUEUE_RUNNERS || ! has_action( 'action_scheduler_run_queue' ) || ActionScheduler::runner()->has_maximum_concurrent_batches() || ! $this->store->has_pending_actions_due() ) {
 			$allow = false;
 		} else {
 			$allow = true;

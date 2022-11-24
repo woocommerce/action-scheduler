@@ -226,7 +226,7 @@ abstract class ActionScheduler_Store extends ActionScheduler_Store_Deprecated {
 	 * @param string $slug Group slug name.
 	 * @return string
 	 */
-	public static function mark_group_for_exclussion( $slug ) {
+	public static function mark_group_for_exclusion( $slug ) {
 		return $slug ? self::IGNORE_GROUP_FLAG . $slug : $slug;
 	}
 

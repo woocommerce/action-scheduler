@@ -11,7 +11,7 @@ abstract class ActionScheduler_Store extends ActionScheduler_Store_Deprecated {
 	const STATUS_FAILED         = 'failed';
 	const STATUS_CANCELED       = 'canceled';
 	const DEFAULT_CLASS         = 'ActionScheduler_wpPostStore';
-	const IGNORE_GROUP_FLAG    = '--';
+	const IGNORE_GROUP_FLAG     = '--*IGNORE*--';
 
 	/** @var ActionScheduler_Store */
 	private static $store = NULL;

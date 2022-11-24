@@ -146,7 +146,7 @@ class ActionScheduler_DBStore extends ActionScheduler_Store {
 
 		if ( self::group_has_ignore_prefix( $slug ) ) {
 			// translators: %s: ignored group name prefix.
-			throw new InvalidArgumentException( sprintf( __( 'Group names cannot start with %s.', 'action-scheduler' ), self::IGNORE_GROUP_FLAG ) );
+			throw new InvalidArgumentException( sprintf( esc_html__( 'Group names cannot start with %s.', 'action-scheduler' ), self::IGNORE_GROUP_FLAG ) );
 		}
 
 		$wpdb->insert( $wpdb->actionscheduler_groups, array( 'slug' => $slug ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery

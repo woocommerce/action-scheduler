@@ -68,7 +68,7 @@ class ActionScheduler_WPCLI_Scheduler_command extends WP_CLI_Command {
 
 			$ignore_group_array = array_map(
 				function ( $val ) {
-					return ActionScheduler_DBStore::mark_group_for_exclussion( $val );
+					return ActionScheduler_DBStore::mark_group_for_exclusion( $val );
 				},
 				explode( ',', $ignore_group )
 			);

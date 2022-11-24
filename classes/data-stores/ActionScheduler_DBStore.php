@@ -629,7 +629,7 @@ class ActionScheduler_DBStore extends ActionScheduler_Store {
 	 * @param int       $limit Number of action to include in claim.
 	 * @param \DateTime $before_date Should use UTC timezone.
 	 * @param array     $hooks Hooks to filter for.
-	 * @param string    $group Group to filter for, adding IGNORE_GROUP_FLAG in front of the group will have it ignored.
+	 * @param string    $group Comma-separated list of groups to filter by. Adding IGNORE_GROUP_FLAG in front of a group will cause it to be ignored.
 	 *
 	 * @return int The number of actions that were claimed.
 	 * @throws \InvalidArgumentException Throws InvalidArgumentException if group doesn't exist.

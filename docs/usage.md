@@ -53,20 +53,20 @@ Adding the subtree as a remote allows us to refer to it in short from via the na
 #### Step 2. Add the Repo as a Subtree
 
 ```
-git subtree add --prefix libraries/action-scheduler subtree-action-scheduler master --squash
+git subtree add --prefix libraries/action-scheduler subtree-action-scheduler trunk --squash
 ```
 
-This will add the `master` branch of Action Scheduler to your repository in the folder `libraries/action-scheduler`.
+This will add the `trunk` branch of Action Scheduler to your repository in the folder `libraries/action-scheduler`.
 
-You can change the `--prefix` to change where the code is included. Or change the `master` branch to a tag, like `2.1.0` to include only a stable version.
+You can change the `--prefix` to change where the code is included. Or change the `trunk` branch to a tag, like `2.1.0` to include only a stable version.
 
 #### Step 3. Update the Subtree
 
 To update Action Scheduler to a new version, use the commands:
 
 ```
-git fetch subtree-action-scheduler master
-git subtree pull --prefix libraries/action-scheduler subtree-action-scheduler master --squash
+git fetch subtree-action-scheduler trunk
+git subtree pull --prefix libraries/action-scheduler subtree-action-scheduler trunk --squash
 ```
 
 ### Loading Action Scheduler
@@ -109,7 +109,7 @@ require_once( plugin_dir_path( __FILE__ ) . '/libraries/action-scheduler/action-
  */
 function eg_schedule_midnight_log() {
 	if ( false === as_has_scheduled_action( 'eg_midnight_log' ) ) {
-		as_schedule_recurring_action( strtotime( 'tomorrow' ), DAY_IN_SECONDS, 'eg_midnight_log' );
+		as_schedule_recurring_action( strtotime( 'tomorrow' ), DAY_IN_SECONDS, 'eg_midnight_log', array(), '', true );
 	}
 }
 add_action( 'init', 'eg_schedule_midnight_log' );

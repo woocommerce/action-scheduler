@@ -22,7 +22,7 @@ Or trigger the `'action_scheduler_run_queue'` hook and let Action Scheduler do i
 do_action( 'action_scheduler_run_queue', $context_identifier );
 ```
 
-Further customization can be done by extending the `ActionScheduler_Abstract_QueueRunner` class to create a custom Queue Runner. For an example of a customized queue runner, see the [`ActionScheduler_WPCLI_QueueRunner`](https://github.com/woocommerce/action-scheduler/blob/master/classes/WP_CLI/ActionScheduler_WPCLI_QueueRunner.php), which is used when running WP CLI.
+Further customization can be done by extending the `ActionScheduler_Abstract_QueueRunner` class to create a custom Queue Runner. For an example of a customized queue runner, see the [`ActionScheduler_WPCLI_QueueRunner`](https://github.com/woocommerce/action-scheduler/blob/trunk/classes/WP_CLI/ActionScheduler_WPCLI_QueueRunner.php), which is used when running WP CLI.
 
 Want to create some other method for initiating Action Scheduler? [Open a new issue](https://github.com/woocommerce/action-scheduler/issues/new), we'd love to help you with it.
 
@@ -105,3 +105,25 @@ It requires no setup, and won't override any WordPress APIs (unless you want it 
 Action Scheduler is designed to manage the scheduled actions on a single site. It has no special handling for running queues across multiple sites in a multisite network. That said, because its storage and Queue Runner are completely swappable, it would be possible to write multisite handling classes to use with it.
 
 If you'd like to create a multisite plugin to do this and release it publicly to help others, [open a new issue to let us know](https://github.com/woocommerce/action-scheduler/issues/new), we'd love to help you with it.
+
+### How can I change the Action Scheduler User-Agent to better identify its requests?
+
+Action Scheduler has a filter available named `as_async_request_queue_runner_post_args` which can be used to filter the arguments that are being sent to the `wp_remote_post` call.
+
+The User-Agent parameter is just one of them and can be adjusted as follows:
+
+```
+function eg_define_custom_user_agent( $args ) {
+	$versions           = ActionScheduler_Versions::instance();
+	$args['user-agent'] = 'Action Scheduler/' . $versions->latest_version();
+
+	return $args;
+}
+add_filter( 'as_async_request_queue_runner_post_args', 'eg_define_custom_user_agent', 10, 1 );
+```
+
+### My site has past-due actions; what can I do?
+
+Actions that are past-due have missed their scheduled date; because of [how WP Cron works](https://developer.wordpress.org/plugins/cron/), it is normal to have some past-due actions.
+
+If there are several past-due actions more than one day old, there may be something wrong with your site. If you need help determining the issue and are a WooCommerce.com customer, please [contact us](https://woocommerce.com/contact-us/).

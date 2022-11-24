@@ -14,9 +14,17 @@
     "yoast/phpunit-polyfills": "^1.0"
   },
   "config": {
+    "allow-plugins": {
+      "dealerdirect/phpcodesniffer-composer-installer": true
+    },
     "platform": {
       "php": "7.3"
     }
+  },
+  "archive": {
+    "exclude": [
+      "node_modules"
+    ]
   },
   "scripts": {
     "test": [

@@ -14,7 +14,7 @@ class ActionScheduler_QueueCleaner_Test extends ActionScheduler_UnitTestCase {
 
 		$created_actions = array();
 		for ( $i = 0 ; $i < 5 ; $i++ ) {
-			$action = new ActionScheduler_Action( $random, array($random), $schedule );
+			$action = new ActionScheduler_Action( ActionScheduler_Callbacks::HOOK_WITH_CALLBACK, array($random), $schedule );
 			$created_actions[] = $store->save_action( $action );
 		}
 

@@ -220,7 +220,8 @@ abstract class ActionScheduler_Store extends ActionScheduler_Store_Deprecated {
 	}
 
 	/**
-	 * Mark group for exclussion by prefixing with '-'.
+	 * Mark group for exclusion by applying a special prefix (by default, the value of
+	 * the IGNORE_GROUP_FLAG property).
 	 *
 	 * @param string $slug Group slug name.
 	 * @return string

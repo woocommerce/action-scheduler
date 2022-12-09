@@ -14,6 +14,9 @@ class ActionScheduler_QueueRunner extends ActionScheduler_Abstract_QueueRunner {
 	/** @var ActionScheduler_QueueRunner  */
 	private static $runner = null;
 
+	/** @var int  */
+	private $processed_actions_count = 0;
+
 	/**
 	 * @return ActionScheduler_QueueRunner
 	 * @codeCoverageIgnore
@@ -125,13 +128,14 @@ class ActionScheduler_QueueRunner extends ActionScheduler_Abstract_QueueRunner {
 		ActionScheduler_Compatibility::raise_time_limit( $this->get_time_limit() );
 		do_action( 'action_scheduler_before_process_queue' );
 		$this->run_cleanup();
-		$processed_actions = 0;
+
+		$this->processed_actions_count = 0;
 		if ( false === $this->has_maximum_concurrent_batches() ) {
 			$batch_size = apply_filters( 'action_scheduler_queue_runner_batch_size', 25 );
 			do {
-				$processed_actions_in_batch = $this->do_batch( $batch_size, $context, $processed_actions );
-				$processed_actions         += $processed_actions_in_batch;
-			} while ( $processed_actions_in_batch > 0 && ! $this->batch_limits_exceeded( $processed_actions ) ); // keep going until we run out of actions, time, or memory
+				$processed_actions_in_batch     = $this->do_batch( $batch_size, $context );
+				$this->processed_actions_count += $processed_actions_in_batch;
+			} while ( $processed_actions_in_batch > 0 && ! $this->batch_limits_exceeded( $this->processed_actions_count ) ); // keep going until we run out of actions, time, or memory
 		}
 
 		do_action( 'action_scheduler_after_process_queue' );
@@ -147,10 +151,9 @@ class ActionScheduler_QueueRunner extends ActionScheduler_Abstract_QueueRunner {
 	 * @param int $size The maximum number of actions to process in the batch.
 	 * @param string $context Optional identifer for the context in which this action is being processed, e.g. 'WP CLI' or 'WP Cron'
 	 *        Generally, this should be capitalised and not localised as it's a proper noun.
-	 * @param int $total_processed_actions The number of total actions processed so far.
 	 * @return int The number of actions processed.
 	 */
-	protected function do_batch( $size = 100, $context = '', $total_processed_actions = 0 ) {
+	protected function do_batch( $size = 100, $context = '' ) {
 		$claim = $this->store->stake_claim($size);
 		$this->monitor->attach($claim);
 		$processed_actions = 0;
@@ -163,7 +166,7 @@ class ActionScheduler_QueueRunner extends ActionScheduler_Abstract_QueueRunner {
 			$this->process_action( $action_id, $context );
 			$processed_actions++;
 
-			if ( $this->batch_limits_exceeded( $processed_actions + $total_processed_actions ) ) {
+			if ( $this->batch_limits_exceeded( $processed_actions + $this->processed_actions_count ) ) {
 				break;
 			}
 		}

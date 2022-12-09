@@ -139,7 +139,7 @@ class ActionScheduler_QueueRunner extends ActionScheduler_Abstract_QueueRunner {
 		}
 
 		do_action( 'action_scheduler_after_process_queue' );
-		return $processed_actions;
+		return $this->processed_actions_count;
 	}
 
 	/**

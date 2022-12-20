@@ -98,6 +98,22 @@ function as_schedule_recurring_action( $timestamp, $interval_in_seconds, $hook, 
 		return 0;
 	}
 
+	/**
+	 * Provides an opportunity to short-circuit the default process for enqueuing recurring
+	 * actions.
+	 *
+	 * Returning a value other than null from the filter will short-circuit the normal
+	 * process. The expectation in such a scenario is that callbacks will return an integer
+	 * representing the scheduled action ID (scheduled using some alternative process) or else
+	 * zero.
+	 *
+	 * @param int|null $pre_option          The value to return instead of the option value.
+	 * @param int      $timestamp           When the action will run.
+	 * @param int      $interval_in_seconds How long to wait between runs.
+	 * @param string   $hook                Action hook.
+	 * @param array    $args                Action arguments.
+	 * @param string   $group               Action group.
+	 */
 	$pre = apply_filters( 'pre_as_schedule_recurring_action', null, $timestamp, $interval_in_seconds, $hook, $args, $group );
 	if ( null !== $pre ) {
 		return is_int( $pre ) ? $pre : 0;
@@ -135,6 +151,22 @@ function as_schedule_cron_action( $timestamp, $schedule, $hook, $args = array(),
 		return 0;
 	}
 
+	/**
+	 * Provides an opportunity to short-circuit the default process for enqueuing cron
+	 * actions.
+	 *
+	 * Returning a value other than null from the filter will short-circuit the normal
+	 * process. The expectation in such a scenario is that callbacks will return an integer
+	 * representing the scheduled action ID (scheduled using some alternative process) or else
+	 * zero.
+	 *
+	 * @param int|null $pre_option The value to return instead of the option value.
+	 * @param int      $timestamp  When the action will run.
+	 * @param string   $schedule   Cron-like schedule string.
+	 * @param string   $hook       Action hook.
+	 * @param array    $args       Action arguments.
+	 * @param string   $group      Action group.
+	 */
 	$pre = apply_filters( 'pre_as_schedule_cron_action', null, $timestamp, $schedule, $hook, $args, $group );
 	if ( null !== $pre ) {
 		return is_int( $pre ) ? $pre : 0;

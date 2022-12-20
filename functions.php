@@ -20,6 +20,20 @@ function as_enqueue_async_action( $hook, $args = array(), $group = '', $unique =
 		return 0;
 	}
 
+	/**
+	 * Provides an opportunity to short-circuit the default process for enqueuing async
+	 * actions.
+	 *
+	 * Returning a value other than null from the filter will short-circuit the normal
+	 * process. The expectation in such a scenario is that callbacks will return an integer
+	 * representing the enqueued action ID (enqueued using some alternative process) or else
+	 * zero.
+	 *
+	 * @param int|null $pre_option The value to return instead of the option value.
+	 * @param string   $hook       Action hook.
+	 * @param array    $args       Action arguments.
+	 * @param string   $group      Action group.
+	 */
 	$pre = apply_filters( 'pre_as_enqueue_async_action', null, $hook, $args, $group );
 	if ( null !== $pre ) {
 		return is_int( $pre ) ? $pre : 0;
@@ -44,6 +58,21 @@ function as_schedule_single_action( $timestamp, $hook, $args = array(), $group =
 		return 0;
 	}
 
+	/**
+	 * Provides an opportunity to short-circuit the default process for enqueuing single
+	 * actions.
+	 *
+	 * Returning a value other than null from the filter will short-circuit the normal
+	 * process. The expectation in such a scenario is that callbacks will return an integer
+	 * representing the scheduled action ID (scheduled using some alternative process) or else
+	 * zero.
+	 *
+	 * @param int|null $pre_option The value to return instead of the option value.
+	 * @param int      $timestamp  When the action will run.
+	 * @param string   $hook       Action hook.
+	 * @param array    $args       Action arguments.
+	 * @param string   $group      Action group.
+	 */
 	$pre = apply_filters( 'pre_as_schedule_single_action', null, $timestamp, $hook, $args, $group );
 	if ( null !== $pre ) {
 		return is_int( $pre ) ? $pre : 0;

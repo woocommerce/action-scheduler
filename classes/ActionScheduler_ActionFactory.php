@@ -52,12 +52,9 @@ class ActionScheduler_ActionFactory {
 	/**
 	 * Enqueue an action to run one time, as soon as possible (rather a specific scheduled time).
 	 *
-	 * This method creates a new action with the NULLSchedule. This schedule maps to a MySQL datetime string of
-	 * 0000-00-00 00:00:00. This is done to create a psuedo "async action" type that is fully backward compatible.
-	 * Existing queries to claim actions claim by date, meaning actions scheduled for 0000-00-00 00:00:00 will
-	 * always be claimed prior to actions scheduled for a specific date. This makes sure that any async action is
-	 * given priority in queue processing. This has the added advantage of making sure async actions can be
-	 * claimed by both the existing WP Cron and WP CLI runners, as well as a new async request runner.
+	 * This method creates a new action using the NullSchedule. In practice, this results in an action scheduled to
+	 * execute "now". Therefore, it will generally run as soon as possible but is not prioritized ahead of other actions
+	 * that are already past-due.
 	 *
 	 * @param string $hook The hook to trigger when this action runs.
 	 * @param array  $args Args to pass when the hook is triggered.

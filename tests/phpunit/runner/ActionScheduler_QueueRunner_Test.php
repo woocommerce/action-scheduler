@@ -389,4 +389,36 @@ class ActionScheduler_QueueRunner_Test extends ActionScheduler_UnitTestCase {
 
 		$runner2->run();
 	}
+
+	/**
+	 * Checks that actions are processed in the correct order. Specifically, that past-due actions are not
+	 * penalized in favor of newer async actions.
+	 *
+	 * @return void
+	 */
+	public function test_order_in_which_actions_are_processed() {
+		/** @var ActionScheduler_Store $store */
+		$store           = ActionScheduler::store();
+		$runner          = ActionScheduler_Mocker::get_queue_runner( $store );
+		$execution_order = array();
+
+		$past_due_action  = as_schedule_single_action( time() - HOUR_IN_SECONDS, __METHOD__, array( 'execute' => 'first' ) );
+		$async_action     = as_enqueue_async_action( __METHOD__, array( 'execute' => 'second' ) );
+
+		$monitor = function ( $order ) use ( &$execution_order ) {
+			$execution_order[] = $order;
+		};
+
+		add_action( __METHOD__, $monitor );
+		$runner->run();
+		remove_action( __METHOD__, $monitor );
+
+		$this->assertEquals(
+			array(
+				'first',
+				'second',
+			),
+			$execution_order
+		);
+	}
 }

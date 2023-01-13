@@ -944,20 +944,22 @@ AND `group_id` = %d
 		 */
 		$action_ids = $wpdb->get_col( $wpdb->prepare( "SELECT action_id FROM {$wpdb->actionscheduler_actions} WHERE claim_id = %d", $claim->get_id() ) );
 
+		$row_updates = 0;
 		if ( count( $action_ids ) > 0 ) {
 			$action_id_string = implode( ',', array_map( 'absint', $action_ids ) );
 			$row_updates = $wpdb->query( "UPDATE {$wpdb->actionscheduler_actions} SET claim_id = 0 WHERE action_id IN ({$action_id_string})" ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
-			if ( $row_updates < count( $action_ids ) ) {
-				throw new RuntimeException(
-					sprintf(
-						__( 'Unable to release actions from claim id %d.', 'woocommerce' ),
-						$claim->get_id()
-					)
-				);
-			}
-			return;
 		}
+
 		$wpdb->delete( $wpdb->actionscheduler_claims, array( 'claim_id' => $claim->get_id() ), array( '%d' ) );
+
+		if ( $row_updates < count( $action_ids ) ) {
+			throw new RuntimeException(
+				sprintf(
+					__( 'Unable to release actions from claim id %d.', 'woocommerce' ),
+					$claim->get_id()
+				)
+			);
+		}
 	}
 
 	/**

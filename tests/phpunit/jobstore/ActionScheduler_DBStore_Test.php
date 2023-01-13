@@ -385,9 +385,13 @@ class ActionScheduler_DBStore_Test extends AbstractStoreTest {
 		$claim1 = $store->stake_claim();
 
 		$store->release_claim( $claim1 );
+		$this->assertCount( 0, $store->find_actions_by_claim_id( $claim1->get_id() ) );
 
 		$claim2 = $store->stake_claim();
 		$this->assertCount( 3, $claim2->get_actions() );
+		$store->release_claim( $claim2 );
+		$this->assertCount( 0, $store->find_actions_by_claim_id( $claim1->get_id() ) );
+
 	}
 
 	public function test_search() {

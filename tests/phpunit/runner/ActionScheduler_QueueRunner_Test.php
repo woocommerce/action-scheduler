@@ -63,6 +63,59 @@ class ActionScheduler_QueueRunner_Test extends ActionScheduler_UnitTestCase {
 		$this->assertEquals( 3, $actions_run );
 	}
 
+	/**
+	 * When an action is processed, it is set to "in-progress" (running) status immediately before the
+	 * callback is invoked. If this fails (which could be because it is already in progress) then the
+	 * action should be skipped.
+	 *
+	 * @return void
+	 */
+	public function test_run_with_action_that_is_already_in_progress() {
+		$store      = ActionScheduler::store();
+		$hook       = uniqid();
+		$callback   = function () {};
+		$count      = 0;
+		$actions    = array();
+		$completed  = array();
+		$schedule   = new ActionScheduler_SimpleSchedule( as_get_datetime_object( '1 day ago' ) );
+
+		for ( $i = 0; $i < 3; $i++ ) {
+			$actions[] = $store->save_action( new ActionScheduler_Action( $hook, array( $hook ), $schedule ) );
+		}
+
+		/**
+		 * This function "sabotages" the next action by prematurely setting its status to "in-progress", simulating
+		 * an edge case where a concurrent process runs the action.
+		 */
+		$saboteur = function () use ( &$count, $store, $actions ) {
+			if ( 0 === $count++ ) {
+				$store->log_execution( $actions[1] );
+			}
+		};
+
+		/**
+		 * @param int $action_id The ID of the recently completed action.
+		 *
+		 * @return void
+		 */
+		$spy = function ( $action_id ) use ( &$completed ) {
+			$completed[] = $action_id;
+		};
+
+		add_action( 'action_scheduler_begin_execute', $saboteur );
+		add_action( 'action_scheduler_completed_action', $spy );
+		add_action( $hook, $callback );
+
+		$actions_attempted = ActionScheduler_Mocker::get_queue_runner( $store )->run();
+
+		remove_action( 'action_scheduler_begin_execute', $saboteur );
+		remove_action( 'action_scheduler_completed_action', $spy );
+		remove_action( $hook, $callback );
+
+		$this->assertEquals( 3, $actions_attempted, 'The queue runner attempted to process all 3 actions.' );
+		$this->assertEquals( array( $actions[0], $actions[2] ), $completed, 'Only two of the three actions were completed (one was skipped, because it was processed by a concurrent request).' );
+	}
+
 	public function test_completed_action_status() {
 		$store = ActionScheduler::store();
 		$runner = ActionScheduler_Mocker::get_queue_runner( $store );

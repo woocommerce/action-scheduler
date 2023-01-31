@@ -1005,6 +1005,8 @@ AND `group_id` = %d
 	/**
 	 * Add execution message to action log.
 	 *
+	 * @throws Exception If the action status cannot be updated to self::STATUS_RUNNING ('in-progress').
+	 *
 	 * @param int $action_id Action ID.
 	 *
 	 * @return void
@@ -1015,7 +1017,18 @@ AND `group_id` = %d
 
 		$sql = "UPDATE {$wpdb->actionscheduler_actions} SET attempts = attempts+1, status=%s, last_attempt_gmt = %s, last_attempt_local = %s WHERE action_id = %d";
 		$sql = $wpdb->prepare( $sql, self::STATUS_RUNNING, current_time( 'mysql', true ), current_time( 'mysql' ), $action_id ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
-		$wpdb->query( $sql ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
+
+		// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
+		if ( ! $wpdb->query( $sql ) ) {
+			throw new Exception(
+				sprintf(
+					/* translators: 1: action ID. 2: status slug. */
+					__( 'Unable to update the status of action %1$d to %2$s.', 'action-scheduler' ),
+					$action_id,
+					self::STATUS_RUNNING
+				)
+			);
+		}
 	}
 
 	/**

@@ -949,7 +949,7 @@ class ActionScheduler_wpPostStore extends ActionScheduler_Store {
 		global $wpdb;
 
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
-		if ( ! $wpdb->query(
+		$status_updated = $wpdb->query(
 			$wpdb->prepare(
 				"UPDATE {$wpdb->posts} SET menu_order = menu_order+1, post_status=%s, post_modified_gmt = %s, post_modified = %s WHERE ID = %d AND post_type = %s",
 				self::STATUS_RUNNING,
@@ -958,7 +958,9 @@ class ActionScheduler_wpPostStore extends ActionScheduler_Store {
 				$action_id,
 				self::POST_TYPE
 			)
-		) ) {
+		);
+
+		if ( ! $status_updated ) {
 			throw new Exception(
 				sprintf(
 					/* translators: 1: action ID. 2: status slug. */

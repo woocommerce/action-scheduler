@@ -1019,7 +1019,9 @@ AND `group_id` = %d
 		$sql = $wpdb->prepare( $sql, self::STATUS_RUNNING, current_time( 'mysql', true ), current_time( 'mysql' ), $action_id ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
 
 		// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
-		if ( ! $wpdb->query( $sql ) ) {
+		$status_updated = $wpdb->query( $sql );
+
+		if ( ! $status_updated ) {
 			throw new Exception(
 				sprintf(
 					/* translators: 1: action ID. 2: status slug. */

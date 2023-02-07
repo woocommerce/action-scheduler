@@ -126,7 +126,7 @@ class ActionScheduler_WPCLI_Scheduler_command extends WP_CLI_Command {
 	protected function print_total_actions( $total ) {
 		WP_CLI::log(
 			sprintf(
-				/* translators: %d refers to how many scheduled taks were found to run */
+				/* translators: %d refers to how many scheduled tasks were found to run */
 				_n( 'Found %d scheduled task', 'Found %d scheduled tasks', $total, 'action-scheduler' ),
 				number_format_i18n( $total )
 			)
@@ -179,7 +179,7 @@ class ActionScheduler_WPCLI_Scheduler_command extends WP_CLI_Command {
 	protected function print_success( $actions_completed ) {
 		WP_CLI::success(
 			sprintf(
-				/* translators: %d refers to the total number of taskes completed */
+				/* translators: %d refers to the total number of tasks completed */
 				_n( '%d scheduled task completed.', '%d scheduled tasks completed.', $actions_completed, 'action-scheduler' ),
 				number_format_i18n( $actions_completed )
 			)

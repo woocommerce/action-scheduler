@@ -19,7 +19,7 @@ class ActionScheduler_WPCLI_Clean_Command extends WP_CLI_Command {
 	 * : Only clean actions with the specified status. Defaults to Canceled, Completed. Define multiple statuses as a comma separated string (without spaces), e.g. `--status=complete,failed,canceled`
 	 *
 	 * [--before=<datestring>]
-	 * : Only delete actions with scheduled date older than this. Defaults to 31 days. e.g `--before='-7 days'`, `--before='02-Feb-2020 20:20:20'`
+	 * : Only delete actions with scheduled date older than this. Defaults to 31 days. e.g `--before='7 days ago'`, `--before='02-Feb-2020 20:20:20'`
 	 *
 	 * [--pause=<seconds>]
 	 * : The number of seconds to pause between batches. Default no pause.

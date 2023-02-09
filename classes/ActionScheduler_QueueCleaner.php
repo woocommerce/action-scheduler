@@ -100,7 +100,7 @@ class ActionScheduler_QueueCleaner {
 	 * @param string $context Context of the delete request.
 	 * @return array Deleted action IDs.
 	 */
-	private function delete_actions( array $actions_to_delete, int $lifespan = NULL, string $context = 'old' ) {
+	private function delete_actions( array $actions_to_delete, $lifespan = null, $context = 'old' ) {
 		$deleted_actions = [];
 		if ( $lifespan === null ) {
 			$lifespan = $this->month_in_seconds;

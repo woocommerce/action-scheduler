@@ -70,7 +70,7 @@ class ActionScheduler_QueueCleaner {
 	 * @param string $context Calling process context. Defaults to `old`.
 	 * @return array Actions deleted.
 	 */
-	public function clean_actions( array $statuses_to_purge, DateTime $cutoff_date, int $batch_size = null, string $context = 'old' ) {
+	public function clean_actions( array $statuses_to_purge, DateTime $cutoff_date, $batch_size = null, $context = 'old' ) {
 		$batch_size = $batch_size !== null ? $batch_size : $this->batch_size;
 		$cutoff     = $cutoff_date !== null ? $cutoff_date : as_get_datetime_object( $this->month_in_seconds . ' seconds ago' );
 		$lifespan   = time() - $cutoff->getTimestamp();

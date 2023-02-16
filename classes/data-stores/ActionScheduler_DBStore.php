@@ -25,6 +25,13 @@ class ActionScheduler_DBStore extends ActionScheduler_Store {
 	/** @var int */
 	protected static $max_index_length = 191;
 
+	/** @var array List of claim filters. */
+	protected $claim_filters = [
+		'group'         => '',
+		'hooks'         => '',
+		'exclude-group' => '',
+	];
+
 	/**
 	 * Initialize the data store
 	 *
@@ -797,6 +804,33 @@ AND `group_id` = %d
 	}
 
 	/**
+	 * Set a claim filter.
+	 *
+	 * @param string $filter_name Claim filter name.
+	 * @param mixed $filter_values Values to filter.
+	 * @return void
+	 */
+	public function set_claim_filter( $filter_name, $filter_values ) {
+		if ( isset( $this->claim_filters[ $filter_name ] ) ) {
+			$this->claim_filters[ $filter_name ] = $filter_values;
+		}
+	}
+
+	/**
+	 * Get the claim filter value.
+	 *
+	 * @param string $filter_name Claim filter name.
+	 * @return mixed
+	 */
+	public function get_claim_filter( $filter_name ) {
+		if ( isset( $this->claim_filters[ $filter_name ] ) ) {
+			return $this->claim_filters[ $filter_name ];
+		}
+
+		return '';
+	}
+
+	/**
 	 * Mark actions claimed.
 	 *
 	 * @param string    $claim_id Claim Id.
@@ -824,6 +858,18 @@ AND `group_id` = %d
 			current_time( 'mysql' ),
 		);
 
+		// Set claim filters.
+		if ( ! empty( $hooks ) ) {
+			$this->set_claim_filter( 'hooks', $hooks );
+		} else {
+			$hooks = $this->get_claim_filter( 'hooks' );
+		}
+		if ( ! empty( $group ) ) {
+			$this->set_claim_filter( 'group', $group );
+		} else {
+			$group = $this->get_claim_filter( 'group' );
+		}
+
 		$where    = 'WHERE claim_id = 0 AND scheduled_date_gmt <= %s AND status=%s';
 		$params[] = $date->format( 'Y-m-d H:i:s' );
 		$params[] = self::STATUS_PENDING;
@@ -834,8 +880,13 @@ AND `group_id` = %d
 			$params       = array_merge( $params, array_values( $hooks ) );
 		}
 
-		if ( ! empty( $group ) ) {
+		$group_operator = '=';
+		if ( empty( $group ) ) {
+			$group = $this->get_claim_filter( 'exclude-group' );
+			$group_operator = '!=';
+		}
 
+		if ( ! empty( $group ) ) {
 			$group_id = $this->get_group_id( $group, false );
 
 			// throw exception if no matching group found, this matches ActionScheduler_wpPostStore's behaviour.
@@ -844,7 +895,7 @@ AND `group_id` = %d
 				throw new InvalidArgumentException( sprintf( __( 'The group "%s" does not exist.', 'action-scheduler' ), $group ) );
 			}
 
-			$where    .= ' AND group_id = %d';
+			$where    .= " AND group_id {$group_operator} %d";
 			$params[] = $group_id;
 		}
 

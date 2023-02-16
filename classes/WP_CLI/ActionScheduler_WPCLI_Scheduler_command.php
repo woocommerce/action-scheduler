@@ -55,6 +55,9 @@ class ActionScheduler_WPCLI_Scheduler_command extends WP_CLI_Command {
 	 * [--group=<group>]
 	 * : Only run actions from the specified group. Omitting this option runs actions from all groups.
 	 *
+	 * [--exclude-group=<group>]
+	 * : Run actions from all groups except the specified group. This option is ignored when `--group` is used.
+	 *
 	 * [--free-memory-on=<count>]
 	 * : The number of actions to process between freeing memory. 0 disables freeing memory. Default 50.
 	 *
@@ -72,15 +75,16 @@ class ActionScheduler_WPCLI_Scheduler_command extends WP_CLI_Command {
 	 */
 	public function run( $args, $assoc_args ) {
 		// Handle passed arguments.
-		$batch   = absint( \WP_CLI\Utils\get_flag_value( $assoc_args, 'batch-size', 100 ) );
-		$batches = absint( \WP_CLI\Utils\get_flag_value( $assoc_args, 'batches', 0 ) );
-		$clean   = absint( \WP_CLI\Utils\get_flag_value( $assoc_args, 'cleanup-batch-size', $batch ) );
-		$hooks   = explode( ',', WP_CLI\Utils\get_flag_value( $assoc_args, 'hooks', '' ) );
-		$hooks   = array_filter( array_map( 'trim', $hooks ) );
-		$group   = \WP_CLI\Utils\get_flag_value( $assoc_args, 'group', '' );
-		$free_on = \WP_CLI\Utils\get_flag_value( $assoc_args, 'free-memory-on', 50 );
-		$sleep   = \WP_CLI\Utils\get_flag_value( $assoc_args, 'pause', 0 );
-		$force   = \WP_CLI\Utils\get_flag_value( $assoc_args, 'force', false );
+		$batch         = absint( \WP_CLI\Utils\get_flag_value( $assoc_args, 'batch-size', 100 ) );
+		$batches       = absint( \WP_CLI\Utils\get_flag_value( $assoc_args, 'batches', 0 ) );
+		$clean         = absint( \WP_CLI\Utils\get_flag_value( $assoc_args, 'cleanup-batch-size', $batch ) );
+		$hooks         = explode( ',', WP_CLI\Utils\get_flag_value( $assoc_args, 'hooks', '' ) );
+		$hooks         = array_filter( array_map( 'trim', $hooks ) );
+		$group         = \WP_CLI\Utils\get_flag_value( $assoc_args, 'group', '' );
+		$exclude_group = \WP_CLI\Utils\get_flag_value( $assoc_args, 'exclude-group', '' );
+		$free_on       = \WP_CLI\Utils\get_flag_value( $assoc_args, 'free-memory-on', 50 );
+		$sleep         = \WP_CLI\Utils\get_flag_value( $assoc_args, 'pause', 0 );
+		$force         = \WP_CLI\Utils\get_flag_value( $assoc_args, 'force', false );
 
 		ActionScheduler_DataController::set_free_ticks( $free_on );
 		ActionScheduler_DataController::set_sleep_time( $sleep );
@@ -88,6 +92,11 @@ class ActionScheduler_WPCLI_Scheduler_command extends WP_CLI_Command {
 		$batches_completed = 0;
 		$actions_completed = 0;
 		$unlimited         = $batches === 0;
+		if ( is_callable( [ ActionScheduler::store(), 'set_claim_filter' ] ) ) {
+			if ( ! empty( $exclude_group ) ) {
+				ActionScheduler::store()->set_claim_filter('exclude-group', $exclude_group );
+			}
+		}
 
 		try {
 			// Custom queue cleaner instance.

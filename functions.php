@@ -123,7 +123,11 @@ function as_schedule_recurring_action( $timestamp, $interval_in_seconds, $hook, 
 	}
 
 	// if you pass a string by mistake, it causes a flood of scheduled actions, recurring almost every minute or less
-	if ( ! is_int( $interval_in_seconds ) ) {
+	$interval = (int) $interval_in_seconds;
+
+	// We expect an integer and allow it to be passed using float and string types, but otherwise
+	// should reject unexpected values.
+	if ( ! is_numeric( $interval_in_seconds ) || $interval_in_seconds != $interval ) {
 		throw new Exception( "Interval parameter should be of type integer, received" . gettype( $interval_in_seconds ) );
 	}
 

@@ -128,7 +128,7 @@ class ActionScheduler_WPCLI_Scheduler_command extends WP_CLI_Command {
 			sprintf(
 				/* translators: %d refers to how many scheduled taks were found to run */
 				_n( 'Found %d scheduled task', 'Found %d scheduled tasks', $total, 'action-scheduler' ),
-				number_format_i18n( $total )
+				$total
 			)
 		);
 	}
@@ -145,7 +145,7 @@ class ActionScheduler_WPCLI_Scheduler_command extends WP_CLI_Command {
 			sprintf(
 				/* translators: %d refers to the total number of batches executed */
 				_n( '%d batch executed.', '%d batches executed.', $batches_completed, 'action-scheduler' ),
-				number_format_i18n( $batches_completed )
+				$batches_completed
 			)
 		);
 	}
@@ -181,7 +181,7 @@ class ActionScheduler_WPCLI_Scheduler_command extends WP_CLI_Command {
 			sprintf(
 				/* translators: %d refers to the total number of taskes completed */
 				_n( '%d scheduled task completed.', '%d scheduled tasks completed.', $actions_completed, 'action-scheduler' ),
-				number_format_i18n( $actions_completed )
+				$actions_completed
 			)
 		);
 	}

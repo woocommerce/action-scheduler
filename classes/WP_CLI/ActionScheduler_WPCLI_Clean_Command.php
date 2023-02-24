@@ -86,7 +86,7 @@ class ActionScheduler_WPCLI_Clean_Command extends WP_CLI_Command {
 			sprintf(
 				/* translators: %d refers to the total number of batches processed */
 				_n( '%d batch processed.', '%d batches processed.', $batches_processed, 'action-scheduler' ),
-				number_format_i18n( $batches_processed )
+				$batches_processed
 			)
 		);
 	}
@@ -118,7 +118,7 @@ class ActionScheduler_WPCLI_Clean_Command extends WP_CLI_Command {
 			sprintf(
 				/* translators: %d refers to the total number of actions deleted */
 				_n( '%d action deleted.', '%d actions deleted.', $actions_deleted, 'action-scheduler' ),
-				number_format_i18n( $actions_deleted )
+				$actions_deleted
 			)
 		);
 	}

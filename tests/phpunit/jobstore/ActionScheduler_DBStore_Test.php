@@ -227,6 +227,55 @@ class ActionScheduler_DBStore_Test extends AbstractStoreTest {
 		$this->assertEqualSets( array_slice( $created_actions[ $unique_group_two ], 3, 3 ), $claim->get_actions() );
 	}
 
+	/**
+	 * The DBStore allows one or more groups to be excluded from a claim.
+	 */
+	public function test_claim_actions_with_group_exclusions() {
+		$created_actions  = array();
+		$store            = new ActionScheduler_DBStore();
+		$groups           = array( 'foo', 'bar', 'baz' );
+		$schedule         = new ActionScheduler_SimpleSchedule( as_get_datetime_object( '-1 hour' ) );
+
+		// Create 6 actions (with 2 in each test group).
+		foreach ( $groups as $group_slug ) {
+			$action = new ActionScheduler_Action( ActionScheduler_Callbacks::HOOK_WITH_CALLBACK, array(), $schedule, $group_slug );
+			$created_actions[ $group_slug ] = array(
+				$store->save_action( $action ),
+				$store->save_action( $action ),
+			);
+		}
+
+		// If we exclude group 'foo' (representing 2 actions) the remaining 4 actions from groups 'bar' and 'baz' should still be claimed.
+		$store->set_claim_filter( 'exclude-groups', 'foo' );
+		$claim = $store->stake_claim();
+		$this->assertEquals(
+			array_merge( $created_actions['bar'], $created_actions['baz'] ),
+			$claim->get_actions(),
+			'A single group can successfully be excluded from claims.'
+		);
+		$store->release_claim( $claim );
+
+		// If we exclude groups 'bar' and 'baz' (representing 4 actions) the remaining 2 actions from group 'foo' should still be claimed.
+		$store->set_claim_filter( 'exclude-groups', array( 'bar', 'baz' ) );
+		$claim = $store->stake_claim();
+		$this->assertEquals(
+			$created_actions['foo'],
+			$claim->get_actions(),
+			'Multiple groups can successfully be excluded from claims.'
+		);
+		$store->release_claim( $claim );
+
+		// If we include group 'foo' (representing 2 actions) after excluding all groups, the inclusion should 'win'.
+		$store->set_claim_filter( 'exclude-groups', array( 'foo', 'bar', 'baz' ) );
+		$claim = $store->stake_claim( 10, null, array(), 'foo' );
+		$this->assertEquals(
+			$created_actions['foo'],
+			$claim->get_actions(),
+			'Including a specific group takes precedence over group exclusions.'
+		);
+		$store->release_claim( $claim );
+	}
+
 	public function test_claim_actions_by_hook_and_group() {
 		$created_actions = $created_actions_by_hook = [];
 		$store           = new ActionScheduler_DBStore();

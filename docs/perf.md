@@ -127,6 +127,23 @@ add_action( 'wp_ajax_nopriv_eg_create_additional_runners', 'eg_create_additional
 
 > WARNING: because of the processing rate of scheduled actions, this kind of increase can very easily take down a site. Use only on high powered servers and be sure to test before attempting to use it in production.
 
+## Cleaning Failed Actions
+
+By default, Action Scheduler does not automatically delete old failed actions. There are two optional methods of removing these actions:
+
+- Include the failed status in the list of statuses to purge:
+```php
+add_filter( 'action_scheduler_default_cleaner_statuses', function( $statuses ) {
+    $statuses[] = ActionScheduler_Store::STATUS_FAILED;
+    return $statuses;
+} );
+```
+- Use [WP CLI](/wp-cli/):
+```shell
+// Example
+wp action-scheduler clean --status=failed --batch-size=50 --before='90 days ago' --pause=2
+```
+
 ## High Volume Plugin
 
 It's not necessary to add all of this code yourself, there is a handy plugin to get access to each of these increases - the [Action Scheduler - High Volume](https://github.com/woocommerce/action-scheduler-high-volume) plugin.

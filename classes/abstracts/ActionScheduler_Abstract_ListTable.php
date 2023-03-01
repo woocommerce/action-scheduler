@@ -673,7 +673,11 @@ abstract class ActionScheduler_Abstract_ListTable extends WP_List_Table {
 
 		// Helper to set 'all' filter when not set on status counts passed in.
 		if ( ! isset( $this->status_counts['all'] ) ) {
-			$this->status_counts = array( 'all' => array_sum( $this->status_counts ) ) + $this->status_counts;
+			$all_count = array_sum( $this->status_counts );
+			if ( isset( $this->status_counts['past-due'] ) ) {
+				$all_count -= $this->status_counts['past-due'];
+			}
+			$this->status_counts = array( 'all' => $all_count ) + $this->status_counts;
 		}
 
 		foreach ( $this->status_counts as $status_name => $count ) {

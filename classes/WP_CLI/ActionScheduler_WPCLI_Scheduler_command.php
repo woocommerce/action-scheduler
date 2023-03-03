@@ -55,8 +55,8 @@ class ActionScheduler_WPCLI_Scheduler_command extends WP_CLI_Command {
 	 * [--group=<group>]
 	 * : Only run actions from the specified group. Omitting this option runs actions from all groups.
 	 *
-	 * [--exclude-group=<group>]
-	 * : Run actions from all groups except the specified group. This option is ignored when `--group` is used.
+	 * [--exclude-groups=<groups>]
+	 * : Run actions from all groups except the specified group(s). Define multiple groups as a comma separated string (without spaces), e.g. '--group_a,group_b'. This option is ignored when `--group` is used.
 	 *
 	 * [--free-memory-on=<count>]
 	 * : The number of actions to process between freeing memory. 0 disables freeing memory. Default 50.
@@ -75,16 +75,16 @@ class ActionScheduler_WPCLI_Scheduler_command extends WP_CLI_Command {
 	 */
 	public function run( $args, $assoc_args ) {
 		// Handle passed arguments.
-		$batch         = absint( \WP_CLI\Utils\get_flag_value( $assoc_args, 'batch-size', 100 ) );
-		$batches       = absint( \WP_CLI\Utils\get_flag_value( $assoc_args, 'batches', 0 ) );
-		$clean         = absint( \WP_CLI\Utils\get_flag_value( $assoc_args, 'cleanup-batch-size', $batch ) );
-		$hooks         = explode( ',', WP_CLI\Utils\get_flag_value( $assoc_args, 'hooks', '' ) );
-		$hooks         = array_filter( array_map( 'trim', $hooks ) );
-		$group         = \WP_CLI\Utils\get_flag_value( $assoc_args, 'group', '' );
-		$exclude_group = \WP_CLI\Utils\get_flag_value( $assoc_args, 'exclude-group', '' );
-		$free_on       = \WP_CLI\Utils\get_flag_value( $assoc_args, 'free-memory-on', 50 );
-		$sleep         = \WP_CLI\Utils\get_flag_value( $assoc_args, 'pause', 0 );
-		$force         = \WP_CLI\Utils\get_flag_value( $assoc_args, 'force', false );
+		$batch          = absint( \WP_CLI\Utils\get_flag_value( $assoc_args, 'batch-size', 100 ) );
+		$batches        = absint( \WP_CLI\Utils\get_flag_value( $assoc_args, 'batches', 0 ) );
+		$clean          = absint( \WP_CLI\Utils\get_flag_value( $assoc_args, 'cleanup-batch-size', $batch ) );
+		$hooks          = explode( ',', WP_CLI\Utils\get_flag_value( $assoc_args, 'hooks', '' ) );
+		$hooks          = array_filter( array_map( 'trim', $hooks ) );
+		$group          = \WP_CLI\Utils\get_flag_value( $assoc_args, 'group', '' );
+		$exclude_groups = \WP_CLI\Utils\get_flag_value( $assoc_args, 'exclude-groups', '' );
+		$free_on        = \WP_CLI\Utils\get_flag_value( $assoc_args, 'free-memory-on', 50 );
+		$sleep          = \WP_CLI\Utils\get_flag_value( $assoc_args, 'pause', 0 );
+		$force          = \WP_CLI\Utils\get_flag_value( $assoc_args, 'force', false );
 
 		ActionScheduler_DataController::set_free_ticks( $free_on );
 		ActionScheduler_DataController::set_sleep_time( $sleep );
@@ -93,8 +93,10 @@ class ActionScheduler_WPCLI_Scheduler_command extends WP_CLI_Command {
 		$actions_completed = 0;
 		$unlimited         = $batches === 0;
 		if ( is_callable( [ ActionScheduler::store(), 'set_claim_filter' ] ) ) {
-			if ( ! empty( $exclude_group ) ) {
-				ActionScheduler::store()->set_claim_filter('exclude-group', $exclude_group );
+			$exclude_groups = $this->parse_comma_separated_string( $exclude_groups );
+
+			if ( ! empty( $exclude_groups ) ) {
+				ActionScheduler::store()->set_claim_filter('exclude-groups', $exclude_groups );
 			}
 		}
 
@@ -126,6 +128,17 @@ class ActionScheduler_WPCLI_Scheduler_command extends WP_CLI_Command {
 	}
 
 	/**
+	 * Converts a string of comma-separated values into an array of those same values.
+	 *
+	 * @param string $string The string of one or more comma separated values.
+	 *
+	 * @return array
+	 */
+	private function parse_comma_separated_string( $string ): array {
+		return array_filter( str_getcsv( $string ) );
+	}
+
+	/**
 	 * Print WP CLI message about how many actions are about to be processed.
 	 *
 	 * @author Jeremy Pry
@@ -137,7 +150,7 @@ class ActionScheduler_WPCLI_Scheduler_command extends WP_CLI_Command {
 			sprintf(
 				/* translators: %d refers to how many scheduled tasks were found to run */
 				_n( 'Found %d scheduled task', 'Found %d scheduled tasks', $total, 'action-scheduler' ),
-				number_format_i18n( $total )
+				$total
 			)
 		);
 	}
@@ -154,7 +167,7 @@ class ActionScheduler_WPCLI_Scheduler_command extends WP_CLI_Command {
 			sprintf(
 				/* translators: %d refers to the total number of batches executed */
 				_n( '%d batch executed.', '%d batches executed.', $batches_completed, 'action-scheduler' ),
-				number_format_i18n( $batches_completed )
+				$batches_completed
 			)
 		);
 	}
@@ -190,7 +203,7 @@ class ActionScheduler_WPCLI_Scheduler_command extends WP_CLI_Command {
 			sprintf(
 				/* translators: %d refers to the total number of tasks completed */
 				_n( '%d scheduled task completed.', '%d scheduled tasks completed.', $actions_completed, 'action-scheduler' ),
-				number_format_i18n( $actions_completed )
+				$actions_completed
 			)
 		);
 	}

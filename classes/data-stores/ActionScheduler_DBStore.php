@@ -92,6 +92,7 @@ class ActionScheduler_DBStore extends ActionScheduler_Store {
 				'scheduled_date_local' => $this->get_scheduled_date_string_local( $action, $date ),
 				'schedule'             => serialize( $action->get_schedule() ), // phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.serialize_serialize
 				'group_id'             => $this->get_group_id( $action->get_group() ),
+				'priority'             => $action->get_priority(),
 			);
 
 			$args = wp_json_encode( $action->get_args() );
@@ -362,7 +363,7 @@ AND `group_id` = %d
 		}
 		$group = $data->group ? $data->group : '';
 
-		return ActionScheduler::factory()->get_stored_action( $data->status, $data->hook, $args, $schedule, $group );
+		return ActionScheduler::factory()->get_stored_action( $data->status, $data->hook, $args, $schedule, $group, $data->priority );
 	}
 
 	/**
@@ -906,7 +907,7 @@ AND `group_id` = %d
 		 *
 		 * @param string $order_by_sql
 		 */
-		$order    = apply_filters( 'action_scheduler_claim_actions_order_by', 'ORDER BY attempts ASC, scheduled_date_gmt ASC, action_id ASC' );
+		$order    = apply_filters( 'action_scheduler_claim_actions_order_by', 'ORDER BY priority ASC, attempts ASC, scheduled_date_gmt ASC, action_id ASC' );
 		$params[] = $limit;
 
 		$sql           = $wpdb->prepare( "{$update} {$where} {$order} LIMIT %d", $params ); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQLPlaceholders
@@ -963,7 +964,7 @@ AND `group_id` = %d
 		$cut_off     = $before_date->format( 'Y-m-d H:i:s' );
 
 		$sql = $wpdb->prepare(
-			"SELECT action_id, scheduled_date_gmt FROM {$wpdb->actionscheduler_actions} WHERE claim_id = %d",
+			"SELECT action_id, scheduled_date_gmt FROM {$wpdb->actionscheduler_actions} WHERE claim_id = %d ORDER BY priority ASC",
 			$claim_id
 		);
 

@@ -35,7 +35,7 @@ Enqueue an action to run one time, as soon as possible.
 ### Usage
 
 ```php
-as_enqueue_async_action( $hook, $args, $group );
+as_enqueue_async_action( $hook, $args, $group, $unique );
 ```
 
 ### Parameters
@@ -59,7 +59,7 @@ Schedule an action to run one time at some defined point in the future.
 ### Usage
 
 ```php
-as_schedule_single_action( $timestamp, $hook, $args, $group );
+as_schedule_single_action( $timestamp, $hook, $args, $group, $unique );
 ```
 
 ### Parameters
@@ -84,7 +84,7 @@ Schedule an action to run repeatedly with a specified interval in seconds.
 ### Usage
 
 ```php
-as_schedule_recurring_action( $timestamp, $interval_in_seconds, $hook, $args, $group );
+as_schedule_recurring_action( $timestamp, $interval_in_seconds, $hook, $args, $group, $unique );
 ```
 
 ### Parameters
@@ -112,7 +112,7 @@ If execution of a cron-like action is delayed, the next attempt will still be sc
 ### Usage
 
 ```php
-as_schedule_cron_action( $timestamp, $schedule, $hook, $args, $group );
+as_schedule_cron_action( $timestamp, $schedule, $hook, $args, $group, $unique );
 ```
 
 ### Parameters

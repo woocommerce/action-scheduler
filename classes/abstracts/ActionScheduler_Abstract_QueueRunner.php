@@ -143,12 +143,22 @@ abstract class ActionScheduler_Abstract_QueueRunner extends ActionScheduler_Abst
 			return false;
 		}
 
-		// Now let's fetch the first action (having the same hook) of *any status*ithin the same window.
+		// Now let's fetch the first action (having the same hook) of *any status* within the same window.
 		unset( $query_args['status'] );
 		$first_action_id_with_the_same_hook = $this->store->query_actions( $query_args );
 
-		// If the IDs match, then actions for this hook must be consistently failing.
-		return $first_action_id_with_the_same_hook === $first_failing_action_id;
+		/**
+		 * If a recurring action is assessed as consistently failing, it will not be rescheduled. This hook provides a
+		 * way to observe and optionally override that assessment.
+		 *
+		 * @param bool                   $is_consistently_failing If the action is considered to be consistently failing.
+		 * @param ActionScheduler_Action $action                  The action being assessed.
+		 */
+		return (bool) apply_filters(
+			'action_scheduler_recurring_action_is_consistently_failing',
+			$first_action_id_with_the_same_hook === $first_failing_action_id,
+			$action
+		);
 	}
 
 	/**

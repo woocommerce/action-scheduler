@@ -121,7 +121,7 @@ class ActionScheduler_Action {
 			$priority = 255;
 		}
 
-		$this->priority = $priority;
+		$this->priority = (int) $priority;
 	}
 
 	/**

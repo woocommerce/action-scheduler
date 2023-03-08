@@ -29,6 +29,46 @@ class Procedural_API_Test extends ActionScheduler_UnitTestCase {
 		$this->assertEquals( $hook, $action->get_hook() );
 	}
 
+	/**
+	 * Test that we reject attempts to register a recurring action with an invalid interval. This guards against
+	 * 'runaway' recurring actions that are created accidentally and treated as having a zero-second interval.
+	 *
+	 * @return void
+	 */
+	public function test_recurring_actions_reject_invalid_intervals() {
+		$this->assertGreaterThan(
+			0,
+			as_schedule_recurring_action( time(), 1, 'foo' ),
+			'When an integer is provided as the interval, a recurring action is successfully created.'
+		);
+
+		$this->assertGreaterThan(
+			0,
+			as_schedule_recurring_action( time(), '10', 'foo' ),
+			'When an integer-like string is provided as the interval, a recurring action is successfully created.'
+		);
+
+		$this->assertGreaterThan(
+			0,
+			as_schedule_recurring_action( time(), 100.0, 'foo' ),
+			'When an integer-value as a double is provided as the interval, a recurring action is successfully created.'
+		);
+
+		$this->setExpectedIncorrectUsage( 'as_schedule_recurring_action' );
+		$this->assertEquals(
+			0,
+			as_schedule_recurring_action( time(), 'nonsense', 'foo' ),
+			'When a non-numeric string is provided as the interval, a recurring action is not created and a doing-it-wrong notice is emitted.'
+		);
+
+		$this->setExpectedIncorrectUsage( 'as_schedule_recurring_action' );
+		$this->assertEquals(
+			0,
+			as_schedule_recurring_action( time(), 123.456, 'foo' ),
+			'When a non-integer double is provided as the interval, a recurring action is not created and a doing-it-wrong notice is emitted.'
+		);
+	}
+
 	public function test_cron_schedule() {
 		$time      = as_get_datetime_object( '2014-01-01' );
 		$hook      = md5( rand() );

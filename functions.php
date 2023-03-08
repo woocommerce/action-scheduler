@@ -131,12 +131,14 @@ function as_schedule_recurring_action( $timestamp, $interval_in_seconds, $hook, 
 			__METHOD__,
 			sprintf(
 				/* translators: 1: provided value 2: provided type. */
-				__( 'An integer was expected but "%1$s" (%2%s) was received.', 'action-scheduler' ),
-				$interval_in_seconds,
-				gettype( $interval_in_seconds )
+				esc_html__( 'An integer was expected but "%1$s" (%2$s) was received.', 'action-scheduler' ),
+				esc_html( $interval_in_seconds ),
+				esc_html( gettype( $interval_in_seconds ) )
 			),
 			'3.6.0'
 		);
+
+		return 0;
 	}
 
 	/**

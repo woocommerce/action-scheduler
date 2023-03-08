@@ -122,7 +122,6 @@ function as_schedule_recurring_action( $timestamp, $interval_in_seconds, $hook, 
 		return 0;
 	}
 
-	// if you pass a string by mistake, it causes a flood of scheduled actions, recurring almost every minute or less
 	$interval = (int) $interval_in_seconds;
 
 	// We expect an integer and allow it to be passed using float and string types, but otherwise
@@ -130,13 +129,13 @@ function as_schedule_recurring_action( $timestamp, $interval_in_seconds, $hook, 
 	if ( ! is_numeric( $interval_in_seconds ) || $interval_in_seconds != $interval ) {
 		_doing_it_wrong(
 			__METHOD__,
-			sprintf( 
+			sprintf(
 				/* translators: 1: provided value 2: provided type. */
 				__( 'An integer was expected but "%1$s" (%2%s) was received.', 'action-scheduler' ),
 				$interval_in_seconds,
 				gettype( $interval_in_seconds )
 			),
-			ActionScheduler_Versions::instance()->latest_version()
+			'3.6.0'
 		);
 	}
 

@@ -252,7 +252,7 @@ class ActionScheduler_ListTable extends ActionScheduler_Abstract_ListTable {
 	 */
 	protected function get_recurrence( $action ) {
 		$schedule = $action->get_schedule();
-		if ( $schedule->is_recurring() ) {
+		if ( $schedule->is_recurring() && method_exists( $schedule, 'get_recurrence' ) ) {
 			$recurrence = $schedule->get_recurrence();
 
 			if ( is_numeric( $recurrence ) ) {
@@ -471,7 +471,7 @@ class ActionScheduler_ListTable extends ActionScheduler_Abstract_ListTable {
 			return __( 'async', 'action-scheduler' );
 		}
 
-		if ( ! $schedule->get_date() ) {
+		if ( ! method_exists( $schedule, 'get_date' ) || ! $schedule->get_date() ) {
 			return '0000-00-00 00:00:00';
 		}
 

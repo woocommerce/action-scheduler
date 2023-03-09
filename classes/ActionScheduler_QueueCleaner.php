@@ -40,7 +40,7 @@ class ActionScheduler_QueueCleaner {
 	/**
 	 * Default queue cleaner process used by queue runner.
 	 *
-	 * @return void
+	 * @return array
 	 */
 	public function delete_old_actions() {
 		/**
@@ -58,7 +58,7 @@ class ActionScheduler_QueueCleaner {
 		 */
 		$statuses_to_purge = (array) apply_filters( 'action_scheduler_default_cleaner_statuses', $this->default_statuses_to_purge );
 
-		$this->clean_actions( $statuses_to_purge, $cutoff, $this->get_batch_size() );
+		return $this->clean_actions( $statuses_to_purge, $cutoff, $this->get_batch_size() );
 	}
 
 	/**

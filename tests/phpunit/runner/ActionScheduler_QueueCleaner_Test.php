@@ -22,13 +22,29 @@ class ActionScheduler_QueueCleaner_Test extends ActionScheduler_UnitTestCase {
 
 		add_filter( 'action_scheduler_retention_period', '__return_zero' ); // delete any finished job
 		$cleaner = new ActionScheduler_QueueCleaner( $store );
-		$cleaner->delete_old_actions();
+		$cleaned = $cleaner->delete_old_actions();
 		remove_filter( 'action_scheduler_retention_period', '__return_zero' );
+
+		$this->assertIsArray( $cleaned, 'ActionScheduler_QueueCleaner::delete_old_actions() returns an array.' );
+		$this->assertCount( 5, $cleaned, 'ActionScheduler_QueueCleaner::delete_old_actions() deleted the expected number of actions.' );
 
 		foreach ( $created_actions as $action_id ) {
 			$action = $store->fetch_action($action_id);
 			$this->assertFalse($action->is_finished()); // it's a NullAction
 		}
+	}
+
+	public function test_retention_period_filter_hook() {
+		// Supplying a non-integer such as null would break under 3.5.4 and earlier.
+		add_filter( 'action_scheduler_retention_period', '__return_null' );
+		$cleaner = new ActionScheduler_QueueCleaner( ActionScheduler::store() );
+
+		$this->assertIsArray(
+			$cleaner->delete_old_actions(),
+			'ActionScheduler_QueueCleaner::delete_old_actions() can be invoked without a fatal error, even if the retention period is a non-integer.'
+		);
+
+		remove_filter( 'action_scheduler_retention_period', '__return_zero' );
 	}
 
 	public function test_delete_canceled_actions() {

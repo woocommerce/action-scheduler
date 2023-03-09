@@ -39,12 +39,20 @@ class ActionScheduler_QueueCleaner_Test extends ActionScheduler_UnitTestCase {
 		add_filter( 'action_scheduler_retention_period', '__return_null' );
 		$cleaner = new ActionScheduler_QueueCleaner( ActionScheduler::store() );
 
+		$this->setExpectedIncorrectUsage( 'ActionScheduler_QueueCleaner::delete_old_actions' );
+		$result = $cleaner->delete_old_actions();
+		remove_filter( 'action_scheduler_retention_period', '__return_zero' );
+
 		$this->assertIsArray(
-			$cleaner->delete_old_actions(),
-			'ActionScheduler_QueueCleaner::delete_old_actions() can be invoked without a fatal error, even if the retention period is a non-integer.'
+			$result,
+			'ActionScheduler_QueueCleaner::delete_old_actions() can be invoked without a fatal error, even if the retention period was invalid.'
 		);
 
-		remove_filter( 'action_scheduler_retention_period', '__return_zero' );
+		$this->assertCount(
+			0,
+			$result,
+			'ActionScheduler_QueueCleaner::delete_old_actions() will not delete any actions if the retention period was invalid.'
+		);
 	}
 
 	public function test_delete_canceled_actions() {

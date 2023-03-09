@@ -48,7 +48,7 @@ class ActionScheduler_QueueCleaner {
 		 *
 		 * @param int $retention_period Minimum scheduled age in seconds of the actions to be deleted.
 		 */
-		$lifespan = (int) apply_filters( 'action_scheduler_retention_period', $this->month_in_seconds );
+		$lifespan = apply_filters( 'action_scheduler_retention_period', $this->month_in_seconds );
 
 		try {
 			$cutoff = as_get_datetime_object( $lifespan . ' seconds ago' );

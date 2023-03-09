@@ -49,7 +49,23 @@ class ActionScheduler_QueueCleaner {
 		 * @param int $retention_period Minimum scheduled age in seconds of the actions to be deleted.
 		 */
 		$lifespan = (int) apply_filters( 'action_scheduler_retention_period', $this->month_in_seconds );
-		$cutoff = as_get_datetime_object( $lifespan . ' seconds ago' );
+
+		try {
+			$cutoff = as_get_datetime_object( $lifespan . ' seconds ago' );
+		} catch ( Exception $e ) {
+			_doing_it_wrong(
+				__METHOD__,
+				sprintf(
+					/* Translators: %s is the exception message. */
+					esc_html__( 'It was not possible to determine a valid cut-off time: %s.', 'action-scheduler' ),
+					esc_html( $e->getMessage() )
+				),
+				'3.5.5'
+			);
+
+			return array();
+		}
+
 
 		/**
 		 * Filter the statuses when cleaning the queue.

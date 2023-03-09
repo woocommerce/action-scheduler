@@ -34,7 +34,7 @@ class ActionScheduler_QueueCleaner_Test extends ActionScheduler_UnitTestCase {
 		}
 	}
 
-	public function test_retention_period_filter_hook() {
+	public function test_invalid_retention_period_filter_hook() {
 		// Supplying a non-integer such as null would break under 3.5.4 and earlier.
 		add_filter( 'action_scheduler_retention_period', '__return_null' );
 		$cleaner = new ActionScheduler_QueueCleaner( ActionScheduler::store() );

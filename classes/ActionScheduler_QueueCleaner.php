@@ -40,7 +40,7 @@ class ActionScheduler_QueueCleaner {
 	/**
 	 * Default queue cleaner process used by queue runner.
 	 *
-	 * @return void
+	 * @return array
 	 */
 	public function delete_old_actions() {
 		/**
@@ -49,7 +49,23 @@ class ActionScheduler_QueueCleaner {
 		 * @param int $retention_period Minimum scheduled age in seconds of the actions to be deleted.
 		 */
 		$lifespan = apply_filters( 'action_scheduler_retention_period', $this->month_in_seconds );
-		$cutoff = as_get_datetime_object( $lifespan . ' seconds ago' );
+
+		try {
+			$cutoff = as_get_datetime_object( $lifespan . ' seconds ago' );
+		} catch ( Exception $e ) {
+			_doing_it_wrong(
+				__METHOD__,
+				sprintf(
+					/* Translators: %s is the exception message. */
+					esc_html__( 'It was not possible to determine a valid cut-off time: %s.', 'action-scheduler' ),
+					esc_html( $e->getMessage() )
+				),
+				'3.5.5'
+			);
+
+			return array();
+		}
+
 
 		/**
 		 * Filter the statuses when cleaning the queue.
@@ -58,7 +74,7 @@ class ActionScheduler_QueueCleaner {
 		 */
 		$statuses_to_purge = (array) apply_filters( 'action_scheduler_default_cleaner_statuses', $this->default_statuses_to_purge );
 
-		$this->clean_actions( $statuses_to_purge, $cutoff, $this->get_batch_size() );
+		return $this->clean_actions( $statuses_to_purge, $cutoff, $this->get_batch_size() );
 	}
 
 	/**

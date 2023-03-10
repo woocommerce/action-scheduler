@@ -165,6 +165,13 @@ abstract class ActionScheduler {
 				 */
 				function () {
 					self::$data_store_initialized = true;
+
+					/**
+					 * Fires when Action Scheduler is ready: it is safe to use the procedural API after this point.
+					 *
+					 * @since 3.5.5
+					 */
+					do_action( 'action_scheduler_init' );
 				},
 				1
 			);
@@ -174,6 +181,13 @@ abstract class ActionScheduler {
 			$logger->init();
 			$runner->init();
 			self::$data_store_initialized = true;
+
+			/**
+			 * Fires when Action Scheduler is ready: it is safe to use the procedural API after this point.
+			 *
+			 * @since 3.5.5
+			 */
+			do_action( 'action_scheduler_init' );
 		}
 
 		if ( apply_filters( 'action_scheduler_load_deprecated_functions', true ) ) {

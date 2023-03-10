@@ -533,4 +533,75 @@ class ActionScheduler_QueueRunner_Test extends ActionScheduler_UnitTestCase {
 			$execution_order
 		);
 	}
+
+	/**
+	 * Tests the ability of the queue runner to accommodate a range of error conditions (raised recoverable errors
+	 * under PHP 5.6, thrown errors under PHP 7.0 upwards, and exceptions under all supported versions).
+	 *
+	 * @return void
+	 */
+	public function test_recoverable_errors_do_not_break_queue_runner() {
+		$executed = 0;
+		as_enqueue_async_action( 'foo' );
+		as_enqueue_async_action( 'bar' );
+		as_enqueue_async_action( 'baz' );
+		as_enqueue_async_action( 'foobar' );
+
+		/**
+		 * Trigger a custom user error.
+		 *
+		 * @return void
+		 */
+		$foo = function () use ( &$executed ) {
+			$executed++;
+			trigger_error( 'Trouble.', E_USER_ERROR );
+		};
+
+		/**
+		 * Throw an exception.
+		 *
+		 * @throws Exception Intentionally raised for testing purposes.
+		 *
+		 * @return void
+		 */
+		$bar = function () use ( &$executed ) {
+			$executed++;
+			throw new Exception( 'More trouble.' );
+		};
+
+		/**
+		 * Trigger a recoverable fatal error. Under PHP 5.6 the error will be raised, and under PHP 7.0 and higher the
+		 * error will be thrown (different mechanisms are needed to support this difference).
+		 *
+		 * @throws Throwable Intentionally raised for testing purposes.
+		 *
+		 * @return void
+		 */
+		$baz = function () use ( &$executed ) {
+			$executed++;
+			(string) (object) array();
+		};
+
+		/**
+		 * A problem-free callback.
+		 *
+		 * @return void
+		 */
+		$foobar = function () use ( &$executed ) {
+			$executed++;
+		};
+
+		add_action( 'foo', $foo );
+		add_action( 'bar', $bar );
+		add_action( 'baz', $baz );
+		add_action( 'foobar', $foobar );
+
+		ActionScheduler_Mocker::get_queue_runner( ActionScheduler::store() )->run();
+		$this->assertEquals( 4, $executed, 'All enqueued actions ran as expected despite errors and exceptions being raised by the first actions in the set.' );
+
+		remove_action( 'foo', $foo );
+		remove_action( 'bar', $bar );
+		remove_action( 'baz', $baz );
+		remove_action( 'foobar', $foobar );
+	}
 }

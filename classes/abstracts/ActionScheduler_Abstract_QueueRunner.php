@@ -67,7 +67,7 @@ abstract class ActionScheduler_Abstract_QueueRunner extends ActionScheduler_Abst
 
 		/*
 		 * The nested try/catch structure is required because we potentially need to convert thrown errors into
-		 * exceptions (and an exception thrown from a catch block cannot be caught be a later catch block in the same
+		 * exceptions (and an exception thrown from a catch block cannot be caught by a later catch block in the *same*
 		 * structure).
 		 */
 		try {

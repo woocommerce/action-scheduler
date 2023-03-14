@@ -153,11 +153,27 @@ abstract class ActionScheduler {
 			add_action( 'init', array( $store, 'init' ), 1, 0 );
 			add_action( 'init', array( $logger, 'init' ), 1, 0 );
 			add_action( 'init', array( $runner, 'init' ), 1, 0 );
+
+			add_action(
+				'init',
+				/**
+				 * Runs after the active store's init() method has been called.
+				 *
+				 * It would probably be preferable to have $store->init() (or it's parent method) set this itself,
+				 * once it has initialized, however that would cause problems in cases where a custom data store is in
+				 * use and it has not yet been updated to follow that same logic.
+				 */
+				function () {
+					self::$data_store_initialized = true;
+				},
+				1
+			);
 		} else {
 			$admin_view->init();
 			$store->init();
 			$logger->init();
 			$runner->init();
+			self::$data_store_initialized = true;
 		}
 
 		if ( apply_filters( 'action_scheduler_load_deprecated_functions', true ) ) {
@@ -172,8 +188,6 @@ abstract class ActionScheduler {
 				$command->register();
 			}
 		}
-
-		self::$data_store_initialized = true;
 
 		/**
 		 * Handle WP comment cleanup after migration.
@@ -193,8 +207,12 @@ abstract class ActionScheduler {
 	 */
 	public static function is_initialized( $function_name = null ) {
 		if ( ! self::$data_store_initialized && ! empty( $function_name ) ) {
-			$message = sprintf( __( '%s() was called before the Action Scheduler data store was initialized', 'action-scheduler' ), esc_attr( $function_name ) );
-			error_log( $message, E_WARNING );
+			$message = sprintf(
+				/* translators: %s function name. */
+				__( '%s() was called before the Action Scheduler data store was initialized', 'action-scheduler' ),
+				esc_attr( $function_name )
+			);
+			error_log( $message );
 		}
 
 		return self::$data_store_initialized;

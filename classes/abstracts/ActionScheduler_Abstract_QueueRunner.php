@@ -64,16 +64,26 @@ abstract class ActionScheduler_Abstract_QueueRunner extends ActionScheduler_Abst
 			$this->store->log_execution( $action_id );
 			$action->execute();
 			do_action( 'action_scheduler_after_execute', $action_id, $action, $context );
+			$this->maybe_schedule_next_instance( $action, $action_id );
 			$this->store->mark_complete( $action_id );
 		} catch ( Exception $e ) {
 			if ( $valid_action ) {
+				$this->maybe_schedule_next_instance( $action, $action_id );
 				$this->store->mark_failure( $action_id );
 				do_action( 'action_scheduler_failed_execution', $action_id, $e, $context );
 			} else {
 				do_action( 'action_scheduler_failed_validation', $action_id, $e, $context );
 			}
 		}
+	}
 
+	/**
+	 * Helper method to schedule next instance of an instance if there is a schedule.
+	 *
+	 * @param ActionScheduler_Action $action    Action object.
+	 * @param int                    $action_id Action ID.
+	 */
+	private function maybe_schedule_next_instance( $action, $action_id ) {
 		if ( isset( $action ) && is_a( $action, 'ActionScheduler_Action' ) && $action->get_schedule()->is_recurring() ) {
 			$this->schedule_next_instance( $action, $action_id );
 		}

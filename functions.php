@@ -12,10 +12,11 @@
  * @param array  $args Arguments to pass when the hook triggers.
  * @param string $group The group to assign this job to.
  * @param bool   $unique Whether the action should be unique.
+ * @param int    $priority Lower values take precedence over higher values. Defaults to 10, with acceptable values falling in the range 0-255.
  *
  * @return int The action ID.
  */
-function as_enqueue_async_action( $hook, $args = array(), $group = '', $unique = false ) {
+function as_enqueue_async_action( $hook, $args = array(), $group = '', $unique = false, $priority = 10 ) {
 	if ( ! ActionScheduler::is_initialized( __FUNCTION__ ) ) {
 		return 0;
 	}
@@ -33,13 +34,23 @@ function as_enqueue_async_action( $hook, $args = array(), $group = '', $unique =
 	 * @param string   $hook       Action hook.
 	 * @param array    $args       Action arguments.
 	 * @param string   $group      Action group.
+	 * @param int      $priority   Action priority.
 	 */
-	$pre = apply_filters( 'pre_as_enqueue_async_action', null, $hook, $args, $group );
+	$pre = apply_filters( 'pre_as_enqueue_async_action', null, $hook, $args, $group, $priority );
 	if ( null !== $pre ) {
 		return is_int( $pre ) ? $pre : 0;
 	}
 
-	return ActionScheduler::factory()->async_unique( $hook, $args, $group, $unique );
+	return ActionScheduler::factory()->create(
+		array(
+			'type'      => 'async',
+			'hook'      => $hook,
+			'arguments' => $args,
+			'group'     => $group,
+			'unique'    => $unique,
+			'priority'  => $priority,
+		)
+	);
 }
 
 /**
@@ -50,10 +61,11 @@ function as_enqueue_async_action( $hook, $args = array(), $group = '', $unique =
  * @param array  $args Arguments to pass when the hook triggers.
  * @param string $group The group to assign this job to.
  * @param bool   $unique Whether the action should be unique.
+ * @param int    $priority Lower values take precedence over higher values. Defaults to 10, with acceptable values falling in the range 0-255.
  *
  * @return int The action ID.
  */
-function as_schedule_single_action( $timestamp, $hook, $args = array(), $group = '', $unique = false ) {
+function as_schedule_single_action( $timestamp, $hook, $args = array(), $group = '', $unique = false, $priority = 10 ) {
 	if ( ! ActionScheduler::is_initialized( __FUNCTION__ ) ) {
 		return 0;
 	}
@@ -72,13 +84,24 @@ function as_schedule_single_action( $timestamp, $hook, $args = array(), $group =
 	 * @param string   $hook       Action hook.
 	 * @param array    $args       Action arguments.
 	 * @param string   $group      Action group.
+	 * @param int      $priorities Action priority.
 	 */
-	$pre = apply_filters( 'pre_as_schedule_single_action', null, $timestamp, $hook, $args, $group );
+	$pre = apply_filters( 'pre_as_schedule_single_action', null, $timestamp, $hook, $args, $group, $priority );
 	if ( null !== $pre ) {
 		return is_int( $pre ) ? $pre : 0;
 	}
 
-	return ActionScheduler::factory()->single_unique( $hook, $args, $timestamp, $group, $unique );
+	return ActionScheduler::factory()->create(
+		array(
+			'type'      => 'single',
+			'hook'      => $hook,
+			'arguments' => $args,
+			'when'      => $timestamp,
+			'group'     => $group,
+			'unique'    => $unique,
+			'priority'  => $priority,
+		)
+	);
 }
 
 /**
@@ -90,10 +113,11 @@ function as_schedule_single_action( $timestamp, $hook, $args = array(), $group =
  * @param array  $args Arguments to pass when the hook triggers.
  * @param string $group The group to assign this job to.
  * @param bool   $unique Whether the action should be unique.
+ * @param int    $priority Lower values take precedence over higher values. Defaults to 10, with acceptable values falling in the range 0-255.
  *
  * @return int The action ID.
  */
-function as_schedule_recurring_action( $timestamp, $interval_in_seconds, $hook, $args = array(), $group = '', $unique = false ) {
+function as_schedule_recurring_action( $timestamp, $interval_in_seconds, $hook, $args = array(), $group = '', $unique = false, $priority = 10 ) {
 	if ( ! ActionScheduler::is_initialized( __FUNCTION__ ) ) {
 		return 0;
 	}
@@ -113,13 +137,25 @@ function as_schedule_recurring_action( $timestamp, $interval_in_seconds, $hook, 
 	 * @param string   $hook                Action hook.
 	 * @param array    $args                Action arguments.
 	 * @param string   $group               Action group.
+	 * @param int      $priority            Action priority.
 	 */
-	$pre = apply_filters( 'pre_as_schedule_recurring_action', null, $timestamp, $interval_in_seconds, $hook, $args, $group );
+	$pre = apply_filters( 'pre_as_schedule_recurring_action', null, $timestamp, $interval_in_seconds, $hook, $args, $group, $priority );
 	if ( null !== $pre ) {
 		return is_int( $pre ) ? $pre : 0;
 	}
 
-	return ActionScheduler::factory()->recurring_unique( $hook, $args, $timestamp, $interval_in_seconds, $group, $unique );
+	return ActionScheduler::factory()->create(
+		array(
+			'type'      => 'recurring',
+			'hook'      => $hook,
+			'arguments' => $args,
+			'when'      => $timestamp,
+			'pattern'   => $interval_in_seconds,
+			'group'     => $group,
+			'unique'    => $unique,
+			'priority'  => $priority,
+		)
+	);
 }
 
 /**
@@ -143,10 +179,11 @@ function as_schedule_recurring_action( $timestamp, $interval_in_seconds, $hook, 
  * @param array  $args Arguments to pass when the hook triggers.
  * @param string $group The group to assign this job to.
  * @param bool   $unique Whether the action should be unique.
+ * @param int    $priority Lower values take precedence over higher values. Defaults to 10, with acceptable values falling in the range 0-255.
  *
  * @return int The action ID.
  */
-function as_schedule_cron_action( $timestamp, $schedule, $hook, $args = array(), $group = '', $unique = false ) {
+function as_schedule_cron_action( $timestamp, $schedule, $hook, $args = array(), $group = '', $unique = false, $priority = 10 ) {
 	if ( ! ActionScheduler::is_initialized( __FUNCTION__ ) ) {
 		return 0;
 	}
@@ -166,13 +203,25 @@ function as_schedule_cron_action( $timestamp, $schedule, $hook, $args = array(),
 	 * @param string   $hook       Action hook.
 	 * @param array    $args       Action arguments.
 	 * @param string   $group      Action group.
+	 * @param int      $priority   Action priority.
 	 */
-	$pre = apply_filters( 'pre_as_schedule_cron_action', null, $timestamp, $schedule, $hook, $args, $group );
+	$pre = apply_filters( 'pre_as_schedule_cron_action', null, $timestamp, $schedule, $hook, $args, $group, $priority );
 	if ( null !== $pre ) {
 		return is_int( $pre ) ? $pre : 0;
 	}
 
-	return ActionScheduler::factory()->cron_unique( $hook, $args, $timestamp, $schedule, $group, $unique );
+	return ActionScheduler::factory()->create(
+		array(
+			'type'      => 'cron',
+			'hook'      => $hook,
+			'arguments' => $args,
+			'when'      => $timestamp,
+			'pattern'   => $schedule,
+			'group'     => $group,
+			'unique'    => $unique,
+			'priority'  => $priority,
+		)
+	);
 }
 
 /**

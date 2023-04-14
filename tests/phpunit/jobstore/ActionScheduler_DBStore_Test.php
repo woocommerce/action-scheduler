@@ -356,6 +356,38 @@ class ActionScheduler_DBStore_Test extends AbstractStoreTest {
 	}
 
 	/**
+	 * Confirm that priorities are respected when claiming actions.
+	 *
+	 * @return void
+	 */
+	public function test_claim_actions_respecting_priority() {
+		$store = new ActionScheduler_DBStore();
+
+		$schedule = new ActionScheduler_SimpleSchedule( as_get_datetime_object( '-2 hours' ) );
+		$routine_action_1 = $store->save_action( new ActionScheduler_Action( 'routine_past_due', array(), $schedule, '' ) );
+
+		$schedule = new ActionScheduler_SimpleSchedule( as_get_datetime_object( '-1 hour' ) );
+		$action   = new ActionScheduler_Action( 'high_priority_past_due', array(), $schedule, '' );
+		$action->set_priority( 5 );
+		$priority_action = $store->save_action( $action );
+
+		$schedule = new ActionScheduler_SimpleSchedule( as_get_datetime_object( '-4 hours' ) );
+		$routine_action_2 = $store->save_action( new ActionScheduler_Action( 'routine_past_due', array(), $schedule, '' ) );
+
+		$schedule = new ActionScheduler_SimpleSchedule( as_get_datetime_object( '+1 hour' ) );
+		$action   = new ActionScheduler_Action( 'high_priority_future', array(), $schedule, '' );
+		$action->set_priority( 2 );
+		$priority_future_action = $store->save_action( $action );
+
+		$claim = $store->stake_claim();
+		$this->assertEquals(
+			array( $priority_action, $routine_action_2, $routine_action_1 ),
+			$claim->get_actions(),
+			'High priority actions take precedence over older but lower priority actions.'
+		);
+	}
+
+	/**
 	 * The query used to claim actions explicitly ignores future pending actions, but it
 	 * is still possible under unusual conditions (such as if MySQL runs out of temporary
 	 * storage space) for such actions to be returned.

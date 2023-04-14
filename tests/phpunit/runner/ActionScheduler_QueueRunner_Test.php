@@ -182,7 +182,15 @@ class ActionScheduler_QueueRunner_Test extends ActionScheduler_UnitTestCase {
 		// Create an action to recur every 24 hours, with the first instance scheduled to run 12 hours ago
 		$random    = md5( rand() );
 		$date      = as_get_datetime_object( '12 hours ago' );
-		$action_id = ActionScheduler::factory()->recurring( $random, array(), $date->getTimestamp(), DAY_IN_SECONDS );
+		$action_id = ActionScheduler::factory()->create(
+			array(
+				'type'     => 'recurring',
+				'hook'     => $random,
+				'when'     => $date->getTimestamp(),
+				'pattern'  => DAY_IN_SECONDS,
+				'priority' => 2,
+			)
+		);
 		$store     = ActionScheduler::store();
 		$runner    = ActionScheduler_Mocker::get_queue_runner( $store );
 
@@ -214,7 +222,7 @@ class ActionScheduler_QueueRunner_Test extends ActionScheduler_UnitTestCase {
 		$this->assertNotEquals( $fetched_action_id, $action_id );
 		$this->assertEquals( $random, $fetched_action->get_hook() );
 		$this->assertEquals( $date->getTimestamp(), $fetched_action->get_schedule()->get_date()->getTimestamp(), '', 1 );
-
+		$this->assertEquals( 2, $fetched_action->get_priority(), 'The replacement action should inherit the same priority as the original action.' );
 		$store->release_claim( $claim );
 
 		// Make sure the 3rd instance of the cron action is scheduled for 24 hours from now, as the action was run early, ahead of schedule

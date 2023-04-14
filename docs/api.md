@@ -35,7 +35,7 @@ Enqueue an action to run one time, as soon as possible.
 ### Usage
 
 ```php
-as_enqueue_async_action( $hook, $args, $group, $unique );
+as_enqueue_async_action( $hook, $args, $group, $unique, $priority );
 ```
 
 ### Parameters
@@ -44,6 +44,7 @@ as_enqueue_async_action( $hook, $args, $group, $unique );
 - **$args** (array) Arguments to pass to callbacks when the hook triggers. Default: _`array()`_.
 - **$group** (string) The group to assign this job to. Default: _''_.
 - **$unique** (boolean) Whether the action should be unique. Default: _`false`_.
+- **$priority** (integer) Lower values take precedence over higher values. Defaults to 10, with acceptable values falling in the range 0-255.
 
 ### Return value
 
@@ -59,7 +60,7 @@ Schedule an action to run one time at some defined point in the future.
 ### Usage
 
 ```php
-as_schedule_single_action( $timestamp, $hook, $args, $group, $unique );
+as_schedule_single_action( $timestamp, $hook, $args, $group, $unique, $priority );
 ```
 
 ### Parameters
@@ -69,6 +70,7 @@ as_schedule_single_action( $timestamp, $hook, $args, $group, $unique );
 - **$args** (array) Arguments to pass to callbacks when the hook triggers. Default: _`array()`_.
 - **$group** (string) The group to assign this job to. Default: _''_.
 - **$unique** (boolean) Whether the action should be unique. Default: _`false`_.
+- **$priority** (integer) Lower values take precedence over higher values. Defaults to 10, with acceptable values falling in the range 0-255.)
 
 ### Return value
 
@@ -84,7 +86,7 @@ Schedule an action to run repeatedly with a specified interval in seconds.
 ### Usage
 
 ```php
-as_schedule_recurring_action( $timestamp, $interval_in_seconds, $hook, $args, $group, $unique );
+as_schedule_recurring_action( $timestamp, $interval_in_seconds, $hook, $args, $group, $unique, $priority );
 ```
 
 ### Parameters
@@ -95,6 +97,7 @@ as_schedule_recurring_action( $timestamp, $interval_in_seconds, $hook, $args, $g
 - **$args** (array) Arguments to pass to callbacks when the hook triggers. Default: _`array()`_.
 - **$group** (string) The group to assign this job to. Default: _''_.
 - **$unique** (boolean) Whether the action should be unique. Default: _`false`_.
+- **$priority** (integer) Lower values take precedence over higher values. Defaults to 10, with acceptable values falling in the range 0-255.
 
 ### Return value
 
@@ -112,7 +115,7 @@ If execution of a cron-like action is delayed, the next attempt will still be sc
 ### Usage
 
 ```php
-as_schedule_cron_action( $timestamp, $schedule, $hook, $args, $group, $unique );
+as_schedule_cron_action( $timestamp, $schedule, $hook, $args, $group, $unique, $priority );
 ```
 
 ### Parameters
@@ -123,6 +126,7 @@ as_schedule_cron_action( $timestamp, $schedule, $hook, $args, $group, $unique );
 - **$args** (array) Arguments to pass to callbacks when the hook triggers. Default: _`array()`_.
 - **$group** (string) The group to assign this job to. Default: _''_.
 - **$unique** (boolean) Whether the action should be unique. Default: _`false`_.
+- **$priority** (integer) Lower values take precedence over higher values. Defaults to 10, with acceptable values falling in the range 0-255.
 
 ### Return value
 

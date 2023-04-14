@@ -22,9 +22,10 @@ Functions return similar values and accept similar arguments to their WP-Cron co
 
 As mentioned in the [Usage - Load Order](usage.md#load-order) section, Action Scheduler will initialize itself on the `'init'` hook with priority `1`. While API functions are loaded prior to this and can be called, they should not be called until after `'init'` with priority `1`, because each component, like the data store, has not yet been initialized.
 
-Do not use Action Scheduler API functions prior to `'init'` hook with priority `1`. Doing so could lead to unexpected results, like data being stored in the incorrect location.
+Do not use Action Scheduler API functions prior to `'init'` hook with priority `1`. Doing so could lead to unexpected results, like data being stored in the incorrect location. To make this easier:
 
-Action Scheduler provides `Action_Scheduler::is_initialized()` for use in hooks to confirm that the data stores have been initialized.
+- Action Scheduler provides `Action_Scheduler::is_initialized()` for use in hooks to confirm that the data stores have been initialized.
+- It also provides the `'action_scheduler_init'` action hook. It is safe to call API functions during or after this event has fired (tip: you can take advantage of WordPress's [did_action()](https://developer.wordpress.org/reference/functions/did_action/) function to check this).
 
 ## Function Reference / `as_enqueue_async_action()`
 

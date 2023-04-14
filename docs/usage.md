@@ -88,7 +88,7 @@ Action Scheduler will register its version on `'plugins_loaded'` with priority `
 
 It is recommended to load it _when the file including it is included_. However, if you need to load it on a hook, then the hook must occur before `'plugins_loaded'`, or you can use `'plugins_loaded'` with negative priority, like `-10`.
 
-Action Scheduler will later initialize itself on `'init'` with priority `1`.  Action Scheduler APIs should not be used until after `'init'` with priority `1`.
+Action Scheduler will later initialize itself on `'init'` with priority `1`.  Action Scheduler APIs should not be used until after `'init'` with priority `1`. As described in [API Function Availability](/api/#api-function-availability), you can also use the `'action_scheduler_init'` action hook for this purpose.
 
 ### Usage in Themes
 

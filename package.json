@@ -23,11 +23,11 @@
     "grunt-checktextdomain": "1.0.1",
     "grunt-phpcs": "0.4.0",
     "husky": "3.0.9",
-    "lint-staged": "9.4.2"
+    "lint-staged": "13.2.1"
   },
   "engines": {
-    "node": ">=10.15.0",
-    "npm": ">=6.4.1"
+    "node": ">=16.0.0",
+    "npm": ">=8.0.0"
   },
   "husky": {
     "hooks": {

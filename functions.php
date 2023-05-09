@@ -122,6 +122,25 @@ function as_schedule_recurring_action( $timestamp, $interval_in_seconds, $hook, 
 		return 0;
 	}
 
+	$interval = (int) $interval_in_seconds;
+
+	// We expect an integer and allow it to be passed using float and string types, but otherwise
+	// should reject unexpected values.
+	if ( ! is_numeric( $interval_in_seconds ) || $interval_in_seconds != $interval ) {
+		_doing_it_wrong(
+			__METHOD__,
+			sprintf(
+				/* translators: 1: provided value 2: provided type. */
+				esc_html__( 'An integer was expected but "%1$s" (%2$s) was received.', 'action-scheduler' ),
+				esc_html( $interval_in_seconds ),
+				esc_html( gettype( $interval_in_seconds ) )
+			),
+			'3.6.0'
+		);
+
+		return 0;
+	}
+
 	/**
 	 * Provides an opportunity to short-circuit the default process for enqueuing recurring
 	 * actions.

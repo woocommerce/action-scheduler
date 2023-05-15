@@ -159,16 +159,10 @@ abstract class ActionScheduler_Abstract_Schema {
 	public function tables_exist() {
 		global $wpdb;
 
-		$expected_tables = array_map(
-			function ( $table_name ) use ( $wpdb ) {
-				return $wpdb->prefix . $table_name;
-			},
-			$this->tables
-		);
-
 		$tables_exist = true;
 
-		foreach ( $expected_tables as $table_name ) {
+		foreach ( $this->tables as $table_name ) {
+			$table_name     = $wpdb->prefix . $table_name;
 			$pattern        = str_replace( '_', '\\_', $table_name );
 			$existing_table = $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $pattern ) );
 

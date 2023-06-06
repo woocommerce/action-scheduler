@@ -1029,7 +1029,7 @@ AND `group_id` = %d
 		if ( $row_updates < count( $action_ids ) ) {
 			throw new RuntimeException(
 				sprintf(
-					__( 'Unable to release actions from claim id %d.', 'woocommerce' ),
+					__( 'Unable to release actions from claim id %d.', 'action-scheduler' ),
 					$claim->get_id()
 				)
 			);

@@ -1,5 +1,13 @@
 *** Changelog ***
 
+= 3.6.1 - 2023-06-14 =
+* Document new optional `$priority` arg for various API functions.
+* Document the new `--exclude-groups` WP CLI option.
+* Document the new `action_scheduler_init` hook.
+* Ensure actions within each claim are executed in the expected order.
+* Fix incorrect text domain.
+* Remove SHOW TABLES usage when checking if tables exist.
+
 = 3.6.0 - 2023-05-10 =
 * Add $unique parameter to function signatures.
 * Add a cast-to-int for extra safety before forming new DateTime object.

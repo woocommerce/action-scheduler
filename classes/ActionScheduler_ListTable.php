@@ -502,7 +502,20 @@ class ActionScheduler_ListTable extends ActionScheduler_Abstract_ListTable {
 	 */
 	protected function bulk_delete( array $ids, $ids_sql ) {
 		foreach ( $ids as $id ) {
-			$this->store->delete_action( $id );
+			try {
+				$this->store->delete_action( $id );
+			} catch ( Exception $e ) {
+				// A possible reason for an exception would include a scenario where the same action is deleted by a
+				// concurrent request.
+				error_log(
+					sprintf(
+						/* translators: 1: action ID 2: exception message. */
+						__( 'Action Scheduler was unable to delete action %1$d. Reason: %2$s', 'action-scheduler' ),
+						$id,
+						$e->getMessage()
+					)
+				);
+			}
 		}
 	}
 

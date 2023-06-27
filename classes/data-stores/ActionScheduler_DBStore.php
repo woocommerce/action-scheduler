@@ -935,7 +935,17 @@ AND `group_id` = %d
 		$sql           = $wpdb->prepare( "{$update} {$where} {$order} LIMIT %d", $params ); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQLPlaceholders
 		$rows_affected = $wpdb->query( $sql ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 		if ( false === $rows_affected ) {
-			throw new \RuntimeException( __( 'Unable to claim actions. Database error.', 'action-scheduler' ) );
+			$error = empty( $wpdb->last_error )
+				? _x( 'unknown', 'database error', 'action-scheduler' )
+				: $wpdb->last_error;
+
+			throw new \RuntimeException(
+				sprintf(
+					/* translators: %s database error. */
+					__( 'Unable to claim actions. Database error: %s.', 'action-scheduler' ),
+					$error
+				)
+			);
 		}
 
 		return (int) $rows_affected;

@@ -24,7 +24,25 @@ class ActionScheduler_OptionLock extends ActionScheduler_Lock {
 	 * @bool True if lock value has changed, false if not or if set failed.
 	 */
 	public function set( $lock_type ) {
-		return update_option( $this->get_key( $lock_type ), time() + $this->get_duration( $lock_type ) );
+		global $wpdb;
+
+		$existing_lock_value  = $this->get_or_create_lock( $lock_type );
+		$expiration_timestamp = $this->get_expiration_from( $existing_lock_value );
+
+		// The lock is already held.
+		if ( $expiration_timestamp >= time() ) {
+			return false;
+		}
+
+		// Otherwise, try to obtain it.
+		return (bool) $wpdb->update(
+			$wpdb->options,
+			array( 'option_value' => $this->new_lock_value( $lock_type ) ),
+			array(
+				'option_name'  => $this->get_key( $lock_type ),
+				'option_value' => $existing_lock_value,
+			)
+		);
 	}
 
 	/**
@@ -34,7 +52,30 @@ class ActionScheduler_OptionLock extends ActionScheduler_Lock {
 	 * @return bool|int False if no lock is set, otherwise the timestamp for when the lock is set to expire.
 	 */
 	public function get_expiration( $lock_type ) {
-		return get_option( $this->get_key( $lock_type ) );
+		return $this->get_expiration_from( $this->get_or_create_lock( $lock_type ) );
+	}
+
+	/**
+	 * Given the lock string, derives the lock expiration timestamp (or false if it cannot be determined).
+	 *
+	 * @param string $lock_value String containing a timestamp, or pipe-separated combination of unique value and timestamp.
+	 *
+	 * @return false|int
+	 */
+	private function get_expiration_from( $lock_value ) {
+		$lock_string = explode( '|', $lock_value );
+
+		// Old style lock?
+		if ( count( $lock_string ) === 1 && is_numeric( $lock_string[0] ) ) {
+			return (int) $lock_string[0];
+		}
+
+		// New style lock?
+		if ( count( $lock_string ) === 2 && is_numeric( $lock_string[1] ) ) {
+			return (int) $lock_string[1];
+		}
+
+		return false;
 	}
 
 	/**
@@ -45,5 +86,55 @@ class ActionScheduler_OptionLock extends ActionScheduler_Lock {
 	 */
 	protected function get_key( $lock_type ) {
 		return sprintf( 'action_scheduler_lock_%s', $lock_type );
+	}
+
+	/**
+	 * Supplies the existing lock value, or an empty string if not set.
+	 *
+	 * @param string $lock_type A string to identify different lock types.
+	 *
+	 * @return string
+	 */
+	private function get_or_create_lock( $lock_type ) {
+		global $wpdb;
+		$lock_key = $this->get_key( $lock_type );
+
+		// Try to ensure the lock option exists, creating it if it does not already exist.
+		$wpdb->query(
+			$wpdb->prepare(
+				"
+					INSERT INTO $wpdb->options ( option_name, option_value, autoload )
+					SELECT %s, '', %s
+					WHERE NOT EXISTS ( SELECT 1 FROM $wpdb->options WHERE option_name = %s )
+				",
+				array(
+					$lock_key,
+					'no',
+					$lock_key,
+				)
+			)
+		);
+
+		// Now grab the existing lock value.
+		return (string) $wpdb->get_var(
+			$wpdb->prepare(
+				"SELECT option_value FROM $wpdb->options WHERE option_name = %s",
+				$this->get_key( $lock_type )
+			)
+		);
+	}
+
+	/**
+	 * Supplies a lock value consisting of a unique value and the current timestamp, which are separated by a pipe
+	 * character.
+	 *
+	 * Example: (string) "649de012e6b262.09774912|1688068114"
+	 *
+	 * @param string $lock_type A string to identify different lock types.
+	 *
+	 * @return string
+	 */
+	private function new_lock_value( $lock_type ) {
+		return uniqid( '', true ) . '|' . ( time() + $this->get_duration( $lock_type ) );
 	}
 }

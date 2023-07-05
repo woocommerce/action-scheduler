@@ -26,20 +26,40 @@ class ActionScheduler_OptionLock extends ActionScheduler_Lock {
 	public function set( $lock_type ) {
 		global $wpdb;
 
-		$existing_lock_value  = $this->get_or_create_lock( $lock_type );
-		$expiration_timestamp = $this->get_expiration_from( $existing_lock_value );
+		$lock_key            = $this->get_key( $lock_type );
+		$existing_lock_value = $this->get_existing_lock( $lock_type );
+		$new_lock_value      = $this->new_lock_value( $lock_type );
 
-		// The lock is already held.
-		if ( $expiration_timestamp >= time() ) {
+		// The lock may not exist yet, or may have been deleted.
+		if ( empty( $existing_lock_value ) ) {
+			return (bool) $wpdb->query(
+				$wpdb->prepare(
+					"
+						INSERT INTO $wpdb->options ( 'option_name', 'option_value', 'autoload' )
+						SELECT %s, %s, 'no'
+						WHERE NOT EXISTS (
+						    SELECT 1
+						    FROM   $wpdb->options
+						    WHERE  option_name = %s
+						)
+					",
+					$lock_key,
+					$new_lock_value,
+					$lock_key
+				)
+			);
+		}
+
+		if ( $this->get_expiration_from( $existing_lock_value ) >= time() ) {
 			return false;
 		}
 
-		// Otherwise, try to obtain it.
+		// Otherwise, try to obtain the lock.
 		return (bool) $wpdb->update(
 			$wpdb->options,
-			array( 'option_value' => $this->new_lock_value( $lock_type ) ),
+			array( 'option_value' => $new_lock_value ),
 			array(
-				'option_name'  => $this->get_key( $lock_type ),
+				'option_name'  => $lock_key,
 				'option_value' => $existing_lock_value,
 			)
 		);
@@ -52,7 +72,7 @@ class ActionScheduler_OptionLock extends ActionScheduler_Lock {
 	 * @return bool|int False if no lock is set, otherwise the timestamp for when the lock is set to expire.
 	 */
 	public function get_expiration( $lock_type ) {
-		return $this->get_expiration_from( $this->get_or_create_lock( $lock_type ) );
+		return $this->get_expiration_from( $this->get_existing_lock( $lock_type ) );
 	}
 
 	/**
@@ -95,27 +115,10 @@ class ActionScheduler_OptionLock extends ActionScheduler_Lock {
 	 *
 	 * @return string
 	 */
-	private function get_or_create_lock( $lock_type ) {
+	private function get_existing_lock( $lock_type ) {
 		global $wpdb;
-		$lock_key = $this->get_key( $lock_type );
 
-		// Try to ensure the lock option exists, creating it if it does not already exist.
-		$wpdb->query(
-			$wpdb->prepare(
-				"
-					INSERT INTO $wpdb->options ( option_name, option_value, autoload )
-					SELECT %s, '', %s
-					WHERE NOT EXISTS ( SELECT 1 FROM $wpdb->options WHERE option_name = %s )
-				",
-				array(
-					$lock_key,
-					'no',
-					$lock_key,
-				)
-			)
-		);
-
-		// Now grab the existing lock value.
+		// Now grab the existing lock value, if there is one.
 		return (string) $wpdb->get_var(
 			$wpdb->prepare(
 				"SELECT option_value FROM $wpdb->options WHERE option_name = %s",

@@ -32,20 +32,13 @@ class ActionScheduler_OptionLock extends ActionScheduler_Lock {
 
 		// The lock may not exist yet, or may have been deleted.
 		if ( empty( $existing_lock_value ) ) {
-			return (bool) $wpdb->query(
-				$wpdb->prepare(
-					"
-						INSERT INTO $wpdb->options ( option_name, option_value, autoload )
-						SELECT %s, %s, 'no'
-						WHERE NOT EXISTS (
-						    SELECT 1
-						    FROM   $wpdb->options
-						    WHERE  option_name = %s
-						)
-					",
-					$lock_key,
-					$new_lock_value,
-					$lock_key
+
+			return (bool) $wpdb->insert(
+				$wpdb->options,
+				array(
+					'option_name'  => $lock_key,
+					'option_value' => $new_lock_value,
+					'autoload'     => 'no',
 				)
 			);
 		}

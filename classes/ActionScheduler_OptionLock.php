@@ -32,7 +32,6 @@ class ActionScheduler_OptionLock extends ActionScheduler_Lock {
 
 		// The lock may not exist yet, or may have been deleted.
 		if ( empty( $existing_lock_value ) ) {
-
 			return (bool) $wpdb->insert(
 				$wpdb->options,
 				array(

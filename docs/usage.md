@@ -125,7 +125,7 @@ add_action( 'eg_midnight_log', 'eg_log_action_data' );
 
 Note that the `as_has_scheduled_action()` function was added in 3.3.0: if you are using an earlier version, you should use `as_next_scheduled_action()` instead. For more details on all available API functions, and the data they accept, refer to the [API Reference](/api/).
 
-## Passing arguments
+### Passing arguments
 
 It is possible to pass arguments to your callbacks. When you initially supply the arguments via a call to `as_schedule_single_action()` or one of its sister functions, they should be in an array. However, your callback function will receive each array item as an individual parameter. Here's an example:
 

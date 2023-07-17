@@ -124,3 +124,29 @@ add_action( 'eg_midnight_log', 'eg_log_action_data' );
 ```
 
 Note that the `as_has_scheduled_action()` function was added in 3.3.0: if you are using an earlier version, you should use `as_next_scheduled_action()` instead. For more details on all available API functions, and the data they accept, refer to the [API Reference](/api/).
+
+### Passing arguments
+
+It is possible to pass arguments to your callbacks. When you initially supply the arguments via a call to `as_schedule_single_action()` or one of its sister functions, they should be in an array. However, your callback function will receive each array item as an individual parameter. Here's an example:
+
+```php
+// You must specify the number of arguments to be accepted (in this case, 2).
+add_action( 'purchase_notification', 'send_purchase_notification', 10, 2 );
+
+// When scheduling the action, provide the arguments as an array.
+as_schedule_single_action( time(), 'purchase_notification', array(
+    'bob@foo.bar',
+    'Learning Action Scheduler (e-book)',
+) );
+
+// Your callback should accept the appropriate number of parameters (again, in this case, 2).
+function send_purchase_notification( $customer_email, $purchased_item ) {
+    wp_mail( 
+        $customer_email,
+        'Thank you!',
+        "You purchased $purchased_item successfully."
+    );
+}
+```
+
+The above is a pretty simple illustration, and you would of course need to make changes if you wish to do anything more complex, such as accept a variable number of arguments. However, it hopefully illustrates the basic principles involved.

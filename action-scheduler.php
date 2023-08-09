@@ -7,6 +7,9 @@
  * Author URI: https://automattic.com/
  * Version: 3.6.1
  * License: GPLv3
+ * Tested up to: 6.2
+ * Requires at least: 5.2
+ * Requires PHP: 5.6
  *
  * Copyright 2019 Automattic, Inc.  (https://automattic.com/contact/)
  *

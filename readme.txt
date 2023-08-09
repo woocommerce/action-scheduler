@@ -3,7 +3,6 @@ Contributors: Automattic, wpmuguru, claudiosanches, peterfabian1000, vedjain, ja
 Tags: scheduler, cron
 Stable tag: 3.6.1
 License: GPLv3
-Requires PHP: 5.6
 
 Action Scheduler - Job Queue for WordPress
 

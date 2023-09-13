@@ -45,6 +45,9 @@ Collaboration is cool. We'd love to work with you to improve Action Scheduler. [
 
 == Changelog ==
 
+= 3.6.3 - 2023-09-13 =
+* Use `_doing_it_wrong` in initialization check.
+
 = 3.6.2 - 2023-08-09 =
 * Add guidance about passing arguments.
 * Atomic option locking.

@@ -57,7 +57,7 @@ class ActionScheduler_OptionLock_Test extends ActionScheduler_UnitTestCase {
 		$simulate_concurrent_claim = function ( $query ) use ( $lock, $type ) {
 			static $executed = false;
 
-			if ( ! $executed && false !== strpos( $query, 'action_scheduler_lock_' ) && 0 === strpos( $query, 'UPDATE' ) ) {
+			if ( ! $executed && false !== strpos( $query, 'action_scheduler_lock_' ) && 0 === strpos( $query, 'INSERT INTO' ) ) {
 				$executed = true;
 				$lock->set( $type );
 			}

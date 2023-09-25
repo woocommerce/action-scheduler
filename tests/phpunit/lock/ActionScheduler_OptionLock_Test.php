@@ -49,6 +49,8 @@ class ActionScheduler_OptionLock_Test extends ActionScheduler_UnitTestCase {
 	 * @return void
 	 */
 	public function test_lock_resists_race_conditions() {
+		global $wpdb;
+
 		$lock = ActionScheduler::lock();
 		$type = md5( wp_rand() );
 
@@ -57,7 +59,7 @@ class ActionScheduler_OptionLock_Test extends ActionScheduler_UnitTestCase {
 		$simulate_concurrent_claim = function ( $query ) use ( $lock, $type ) {
 			static $executed = false;
 
-			if ( ! $executed && false !== strpos( $query, 'action_scheduler_lock_' ) && 0 === strpos( $query, 'UPDATE' ) ) {
+			if ( ! $executed && false !== strpos( $query, 'action_scheduler_lock_' ) && 0 === strpos( $query, 'INSERT INTO' ) ) {
 				$executed = true;
 				$lock->set( $type );
 			}
@@ -66,8 +68,10 @@ class ActionScheduler_OptionLock_Test extends ActionScheduler_UnitTestCase {
 		};
 
 		add_filter( 'query', $simulate_concurrent_claim );
+		$wpdb->suppress_errors( true );
 		$this->assertFalse( $lock->is_locked( $type ), 'Initially, the lock is not held' );
 		$this->assertFalse( $lock->set( $type ), 'The lock was not obtained, because another process already claimed it.' );
+		$wpdb->suppress_errors( false );
 		remove_filter( 'query', $simulate_concurrent_claim );
 	}
 }

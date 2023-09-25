@@ -23,6 +23,7 @@
 		<testsuite name="Action Scheduler">
 			<directory>./phpunit/helpers</directory>
 			<directory>./phpunit/jobs</directory>
+			<directory>./phpunit/lock</directory>
 			<directory>./phpunit/procedural_api</directory>
 			<directory>./phpunit/runner</directory>
 			<directory>./phpunit/schedules</directory>

@@ -1,5 +1,25 @@
-phpunit.xml
-vendor
+# Operating System files
+.DS_Store
+Thumbs.db
+
+# IDE files
 .idea
-node_modules
+.vscode/*
+project.xml
+project.properties
+.project
+.settings*
+*.sublime-project
+*.sublime-workspace
+.sublimelinterrc
+
+# Project files
+node_modules/
+vendor/
+
+#PHP Unit
+.phpunit.result.cache
+phpunit.xml
+
+# Build files
 action-scheduler.zip

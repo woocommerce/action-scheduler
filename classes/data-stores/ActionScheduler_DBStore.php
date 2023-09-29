@@ -705,7 +705,7 @@ AND `group_id` = %d
 			array(
 				'per_page' => 1000,
 				'status'   => self::STATUS_PENDING,
-				'orderby'  => 'action_id',
+				'orderby'  => 'none',
 			)
 		);
 

@@ -392,6 +392,46 @@ class Procedural_API_Test extends ActionScheduler_UnitTestCase {
 	}
 
 	/**
+	 * Test recovering from an incorrect database schema when scheduling a single action.
+	 */
+	public function test_as_recover_from_incorrect_schema() {
+		global $wpdb;
+		$wpdb->suppress_errors( true );
+
+		// we need a hybrid store so that dropping the priority column will cause an exception.
+		$this->set_action_scheduler_store( new ActionScheduler_HybridStore() );
+		$this->assertEquals( 'ActionScheduler_HybridStore', get_class( ActionScheduler::store() ) );
+
+		// drop the priority column from the actions table.
+		$wpdb->query( "ALTER TABLE {$wpdb->actionscheduler_actions} DROP COLUMN priority" );
+
+		// try to schedule a single action.
+		$action_id = as_schedule_single_action( time(), 'hook_17', array( 'a', 'b' ), 'dummytest', true );
+
+		// ensure that no exception was thrown and zero was returned.
+		$this->assertEquals( 0, $action_id );
+
+		// try to schedule an async action.
+		$action_id = as_enqueue_async_action( 'hook_17', array( 'a', 'b' ), 'dummytest', true );
+		// ensure that no exception was thrown and zero was returned.
+		$this->assertEquals( 0, $action_id );
+
+		// try to schedule a recurring action.
+		$action_id = as_schedule_recurring_action( time(), MINUTE_IN_SECONDS, 'hook_17', array( 'a', 'b' ), 'dummytest', true );
+		// ensure that no exception was thrown and zero was returned.
+		$this->assertEquals( 0, $action_id );
+
+		// try to schedule a cron action.
+		$action_id = as_schedule_cron_action( time(), '0 0 * * *', 'hook_17', array( 'a', 'b' ), 'dummytest', true );
+		// ensure that no exception was thrown and zero was returned.
+		$this->assertEquals( 0, $action_id );
+
+		// recreate the priority column.
+		$wpdb->query( "ALTER TABLE {$wpdb->actionscheduler_actions} ADD COLUMN priority tinyint(10) UNSIGNED NOT NULL DEFAULT 10" );
+		$wpdb->suppress_errors( false );
+	}
+
+	/**
 	 * Helper method to set actions scheduler store.
 	 *
 	 * @param ActionScheduler_Store $store Store instance to set.

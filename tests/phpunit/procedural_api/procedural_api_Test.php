@@ -411,20 +411,44 @@ class Procedural_API_Test extends ActionScheduler_UnitTestCase {
 		// ensure that no exception was thrown and zero was returned.
 		$this->assertEquals( 0, $action_id );
 
+		// ensure that the error was logged.
+		$logs = ActionScheduler_Logger::instance()->get_logs( 0 );
+		$message = end( $logs )->get_message();
+		$this->assertContains( 'hook_17', $message );
+		$this->assertContains( "Unknown column 'priority' in 'field list'", $message );
+
 		// try to schedule an async action.
-		$action_id = as_enqueue_async_action( 'hook_17', array( 'a', 'b' ), 'dummytest', true );
+		$action_id = as_enqueue_async_action( 'hook_18', array( 'a', 'b' ), 'dummytest', true );
 		// ensure that no exception was thrown and zero was returned.
 		$this->assertEquals( 0, $action_id );
+
+		// ensure that the error was logged.
+		$logs = ActionScheduler_Logger::instance()->get_logs( 0 );
+		$message = end( $logs )->get_message();
+		$this->assertContains( 'hook_18', $message );
+		$this->assertContains( "Unknown column 'priority' in 'field list'", $message );
 
 		// try to schedule a recurring action.
-		$action_id = as_schedule_recurring_action( time(), MINUTE_IN_SECONDS, 'hook_17', array( 'a', 'b' ), 'dummytest', true );
+		$action_id = as_schedule_recurring_action( time(), MINUTE_IN_SECONDS, 'hook_19', array( 'a', 'b' ), 'dummytest', true );
 		// ensure that no exception was thrown and zero was returned.
 		$this->assertEquals( 0, $action_id );
 
+		// ensure that the error was logged.
+		$logs = ActionScheduler_Logger::instance()->get_logs( 0 );
+		$message = end( $logs )->get_message();
+		$this->assertContains( 'hook_19', $message );
+		$this->assertContains( "Unknown column 'priority' in 'field list'", $message );
+
 		// try to schedule a cron action.
-		$action_id = as_schedule_cron_action( time(), '0 0 * * *', 'hook_17', array( 'a', 'b' ), 'dummytest', true );
+		$action_id = as_schedule_cron_action( time(), '0 0 * * *', 'hook_20', array( 'a', 'b' ), 'dummytest', true );
 		// ensure that no exception was thrown and zero was returned.
 		$this->assertEquals( 0, $action_id );
+
+		// ensure that the error was logged.
+		$logs = ActionScheduler_Logger::instance()->get_logs( 0 );
+		$message = end( $logs )->get_message();
+		$this->assertContains( 'hook_20', $message );
+		$this->assertContains( "Unknown column 'priority' in 'field list'", $message );
 
 		// recreate the priority column.
 		$wpdb->query( "ALTER TABLE {$wpdb->actionscheduler_actions} ADD COLUMN priority tinyint(10) UNSIGNED NOT NULL DEFAULT 10" );

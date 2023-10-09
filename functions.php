@@ -56,9 +56,10 @@ function as_enqueue_async_action( $hook, $args = array(), $group = '', $unique =
 		ActionScheduler::logger()->log(
 			0,
 			sprintf(
-				/* translators: %s is the name of the hook to be enqueued. */
-				__( 'Caught exception while enqueuing action: %s', 'action-scheduler' ),
-				esc_attr( $hook )
+				/* translators: %1$s is the name of the hook to be enqueued, %2$s is the exception message. */
+				__( 'Caught exception while enqueuing action "%1$s": %2$s', 'action-scheduler' ),
+				$hook,
+				$exception->getMessage()
 			)
 		);
 		return 0;
@@ -119,9 +120,10 @@ function as_schedule_single_action( $timestamp, $hook, $args = array(), $group =
 		ActionScheduler::logger()->log(
 			0,
 			sprintf(
-				/* translators: %s is the name of the hook to be enqueued. */
-				__( 'Caught exception while enqueuing action: %s', 'action-scheduler' ),
-				esc_attr( $hook )
+				/* translators: %1$s is the name of the hook to be enqueued, %2$s is the exception message. */
+				__( 'Caught exception while enqueuing action "%1$s": %2$s', 'action-scheduler' ),
+				$hook,
+				$exception->getMessage()
 			)
 		);
 		return 0;
@@ -204,9 +206,10 @@ function as_schedule_recurring_action( $timestamp, $interval_in_seconds, $hook, 
 		ActionScheduler::logger()->log(
 			0,
 			sprintf(
-				/* translators: %s is the name of the hook to be enqueued. */
-				__( 'Caught exception while enqueuing action: %s', 'action-scheduler' ),
-				esc_attr( $hook )
+				/* translators: %1$s is the name of the hook to be enqueued, %2$s is the exception message. */
+				__( 'Caught exception while enqueuing action "%1$s": %2$s', 'action-scheduler' ),
+				$hook,
+				$exception->getMessage()
 			)
 		);
 		return 0;
@@ -282,9 +285,10 @@ function as_schedule_cron_action( $timestamp, $schedule, $hook, $args = array(),
 		ActionScheduler::logger()->log(
 			0,
 			sprintf(
-				/* translators: %s is the name of the hook to be enqueued. */
-				__( 'Caught exception while enqueuing action: %s', 'action-scheduler' ),
-				esc_attr( $hook )
+				/* translators: %1$s is the name of the hook to be enqueued, %2$s is the exception message. */
+				__( 'Caught exception while enqueuing action "%1$s": %2$s', 'action-scheduler' ),
+				$hook,
+				$exception->getMessage()
 			)
 		);
 		return 0;

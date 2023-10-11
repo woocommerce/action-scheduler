@@ -1,5 +1,12 @@
 *** Changelog ***
 
+= 3.6.4 - 2023-10-11 =
+* 3.6.3 release.
+* Fix option lock test.
+* Fix: Use orderby => 'none' when bulk cancelling actions.
+* Tweak - WP 6.3 compatibility.
+* Update PR unit tests matrix.
+
 = 3.6.3 - 2023-09-13 =
 * Use `_doing_it_wrong` in initialization check.
 

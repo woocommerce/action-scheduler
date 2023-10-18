@@ -53,8 +53,7 @@ function as_enqueue_async_action( $hook, $args = array(), $group = '', $unique =
 			)
 		);
 	} catch ( Exception $exception ) {
-		ActionScheduler::logger()->log(
-			0,
+		error_log(
 			sprintf(
 				/* translators: %1$s is the name of the hook to be enqueued, %2$s is the exception message. */
 				__( 'Caught exception while enqueuing action "%1$s": %2$s', 'action-scheduler' ),
@@ -117,8 +116,7 @@ function as_schedule_single_action( $timestamp, $hook, $args = array(), $group =
 			)
 		);
 	} catch ( Exception $exception ) {
-		ActionScheduler::logger()->log(
-			0,
+		error_log(
 			sprintf(
 				/* translators: %1$s is the name of the hook to be enqueued, %2$s is the exception message. */
 				__( 'Caught exception while enqueuing action "%1$s": %2$s', 'action-scheduler' ),
@@ -203,8 +201,7 @@ function as_schedule_recurring_action( $timestamp, $interval_in_seconds, $hook, 
 			)
 		);
 	} catch ( Exception $exception ) {
-		ActionScheduler::logger()->log(
-			0,
+		error_log(
 			sprintf(
 				/* translators: %1$s is the name of the hook to be enqueued, %2$s is the exception message. */
 				__( 'Caught exception while enqueuing action "%1$s": %2$s', 'action-scheduler' ),
@@ -282,8 +279,7 @@ function as_schedule_cron_action( $timestamp, $schedule, $hook, $args = array(),
 			)
 		);
 	} catch ( Exception $exception ) {
-		ActionScheduler::logger()->log(
-			0,
+		error_log(
 			sprintf(
 				/* translators: %1$s is the name of the hook to be enqueued, %2$s is the exception message. */
 				__( 'Caught exception while enqueuing action "%1$s": %2$s', 'action-scheduler' ),

@@ -1,7 +1,7 @@
 === Action Scheduler ===
 Contributors: Automattic, wpmuguru, claudiosanches, peterfabian1000, vedjain, jamosova, obliviousharmony, konamiman, sadowski, royho, barryhughes-1
 Tags: scheduler, cron
-Stable tag: 3.6.3
+Stable tag: 3.6.4
 License: GPLv3
 Tested up to: 6.3
 
@@ -44,6 +44,10 @@ Action Scheduler is developed and maintained by [Automattic](http://automattic.c
 Collaboration is cool. We'd love to work with you to improve Action Scheduler. [Pull Requests](https://github.com/woocommerce/action-scheduler/pulls) welcome.
 
 == Changelog ==
+
+= 3.6.4 - 2023-10-11 =
+* Performance improvements when bulk cancelling actions.
+* Dev-related fixes.
 
 = 3.6.3 - 2023-09-13 =
 * Use `_doing_it_wrong` in initialization check.

@@ -1,5 +1,9 @@
 *** Changelog ***
 
+= 3.6.4 - 2023-10-11 =
+* Performance improvements when bulk cancelling actions.
+* Dev-related fixes.
+
 = 3.6.3 - 2023-09-13 =
 * Use `_doing_it_wrong` in initialization check.
 

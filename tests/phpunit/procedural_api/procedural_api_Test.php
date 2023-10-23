@@ -227,7 +227,7 @@ class Procedural_API_Test extends ActionScheduler_UnitTestCase {
 
 	public function test_as_get_datetime_object_default() {
 
-		$utc_now = new ActionScheduler_DateTime( null, new DateTimeZone( 'UTC' ) );
+		$utc_now = new ActionScheduler_DateTime( 'now', new DateTimeZone( 'UTC' ) );
 		$as_now  = as_get_datetime_object();
 
 		// Don't want to use 'U' as timestamps will always be in UTC.
@@ -268,7 +268,7 @@ class Procedural_API_Test extends ActionScheduler_UnitTestCase {
 		// phpcs:ignore
 		date_default_timezone_set( $timezone_au );
 
-		$au_now = new ActionScheduler_DateTime( null );
+		$au_now = new ActionScheduler_DateTime( 'now' );
 		$as_now = as_get_datetime_object();
 
 		// Make sure they're for the same time.
@@ -277,7 +277,7 @@ class Procedural_API_Test extends ActionScheduler_UnitTestCase {
 		// But not in the same timezone, as $as_now should be using UTC.
 		$this->assertNotEquals( $au_now->format( 'Y-m-d H:i:s' ), $as_now->format( 'Y-m-d H:i:s' ) );
 
-		$au_now    = new ActionScheduler_DateTime( null );
+		$au_now    = new ActionScheduler_DateTime( 'now' );
 		$as_au_now = as_get_datetime_object();
 
 		$this->assertEquals( $au_now->getTimestamp(), $as_now->getTimestamp(), '', 2 );

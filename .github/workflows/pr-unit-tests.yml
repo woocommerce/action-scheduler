@@ -10,22 +10,13 @@ jobs:
       fail-fast: false
       matrix:
         # We test against the earliest and latest PHP versions for each major supported version.
-        php: [ '5.6', '7.0', '7.4', '8.0' ]
-        wp: [ '5.2', '5.3', '5.4', '5.5', '5.6', 'latest' ]
+        php: [ '5.6', '7.0', '7.4', '8.0', '8.1', '8.2' ]
+        wp: [ '6.1', '6.2', '6.3', 'latest' ]
         multisite: [ '0', '1' ]
         exclude:
-          # Earlier versions of WordPress do not support PHP 7.4+
-          - php: 7.4
-            wp: 5.2
-          - php: 8.0
-            wp: 5.2
-          - php: 8.0
-            wp: 5.3
-          - php: 8.0
-            wp: 5.4
-          - php: 8.0
-            wp: 5.5
           # WordPress 6.3+ requires PHP 7.0+
+          - php: 5.6
+            wp: 6.3
           - php: 5.6
             wp: latest
     services:

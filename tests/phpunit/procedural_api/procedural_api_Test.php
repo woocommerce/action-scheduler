@@ -395,8 +395,11 @@ class Procedural_API_Test extends ActionScheduler_UnitTestCase {
 	 * Test recovering from an incorrect database schema when scheduling a single action.
 	 */
 	public function test_as_recover_from_incorrect_schema() {
+		// custom error reporting so we can test for errors sent to error_log.
 		global $wpdb;
 		$wpdb->suppress_errors( true );
+		$error_capture = tmpfile();
+		$actual_error_log = ini_set( 'error_log', stream_get_meta_data( $error_capture )['uri'] );
 
 		// we need a hybrid store so that dropping the priority column will cause an exception.
 		$this->set_action_scheduler_store( new ActionScheduler_HybridStore() );
@@ -411,48 +414,34 @@ class Procedural_API_Test extends ActionScheduler_UnitTestCase {
 		// ensure that no exception was thrown and zero was returned.
 		$this->assertEquals( 0, $action_id );
 
-		// ensure that the error was logged.
-		$logs = ActionScheduler_Logger::instance()->get_logs( 0 );
-		$message = end( $logs )->get_message();
-		$this->assertContains( 'hook_17', $message );
-		$this->assertContains( "Unknown column 'priority' in 'field list'", $message );
-
 		// try to schedule an async action.
 		$action_id = as_enqueue_async_action( 'hook_18', array( 'a', 'b' ), 'dummytest', true );
 		// ensure that no exception was thrown and zero was returned.
 		$this->assertEquals( 0, $action_id );
-
-		// ensure that the error was logged.
-		$logs = ActionScheduler_Logger::instance()->get_logs( 0 );
-		$message = end( $logs )->get_message();
-		$this->assertContains( 'hook_18', $message );
-		$this->assertContains( "Unknown column 'priority' in 'field list'", $message );
 
 		// try to schedule a recurring action.
 		$action_id = as_schedule_recurring_action( time(), MINUTE_IN_SECONDS, 'hook_19', array( 'a', 'b' ), 'dummytest', true );
 		// ensure that no exception was thrown and zero was returned.
 		$this->assertEquals( 0, $action_id );
 
-		// ensure that the error was logged.
-		$logs = ActionScheduler_Logger::instance()->get_logs( 0 );
-		$message = end( $logs )->get_message();
-		$this->assertContains( 'hook_19', $message );
-		$this->assertContains( "Unknown column 'priority' in 'field list'", $message );
-
 		// try to schedule a cron action.
 		$action_id = as_schedule_cron_action( time(), '0 0 * * *', 'hook_20', array( 'a', 'b' ), 'dummytest', true );
 		// ensure that no exception was thrown and zero was returned.
 		$this->assertEquals( 0, $action_id );
 
-		// ensure that the error was logged.
-		$logs = ActionScheduler_Logger::instance()->get_logs( 0 );
-		$message = end( $logs )->get_message();
-		$this->assertContains( 'hook_20', $message );
-		$this->assertContains( "Unknown column 'priority' in 'field list'", $message );
+		// ensure that all four errors were logged to error_log.
+		$logged_errors = stream_get_contents( $error_capture );
+		$this->assertContains( 'Caught exception while enqueuing action "hook_17": Error saving action', $logged_errors );
+		$this->assertContains( 'Caught exception while enqueuing action "hook_18": Error saving action', $logged_errors );
+		$this->assertContains( 'Caught exception while enqueuing action "hook_19": Error saving action', $logged_errors );
+		$this->assertContains( 'Caught exception while enqueuing action "hook_20": Error saving action', $logged_errors );
+		$this->assertContains( "Unknown column 'priority' in 'field list'", $logged_errors );
 
 		// recreate the priority column.
 		$wpdb->query( "ALTER TABLE {$wpdb->actionscheduler_actions} ADD COLUMN priority tinyint(10) UNSIGNED NOT NULL DEFAULT 10" );
+		// restore error logging.
 		$wpdb->suppress_errors( false );
+		ini_set( 'error_log', $actual_error_log );
 	}
 
 	/**

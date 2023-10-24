@@ -14,7 +14,7 @@
  * @param bool   $unique Whether the action should be unique.
  * @param int    $priority Lower values take precedence over higher values. Defaults to 10, with acceptable values falling in the range 0-255.
  *
- * @return int The action ID.
+ * @return int The action ID. Zero if there was an error scheduling the action.
  */
 function as_enqueue_async_action( $hook, $args = array(), $group = '', $unique = false, $priority = 10 ) {
 	if ( ! ActionScheduler::is_initialized( __FUNCTION__ ) ) {
@@ -63,7 +63,7 @@ function as_enqueue_async_action( $hook, $args = array(), $group = '', $unique =
  * @param bool   $unique Whether the action should be unique.
  * @param int    $priority Lower values take precedence over higher values. Defaults to 10, with acceptable values falling in the range 0-255.
  *
- * @return int The action ID.
+ * @return int The action ID. Zero if there was an error scheduling the action.
  */
 function as_schedule_single_action( $timestamp, $hook, $args = array(), $group = '', $unique = false, $priority = 10 ) {
 	if ( ! ActionScheduler::is_initialized( __FUNCTION__ ) ) {
@@ -115,7 +115,7 @@ function as_schedule_single_action( $timestamp, $hook, $args = array(), $group =
  * @param bool   $unique Whether the action should be unique.
  * @param int    $priority Lower values take precedence over higher values. Defaults to 10, with acceptable values falling in the range 0-255.
  *
- * @return int The action ID.
+ * @return int The action ID. Zero if there was an error scheduling the action.
  */
 function as_schedule_recurring_action( $timestamp, $interval_in_seconds, $hook, $args = array(), $group = '', $unique = false, $priority = 10 ) {
 	if ( ! ActionScheduler::is_initialized( __FUNCTION__ ) ) {
@@ -200,7 +200,7 @@ function as_schedule_recurring_action( $timestamp, $interval_in_seconds, $hook, 
  * @param bool   $unique Whether the action should be unique.
  * @param int    $priority Lower values take precedence over higher values. Defaults to 10, with acceptable values falling in the range 0-255.
  *
- * @return int The action ID.
+ * @return int The action ID. Zero if there was an error scheduling the action.
  */
 function as_schedule_cron_action( $timestamp, $schedule, $hook, $args = array(), $group = '', $unique = false, $priority = 10 ) {
 	if ( ! ActionScheduler::is_initialized( __FUNCTION__ ) ) {
@@ -283,9 +283,10 @@ function as_unschedule_action( $hook, $args = array(), $group = '' ) {
 			ActionScheduler::logger()->log(
 				$action_id,
 				sprintf(
-					/* translators: %s is the name of the hook to be cancelled. */
-					__( 'Caught exception while cancelling action: %s', 'action-scheduler' ),
-					esc_attr( $hook )
+					/* translators: %1$s is the name of the hook to be cancelled, %2$s is the exception message. */
+					__( 'Caught exception while cancelling action "%1$s": %2$s', 'action-scheduler' ),
+					$hook,
+					$exception->getMessage()
 				)
 			);
 

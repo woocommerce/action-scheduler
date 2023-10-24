@@ -49,8 +49,7 @@ as_enqueue_async_action( $hook, $args, $group, $unique, $priority );
 
 ### Return value
 
-`(integer)` the action's ID.
-
+`(integer)` the action's ID. Zero if there was an error scheduling the action. The error will be sent to `error_log`.
 
 ## Function Reference / `as_schedule_single_action()`
 
@@ -75,8 +74,7 @@ as_schedule_single_action( $timestamp, $hook, $args, $group, $unique, $priority 
 
 ### Return value
 
-`(integer)` the action's ID.
-
+`(integer)` the action's ID. Zero if there was an error scheduling the action. The error will be sent to `error_log`.
 
 ## Function Reference / `as_schedule_recurring_action()`
 
@@ -102,14 +100,13 @@ as_schedule_recurring_action( $timestamp, $interval_in_seconds, $hook, $args, $g
 
 ### Return value
 
-`(integer)` the action's ID.
-
+`(integer)` the action's ID. Zero if there was an error scheduling the action. The error will be sent to `error_log`.
 
 ## Function Reference / `as_schedule_cron_action()`
 
 ### Description
 
-Schedule an action that recurs on a cron-like schedule. 
+Schedule an action that recurs on a cron-like schedule.
 
 If execution of a cron-like action is delayed, the next attempt will still be scheduled according to the provided cron expression.
 
@@ -131,8 +128,7 @@ as_schedule_cron_action( $timestamp, $schedule, $hook, $args, $group, $unique, $
 
 ### Return value
 
-`(integer)` the action's ID.
-
+`(integer)` the action's ID. Zero if there was an error scheduling the action. The error will be sent to `error_log`.
 
 ## Function Reference / `as_unschedule_action()`
 
@@ -178,7 +174,6 @@ as_unschedule_all_actions( $hook, $args, $group )
 
 `(string|null)` The scheduled action ID if a scheduled action was found, or null if no matching action found.
 
-
 ## Function Reference / `as_next_scheduled_action()`
 
 ### Description
@@ -201,7 +196,6 @@ as_next_scheduled_action( $hook, $args, $group );
 
 `(integer|boolean)` The timestamp for the next occurrence of a pending scheduled action, true for an async or in-progress action or false if there is no matching action.
 
-
 ## Function Reference / `as_has_scheduled_action()`
 
 ### Description
@@ -223,7 +217,6 @@ as_has_scheduled_action( $hook, $args, $group );
 ### Return value
 
 `(boolean)` True if a matching action is pending or in-progress, false otherwise.
-
 
 ## Function Reference / `as_get_scheduled_actions()`
 

@@ -13,6 +13,7 @@ class ActionScheduler_ActionFactory {
 	 * @param array                    $args Args to pass to callbacks when the hook is triggered.
 	 * @param ActionScheduler_Schedule $schedule The action's schedule.
 	 * @param string                   $group A group to put the action in.
+	 * phpcs:ignore Squiz.Commenting.FunctionComment.ExtraParamComment
 	 * @param int                      $priority The action priority.
 	 *
 	 * @return ActionScheduler_Action An instance of the stored action.
@@ -246,7 +247,6 @@ class ActionScheduler_ActionFactory {
 	 * async_unique(), single() or single_unique(), etc.
 	 *
 	 * @internal Not intended for public use, should not be overriden by subclasses.
-	 * @throws   Exception May be thrown if invalid options are passed.
 	 *
 	 * @param array $options {
 	 *     Describes the action we wish to schedule.
@@ -263,7 +263,7 @@ class ActionScheduler_ActionFactory {
 	 *     @type int        $priority  Lower values means higher priority. Should be in the range 0-255.
 	 * }
 	 *
-	 * @return int
+	 * @return int The action ID. Zero if there was an error scheduling the action.
 	 */
 	public function create( array $options = array() ) {
 		$defaults = array(
@@ -307,12 +307,27 @@ class ActionScheduler_ActionFactory {
 				break;
 
 			default:
-				throw new Exception( "Unknown action type '{$options['type']}' specified when trying to create an action for '{$options['hook']}'." );
+				error_log( "Unknown action type '{$options['type']}' specified when trying to create an action for '{$options['hook']}'." );
+				return 0;
 		}
 
 		$action = new ActionScheduler_Action( $options['hook'], $options['arguments'], $schedule, $options['group'] );
 		$action->set_priority( $options['priority'] );
-		return $options['unique'] ? $this->store_unique_action( $action ) : $this->store( $action );
+
+		$action_id = 0;
+		try {
+			$action_id = $options['unique'] ? $this->store_unique_action( $action ) : $this->store( $action );
+		} catch ( Exception $e ) {
+			error_log(
+				sprintf(
+					/* translators: %1$s is the name of the hook to be enqueued, %2$s is the exception message. */
+					__( 'Caught exception while enqueuing action "%1$s": %2$s', 'action-scheduler' ),
+					$options['hook'],
+					$e->getMessage()
+				)
+			);
+		}
+		return $action_id;
 	}
 
 	/**

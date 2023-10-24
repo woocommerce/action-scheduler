@@ -41,28 +41,16 @@ function as_enqueue_async_action( $hook, $args = array(), $group = '', $unique =
 		return is_int( $pre ) ? $pre : 0;
 	}
 
-	try {
-		return ActionScheduler::factory()->create(
-			array(
-				'type'      => 'async',
-				'hook'      => $hook,
-				'arguments' => $args,
-				'group'     => $group,
-				'unique'    => $unique,
-				'priority'  => $priority,
-			)
-		);
-	} catch ( Exception $exception ) {
-		error_log(
-			sprintf(
-				/* translators: %1$s is the name of the hook to be enqueued, %2$s is the exception message. */
-				__( 'Caught exception while enqueuing action "%1$s": %2$s', 'action-scheduler' ),
-				$hook,
-				$exception->getMessage()
-			)
-		);
-		return 0;
-	}
+	return ActionScheduler::factory()->create(
+		array(
+			'type'      => 'async',
+			'hook'      => $hook,
+			'arguments' => $args,
+			'group'     => $group,
+			'unique'    => $unique,
+			'priority'  => $priority,
+		)
+	);
 }
 
 /**
@@ -103,29 +91,17 @@ function as_schedule_single_action( $timestamp, $hook, $args = array(), $group =
 		return is_int( $pre ) ? $pre : 0;
 	}
 
-	try {
-		return ActionScheduler::factory()->create(
-			array(
-				'type'      => 'single',
-				'hook'      => $hook,
-				'arguments' => $args,
-				'when'      => $timestamp,
-				'group'     => $group,
-				'unique'    => $unique,
-				'priority'  => $priority,
-			)
-		);
-	} catch ( Exception $exception ) {
-		error_log(
-			sprintf(
-				/* translators: %1$s is the name of the hook to be enqueued, %2$s is the exception message. */
-				__( 'Caught exception while enqueuing action "%1$s": %2$s', 'action-scheduler' ),
-				$hook,
-				$exception->getMessage()
-			)
-		);
-		return 0;
-	}
+	return ActionScheduler::factory()->create(
+		array(
+			'type'      => 'single',
+			'hook'      => $hook,
+			'arguments' => $args,
+			'when'      => $timestamp,
+			'group'     => $group,
+			'unique'    => $unique,
+			'priority'  => $priority,
+		)
+	);
 }
 
 /**
@@ -187,30 +163,18 @@ function as_schedule_recurring_action( $timestamp, $interval_in_seconds, $hook, 
 		return is_int( $pre ) ? $pre : 0;
 	}
 
-	try {
-		return ActionScheduler::factory()->create(
-			array(
-				'type'      => 'recurring',
-				'hook'      => $hook,
-				'arguments' => $args,
-				'when'      => $timestamp,
-				'pattern'   => $interval_in_seconds,
-				'group'     => $group,
-				'unique'    => $unique,
-				'priority'  => $priority,
-			)
-		);
-	} catch ( Exception $exception ) {
-		error_log(
-			sprintf(
-				/* translators: %1$s is the name of the hook to be enqueued, %2$s is the exception message. */
-				__( 'Caught exception while enqueuing action "%1$s": %2$s', 'action-scheduler' ),
-				$hook,
-				$exception->getMessage()
-			)
-		);
-		return 0;
-	}
+	return ActionScheduler::factory()->create(
+		array(
+			'type'      => 'recurring',
+			'hook'      => $hook,
+			'arguments' => $args,
+			'when'      => $timestamp,
+			'pattern'   => $interval_in_seconds,
+			'group'     => $group,
+			'unique'    => $unique,
+			'priority'  => $priority,
+		)
+	);
 }
 
 /**
@@ -265,30 +229,18 @@ function as_schedule_cron_action( $timestamp, $schedule, $hook, $args = array(),
 		return is_int( $pre ) ? $pre : 0;
 	}
 
-	try {
-		return ActionScheduler::factory()->create(
-			array(
-				'type'      => 'cron',
-				'hook'      => $hook,
-				'arguments' => $args,
-				'when'      => $timestamp,
-				'pattern'   => $schedule,
-				'group'     => $group,
-				'unique'    => $unique,
-				'priority'  => $priority,
-			)
-		);
-	} catch ( Exception $exception ) {
-		error_log(
-			sprintf(
-				/* translators: %1$s is the name of the hook to be enqueued, %2$s is the exception message. */
-				__( 'Caught exception while enqueuing action "%1$s": %2$s', 'action-scheduler' ),
-				$hook,
-				$exception->getMessage()
-			)
-		);
-		return 0;
-	}
+	return ActionScheduler::factory()->create(
+		array(
+			'type'      => 'cron',
+			'hook'      => $hook,
+			'arguments' => $args,
+			'when'      => $timestamp,
+			'pattern'   => $schedule,
+			'group'     => $group,
+			'unique'    => $unique,
+			'priority'  => $priority,
+		)
+	);
 }
 
 /**

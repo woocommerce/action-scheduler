@@ -15,6 +15,8 @@ There are two ways to install Action Scheduler:
 1. regular WordPress plugin; or
 1. a library within your plugin's codebase.
 
+Note that [Action Scheduler follows an L-2 dependency version policy](https://developer.woocommerce.com/2023/10/24/action-scheduler-to-adopt-l-2-dependency-version-policy/). That is, the library requires at least the "latest minus two" version of WordPress and the PHP minimum version requirement of that WordPress version.
+
 ### Usage as a Plugin
 
 Action Scheduler includes the necessary file headers to be used as a standard WordPress plugin.

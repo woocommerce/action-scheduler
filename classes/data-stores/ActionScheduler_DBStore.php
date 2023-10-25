@@ -887,7 +887,7 @@ AND `group_id` = %d
 		$params[] = $date->format( 'Y-m-d H:i:s' );
 		$params[] = self::STATUS_PENDING;
 
-		if ( ! empty( $hooks ) ) {
+		if ( is_array( $hooks ) && ! empty( $hooks ) ) {
 			$placeholders = array_fill( 0, count( $hooks ), '%s' );
 			$where        .= ' AND hook IN (' . join( ', ', $placeholders ) . ')';
 			$params       = array_merge( $params, array_values( $hooks ) );

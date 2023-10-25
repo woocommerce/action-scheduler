@@ -16,6 +16,9 @@ class ActionScheduler_ActionClaim {
 		return $this->id;
 	}
 
+	/**
+	 * @return array
+	 */
 	public function get_actions() {
 		return $this->action_ids;
 	}

@@ -711,7 +711,7 @@ AND `group_id` = %d
 
 		while ( $action_ids ) {
 			$action_ids = $this->query_actions( $query_args );
-			if ( empty( $action_ids ) ) {
+			if ( empty( $action_ids ) || ! is_countable( $action_ids ) ) {
 				break;
 			}
 

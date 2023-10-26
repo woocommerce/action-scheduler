@@ -91,7 +91,7 @@ abstract class ActionScheduler_Abstract_QueueRunner extends ActionScheduler_Abst
 			} catch ( Throwable $e ) {
 				// Throwable is defined when executing under PHP 7.0 and up. We convert it to an exception, for
 				// compatibility with ActionScheduler_Logger.
-				throw new Exception( $e->getMessage(), $e->getCode(), $e->getPrevious() );
+				throw new Exception( $e->getMessage(), $e->getCode(), $e );
 			}
 		} catch ( Exception $e ) {
 			// This catch block exists for compatibility with PHP 5.6.

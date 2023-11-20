@@ -1,6 +1,7 @@
 *** Changelog ***
 
 = 3.7.0 - 2023-11-20 =
+* Important: starting with this release, Action Scheduler follows an L-2 version policy (WordPress, and consequently PHP).
 * Add extended indexes for hook_status_scheduled_date_gmt and status_sheduled_date_gmt.
 * Catch and log exceptions thrown when actions can't be created, e.g. under a corrupt database schema.
 * Release/3.6.4.

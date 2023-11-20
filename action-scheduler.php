@@ -7,8 +7,8 @@
  * Author URI: https://automattic.com/
  * Version: 3.7.0
  * License: GPLv3
+ * Requires at least: 6.2
  * Tested up to: 6.4
- * Requires at least: 5.2
  * Requires PHP: 5.6
  *
  * Copyright 2019 Automattic, Inc.  (https://automattic.com/contact/)
@@ -38,6 +38,7 @@ if ( ! function_exists( 'action_scheduler_register_3_dot_7_dot_0' ) && function_
 
 	add_action( 'plugins_loaded', 'action_scheduler_register_3_dot_7_dot_0', 0, 0 ); // WRCS: DEFINED_VERSION.
 
+	// phpcs:disable Generic.Functions.OpeningFunctionBraceKernighanRitchie.ContentAfterBrace
 	/**
 	 * Registers this version of Action Scheduler.
 	 */
@@ -46,6 +47,7 @@ if ( ! function_exists( 'action_scheduler_register_3_dot_7_dot_0' ) && function_
 		$versions->register( '3.7.0', 'action_scheduler_initialize_3_dot_7_dot_0' ); // WRCS: DEFINED_VERSION.
 	}
 
+	// phpcs:disable Generic.Functions.OpeningFunctionBraceKernighanRitchie.ContentAfterBrace
 	/**
 	 * Initializes this version of Action Scheduler.
 	 */

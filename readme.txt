@@ -45,6 +45,15 @@ Collaboration is cool. We'd love to work with you to improve Action Scheduler. [
 
 == Changelog ==
 
+= 3.7.0 - 2023-11-20 =
+* Add extended indexes for hook_status_scheduled_date_gmt and status_sheduled_date_gmt.
+* Catch and log exceptions thrown when actions can't be created, e.g. under a corrupt database schema.
+* Release/3.6.4.
+* Tweak - WP 6.4 compatibility.
+* Update unit tests for upcoming dependency version policy.
+* make sure hook action_scheduler_failed_execution can access original exception object.
+* mention dependency version policy in usage.md.
+
 = 3.6.4 - 2023-10-11 =
 * Performance improvements when bulk cancelling actions.
 * Dev-related fixes.

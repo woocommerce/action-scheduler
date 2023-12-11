@@ -39,7 +39,7 @@ jobs:
           php-version: ${{ matrix.php }}
           tools: composer
           extensions: mysql
-          coverage: none
+          coverage: xdebug
 
       - name: Tool versions
         run: |

@@ -30,8 +30,6 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 2
 
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
@@ -39,7 +37,7 @@ jobs:
           php-version: ${{ matrix.php }}
           tools: composer
           extensions: mysql
-          coverage: xdebug
+          coverage: none
 
       - name: Tool versions
         run: |
@@ -86,9 +84,4 @@ jobs:
       - name: Run tests
         run: |
           ./vendor/bin/phpunit --version
-          WP_MULTISITE=${{ matrix.multisite }} ./vendor/bin/phpunit -c ./tests/phpunit.xml.dist --coverage-clover coverage.xml
-
-      - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v4-beta
-        env:
-          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+          WP_MULTISITE=${{ matrix.multisite }} ./vendor/bin/phpunit -c ./tests/phpunit.xml.dist

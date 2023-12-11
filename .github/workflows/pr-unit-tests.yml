@@ -88,6 +88,7 @@ jobs:
           ./vendor/bin/phpunit --version
           WP_MULTISITE=${{ matrix.multisite }} ./vendor/bin/phpunit -c ./tests/phpunit.xml.dist --coverage-clover coverage.xml
 
-      - name: Code Coverage
-        run: |
-          bash <(curl -s https://codecov.io/bash)
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v4-beta
+        env:
+          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}

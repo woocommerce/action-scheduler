@@ -86,7 +86,7 @@ jobs:
       - name: Run tests
         run: |
           ./vendor/bin/phpunit --version
-          WP_MULTISITE=${{ matrix.multisite }} ./vendor/bin/phpunit -c ./tests/phpunit.xml.dist --coverage-clover coverage.xml .
+          WP_MULTISITE=${{ matrix.multisite }} ./vendor/bin/phpunit -c ./tests/phpunit.xml.dist --coverage-clover coverage.xml
 
       - name: Code Coverage
         run: |

@@ -47,6 +47,11 @@ Collaboration is cool. We'd love to work with you to improve Action Scheduler. [
 
 == Changelog ==
 
+= 3.7.1 - 2023-12-13 =
+* Release/3.7.0.
+* Tweak - WP 6.4 compatibility.
+* update semver to 5.7.2 because of a security vulnerability in 5.7.1.
+
 = 3.7.0 - 2023-11-20 =
 * Important: starting with this release, Action Scheduler follows an L-2 version policy (WordPress, and consequently PHP).
 * Add extended indexes for hook_status_scheduled_date_gmt and status_sheduled_date_gmt.

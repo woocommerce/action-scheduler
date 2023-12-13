@@ -34,7 +34,7 @@ jobs:
           key: ${{ runner.os }}-${{ hashFiles('./composer.lock') }}
 
       - name: Install dependencies
-        run: composer self-update && composer require --dev --no-update phpunit/phpunit:^9.5 && composer install && composer dump-autoload
+        run: composer self-update && composer require --dev --no-update phpunit/phpunit:^9.5 && composer update && composer install && composer dump-autoload
 
       - name: Init database and WordPress
         run: ./tests/bin/install.sh woo_test root root 127.0.0.1 latest

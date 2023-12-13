@@ -34,13 +34,13 @@ jobs:
           key: ${{ runner.os }}-${{ hashFiles('./composer.lock') }}
 
       - name: Install dependencies
-        run: composer self-update && composer install && composer dump-autoload
+        run: composer self-update && composer require --dev --no-update phpunit/phpunit:^9.5 && composer install && composer dump-autoload
 
       - name: Init database and WordPress
         run: ./tests/bin/install.sh woo_test root root 127.0.0.1 latest
 
       - name: Run tests and collect coverage
-        run: ./vendor/bin/phpunit -c ./tests/phpunit.xml.dist --coverage-clover coverage.xml
+        run: XDEBUG_MODE=coverage ./vendor/bin/phpunit -c ./tests/phpunit.xml.dist --coverage-clover coverage.xml
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v4-beta

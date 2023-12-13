@@ -7,8 +7,11 @@ use Action_Scheduler\Migration\LogMigrator;
  * @group migration
  */
 class LogMigrator_Test extends ActionScheduler_UnitTestCase {
-	function setUp() {
-		parent::setUp();
+	/**
+	 * @before
+	 */
+	function set_up() {
+		parent::set_up();
 		if ( ! taxonomy_exists( ActionScheduler_wpPostStore::GROUP_TAXONOMY )  ) {
 			// register the post type and taxonomy necessary for the store to work
 			$store = new ActionScheduler_wpPostStore();

@@ -9,14 +9,16 @@ class ActionScheduler_UnitTestCase extends WP_UnitTestCase {
 
 	/**
 	 * Perform test set-up work.
+	 * @before
 	 */
 	public function set_up() {
-		ActionScheduler_Callbacks::add_callbacks();
 		parent::set_up();
+		ActionScheduler_Callbacks::add_callbacks();
 	}
 
 	/**
 	 * Perform test tear-down work.
+	 * @after
 	 */
 	public function tear_down() {
 		ActionScheduler_Callbacks::remove_callbacks();

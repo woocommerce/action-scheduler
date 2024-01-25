@@ -138,41 +138,13 @@ class ActionScheduler_ListTable extends ActionScheduler_Abstract_ListTable {
 		);
 
 		self::$time_periods = array(
-			array(
-				'seconds' => YEAR_IN_SECONDS,
-				/* translators: %s: amount of time */
-				'names'   => _n_noop( '%s year', '%s years', 'action-scheduler' ),
-			),
-			array(
-				'seconds' => MONTH_IN_SECONDS,
-				/* translators: %s: amount of time */
-				'names'   => _n_noop( '%s month', '%s months', 'action-scheduler' ),
-			),
-			array(
-				'seconds' => WEEK_IN_SECONDS,
-				/* translators: %s: amount of time */
-				'names'   => _n_noop( '%s week', '%s weeks', 'action-scheduler' ),
-			),
-			array(
-				'seconds' => DAY_IN_SECONDS,
-				/* translators: %s: amount of time */
-				'names'   => _n_noop( '%s day', '%s days', 'action-scheduler' ),
-			),
-			array(
-				'seconds' => HOUR_IN_SECONDS,
-				/* translators: %s: amount of time */
-				'names'   => _n_noop( '%s hour', '%s hours', 'action-scheduler' ),
-			),
-			array(
-				'seconds' => MINUTE_IN_SECONDS,
-				/* translators: %s: amount of time */
-				'names'   => _n_noop( '%s minute', '%s minutes', 'action-scheduler' ),
-			),
-			array(
-				'seconds' => 1,
-				/* translators: %s: amount of time */
-				'names'   => _n_noop( '%s second', '%s seconds', 'action-scheduler' ),
-			),
+			YEAR_IN_SECONDS,
+			MONTH_IN_SECONDS,
+			WEEK_IN_SECONDS,
+			DAY_IN_SECONDS,
+			HOUR_IN_SECONDS,
+			MINUTE_IN_SECONDS,
+			1,
 		);
 
 		parent::__construct(
@@ -205,6 +177,42 @@ class ActionScheduler_ListTable extends ActionScheduler_Abstract_ListTable {
 	public function set_items_per_page_option( $status, $option, $value ) {
 		return $value;
 	}
+
+	/**
+	 * Translate periods in interval.
+	 * 
+	 * @link https://github.com/woocommerce/action-scheduler/issues/1011
+	 * @param int $time_period_index   Time period index in seconds.
+	 * @param int $periods_in_interval Periods in interval.
+	 * @return string
+	 */
+	private static function translate_periods_in_interval( $time_period_index, $periods_in_interval ) {
+		switch ( $time_period_index ) {
+			case YEAR_IN_SECONDS:
+				/* translators: %s: amount of time */
+				return _n( '%s year', '%s years', $periods_in_interval, 'action-scheduler' );
+			case MONTH_IN_SECONDS:
+				/* translators: %s: amount of time */
+				return _n( '%s month', '%s months', $periods_in_interval, 'action-scheduler' );
+			case WEEK_IN_SECONDS:
+				/* translators: %s: amount of time */
+				return _n( '%s week', '%s weeks', $periods_in_interval, 'action-scheduler' );
+			case DAY_IN_SECONDS:
+				/* translators: %s: amount of time */
+				return _n( '%s day', '%s days', $periods_in_interval, 'action-scheduler' );
+			case HOUR_IN_SECONDS:
+				/* translators: %s: amount of time */
+				return _n( '%s day', '%s days', $periods_in_interval, 'action-scheduler' );
+			case MINUTE_IN_SECONDS:
+				/* translators: %s: amount of time */
+				return _n( '%s minute', '%s minutes', $periods_in_interval, 'action-scheduler' );
+			case 1:
+			default:
+				/* translators: %s: amount of time */
+				return _n( '%s second', '%s seconds', $periods_in_interval, 'action-scheduler' );
+		}
+	}
+
 	/**
 	 * Convert an interval of seconds into a two part human friendly string.
 	 *
@@ -228,14 +236,20 @@ class ActionScheduler_ListTable extends ActionScheduler_Abstract_ListTable {
 
 		for ( $time_period_index = 0, $periods_included = 0, $seconds_remaining = $interval; $time_period_index < count( self::$time_periods ) && $seconds_remaining > 0 && $periods_included < $periods_to_include; $time_period_index++ ) {
 
-			$periods_in_interval = floor( $seconds_remaining / self::$time_periods[ $time_period_index ]['seconds'] );
+			$periods_in_interval = floor( $seconds_remaining / self::$time_periods[ $time_period_index ] );
 
 			if ( $periods_in_interval > 0 ) {
 				if ( ! empty( $output ) ) {
 					$output .= ' ';
 				}
-				$output .= sprintf( _n( self::$time_periods[ $time_period_index ]['names'][0], self::$time_periods[ $time_period_index ]['names'][1], $periods_in_interval, 'action-scheduler' ), $periods_in_interval );
-				$seconds_remaining -= $periods_in_interval * self::$time_periods[ $time_period_index ]['seconds'];
+				$output .= sprintf(
+					self::translate_periods_in_interval(
+						self::$time_periods[ $time_period_index ],
+						$periods_in_interval
+					),
+					$periods_in_interval
+				);
+				$seconds_remaining -= $periods_in_interval * self::$time_periods[ $time_period_index ];
 				$periods_included++;
 			}
 		}

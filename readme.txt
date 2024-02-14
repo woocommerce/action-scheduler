@@ -1,7 +1,7 @@
 === Action Scheduler ===
 Contributors: Automattic, wpmuguru, claudiosanches, peterfabian1000, vedjain, jamosova, obliviousharmony, konamiman, sadowski, royho, barryhughes-1
 Tags: scheduler, cron
-Stable tag: 3.7.1
+Stable tag: 3.7.2
 License: GPLv3
 Requires at least: 6.2
 Tested up to: 6.4
@@ -46,6 +46,9 @@ Action Scheduler is developed and maintained by [Automattic](http://automattic.c
 Collaboration is cool. We'd love to work with you to improve Action Scheduler. [Pull Requests](https://github.com/woocommerce/action-scheduler/pulls) welcome.
 
 == Changelog ==
+
+= 3.7.2 - 2024-02-14 =
+* No longer user variables in `_n()` translation function.
 
 = 3.7.1 - 2023-12-13 =
 * update semver to 5.7.2 because of a security vulnerability in 5.7.1.

@@ -699,8 +699,8 @@ abstract class ActionScheduler_Abstract_ListTable extends WP_List_Table {
 
 		// Translated status labels.
 		$status_labels             = ActionScheduler_Store::instance()->get_status_labels();
-		$status_labels['all']      = _x( 'All', 'status labels', 'action-scheduler' );
-		$status_labels['past-due'] = _x( 'Past-due', 'status labels', 'action-scheduler' );
+		$status_labels['all']      = esc_html_x( 'All', 'status labels', 'action-scheduler' );
+		$status_labels['past-due'] = esc_html_x( 'Past-due', 'status labels', 'action-scheduler' );
 
 		foreach ( $this->status_counts as $status_slug => $count ) {
 

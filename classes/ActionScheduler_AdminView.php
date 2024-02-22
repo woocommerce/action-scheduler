@@ -192,8 +192,8 @@ class ActionScheduler_AdminView extends ActionScheduler_AdminView_Deprecated {
 		# Print notice.
 		echo '<div class="notice notice-warning"><p>';
 		printf(
+			// translators: 1) is the number of affected actions, 2) is a link to an admin screen.
 			_n(
-				// translators: 1) is the number of affected actions, 2) is a link to an admin screen.
 				'<strong>Action Scheduler:</strong> %1$d <a href="%2$s">past-due action</a> found; something may be wrong. <a href="https://actionscheduler.org/faq/#my-site-has-past-due-actions-what-can-i-do" target="_blank">Read documentation &raquo;</a>',
 				'<strong>Action Scheduler:</strong> %1$d <a href="%2$s">past-due actions</a> found; something may be wrong. <a href="https://actionscheduler.org/faq/#my-site-has-past-due-actions-what-can-i-do" target="_blank">Read documentation &raquo;</a>',
 				$num_pastdue_actions,
@@ -224,6 +224,7 @@ class ActionScheduler_AdminView extends ActionScheduler_AdminView_Deprecated {
 				'id'      => 'action_scheduler_about',
 				'title'   => __( 'About', 'action-scheduler' ),
 				'content' =>
+					// translators: %s is the Action Scheduler version.
 					'<h2>' . sprintf( __( 'About Action Scheduler %s', 'action-scheduler' ), $as_version ) . '</h2>' .
 					'<p>' .
 						__( 'Action Scheduler is a scalable, traceable job queue for background processing large sets of actions. Action Scheduler works by triggering an action hook to run at some time in the future. Scheduled actions can also be scheduled to run on a recurring schedule.', 'action-scheduler' ) .

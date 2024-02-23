@@ -11,7 +11,7 @@
  * @param string $hook The hook to trigger.
  * @param array  $args Arguments to pass when the hook triggers.
  * @param string $group The group to assign this job to.
- * @param bool   $unique Whether the action should be unique.
+ * @param bool   $unique Whether the action should be unique. It will not be scheduled if another pending or running action has the same hook and group parameters.
  * @param int    $priority Lower values take precedence over higher values. Defaults to 10, with acceptable values falling in the range 0-255.
  *
  * @return int The action ID. Zero if there was an error scheduling the action.
@@ -60,7 +60,7 @@ function as_enqueue_async_action( $hook, $args = array(), $group = '', $unique =
  * @param string $hook The hook to trigger.
  * @param array  $args Arguments to pass when the hook triggers.
  * @param string $group The group to assign this job to.
- * @param bool   $unique Whether the action should be unique.
+ * @param bool   $unique Whether the action should be unique. It will not be scheduled if another pending or running action has the same hook and group parameters.
  * @param int    $priority Lower values take precedence over higher values. Defaults to 10, with acceptable values falling in the range 0-255.
  *
  * @return int The action ID. Zero if there was an error scheduling the action.
@@ -112,7 +112,7 @@ function as_schedule_single_action( $timestamp, $hook, $args = array(), $group =
  * @param string $hook The hook to trigger.
  * @param array  $args Arguments to pass when the hook triggers.
  * @param string $group The group to assign this job to.
- * @param bool   $unique Whether the action should be unique.
+ * @param bool   $unique Whether the action should be unique. It will not be scheduled if another pending or running action has the same hook and group parameters.
  * @param int    $priority Lower values take precedence over higher values. Defaults to 10, with acceptable values falling in the range 0-255.
  *
  * @return int The action ID. Zero if there was an error scheduling the action.
@@ -197,7 +197,7 @@ function as_schedule_recurring_action( $timestamp, $interval_in_seconds, $hook, 
  * @param string $hook The hook to trigger.
  * @param array  $args Arguments to pass when the hook triggers.
  * @param string $group The group to assign this job to.
- * @param bool   $unique Whether the action should be unique.
+ * @param bool   $unique Whether the action should be unique. It will not be scheduled if another pending or running action has the same hook and group parameters.
  * @param int    $priority Lower values take precedence over higher values. Defaults to 10, with acceptable values falling in the range 0-255.
  *
  * @return int The action ID. Zero if there was an error scheduling the action.

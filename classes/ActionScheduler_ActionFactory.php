@@ -351,7 +351,26 @@ class ActionScheduler_ActionFactory {
 	 */
 	protected function store_unique_action( ActionScheduler_Action $action ) {
 		$store = ActionScheduler_Store::instance();
-		return method_exists( $store, 'save_unique_action' ) ?
-			$store->save_unique_action( $action ) : $store->save_action( $action );
+		if ( method_exists( $store, 'save_unique_action' ) ) {
+			return $store->save_unique_action( $action );
+		} else {
+			/**
+			 * Fallback to non-unique action if the store doesn't support unique actions.
+			 * We try to save the action as unique, accepting that there might be a race condition.
+			 * This is likely still better than givinig up on unique actions entirely.
+			 */
+			$existing_action_id = (int) $store->find_action(
+				$action->get_hook(),
+				array(
+					'args'   => $action->get_args(),
+					'status' => ActionScheduler_Store::STATUS_PENDING,
+					'group'  => $action->get_group(),
+				)
+			);
+			if ( $existing_action_id > 0 ) {
+				return 0;
+			}
+			return $store->save_action( $action );
+		}
 	}
 }

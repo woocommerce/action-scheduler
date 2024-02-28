@@ -353,6 +353,20 @@ class Procedural_API_Test extends ActionScheduler_UnitTestCase {
 	}
 
 	/**
+	 * Test enqueueing a unique action using the hybrid store.
+	 * This is using a best-effort approach, so it's possible that the action will be enqueued even if it's not unique.
+	 */
+	public function test_as_enqueue_async_action_unique_hybrid_best_effort() {
+		$this->set_action_scheduler_store( new ActionScheduler_HybridStore() );
+
+		$action_id = as_enqueue_async_action( 'hook_1', array( 'a' ), 'dummy', true );
+		$this->assertValidAction( $action_id );
+
+		$action_id_duplicate = as_enqueue_async_action( 'hook_1', array( 'a' ), 'dummy', true );
+		$this->assertEquals( 0, $action_id_duplicate );
+	}
+
+	/**
 	 * Test as_schedule_single_action with unique param.
 	 */
 	public function test_as_schedule_single_action_unique() {

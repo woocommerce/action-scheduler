@@ -16,7 +16,11 @@ jobs:
         exclude:
           # WordPress 6.3+ requires PHP 7.0+
           - php: 5.6
-            wp: [ '6.3', 'latest', 'nightly' ]
+            wp: 6.3
+          - php: 5.6
+            wp: latest
+          - php: 5.6
+            wp: nightly
     services:
       database:
         image: mysql:5.6

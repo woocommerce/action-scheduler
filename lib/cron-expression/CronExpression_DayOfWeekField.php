@@ -53,8 +53,8 @@ class CronExpression_DayOfWeekField extends CronExpression_AbstractField
         if (strpos($value, '#')) {
             list($weekday, $nth) = explode('#', $value);
             // Validate the hash fields
-            if ($weekday < 1 || $weekday > 5) {
-                throw new InvalidArgumentException("Weekday must be a value between 1 and 5. {$weekday} given");
+            if ($weekday < 0 || $weekday > 7) {
+                throw new InvalidArgumentException("Weekday must be a value between 0 and 7. {$weekday} given");
             }
             if ($nth > 5) {
                 throw new InvalidArgumentException('There are never more than 5 of a given weekday in a month');

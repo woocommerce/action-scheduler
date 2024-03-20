@@ -1,7 +1,7 @@
 === Action Scheduler ===
 Contributors: Automattic, wpmuguru, claudiosanches, peterfabian1000, vedjain, jamosova, obliviousharmony, konamiman, sadowski, royho, barryhughes-1
 Tags: scheduler, cron
-Stable tag: 3.7.2
+Stable tag: 3.7.3
 License: GPLv3
 Requires at least: 6.2
 Tested up to: 6.5
@@ -46,6 +46,14 @@ Action Scheduler is developed and maintained by [Automattic](http://automattic.c
 Collaboration is cool. We'd love to work with you to improve Action Scheduler. [Pull Requests](https://github.com/woocommerce/action-scheduler/pulls) welcome.
 
 == Changelog ==
+
+= 3.7.3 - 2024-03-20 =
+* Do not iterate over all of GET when building form in list table.
+* Fix a few issues reported by PCP (Plugin Check Plugin).
+* Try to save actions as unique even when the store doesn't support it.
+* Tweak - WP 6.4 compatibility.
+* Update "Tested up to" tag to WordPress 6.5.
+* update version in package-lock.json.
 
 = 3.7.2 - 2024-02-14 =
 * No longer user variables in `_n()` translation function.

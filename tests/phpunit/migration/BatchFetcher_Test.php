@@ -8,8 +8,11 @@ use ActionScheduler_wpPostStore as PostStore;
  * @group migration
  */
 class BatchFetcher_Test extends ActionScheduler_UnitTestCase {
-	public function setUp() {
-		parent::setUp();
+	/**
+	 * @before
+	 */
+	public function set_up() {
+		parent::set_up();
 		if ( ! taxonomy_exists( PostStore::GROUP_TAXONOMY ) ) {
 			// register the post type and taxonomy necessary for the store to work
 			$store = new PostStore();

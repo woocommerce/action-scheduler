@@ -445,11 +445,19 @@ class Procedural_API_Test extends ActionScheduler_UnitTestCase {
 
 		// ensure that all four errors were logged to error_log.
 		$logged_errors = stream_get_contents( $error_capture );
-		$this->assertContains( 'Caught exception while enqueuing action "hook_17": Error saving action', $logged_errors );
-		$this->assertContains( 'Caught exception while enqueuing action "hook_18": Error saving action', $logged_errors );
-		$this->assertContains( 'Caught exception while enqueuing action "hook_19": Error saving action', $logged_errors );
-		$this->assertContains( 'Caught exception while enqueuing action "hook_20": Error saving action', $logged_errors );
-		$this->assertContains( "Unknown column 'priority' in 'field list'", $logged_errors );
+		if ( method_exists( $this, 'assertStringContainsString' ) ) {
+			$this->assertStringContainsString( 'Caught exception while enqueuing action "hook_17": Error saving action', $logged_errors );
+			$this->assertStringContainsString( 'Caught exception while enqueuing action "hook_18": Error saving action', $logged_errors );
+			$this->assertStringContainsString( 'Caught exception while enqueuing action "hook_19": Error saving action', $logged_errors );
+			$this->assertStringContainsString( 'Caught exception while enqueuing action "hook_20": Error saving action', $logged_errors );
+			$this->assertStringContainsString( "Unknown column 'priority' in 'field list'", $logged_errors );
+		} else {
+			$this->assertContains( 'Caught exception while enqueuing action "hook_17": Error saving action', $logged_errors );
+			$this->assertContains( 'Caught exception while enqueuing action "hook_18": Error saving action', $logged_errors );
+			$this->assertContains( 'Caught exception while enqueuing action "hook_19": Error saving action', $logged_errors );
+			$this->assertContains( 'Caught exception while enqueuing action "hook_20": Error saving action', $logged_errors );
+			$this->assertContains( "Unknown column 'priority' in 'field list'", $logged_errors );
+		}
 
 		// recreate the priority column.
 		$wpdb->query( "ALTER TABLE {$wpdb->actionscheduler_actions} ADD COLUMN priority tinyint(10) UNSIGNED NOT NULL DEFAULT 10" );

@@ -7,14 +7,15 @@ use Action_Scheduler\Tests\DataStores\AbstractStoreTest;
  * @group tables
  */
 class ActionScheduler_DBStore_Test extends AbstractStoreTest {
+	/**
+	 * @before
+	 */
+	public function set_up() {
+		parent::set_up();
 
-	public function setUp() {
 		global $wpdb;
-
 		// Delete all actions before each test.
 		$wpdb->query( "DELETE FROM {$wpdb->actionscheduler_actions}" );
-
-		parent::setUp();
 	}
 
 	/**

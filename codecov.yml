@@ -1,5 +1,5 @@
 codecov:
-  branch: master
+  branch: trunk
 
 coverage:
   ignore:

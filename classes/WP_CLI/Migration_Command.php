@@ -142,6 +142,7 @@ class Migration_Command extends WP_CLI_Command {
 			WP_CLI::debug( 'Beginning migration of batch: ' . print_r( $batch, true ) );
 		}, 10, 1 );
 		add_action( 'action_scheduler/migration_batch_complete', function ( $batch ) {
+			/** @var array $batch */
 			WP_CLI::log( sprintf( 'Completed migration of %d actions', count( $batch ) ) );
 		}, 10, 1 );
 	}

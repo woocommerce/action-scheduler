@@ -10,7 +10,7 @@ use Action_Scheduler\WP_CLI\ProgressBar;
 class ActionScheduler_WPCLI_QueueRunner extends ActionScheduler_Abstract_QueueRunner {
 
 	/** @var array */
-	protected $actions;
+	protected $actions = array();
 
 	/** @var  ActionScheduler_ActionClaim */
 	protected $claim;

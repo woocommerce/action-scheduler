@@ -326,6 +326,7 @@ abstract class ActionScheduler_Abstract_ListTable extends WP_List_Table {
 			array(
 				'page',
 				'status',
+				'tab',
 			)
 		);
 	}

@@ -8,7 +8,7 @@
  * Version: 3.7.3
  * License: GPLv3
  * Requires at least: 6.2
- * Tested up to: 6.4
+ * Tested up to: 6.5
  * Requires PHP: 5.6
  *
  * Copyright 2019 Automattic, Inc.  (https://automattic.com/contact/)

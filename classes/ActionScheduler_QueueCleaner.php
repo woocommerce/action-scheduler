@@ -177,7 +177,7 @@ class ActionScheduler_QueueCleaner {
 
 	/**
 	 * Mark actions that have been running for more than a given time limit as failed, based on
-	 * the assumption some uncatachable and unloggable fatal error occurred during processing.
+	 * the assumption some uncatchable and unloggable fatal error occurred during processing.
 	 *
 	 * When called by ActionScheduler_Abstract_QueueRunner::run_cleanup(), the time limit passed
 	 * as a parameter is 10x the time limit used for queue processing.

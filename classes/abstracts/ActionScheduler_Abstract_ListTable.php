@@ -455,7 +455,7 @@ abstract class ActionScheduler_Abstract_ListTable extends WP_List_Table {
 	/**
 	 * Prepares the data to feed WP_Table_List.
 	 *
-	 * This has the core for selecting, sorting and filting data. To keep the code simple
+	 * This has the core for selecting, sorting and filtering data. To keep the code simple
 	 * its logic is split among many methods (get_items_query_*).
 	 *
 	 * Beside populating the items this function will also count all the records that matches

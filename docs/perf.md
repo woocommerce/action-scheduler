@@ -12,7 +12,7 @@ Specifically, Action Scheduler will only process actions in a request until:
 * processing another 3 actions would exceed 30 seconds of total request time, based on the average processing time for the current batch
 * in a single concurrent queue
 
-While Action Scheduler will initiate an asychronous loopback request to process additional actions, on sites with very large queues, this can result in slow processing times.
+While Action Scheduler will initiate an asynchronous loopback request to process additional actions, on sites with very large queues, this can result in slow processing times.
 
 While using [WP CLI to process queues](/wp-cli/) is the best approach to increasing processing speed, on occasion, that is not a viable option. In these cases, it's also possible to increase the processing thresholds in Action Scheduler to increase the rate at which actions are processed by the default queue runner.
 

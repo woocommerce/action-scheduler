@@ -712,6 +712,6 @@ class ActionScheduler_DBStore_Test extends AbstractStoreTest {
 		remove_action( 'foo', $watcher );
 		add_action( 'parent', $parent_action );
 
-		$this->assertEquals( range( 1, 20 ), $actual_order, 'Once claimed, scheduled actions are executed in the exepcted order, including if "child actions" are scheduled from within another action.' );
+		$this->assertEquals( range( 1, 20 ), $actual_order, 'Once claimed, scheduled actions are executed in the expected order, including if "child actions" are scheduled from within another action.' );
 	}
 }

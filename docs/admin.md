@@ -5,7 +5,7 @@ description: Learn how to administer background jobs with the Action Scheduler j
 
 Action Scheduler has a built in administration screen for monitoring, debugging and manually triggering scheduled actions.
 
-The administration interface is accesible through both:
+The administration interface is accessible through both:
 
 1. **Tools > Scheduled Actions**
 1. **WooCommerce > Status > Scheduled Actions**, when WooCommerce is installed.

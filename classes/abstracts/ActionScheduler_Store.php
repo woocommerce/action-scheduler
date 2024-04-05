@@ -248,7 +248,7 @@ abstract class ActionScheduler_Store extends ActionScheduler_Store_Deprecated {
 	}
 
 	/**
-	 * Get the time MySQL formated date/time string for an action's (next) scheduled date.
+	 * Get the time MySQL formatted date/time string for an action's (next) scheduled date.
 	 *
 	 * @param ActionScheduler_Action $action
 	 * @param DateTime $scheduled_date (optional)
@@ -265,7 +265,7 @@ abstract class ActionScheduler_Store extends ActionScheduler_Store_Deprecated {
 	}
 
 	/**
-	 * Get the time MySQL formated date/time string for an action's (next) scheduled date.
+	 * Get the time MySQL formatted date/time string for an action's (next) scheduled date.
 	 *
 	 * @param ActionScheduler_Action $action
 	 * @param DateTime $scheduled_date (optional)

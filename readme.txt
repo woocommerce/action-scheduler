@@ -13,7 +13,7 @@ Action Scheduler - Job Queue for WordPress
 
 Action Scheduler is a scalable, traceable job queue for background processing large sets of actions in WordPress. It's specially designed to be distributed in WordPress plugins.
 
-Action Scheduler works by triggering an action hook to run at some time in the future. Each hook can be scheduled with unique data, to allow callbacks to perform operations on that data. The hook can also be scheduled to run on one or more occassions.
+Action Scheduler works by triggering an action hook to run at some time in the future. Each hook can be scheduled with unique data, to allow callbacks to perform operations on that data. The hook can also be scheduled to run on one or more occasions.
 
 Think of it like an extension to `do_action()` which adds the ability to delay and repeat a hook.
 
@@ -63,7 +63,7 @@ Collaboration is cool. We'd love to work with you to improve Action Scheduler. [
 
 = 3.7.0 - 2023-11-20 =
 * Important: starting with this release, Action Scheduler follows an L-2 version policy (WordPress, and consequently PHP).
-* Add extended indexes for hook_status_scheduled_date_gmt and status_sheduled_date_gmt.
+* Add extended indexes for hook_status_scheduled_date_gmt and status_scheduled_date_gmt.
 * Catch and log exceptions thrown when actions can't be created, e.g. under a corrupt database schema.
 * Tweak - WP 6.4 compatibility.
 * Update unit tests for upcoming dependency version policy.
@@ -158,7 +158,7 @@ Collaboration is cool. We'd love to work with you to improve Action Scheduler. [
 * Dev - ActionScheduler_wcSystemStatus PHPCS fixes (props @ovidiul). #761
 * Dev - ActionScheduler_DBLogger.php PHPCS fixes (props @ovidiul). #768
 * Dev - Fixed phpcs for ActionScheduler_Schedule_Deprecated (props @ovidiul). #762
-* Dev - Improve actions table indicies (props @glagonikas). #774 & #777
+* Dev - Improve actions table indices (props @glagonikas). #774 & #777
 * Dev - PHPCS fixes for ActionScheduler_DBStore.php (props @ovidiul). #769 & #778
 * Dev - PHPCS Fixes for ActionScheduler_Abstract_ListTable (props @ovidiul). #763 & #779
 * Dev - Adds new filter action_scheduler_claim_actions_order_by to allow tuning of the claim query (props @glagonikas). #773

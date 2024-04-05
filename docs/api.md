@@ -3,7 +3,7 @@ description: Reference guide for background processing functions provided by the
 ---
 # API Reference
 
-Action Scheduler provides a range of functions for scheduling hooks to run at some time in the future on one or more occassions.
+Action Scheduler provides a range of functions for scheduling hooks to run at some time in the future on one or more occasions.
 
 To understand the scheduling functions, it can help to think of them as extensions to WordPress' `do_action()` function that add the ability to delay and repeat when the hook will be triggered.
 

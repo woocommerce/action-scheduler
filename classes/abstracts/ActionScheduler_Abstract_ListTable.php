@@ -544,7 +544,7 @@ abstract class ActionScheduler_Abstract_ListTable extends WP_List_Table {
 
 	/**
 	 * Set the data for displaying. It will attempt to unserialize (There is a chance that some columns
-	 * are serialized). This can be override in child classes for futher data transformation.
+	 * are serialized). This can be override in child classes for further data transformation.
 	 *
 	 * @param array $items Items array.
 	 */
@@ -645,7 +645,7 @@ abstract class ActionScheduler_Abstract_ListTable extends WP_List_Table {
 	}
 
 	/**
-	 * Default column formatting, it will escape everythig for security.
+	 * Default column formatting, it will escape everything for security.
 	 *
 	 * @param array  $item The item array.
 	 * @param string $column_name Column name to display.

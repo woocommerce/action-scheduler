@@ -2,6 +2,7 @@
 
 = 3.7.4 - 2024-04-05 =
 * Give a clear description of how the $unique parameter works.
+* Merge release/3.7.3 into trunk.
 * Preserve the tab field if set.
 * Tweak - WP 6.5 compatibility.
 

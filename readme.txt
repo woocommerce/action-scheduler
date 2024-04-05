@@ -1,7 +1,7 @@
 === Action Scheduler ===
 Contributors: Automattic, wpmuguru, claudiosanches, peterfabian1000, vedjain, jamosova, obliviousharmony, konamiman, sadowski, royho, barryhughes-1
 Tags: scheduler, cron
-Stable tag: 3.7.3
+Stable tag: 3.7.4
 License: GPLv3
 Requires at least: 6.2
 Tested up to: 6.5
@@ -46,6 +46,11 @@ Action Scheduler is developed and maintained by [Automattic](http://automattic.c
 Collaboration is cool. We'd love to work with you to improve Action Scheduler. [Pull Requests](https://github.com/woocommerce/action-scheduler/pulls) welcome.
 
 == Changelog ==
+
+= 3.7.4 - 2024-04-05 =
+* Give a clear description of how the $unique parameter works.
+* Preserve the tab field if set.
+* Tweak - WP 6.5 compatibility.
 
 = 3.7.3 - 2024-03-20 =
 * Do not iterate over all of GET when building form in list table.

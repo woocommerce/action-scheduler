@@ -58,9 +58,11 @@ abstract class ActionScheduler_Abstract_QueueRunner extends ActionScheduler_Abst
 			 *
 			 * @param int    $type    Error level expressed as an integer.
 			 * @param string $message Error message.
+			 * @param string $file    File in which the error occurred.
+			 * @param int    $line    Line number at which the error occurred.
 			 */
-			function ( $type, $message ) {
-				throw new Exception( $message );
+			function ( $type, $message, $file, $line ) {
+				throw new ErrorException( $message, 0, $type, $file, $line );
 			},
 			E_USER_ERROR | E_RECOVERABLE_ERROR
 		);

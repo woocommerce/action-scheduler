@@ -1,11 +1,9 @@
 *** Changelog ***
 
 = 3.8.0 - 2024-05-22 =
-* Bump "Tested up to" version to 6.5.
-* Fix typos in perf.md.
-* Merge Release/3.7.4 into trunk.
-* Tweak - WP 6.5 compatibility.
-* Update minimum requirements for WordPress (and PHP). Fix test matrix.
+* Documentation - Fixed typos in perf.md.
+* Update - We now require WordPress 6.3 or higher.
+* Update - We now require PHP 7.0 or higher.
 
 = 3.7.4 - 2024-04-05 =
 * Give a clear description of how the $unique parameter works.

@@ -47,6 +47,13 @@ Collaboration is cool. We'd love to work with you to improve Action Scheduler. [
 
 == Changelog ==
 
+= 3.8.0 - 2024-05-22 =
+* Bump "Tested up to" version to 6.5.
+* Fix typos in perf.md.
+* Merge Release/3.7.4 into trunk.
+* Tweak - WP 6.5 compatibility.
+* Update minimum requirements for WordPress (and PHP). Fix test matrix.
+
 = 3.7.4 - 2024-04-05 =
 * Give a clear description of how the $unique parameter works.
 * Preserve the tab field if set.

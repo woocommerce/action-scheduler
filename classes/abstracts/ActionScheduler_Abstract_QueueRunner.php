@@ -44,14 +44,14 @@ abstract class ActionScheduler_Abstract_QueueRunner extends ActionScheduler_Abst
 	 * Process an individual action.
 	 *
 	 * @param int $action_id The action ID to process.
-	 * @param string $context Optional identifer for the context in which this action is being processed, e.g. 'WP CLI' or 'WP Cron'
+	 * @param string $context Optional identifier for the context in which this action is being processed, e.g. 'WP CLI' or 'WP Cron'
 	 *        Generally, this should be capitalised and not localised as it's a proper noun.
 	 */
 	public function process_action( $action_id, $context = '' ) {
 		// Temporarily override the error handler while we process the current action.
 		set_error_handler(
 			/**
-			 * Temporary error handler which can catch errors and convert them into exceptions. This faciliates more
+			 * Temporary error handler which can catch errors and convert them into exceptions. This facilitates more
 			 * robust error handling across all supported PHP versions.
 			 *
 			 * @throws Exception
@@ -364,7 +364,7 @@ abstract class ActionScheduler_Abstract_QueueRunner extends ActionScheduler_Abst
 	 * Process actions in the queue.
 	 *
 	 * @author Jeremy Pry
-	 * @param string $context Optional identifer for the context in which this action is being processed, e.g. 'WP CLI' or 'WP Cron'
+	 * @param string $context Optional identifier for the context in which this action is being processed, e.g. 'WP CLI' or 'WP Cron'
 	 *        Generally, this should be capitalised and not localised as it's a proper noun.
 	 * @return int The number of actions processed.
 	 */

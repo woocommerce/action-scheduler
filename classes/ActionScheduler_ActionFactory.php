@@ -246,7 +246,7 @@ class ActionScheduler_ActionFactory {
 	 * This general purpose method can be used in place of specific methods such as async(),
 	 * async_unique(), single() or single_unique(), etc.
 	 *
-	 * @internal Not intended for public use, should not be overriden by subclasses.
+	 * @internal Not intended for public use, should not be overridden by subclasses.
 	 *
 	 * @param array $options {
 	 *     Describes the action we wish to schedule.
@@ -357,7 +357,7 @@ class ActionScheduler_ActionFactory {
 			/**
 			 * Fallback to non-unique action if the store doesn't support unique actions.
 			 * We try to save the action as unique, accepting that there might be a race condition.
-			 * This is likely still better than givinig up on unique actions entirely.
+			 * This is likely still better than giving up on unique actions entirely.
 			 */
 			$existing_action_id = (int) $store->find_action(
 				$action->get_hook(),

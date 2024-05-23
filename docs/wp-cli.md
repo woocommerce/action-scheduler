@@ -53,7 +53,7 @@ For example, consider two scheduled actions for the same subscription:
 * `scheduled_payment` scheduled for `2015-11-13 00:00:00` and
 * `scheduled_expiration` scheduled for `2015-11-13 00:01:00`.
 
-Under normal conditions, Action Scheduler will ensure the `scheduled_payment` action is run before the `scheduled_expiration` action. Becuase that's how they are scheduled.
+Under normal conditions, Action Scheduler will ensure the `scheduled_payment` action is run before the `scheduled_expiration` action. Because that's how they are scheduled.
 
 However, when using the `--hooks` option, the `scheduled_payment` and `scheduled_expiration` actions will be processed in separate queues. As a result, this dependency is not guaranteed.
 

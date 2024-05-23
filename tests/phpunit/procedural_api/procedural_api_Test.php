@@ -353,7 +353,7 @@ class Procedural_API_Test extends ActionScheduler_UnitTestCase {
 	}
 
 	/**
-	 * Test enqueueing a unique action using the hybrid store.
+	 * Test enqueuing a unique action using the hybrid store.
 	 * This is using a best-effort approach, so it's possible that the action will be enqueued even if it's not unique.
 	 */
 	public function test_as_enqueue_async_action_unique_hybrid_best_effort() {

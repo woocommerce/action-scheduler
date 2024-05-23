@@ -26,7 +26,7 @@
 
 = 3.7.0 - 2023-11-20 =
 * Important: starting with this release, Action Scheduler follows an L-2 version policy (WordPress, and consequently PHP).
-* Add extended indexes for hook_status_scheduled_date_gmt and status_sheduled_date_gmt.
+* Add extended indexes for hook_status_scheduled_date_gmt and status_scheduled_date_gmt.
 * Catch and log exceptions thrown when actions can't be created, e.g. under a corrupt database schema.
 * Tweak - WP 6.4 compatibility.
 * Update unit tests for upcoming dependency version policy.
@@ -121,7 +121,7 @@
 * Dev - ActionScheduler_wcSystemStatus PHPCS fixes (props @ovidiul). #761
 * Dev - ActionScheduler_DBLogger.php PHPCS fixes (props @ovidiul). #768
 * Dev - Fixed phpcs for ActionScheduler_Schedule_Deprecated (props @ovidiul). #762
-* Dev - Improve actions table indicies (props @glagonikas). #774 & #777
+* Dev - Improve actions table indices (props @glagonikas). #774 & #777
 * Dev - PHPCS fixes for ActionScheduler_DBStore.php (props @ovidiul). #769 & #778
 * Dev - PHPCS Fixes for ActionScheduler_Abstract_ListTable (props @ovidiul). #763 & #779
 * Dev - Adds new filter action_scheduler_claim_actions_order_by to allow tuning of the claim query (props @glagonikas). #773

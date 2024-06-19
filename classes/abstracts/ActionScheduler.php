@@ -197,6 +197,8 @@ abstract class ActionScheduler {
 		if ( defined( 'WP_CLI' ) && WP_CLI ) {
 			WP_CLI::add_command( 'action-scheduler', 'ActionScheduler_WPCLI_Scheduler_command' );
 			WP_CLI::add_command( 'action-scheduler', 'ActionScheduler_WPCLI_Clean_Command' );
+			WP_CLI::add_command( 'action-scheduler action', 'ActionScheduler_WPCLI_Action_Command' );
+			WP_CLI::add_command( 'action-scheduler', 'ActionScheduler_WPCLI_System_Command' );
 			if ( ! ActionScheduler_DataController::is_migration_complete() && Controller::instance()->allow_migration() ) {
 				$command = new Migration_Command();
 				$command->register();
@@ -253,6 +255,7 @@ abstract class ActionScheduler {
 			'ActionScheduler_Abstract_Schema'            => true,
 			'ActionScheduler_Store'                      => true,
 			'ActionScheduler_TimezoneHelper'             => true,
+			'ActionScheduler_WPCLI_Command'              => true,
 		);
 
 		return isset( $abstracts[ $class ] ) && $abstracts[ $class ];
@@ -297,9 +300,11 @@ abstract class ActionScheduler {
 	 */
 	protected static function is_class_cli( $class ) {
 		static $cli_segments = array(
-			'QueueRunner' => true,
-			'Command'     => true,
-			'ProgressBar' => true,
+			'QueueRunner'                          => true,
+			'Command'                              => true,
+			'ProgressBar'                          => true,
+			'ActionScheduler_WPCLI_Action_Command' => true,
+			'ActionScheduler_WPCLI_System_Command' => true,
 		);
 
 		$segments = explode( '_', $class );

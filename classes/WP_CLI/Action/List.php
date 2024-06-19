@@ -1,5 +1,8 @@
-<?php declare( strict_types=1 );
+<?php
 
+/**
+ * WP-CLI command: action-scheduler action list
+ */
 class ActionScheduler_WPCLI_Action_List_Command extends ActionScheduler_WPCLI_Command {
 
 	const PARAMETERS = array(
@@ -23,7 +26,7 @@ class ActionScheduler_WPCLI_Action_List_Command extends ActionScheduler_WPCLI_Co
 	 *
 	 * @return void
 	 */
-	public function execute() : void {
+	public function execute() {
 		$store  = \ActionScheduler::store();
 		$logger = \ActionScheduler::logger();
 
@@ -44,9 +47,13 @@ class ActionScheduler_WPCLI_Action_List_Command extends ActionScheduler_WPCLI_Co
 
 		$formatter = new \WP_CLI\Formatter( $this->assoc_args, $fields );
 
-		$query_args = array_filter( $this->assoc_args, static function ( string $key ) : bool {
-			return in_array( $key, static::PARAMETERS );
-		}, ARRAY_FILTER_USE_KEY );
+		$query_args = array_filter(
+			$this->assoc_args,
+			static function ( $key ) {
+				return in_array( $key, static::PARAMETERS, true );
+			},
+			ARRAY_FILTER_USE_KEY
+		);
 
 		if ( ! empty( $query_args['args'] ) ) {
 			$query_args['args'] = json_decode( $query_args['args'], true );

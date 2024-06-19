@@ -1,6 +1,8 @@
-<?php declare( strict_types=1 );
+<?php
 
-
+/**
+ * WP-CLI command: action-scheduler action get
+ */
 class ActionScheduler_WPCLI_Action_Get_Command extends ActionScheduler_WPCLI_Command {
 
 	/**
@@ -8,7 +10,7 @@ class ActionScheduler_WPCLI_Action_Get_Command extends ActionScheduler_WPCLI_Com
 	 *
 	 * @return void
 	 */
-	public function execute() : void {
+	public function execute() {
 		$action_id = $this->args[0];
 		$store     = \ActionScheduler::store();
 		$logger    = \ActionScheduler::logger();
@@ -34,8 +36,9 @@ class ActionScheduler_WPCLI_Action_Get_Command extends ActionScheduler_WPCLI_Com
 
 		$fields = array_keys( $action_arr );
 
-		if ( !empty( $this->assoc_args['fields'] ) )
+		if ( ! empty( $this->assoc_args['fields'] ) ) {
 			$fields = explode( ',', $this->assoc_args['fields'] );
+		}
 
 		$formatter = new \WP_CLI\Formatter( $this->assoc_args, $fields );
 		$formatter->display_item( $action_arr );

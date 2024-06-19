@@ -1,7 +1,10 @@
-<?php declare( strict_types=1 );
+<?php
 
 use function \WP_CLI\Utils\get_flag_value;
 
+/**
+ * WP-CLI command: action-scheduler action cancel
+ */
 class ActionScheduler_WPCLI_Action_Cancel_Command extends ActionScheduler_WPCLI_Command {
 
 	/**
@@ -13,11 +16,15 @@ class ActionScheduler_WPCLI_Action_Cancel_Command extends ActionScheduler_WPCLI_
 	 * @uses $this->print_success()
 	 * @return void
 	 */
-	public function execute() : void {
+	public function execute() {
 		$hook          = $this->args[0];
-		$group         = $this->args[1] ?? null;
+		$group         = null;
 		$callback_args = get_flag_value( $this->assoc_args, 'args', null );
 		$all           = get_flag_value( $this->assoc_args, 'all' );
+
+		if ( ! empty( $this->args[1] ) ) {
+			$group = $this->args[1];
+		}
 
 		if ( ! empty( $callback_args ) ) {
 			$callback_args = json_decode( $callback_args, true );
@@ -43,10 +50,10 @@ class ActionScheduler_WPCLI_Action_Cancel_Command extends ActionScheduler_WPCLI_
 	/**
 	 * Print a success message.
 	 *
-	 * @param bool $multiple
+	 * @param bool $multiple Boolean if multiple actions.
 	 * @return void
 	 */
-	protected function print_success( bool $multiple ) : void {
+	protected function print_success( $multiple ) {
 		\WP_CLI::success( _n( 'Scheduled action cancelled.', 'All scheduled actions cancelled.', $multiple ? 2 : 1, 'action-scheduler' ) );
 	}
 
@@ -54,15 +61,15 @@ class ActionScheduler_WPCLI_Action_Cancel_Command extends ActionScheduler_WPCLI_
 	 * Convert an exception into a WP CLI error.
 	 *
 	 * @param \Exception $e The error object.
-	 * @param bool $multiple
+	 * @param bool       $multiple Boolean if multiple actions.
 	 * @throws \WP_CLI\ExitException
 	 * @return void
 	 */
-	protected function print_error( \Exception $e, bool $multiple ) : void {
+	protected function print_error( \Exception $e, $multiple ) {
 		\WP_CLI::error(
 			sprintf(
-				/* translators: %s refers to the exception error message. */
-				__( 'There was an error cancelling the scheduled %s: %s', 'action-scheduler' ),
+				/* translators: %1$s: singular or plural %2$s: refers to the exception error message. */
+				__( 'There was an error cancelling the scheduled %1$s: %2$s', 'action-scheduler' ),
 				$multiple ? 'actions' : 'action',
 				$e->getMessage()
 			)

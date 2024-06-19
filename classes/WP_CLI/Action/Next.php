@@ -1,9 +1,10 @@
-<?php declare( strict_types=1 );
+<?php
 
-namespace AS_CLI\Commands\Action;
-use AS_CLI\Commands\Command_Abstract;
 use function \WP_CLI\Utils\get_flag_value;
 
+/**
+ * WP-CLI command: action-scheduler action next
+ */
 class ActionScheduler_WPCLI_Action_Next_Command extends ActionScheduler_WPCLI_Command {
 
 	/**
@@ -11,13 +12,14 @@ class ActionScheduler_WPCLI_Action_Next_Command extends ActionScheduler_WPCLI_Co
 	 *
 	 * @return void
 	 */
-	function execute() : void {
+	public function execute() {
 		$hook          = $this->args[0];
 		$group         = get_flag_value( $this->assoc_args, 'group', '' );
 		$callback_args = get_flag_value( $this->assoc_args, 'args', null );
 
-		if ( !empty( $callback_args ) )
+		if ( ! empty( $callback_args ) ) {
 			$callback_args = json_decode( $callback_args, true );
+		}
 
 		$next_action_id = $this->as_next_scheduled_action( $hook, $callback_args, $group );
 
@@ -37,8 +39,9 @@ class ActionScheduler_WPCLI_Action_Next_Command extends ActionScheduler_WPCLI_Co
 
 		$this->process_csv_arguments_to_arrays();
 
-		if ( !empty( $this->assoc_args['fields'] ) )
+		if ( ! empty( $this->assoc_args['fields'] ) ) {
 			$fields = $this->assoc_args['fields'];
+		}
 
 		$store     = \ActionScheduler::store();
 		$logger    = \ActionScheduler::logger();
@@ -69,8 +72,9 @@ class ActionScheduler_WPCLI_Action_Next_Command extends ActionScheduler_WPCLI_Co
 			);
 		}
 
-		if ( !empty( $this->assoc_args['fields'] ) )
+		if ( ! empty( $this->assoc_args['fields'] ) ) {
 			$fields = explode( ',', $this->assoc_args['fields'] );
+		}
 
 		$formatter->display_item( $action_arr );
 	}
@@ -79,41 +83,47 @@ class ActionScheduler_WPCLI_Action_Next_Command extends ActionScheduler_WPCLI_Co
 	 * Get next scheduled action.
 	 *
 	 * @see as_next_scheduled_action()
-	 * @param string $hook
-	 * @param null|array $args
-	 * @param string $group
+	 * @param string $hook Name of the hook to search for.
+	 * @param array  $args Arguments of the action to be searched.
+	 * @param string $group Group of the action to be searched.
 	 * @return int
 	 */
-	protected function as_next_scheduled_action( $hook, $args = null, $group = '' ) : int {
-		if ( ! \ActionScheduler::is_initialized( 'as_next_scheduled_action' ) ) {
+	protected function as_next_scheduled_action( $hook, $args = null, $group = '' ) {
+		if ( ! ActionScheduler::is_initialized( 'as_next_scheduled_action' ) ) {
 			return 0;
 		}
-		$params = array();
-		if ( is_array($args) ) {
+
+		$params = array(
+			'hook'    => $hook,
+			'orderby' => 'date',
+			'order'   => 'ASC',
+			'group'   => $group,
+		);
+
+		if ( is_array( $args ) ) {
 			$params['args'] = $args;
 		}
-		if ( !empty($group) ) {
-			$params['group'] = $group;
+
+		$params['status'] = ActionScheduler_Store::STATUS_RUNNING;
+		$action_id        = ActionScheduler::store()->query_action( $params );
+		if ( $action_id ) {
+			return $action_id;
 		}
 
-		$params['status'] = \ActionScheduler_Store::STATUS_RUNNING;
-		$job_id = absint( \ActionScheduler::store()->find_action( $hook, $params ) );
-		if ( ! empty( $job_id ) ) {
-			return $job_id;
-		}
-
-		$params['status'] = \ActionScheduler_Store::STATUS_PENDING;
-		$job_id = absint( \ActionScheduler::store()->find_action( $hook, $params ) );
-		if ( empty($job_id) ) {
+		$params['status'] = ActionScheduler_Store::STATUS_PENDING;
+		$action_id        = ActionScheduler::store()->query_action( $params );
+		if ( null === $action_id ) {
 			return 0;
 		}
-		$job = \ActionScheduler::store()->fetch_action( $job_id );
-		$scheduled_date = $job->get_schedule()->get_date();
+
+		$action         = ActionScheduler::store()->fetch_action( $action_id );
+		$scheduled_date = $action->get_schedule()->get_date();
 		if ( $scheduled_date ) {
-			return $job_id;
-		} elseif ( NULL === $scheduled_date ) { // pending async action with NullSchedule
-			return $job_id;
+			return (int) $scheduled_date->format( 'U' );
+		} elseif ( null === $scheduled_date ) { // pending async action with NullSchedule.
+			return $action_id;
 		}
+
 		return 0;
 	}
 

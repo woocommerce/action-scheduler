@@ -25,11 +25,11 @@ class ActionScheduler_WPCLI_Action_Command extends WP_CLI_Command {
 	 * [--all]
 	 * : Cancel all occurrences of a scheduled action.
 	 *
-	 * @param array $args
-	 * @param array $assoc_args
+	 * @param array $args       Positional arguments.
+	 * @param array $assoc_args Keyed arguments.
 	 * @return void
 	 */
-	function cancel( array $args, array $assoc_args ) : void {
+	public function cancel( array $args, array $assoc_args ) {
 		require_once 'Action/Cancel.php';
 		$command = new ActionScheduler_WPCLI_Action_Cancel_Command( $args, $assoc_args );
 		$command->execute();
@@ -77,11 +77,11 @@ class ActionScheduler_WPCLI_Action_Command extends WP_CLI_Command {
 	 *     wp action-scheduler action create hook_recurring 1627148188 --interval=5
 	 *     wp action-scheduler action create hook_cron 1627147655 --cron='5 4 * * *'
 	 *
-	 * @param array $args
-	 * @param array $assoc_args
+	 * @param array $args       Positional arguments.
+	 * @param array $assoc_args Keyed arguments.
 	 * @return void
 	 */
-	function create( array $args, array $assoc_args ) : void {
+	public function create( array $args, array $assoc_args ) {
 		require_once 'Action/Create.php';
 		$command = new ActionScheduler_WPCLI_Action_Create_Command( $args, $assoc_args );
 		$command->execute();
@@ -109,11 +109,11 @@ class ActionScheduler_WPCLI_Action_Command extends WP_CLI_Command {
 	 *     # Delete the first five pending actions in 'action-scheduler' group
 	 *     $ wp action-scheduler action delete $( wp action-scheduler action list --status=pending --group=action-scheduler --format=ids )
 	 *
-	 * @param array $args
-	 * @param array $assoc_args
+	 * @param array $args       Positional arguments.
+	 * @param array $assoc_args Keyed arguments.
 	 * @return void
 	 */
-	function delete( array $args, array $assoc_args ) : void {
+	public function delete( array $args, array $assoc_args ) {
 		require_once 'Action/Delete.php';
 		$command = new ActionScheduler_WPCLI_Action_Delete_Command( $args, $assoc_args );
 		$command->execute();
@@ -158,11 +158,11 @@ class ActionScheduler_WPCLI_Action_Command extends WP_CLI_Command {
 	 *
 	 *     wp action-scheduler action generate test_multiple 1627147598 --count=5 --interval=5
 	 *
-	 * @param array $args
-	 * @param array $assoc_args
+	 * @param array $args       Positional arguments.
+	 * @param array $assoc_args Keyed arguments.
 	 * @return void
 	 */
-	function generate( array $args, array $assoc_args ) : void {
+	public function generate( array $args, array $assoc_args ) {
 		require_once 'Action/Generate.php';
 		$command = new ActionScheduler_WPCLI_Action_Generate_Command( $args, $assoc_args );
 		$command->execute();
@@ -196,11 +196,11 @@ class ActionScheduler_WPCLI_Action_Command extends WP_CLI_Command {
 	 *   - yaml
 	 * ---
 	 *
-	 * @param array $args
-	 * @param array $assoc_args
+	 * @param array $args       Positional arguments.
+	 * @param array $assoc_args Keyed arguments.
 	 * @return void
 	 */
-	function get( array $args, array $assoc_args ) : void {
+	public function get( array $args, array $assoc_args ) {
 		require_once 'Action/Get.php';
 		$command = new ActionScheduler_WPCLI_Action_Get_Command( $args, $assoc_args );
 		$command->execute();
@@ -252,11 +252,13 @@ class ActionScheduler_WPCLI_Action_Command extends WP_CLI_Command {
 	 * * args
 	 * * log_entries
 	 *
-	 * @param array $args
-	 * @param array $assoc_args
+	 * @param array $args       Positional arguments.
+	 * @param array $assoc_args Keyed arguments.
 	 * @return void
+	 *
+	 * @subcommand list
 	 */
-	function list( array $args, array $assoc_args ) : void {
+	public function subcommand_list( array $args, array $assoc_args ) {
 		require_once 'Action/List.php';
 		$command = new ActionScheduler_WPCLI_Action_List_Command( $args, $assoc_args );
 		$command->execute();
@@ -305,11 +307,11 @@ class ActionScheduler_WPCLI_Action_Command extends WP_CLI_Command {
 	 * * args
 	 * * log_entries
 	 *
-	 * @param array $args
-	 * @param array $assoc_args
+	 * @param array $args       Positional arguments.
+	 * @param array $assoc_args Keyed arguments.
 	 * @return void
 	 */
-	function next( array $args, array $assoc_args ) : void {
+	public function next( array $args, array $assoc_args ) {
 		require_once 'Action/Next.php';
 		$command = new ActionScheduler_WPCLI_Action_Next_Command( $args, $assoc_args );
 		$command->execute();
@@ -337,11 +339,11 @@ class ActionScheduler_WPCLI_Action_Command extends WP_CLI_Command {
 	 *     # Run the first five pending actions in 'action-scheduler' group
 	 *     $ wp action-scheduler action run $( wp action-scheduler action list --status=pending --group=action-scheduler --format=ids )
 	 *
-	 * @param array $args
-	 * @param array $assoc_args
+	 * @param array $args       Positional arguments.
+	 * @param array $assoc_args Keyed arguments.
 	 * @return void
 	 */
-	function run( array $args, array $assoc_args ) : void {
+	public function run( array $args, array $assoc_args ) {
 		require_once 'Action/Run.php';
 		$command = new ActionScheduler_WPCLI_Action_Run_Command( $args, $assoc_args );
 		$command->execute();

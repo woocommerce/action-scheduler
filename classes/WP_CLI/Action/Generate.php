@@ -1,7 +1,10 @@
-<?php declare( strict_types=1 );
+<?php
 
 use function \WP_CLI\Utils\get_flag_value;
 
+/**
+ * WP-CLI command: action-scheduler action generate
+ */
 class ActionScheduler_WPCLI_Action_Generate_Command extends ActionScheduler_WPCLI_Command {
 
 	/**
@@ -12,7 +15,7 @@ class ActionScheduler_WPCLI_Action_Generate_Command extends ActionScheduler_WPCL
 	 * @uses $this->print_success()
 	 * @return void
 	 */
-	public function execute() : void {
+	public function execute() {
 		$hook           = $this->args[0];
 		$schedule_start = $this->args[1];
 		$callback_args  = get_flag_value( $this->assoc_args, 'args', array() );
@@ -20,7 +23,7 @@ class ActionScheduler_WPCLI_Action_Generate_Command extends ActionScheduler_WPCL
 		$interval       = absint( get_flag_value( $this->assoc_args, 'interval', 0 ) );
 		$count          = absint( get_flag_value( $this->assoc_args, 'count', 1 ) );
 
-		if ( !empty( $callback_args ) ) {
+		if ( ! empty( $callback_args ) ) {
 			$callback_args = json_decode( $callback_args, true );
 		}
 
@@ -44,7 +47,7 @@ class ActionScheduler_WPCLI_Action_Generate_Command extends ActionScheduler_WPCL
 			$this->print_error( $e );
 		}
 
-		$num_actions_added = count( ( array ) $actions_added );
+		$num_actions_added = count( (array) $actions_added );
 
 		$this->print_success( $num_actions_added, $action_type );
 	}
@@ -52,20 +55,24 @@ class ActionScheduler_WPCLI_Action_Generate_Command extends ActionScheduler_WPCL
 	/**
 	 * Schedule multiple single actions.
 	 *
-	 * @param int $schedule_start Starting timestamp of first action.
-	 * @param int $interval How long to wait between runs.
-	 * @param int $count Limit number of actions to schedule.
+	 * @param int    $schedule_start Starting timestamp of first action.
+	 * @param int    $interval How long to wait between runs.
+	 * @param int    $count Limit number of actions to schedule.
 	 * @param string $hook The hook to trigger.
-	 * @param array $args Arguments to pass when the hook triggers.
+	 * @param array  $args Arguments to pass when the hook triggers.
 	 * @param string $group The group to assign this job to.
 	 * @uses as_schedule_single_action()
 	 * @return int[] IDs of actions added.
 	 */
-	protected function generate( int $schedule_start, int $interval, int $count, string $hook, array $args = array(), string $group = '' ) : array {
+	protected function generate( $schedule_start, $interval, $count, $hook, array $args = array(), $group = '' ) {
 		$actions_added = array();
 
 		$progress_bar = \WP_CLI\Utils\make_progress_bar(
-			sprintf( _n( 'Creating %d action', 'Creating %d actions', $count, 'action-scheduler' ), number_format_i18n( $count ) ),
+			sprintf(
+				/* translators: %d is number of actions to create */
+				_n( 'Creating %d action', 'Creating %d actions', $count, 'action-scheduler' ),
+				number_format_i18n( $count )
+			),
 			$count
 		);
 
@@ -82,15 +89,15 @@ class ActionScheduler_WPCLI_Action_Generate_Command extends ActionScheduler_WPCL
 	/**
 	 * Print a success message with the action ID.
 	 *
-	 * @param int $action_added
-	 * @param string $action_type
+	 * @param int    $actions_added Number of actions generated.
+	 * @param string $action_type   Type of actions scheduled.
 	 * @return void
 	 */
-	protected function print_success( $actions_added, $action_type ) : void {
+	protected function print_success( $actions_added, $action_type ) {
 		\WP_CLI::success(
 			sprintf(
-				/* translators: %d refers to the total number of taskes added */
-				_n( '%d %s action scheduled.', '%d %s actions scheduled.', $actions_added, 'action-scheduler' ),
+				/* translators: %1$d refers to the total number of tasks added, %2$s is the action type */
+				_n( '%1$d %2$s action scheduled.', '%1$d %2$s actions scheduled.', $actions_added, 'action-scheduler' ),
 				number_format_i18n( $actions_added ),
 				$action_type
 			)
@@ -104,7 +111,7 @@ class ActionScheduler_WPCLI_Action_Generate_Command extends ActionScheduler_WPCL
 	 * @throws \WP_CLI\ExitException
 	 * @return void
 	 */
-	protected function print_error( \Exception $e ) : void {
+	protected function print_error( \Exception $e ) {
 		\WP_CLI::error(
 			sprintf(
 				/* translators: %s refers to the exception error message. */

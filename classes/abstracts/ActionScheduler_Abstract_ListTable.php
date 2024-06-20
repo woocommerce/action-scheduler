@@ -678,9 +678,10 @@ abstract class ActionScheduler_Abstract_ListTable extends WP_List_Table {
 			wp_admin_notice(
 				$notice['message'],
 				array(
-					'type'           => $notice['type'] === 'updated' ? '' : $notice['type'],
-					'paragraph_wrap' => true,
-					'additional_classes' => ( $notice['type'] === 'updated' ? 'updated' : '')
+					'id'                 => 'message',
+					'type'               => $notice['type'] === 'updated' ? '' : $notice['type'],
+					'paragraph_wrap'     => true,
+					'additional_classes' => ( $notice['type'] === 'updated' ? 'updated' : ''),
 				)
 			);
 		}

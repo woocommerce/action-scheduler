@@ -361,8 +361,8 @@ class ActionScheduler_ListTable extends ActionScheduler_Abstract_ListTable {
 			foreach ( $table_list as $table_name ) {
 				if ( ! in_array( $wpdb->prefix . $table_name, $found_tables, true ) ) {
 					$this->admin_notices[] = array(
-						'class'   => 'error',
-						'message' => __( 'It appears one or more database tables were missing. Attempting to re-create the missing table(s).', 'action-scheduler' ),
+						'type'    => 'error',
+						'message' => __( 'It appears one or more database tables were missing. Attempting to re-create the missing table(s).' , 'action-scheduler' ),
 					);
 					$this->recreate_tables();
 					parent::display_admin_notices();
@@ -375,7 +375,7 @@ class ActionScheduler_ListTable extends ActionScheduler_Abstract_ListTable {
 		if ( $this->runner->has_maximum_concurrent_batches() ) {
 			$claim_count           = $this->store->get_claim_count();
 			$this->admin_notices[] = array(
-				'class'   => 'updated',
+				'type'    => 'updated',
 				'message' => sprintf(
 					/* translators: %s: amount of claims */
 					_n(
@@ -402,7 +402,7 @@ class ActionScheduler_ListTable extends ActionScheduler_Abstract_ListTable {
 			}
 
 			$this->admin_notices[] = array(
-				'class'   => 'notice notice-info',
+				'type'    => 'info',
 				'message' => $async_request_message,
 			);
 		}
@@ -413,10 +413,10 @@ class ActionScheduler_ListTable extends ActionScheduler_Abstract_ListTable {
 			delete_transient( 'action_scheduler_admin_notice' );
 
 			$action           = $this->store->fetch_action( $notification['action_id'] );
-			$action_hook_html = '<strong><code>' . esc_html( $action->get_hook() ) . '</code></strong>';
+			$action_hook_html = '<strong><code>' . $action->get_hook() . '</code></strong>';
 
-			if ( 1 === absint( $notification['success'] ) ) {
-				$class = 'updated';
+			if ( 1 == $notification['success'] ) {
+				$type = 'updated';
 				switch ( $notification['row_action_type'] ) {
 					case 'run':
 						/* translators: %s: action HTML */
@@ -432,7 +432,7 @@ class ActionScheduler_ListTable extends ActionScheduler_Abstract_ListTable {
 						break;
 				}
 			} else {
-				$class = 'error';
+				$type = 'error';
 				/* translators: 1: action HTML 2: action ID 3: error message */
 				$action_message_html = sprintf( __( 'Could not process change for action: "%1$s" (ID: %2$d). Error: %3$s', 'action-scheduler' ), $action_hook_html, esc_html( $notification['action_id'] ), esc_html( $notification['error_message'] ) );
 			}
@@ -440,7 +440,7 @@ class ActionScheduler_ListTable extends ActionScheduler_Abstract_ListTable {
 			$action_message_html = apply_filters( 'action_scheduler_admin_notice_html', $action_message_html, $action, $notification );
 
 			$this->admin_notices[] = array(
-				'class'   => $class,
+				'type'    => $type,
 				'message' => $action_message_html,
 			);
 		}

@@ -7,7 +7,7 @@
  * Author URI: https://automattic.com/
  * Version: 3.8.0
  * License: GPLv3
- * Requires at least: 6.2
+ * Requires at least: 6.4
  * Tested up to: 6.5
  * Requires PHP: 5.6
  *

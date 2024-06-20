@@ -47,6 +47,10 @@ Collaboration is cool. We'd love to work with you to improve Action Scheduler. [
 
 == Changelog ==
 
+= 3.8.1 - 2024-06-20 =
+* Fix typos.
+* Improve the messaging in our unidentified action exceptions.
+
 = 3.8.0 - 2024-05-22 =
 * Documentation - Fixed typos in perf.md.
 * Update - We now require WordPress 6.3 or higher.

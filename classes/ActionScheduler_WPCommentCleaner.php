@@ -90,7 +90,7 @@ class ActionScheduler_WPCommentCleaner {
 	public static function register_admin_notice() {
 		add_action( 'admin_notices', array( __CLASS__, 'print_admin_notice' ) );
 	}
-	
+
 	/**
 	 * Prints details about the orphaned action logs and includes information on where to learn more.
 	 */
@@ -110,6 +110,12 @@ class ActionScheduler_WPCommentCleaner {
 			'https://github.com/woocommerce/action-scheduler/issues/368'
 		);
 
-		echo '<div class="notice notice-warning"><p>' . wp_kses_post( $notice ) . '</p></div>';
+		wp_admin_notice(
+			$notice,
+			array(
+				'type' => 'warning',
+				'paragraph_wrap' => true,
+			)
+		);
 	}
 }

@@ -711,7 +711,7 @@ AND `group_id` = %d
 
 		while ( $action_ids ) {
 			$action_ids = $this->query_actions( $query_args );
-			if ( empty( $action_ids ) ) {
+			if ( empty( $action_ids ) || ! is_countable( $action_ids ) ) {
 				break;
 			}
 
@@ -889,7 +889,7 @@ AND `group_id` = %d
 		$params[] = $date->format( 'Y-m-d H:i:s' );
 		$params[] = self::STATUS_PENDING;
 
-		if ( ! empty( $hooks ) ) {
+		if ( is_array( $hooks ) && ! empty( $hooks ) ) {
 			$placeholders = array_fill( 0, count( $hooks ), '%s' );
 			$where        .= ' AND hook IN (' . join( ', ', $placeholders ) . ')';
 			$params       = array_merge( $params, array_values( $hooks ) );

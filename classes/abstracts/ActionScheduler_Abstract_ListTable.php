@@ -69,7 +69,7 @@ abstract class ActionScheduler_Abstract_ListTable extends WP_List_Table {
 	 * (with the prefix row_action_<key>) and the value is the label
 	 * and title.
 	 *
-	 * @var array
+	 * @var array[]
 	 */
 	protected $row_actions = array();
 

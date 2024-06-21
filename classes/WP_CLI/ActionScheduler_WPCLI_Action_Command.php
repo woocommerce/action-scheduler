@@ -265,6 +265,26 @@ class ActionScheduler_WPCLI_Action_Command extends WP_CLI_Command {
 	}
 
 	/**
+	 * Get logs for a scheduled action.
+	 *
+	 * ## OPTIONS
+	 *
+	 * <id>
+	 * : The ID of the action to get.
+	 * ---
+	 * default: 0
+	 * ---
+	 *
+	 * @param array $args       Positional arguments.
+	 * @param array $assoc_args Keyed arguments.
+	 * @return void
+	 */
+	public function logs( array $args ) {
+		$command = sprintf( 'action-scheduler action get %d --field=log_entries', $args[0] );
+		WP_CLI::runcommand( $command );
+	}
+
+	/**
 	 * Get the next scheduled action.
 	 *
 	 * ## OPTIONS

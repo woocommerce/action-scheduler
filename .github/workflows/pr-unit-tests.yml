@@ -30,7 +30,7 @@ jobs:
         options: --health-cmd="mysqladmin ping" --health-interval=10s --health-timeout=5s --health-retries=5
     steps:
       - name: Checkout code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
 
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
@@ -86,7 +86,3 @@ jobs:
         run: |
           ./vendor/bin/phpunit --version
           WP_MULTISITE=${{ matrix.multisite }} ./vendor/bin/phpunit -c ./tests/phpunit.xml.dist
-
-      - name: Code Coverage
-        run: |
-          bash <(curl -s https://codecov.io/bash)

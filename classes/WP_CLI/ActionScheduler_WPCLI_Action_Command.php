@@ -10,10 +10,10 @@ class ActionScheduler_WPCLI_Action_Command extends WP_CLI_Command {
 	 *
 	 * ## OPTIONS
 	 *
-	 * <hook>
+	 * [<hook>]
 	 * : Name of the action hook.
 	 *
-	 * [<group>]
+	 * [--group=<group>]
 	 * : The group the job is assigned to.
 	 *
 	 * [--args=<args>]

@@ -27,6 +27,8 @@ class ActionScheduler_WPCLI_Action_Create_Command extends ActionScheduler_WPCLI_
 		$group          = get_flag_value( $this->assoc_args, 'group', '' );
 		$interval       = absint( get_flag_value( $this->assoc_args, 'interval', 0 ) );
 		$cron           = get_flag_value( $this->assoc_args, 'cron', '' );
+		$unique         = get_flag_value( $this->assoc_args, 'unique', false );
+		$priority       = absint( get_flag_value( $this->assoc_args, 'priority', 10 ) );
 
 		if ( ! empty( $callback_args ) ) {
 			$callback_args = json_decode( $callback_args, true );
@@ -39,6 +41,8 @@ class ActionScheduler_WPCLI_Action_Create_Command extends ActionScheduler_WPCLI_
 			'hook'          => $hook,
 			'callback_args' => $callback_args,
 			'group'         => $group,
+			'unique'        => $unique,
+			'priority'      => $priority,
 		);
 
 		// Generate schedule start if appropriate.
@@ -58,7 +62,7 @@ class ActionScheduler_WPCLI_Action_Create_Command extends ActionScheduler_WPCLI_
 			$function_args = array_filter(
 				$function_args,
 				static function( $key ) {
-					return in_array( $key, array( 'hook', 'callback_args', 'group' ), true );
+					return in_array( $key, array( 'hook', 'callback_args', 'group', 'unique', 'priority' ), true );
 				},
 				ARRAY_FILTER_USE_KEY
 			);

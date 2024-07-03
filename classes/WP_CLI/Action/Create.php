@@ -79,8 +79,13 @@ class ActionScheduler_WPCLI_Action_Create_Command extends ActionScheduler_WPCLI_
 		$function_args = array_values( array_filter( $function_args ) );
 
 		try {
-			$actions_added = call_user_func_array( $function, $function_args );
+			$action_id = call_user_func_array( $function, $function_args );
 		} catch ( \Exception $e ) {
+			$this->print_error( $e );
+		}
+
+		if ( 0 === $action_id ) {
+			$e = new \Exception( __( 'Unable to create a scheduled action.', 'action-scheduler' ) );
 			$this->print_error( $e );
 		}
 
@@ -100,10 +105,10 @@ class ActionScheduler_WPCLI_Action_Create_Command extends ActionScheduler_WPCLI_
 	protected function print_success( $actions_added, $action_type ) {
 		\WP_CLI::success(
 			sprintf(
-				/* translators: %1$d: refers to the total number of tasks added, %2$s: type of action */
-				_n( '%1$d %2$s action scheduled.', '%1$d %2$s actions scheduled.', $actions_added, 'action-scheduler' ),
-				number_format_i18n( $actions_added ),
-				$action_type
+				/* translators: %1$s: type of action, %2$d: ID of the created action */
+				__( '%1$s action (%2$d) scheduled.', 'action-scheduler' ),
+				ucfirst( $action_type ),
+				$action_id
 			)
 		);
 	}

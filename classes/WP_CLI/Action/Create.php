@@ -80,7 +80,7 @@ class ActionScheduler_WPCLI_Action_Create_Command extends ActionScheduler_WPCLI_
 			$function    = 'as_schedule_cron_action';
 		}
 
-		$function_args = array_values( array_filter( $function_args ) );
+		$function_args = array_values( $function_args );
 
 		try {
 			$action_id = call_user_func_array( $function, $function_args );

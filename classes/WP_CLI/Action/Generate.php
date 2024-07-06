@@ -39,7 +39,7 @@ class ActionScheduler_WPCLI_Action_Generate_Command extends ActionScheduler_WPCL
 		);
 
 		$action_type   = 'single';
-		$function_args = array_values( array_filter( $function_args ) );
+		$function_args = array_values( $function_args );
 
 		try {
 			$actions_added = $this->generate( ...$function_args );

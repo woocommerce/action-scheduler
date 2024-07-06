@@ -45,10 +45,14 @@ class ActionScheduler_WPCLI_Action_Create_Command extends ActionScheduler_WPCLI_
 			'priority'      => $priority,
 		);
 
-		// Generate schedule start if appropriate.
-		if ( ! in_array( $schedule_start, static::ASYNC_OPTS, true ) ) {
-			$schedule_start         = as_get_datetime_object( $schedule_start );
-			$function_args['start'] = $schedule_start->format( 'U' );
+		try {
+			// Generate schedule start if appropriate.
+			if ( ! in_array( $schedule_start, static::ASYNC_OPTS, true ) ) {
+				$schedule_start         = as_get_datetime_object( $schedule_start );
+				$function_args['start'] = $schedule_start->format( 'U' );
+			}
+		} catch( \Exception $e ) {
+			\WP_CLI::error( $e->getMessage() );
 		}
 
 		// Default to creating single action.

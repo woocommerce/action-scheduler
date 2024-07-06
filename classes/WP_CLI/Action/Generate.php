@@ -38,7 +38,6 @@ class ActionScheduler_WPCLI_Action_Generate_Command extends ActionScheduler_WPCL
 			'group'         => $group,
 		);
 
-		$action_type   = 'single';
 		$function_args = array_values( $function_args );
 
 		try {
@@ -49,7 +48,7 @@ class ActionScheduler_WPCLI_Action_Generate_Command extends ActionScheduler_WPCL
 
 		$num_actions_added = count( (array) $actions_added );
 
-		$this->print_success( $num_actions_added, $action_type );
+		$this->print_success( $num_actions_added, 'single' );
 	}
 
 	/**

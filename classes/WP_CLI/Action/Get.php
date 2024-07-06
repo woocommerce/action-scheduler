@@ -16,6 +16,11 @@ class ActionScheduler_WPCLI_Action_Get_Command extends ActionScheduler_WPCLI_Com
 		$logger    = \ActionScheduler::logger();
 		$action    = $store->fetch_action( $action_id );
 
+		if ( is_a( $action, ActionScheduler_NullAction::class ) ) {
+			/* translators: %d is action ID. */
+			\WP_CLI::error( sprintf( esc_html__( 'Unable to retrieve action %d.', 'action-scheduler' ), $action_id ) );
+		}
+
 		$only_logs   = ! empty( $this->assoc_args['field'] ) && 'log_entries' === $this->assoc_args['field'];
 		$log_entries = array();
 
@@ -35,10 +40,16 @@ class ActionScheduler_WPCLI_Action_Get_Command extends ActionScheduler_WPCLI_Com
 			return;
 		}
 
+		try {
+			$status = $store->get_status( $action_id );
+		} catch ( \Exception $e ) {
+			\WP_CLI::error( $e->getMessage() );
+		}
+
 		$action_arr = array(
 			'id'             => $this->args[0],
 			'hook'           => $action->get_hook(),
-			'status'         => $store->get_status( $action_id ),
+			'status'         => $status,
 			'args'           => $action->get_args(),
 			'group'          => $action->get_group(),
 			'recurring'      => $action->get_schedule()->is_recurring() ? 'yes' : 'no',

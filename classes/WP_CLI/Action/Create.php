@@ -93,20 +93,18 @@ class ActionScheduler_WPCLI_Action_Create_Command extends ActionScheduler_WPCLI_
 			$this->print_error( $e );
 		}
 
-		$num_actions_added = count( (array) $actions_added );
-
-		$this->print_success( $num_actions_added, $action_type );
+		$this->print_success( $action_id, $action_type );
 	}
 
 	/**
 	 * Print a success message with the action ID.
 	 *
-	 * @param int    $actions_added Number actions added.
-	 * @param string $action_type   Type of action.
+	 * @param int    $action_id   Created action ID.
+	 * @param string $action_type Type of action.
 	 *
 	 * @return void
 	 */
-	protected function print_success( $actions_added, $action_type ) {
+	protected function print_success( $action_id, $action_type ) {
 		\WP_CLI::success(
 			sprintf(
 				/* translators: %1$s: type of action, %2$d: ID of the created action */

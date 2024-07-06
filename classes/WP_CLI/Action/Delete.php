@@ -11,6 +11,7 @@ class ActionScheduler_WPCLI_Action_Delete_Command extends ActionScheduler_WPCLI_
 	/** @var array<string, int> */
 	protected $action_counts = array(
 		'deleted' => 0,
+		'failed'  => 0,
 		'total'   => 0,
 	);
 
@@ -50,17 +51,28 @@ class ActionScheduler_WPCLI_Action_Delete_Command extends ActionScheduler_WPCLI_
 		);
 
 		foreach ( $this->action_ids as $action_id ) {
-			$store->delete_action( $action_id );
+			try {
+				$store->delete_action( $action_id );
+			} catch ( \Exception $e ) {
+				$this->action_counts['failed']++;
+				\WP_CLI::warning( $e->getMessage() );
+			}
+
 			$progress_bar->tick();
 		}
 
 		$progress_bar->finish();
 
+		/* translators: %1$d: number of actions deleted */
+		$format = _n( 'Deleted %1$d action', 'Deleted %1$d actions', $this->action_counts['deleted'], 'action-scheduler' ) .', ';
+		/* translators: %2$d: number of actions deletions failed */
+		$format .= _n( '%2$d failure.', '%2$d failures.', $this->action_counts['failed'], 'action-scheduler' );
+
 		\WP_CLI::success(
 			sprintf(
-				/* translators: %d: number of actions deleted */
-				_n( 'Deleted %d action.', 'Deleted %d actions.', $this->action_counts['deleted'], 'action-scheduler' ),
-				number_format_i18n( $this->action_counts['deleted'] )
+				$format,
+				number_format_i18n( $this->action_counts['deleted'] ),
+				number_format_i18n( $this->action_counts['failed'] )
 			)
 		);
 	}

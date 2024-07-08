@@ -25,11 +25,6 @@ class ActionScheduler_WPCLI_Action_Get_Command extends ActionScheduler_WPCLI_Com
 		$log_entries = array();
 
 		foreach ( $logger->get_logs( $action_id ) as $log_entry ) {
-			if ( $only_logs ) {
-				WP_CLI::line( sprintf( '%s %s', $log_entry->get_date()->format( static::DATE_FORMAT ), $log_entry->get_message() ) );
-				continue;
-			}
-
 			$log_entries[] = array(
 				'date'    => $log_entry->get_date()->format( static::DATE_FORMAT ),
 				'message' => $log_entry->get_message(),
@@ -37,6 +32,13 @@ class ActionScheduler_WPCLI_Action_Get_Command extends ActionScheduler_WPCLI_Com
 		}
 
 		if ( $only_logs ) {
+			$args = array(
+				'format' => \WP_CLI\Utils\get_flag_value( $this->assoc_args, 'format', 'table' ),
+			);
+
+			$formatter = new \WP_CLI\Formatter( $args, array( 'date', 'message' ) );
+			$formatter->display_items( $log_entries );
+
 			return;
 		}
 

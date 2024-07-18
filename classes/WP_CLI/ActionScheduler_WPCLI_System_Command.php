@@ -110,7 +110,7 @@ class ActionScheduler_WPCLI_System_Command {
 				);
 			}
 
-			ksort( $rows, SORT_NUMERIC );
+			uksort( $rows, 'version_compare' );
 
 			$formatter = new \WP_CLI\Formatter( $assoc_args, array( 'version', 'callback' ) );
 			$formatter->display_items( $rows );

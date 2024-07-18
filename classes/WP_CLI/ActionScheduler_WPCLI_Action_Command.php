@@ -285,47 +285,27 @@ class ActionScheduler_WPCLI_Action_Command extends WP_CLI_Command {
 	}
 
 	/**
-	 * Get the next scheduled action.
+	 * Get the ID or timestamp of the next scheduled action.
 	 *
 	 * ## OPTIONS
 	 *
-	 * <id>
+	 * <hook>
 	 * : The hook of the next scheduled action.
 	 *
-	 * [--field=<field>]
-	 * : Prints the value of a single property for the action.
-	 *
-	 * [--fields=<fields>]
-	 * : Limit the output to specific object properties.
-	 *
-	 * [--format=<format>]
-	 * : Render output in a particular format.
+	 * [--args=<args>]
+	 * : JSON object of arguments to search for next scheduled action.
 	 * ---
-	 * default: table
-	 * options:
-	 *   - table
-	 *   - csv
-	 *   - ids
-	 *   - json
-	 *   - count
-	 *   - yaml
+	 * default: []
 	 * ---
 	 *
-	 * ## AVAILABLE FIELDS
+	 * [--group=<group>]
+	 * : The group to which the next scheduled action is assigned.
+	 * ---
+	 * default: ''
+	 * ---
 	 *
-	 * These fields will be displayed by default for the action:
-	 *
-	 * * id
-	 * * hook
-	 * * status
-	 * * group
-	 * * recurring
-	 * * scheduled_date
-	 *
-	 * These fields are optionally available:
-	 *
-	 * * args
-	 * * log_entries
+	 * [--raw]
+	 * : Display the raw output of as_next_scheduled_action() (timestamp or boolean).
 	 *
 	 * @param array $args       Positional arguments.
 	 * @param array $assoc_args Keyed arguments.

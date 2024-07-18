@@ -69,10 +69,16 @@ class ActionScheduler_WPCLI_Action_List_Command extends ActionScheduler_WPCLI_Co
 			$return_format = '\'ids\'';
 		}
 
+		$params = var_export( $query_args, true );
+
+		if ( empty( $query_args ) ) {
+			$params = 'array()';
+		}
+
 		WP_CLI::debug(
 			sprintf(
 				'as_get_scheduled_actions( %s, %s )',
-				var_export( $query_args, true ),
+				$params,
 				$return_format
 			)
 		);

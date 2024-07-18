@@ -63,7 +63,19 @@ class ActionScheduler_WPCLI_Action_List_Command extends ActionScheduler_WPCLI_Co
 			$query_args['claimed'] = false;
 		}
 
-		WP_CLI::debug( 'as_get_scheduled_actions( ' . var_export( $query_args, true ) . ' )' );
+		$return_format = 'OBJECT';
+
+		if ( in_array( $formatter->format, array( 'ids', 'count' ) ) ) {
+			$return_format = '\'ids\'';
+		}
+
+		WP_CLI::debug(
+			sprintf(
+				'as_get_scheduled_actions( %s, %s )',
+				var_export( $query_args, true ),
+				$return_format
+			)
+		);
 
 		if ( ! empty( $query_args['args'] ) ) {
 			$query_args['args'] = json_decode( $query_args['args'], true );
@@ -82,7 +94,7 @@ class ActionScheduler_WPCLI_Action_List_Command extends ActionScheduler_WPCLI_Co
 				break;
 
 			default:
-				$actions = as_get_scheduled_actions( $query_args );
+				$actions = as_get_scheduled_actions( $query_args, OBJECT );
 
 				$actions_arr = array();
 

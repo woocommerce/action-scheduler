@@ -55,6 +55,16 @@ class ActionScheduler_WPCLI_Action_List_Command extends ActionScheduler_WPCLI_Co
 			ARRAY_FILTER_USE_KEY
 		);
 
+		/**
+		 * The `claimed` parameter expects a boolean or integer:
+		 * check for string 'false', and set explicitly to `false` boolean.
+		 */
+		if ( array_key_exists( 'claimed', $query_args ) && 'false' === strtolower( $query_args['claimed'] ) ) {
+			$query_args['claimed'] = false;
+		}
+
+		WP_CLI::debug( 'as_get_scheduled_actions( ' . var_export( $query_args, true ) . ' )' );
+
 		if ( ! empty( $query_args['args'] ) ) {
 			$query_args['args'] = json_decode( $query_args['args'], true );
 		}

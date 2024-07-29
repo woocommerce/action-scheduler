@@ -7,7 +7,7 @@ use function \WP_CLI\Utils\get_flag_value;
  */
 class ActionScheduler_WPCLI_Action_Create_Command extends ActionScheduler_WPCLI_Command {
 
-	const ASYNC_OPTS = array( 'async', 'now', 0 );
+	const ASYNC_OPTS = array( 'async', 0 );
 
 	/**
 	 * Execute command.
@@ -35,7 +35,7 @@ class ActionScheduler_WPCLI_Action_Create_Command extends ActionScheduler_WPCLI_
 		}
 
 		$function_args = array(
-			'start'         => 'async',
+			'start'         => $schedule_start,
 			'cron'          => $cron,
 			'interval'      => $interval,
 			'hook'          => $hook,
@@ -59,7 +59,29 @@ class ActionScheduler_WPCLI_Action_Create_Command extends ActionScheduler_WPCLI_
 		$action_type = 'single';
 		$function    = 'as_schedule_single_action';
 
-		if ( 'async' === $function_args['start'] ) { // Enqueue async action.
+		if ( ! empty( $interval ) ) { // Creating recurring action.
+			$action_type = 'recurring';
+			$function    = 'as_schedule_recurring_action';
+
+			$function_args = array_filter(
+				$function_args,
+				static function( $key ) {
+					return in_array( $key, array( 'start', 'interval', 'hook', 'callback_args', 'group', 'unique', 'priority' ), true );
+				},
+				ARRAY_FILTER_USE_KEY
+			);
+		} else if ( ! empty( $cron ) ) { // Creating cron action.
+			$action_type = 'cron';
+			$function    = 'as_schedule_cron_action';
+
+			$function_args = array_filter(
+				$function_args,
+				static function( $key ) {
+					return in_array( $key, array( 'start', 'cron', 'hook', 'callback_args', 'group', 'unique', 'priority' ), true );
+				},
+				ARRAY_FILTER_USE_KEY
+			);
+		} else if ( in_array( $function_args['start'], static::ASYNC_OPTS ) ) { // Enqueue async action.
 			$action_type = 'async';
 			$function    = 'as_enqueue_async_action';
 
@@ -71,13 +93,6 @@ class ActionScheduler_WPCLI_Action_Create_Command extends ActionScheduler_WPCLI_
 				ARRAY_FILTER_USE_KEY
 			);
 
-		} else if ( ! empty( $interval ) ) { // Creating recurring action.
-			$action_type = 'recurring';
-			$function    = 'as_schedule_recurring_action';
-
-		} else if ( ! empty( $cron ) ) { // Creating cron action.
-			$action_type = 'cron';
-			$function    = 'as_schedule_cron_action';
 		}
 
 		$function_args = array_values( $function_args );

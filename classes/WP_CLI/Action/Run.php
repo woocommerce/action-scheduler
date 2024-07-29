@@ -78,7 +78,7 @@ class ActionScheduler_WPCLI_Action_Run_Command extends ActionScheduler_WPCLI_Com
 			 * %1$d: count of actions evaluated.
 			 * %2$s: type of action evaluated.
 			 */
-			$format = _n( '%1$d action %2$s.', '%1$d actions %2$s.', $count, 'action-scheduler' ),
+			$format = _n( '%1$d action %2$s.', '%1$d actions %2$s.', $count, 'action-scheduler' );
 
 			\WP_CLI::warning(
 				sprintf(

@@ -92,7 +92,14 @@ class ActionScheduler_WPCLI_Action_Create_Command extends ActionScheduler_WPCLI_
 				},
 				ARRAY_FILTER_USE_KEY
 			);
-
+		} else { // Enqueue single action.
+			$function_args = array_filter(
+				$function_args,
+				static function( $key ) {
+					return in_array( $key, array( 'start', 'hook', 'callback_args', 'group', 'unique', 'priority' ), true );
+				},
+				ARRAY_FILTER_USE_KEY
+			);
 		}
 
 		$function_args = array_values( $function_args );

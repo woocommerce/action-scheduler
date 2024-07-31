@@ -33,9 +33,6 @@ class ActionScheduler_WPCLI_Action_Delete_Command extends ActionScheduler_WPCLI_
 	/**
 	 * Execute.
 	 *
-	 * @uses \ActionScheduler_Store::delete_action()
-	 * @uses \WP_CLI::warning()
-	 * @uses \WP_CLI::success()
 	 * @return void
 	 */
 	public function execute() {
@@ -81,7 +78,6 @@ class ActionScheduler_WPCLI_Action_Delete_Command extends ActionScheduler_WPCLI_
 	 * Action: action_scheduler_deleted_action
 	 *
 	 * @param int $action_id Action ID.
-	 * @uses \WP_CLI::debug()
 	 * @return void
 	 */
 	public function action__deleted( $action_id ) {

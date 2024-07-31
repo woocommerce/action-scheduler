@@ -10,10 +10,6 @@ class ActionScheduler_WPCLI_Action_Cancel_Command extends ActionScheduler_WPCLI_
 	/**
 	 * Execute command.
 	 *
-	 * @uses as_unschedule_action()
-	 * @uses as_unschedule_all_actions()
-	 * @uses $this->print_error()
-	 * @uses $this->print_success()
 	 * @return void
 	 */
 	public function execute() {

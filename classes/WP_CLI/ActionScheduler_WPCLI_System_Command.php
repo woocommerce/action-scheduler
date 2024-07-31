@@ -19,7 +19,6 @@ class ActionScheduler_WPCLI_System_Command {
 	 *
 	 * @param array $args       Positional args.
 	 * @param array $assoc_args Keyed args.
-	 * @uses $this->get_current_datastore()
 	 * @return void
 	 *
 	 * @subcommand data-store
@@ -33,7 +32,6 @@ class ActionScheduler_WPCLI_System_Command {
 	 *
 	 * @param array $args       Positional args.
 	 * @param array $assoc_args Keyed args.
-	 * @uses $this->get_current_runner()
 	 * @return void
 	 */
 	public function runner( array $args, array $assoc_args ) {
@@ -45,9 +43,6 @@ class ActionScheduler_WPCLI_System_Command {
 	 *
 	 * @param array $args       Positional args.
 	 * @param array $assoc_args Keyed args.
-	 * @uses $this->get_current_datastore()
-	 * @uses $this->get_latest_version()
-	 * @uses $this->print_statuses()
 	 * @return void
 	 */
 	public function status( array $args, array $assoc_args ) {
@@ -89,9 +84,6 @@ class ActionScheduler_WPCLI_System_Command {
 	 *
 	 * @param array $args       Positional args.
 	 * @param array $assoc_args Keyed args.
-	 * @uses \ActionScheduler_Versions::get_versions()
-	 * @uses \WP_CLI\Formatter::display_items()
-	 * @uses $this->get_latest_version()
 	 * @return void
 	 */
 	public function version( array $args, array $assoc_args ) {
@@ -134,7 +126,6 @@ class ActionScheduler_WPCLI_System_Command {
 	 * Get latest version.
 	 *
 	 * @param null|\ActionScheduler_Versions $instance Versions.
-	 * @uses \ActionScheduler_Versions::latest_version()
 	 * @return string
 	 */
 	protected function get_latest_version( $instance = null ) {
@@ -148,7 +139,6 @@ class ActionScheduler_WPCLI_System_Command {
 	/**
 	 * Get current runner.
 	 *
-	 * @uses \ActionScheduler::runner()
 	 * @return string
 	 */
 	protected function get_current_runner() {

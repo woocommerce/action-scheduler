@@ -12,12 +12,6 @@ class ActionScheduler_WPCLI_Action_Create_Command extends ActionScheduler_WPCLI_
 	/**
 	 * Execute command.
 	 *
-	 * @uses as_schedule_single_action()
-	 * @uses as_enqueue_async_action()
-	 * @uses as_schedule_recurring_action()
-	 * @uses as_schedule_cron_action()
-	 * @uses $this->print_error()
-	 * @uses $this->print_success()
 	 * @return void
 	 */
 	public function execute() {

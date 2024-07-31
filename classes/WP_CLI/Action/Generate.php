@@ -10,9 +10,6 @@ class ActionScheduler_WPCLI_Action_Generate_Command extends ActionScheduler_WPCL
 	/**
 	 * Execute command.
 	 *
-	 * @uses $this->generate()
-	 * @uses $this->print_error()
-	 * @uses $this->print_success()
 	 * @return void
 	 */
 	public function execute() {
@@ -60,7 +57,6 @@ class ActionScheduler_WPCLI_Action_Generate_Command extends ActionScheduler_WPCL
 	 * @param string $hook The hook to trigger.
 	 * @param array  $args Arguments to pass when the hook triggers.
 	 * @param string $group The group to assign this job to.
-	 * @uses as_schedule_single_action()
 	 * @return int[] IDs of actions added.
 	 */
 	protected function generate( $schedule_start, $interval, $count, $hook, array $args = array(), $group = '' ) {

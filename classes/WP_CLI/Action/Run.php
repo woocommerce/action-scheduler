@@ -38,9 +38,6 @@ class ActionScheduler_WPCLI_Action_Run_Command extends ActionScheduler_WPCLI_Com
 	/**
 	 * Execute.
 	 *
-	 * @uses \ActionScheduler_Abstract_QueueRunner::process_action()
-	 * @uses \WP_CLI::warning()
-	 * @uses \WP_CLI::success()
 	 * @return void
 	 */
 	public function execute() {
@@ -102,7 +99,6 @@ class ActionScheduler_WPCLI_Action_Run_Command extends ActionScheduler_WPCLI_Com
 	 * Action: action_scheduler_execution_ignored
 	 *
 	 * @param int $action_id Action ID.
-	 * @uses \WP_CLI::debug()
 	 * @return void
 	 */
 	public function action__ignored( $action_id ) {
@@ -124,7 +120,6 @@ class ActionScheduler_WPCLI_Action_Run_Command extends ActionScheduler_WPCLI_Com
 	 * Action: action_scheduler_after_execute
 	 *
 	 * @param int $action_id Action ID.
-	 * @uses \WP_CLI::success()
 	 * @return void
 	 */
 	public function action__executed( $action_id ) {
@@ -147,7 +142,6 @@ class ActionScheduler_WPCLI_Action_Run_Command extends ActionScheduler_WPCLI_Com
 	 *
 	 * @param int        $action_id Action ID.
 	 * @param \Exception $e         Exception.
-	 * @uses \WP_CLI::debug()
 	 * @return void
 	 */
 	public function action__failed( $action_id, \Exception $e ) {
@@ -170,7 +164,6 @@ class ActionScheduler_WPCLI_Action_Run_Command extends ActionScheduler_WPCLI_Com
 	 *
 	 * @param int        $action_id Action ID.
 	 * @param \Exception $e         Exception.
-	 * @uses \WP_CLI::debug()
 	 * @return void
 	 */
 	public function action__invalid( $action_id, \Exception $e ) {

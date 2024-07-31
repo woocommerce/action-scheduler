@@ -45,15 +45,8 @@ class ActionScheduler_WPCLI_Action_List_Command extends ActionScheduler_WPCLI_Co
 			$fields = $this->assoc_args['fields'];
 		}
 
-		$formatter = new \WP_CLI\Formatter( $this->assoc_args, $fields );
-
-		$query_args = array_filter(
-			$this->assoc_args,
-			static function ( $key ) {
-				return in_array( $key, static::PARAMETERS, true );
-			},
-			ARRAY_FILTER_USE_KEY
-		);
+		$formatter  = new \WP_CLI\Formatter( $this->assoc_args, $fields );
+		$query_args = $this->assoc_args;
 
 		/**
 		 * The `claimed` parameter expects a boolean or integer:

@@ -231,7 +231,11 @@ class ActionScheduler_AdminView extends ActionScheduler_AdminView_Deprecated {
 					'</p>' .
 					'<h3>' . __( 'WP CLI', 'action-scheduler' ) . '</h3>' .
 					'<p>' .
-						__( 'WP CLI commands are available: execute <code>wp help action-scheduler</code> for a list of available commands.' ) .
+						sprintf(
+							/* translators: %1$s is WP CLI command (not translatable) */
+							__( 'WP CLI commands are available: execute %1$s for a list of available commands.', 'action-scheduler' ),
+							'<code>wp help action-scheduler</code>',
+						) .
 					'</p>',
 			)
 		);

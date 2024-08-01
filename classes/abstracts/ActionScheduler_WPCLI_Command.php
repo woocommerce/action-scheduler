@@ -7,10 +7,18 @@ abstract class ActionScheduler_WPCLI_Command extends \WP_CLI_Command {
 
 	const DATE_FORMAT = 'Y-m-d H:i:s O';
 
-	/** @var string[] */
+	/**
+	 * Keyed arguments.
+	 *
+	 * @var string[]
+	 */
 	protected $args;
 
-	/** @var array<string, string> */
+	/**
+	 * Positional arguments.
+	 *
+	 * @var array<string, string>
+	 */
 	protected $assoc_args;
 
 	/**
@@ -18,11 +26,12 @@ abstract class ActionScheduler_WPCLI_Command extends \WP_CLI_Command {
 	 *
 	 * @param string[]              $args       Positional arguments.
 	 * @param array<string, string> $assoc_args Keyed arguments.
+	 * @throws \Exception When loading a CLI command file outside of WP CLI context.
 	 */
 	public function __construct( array $args, array $assoc_args ) {
 		if ( ! defined( 'WP_CLI' ) || ! constant( 'WP_CLI' ) ) {
 			/* translators: %s php class name */
-			throw new Exception( sprintf( __( 'The %s class can only be run within WP CLI.', 'action-scheduler' ), get_class( $this ) ) );
+			throw new \Exception( sprintf( __( 'The %s class can only be run within WP CLI.', 'action-scheduler' ), get_class( $this ) ) );
 		}
 
 		$this->args       = $args;

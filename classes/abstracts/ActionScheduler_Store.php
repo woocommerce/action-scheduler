@@ -2,6 +2,7 @@
 
 /**
  * Class ActionScheduler_Store
+ *
  * @codeCoverageIgnore
  */
 abstract class ActionScheduler_Store extends ActionScheduler_Store_Deprecated {

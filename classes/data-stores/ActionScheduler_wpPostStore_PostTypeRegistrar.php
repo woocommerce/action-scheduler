@@ -2,6 +2,7 @@
 
 /**
  * Class ActionScheduler_wpPostStore_PostTypeRegistrar
+ *
  * @codeCoverageIgnore
  */
 class ActionScheduler_wpPostStore_PostTypeRegistrar {
@@ -47,4 +48,3 @@ class ActionScheduler_wpPostStore_PostTypeRegistrar {
 		return $args;
 	}
 }
- 

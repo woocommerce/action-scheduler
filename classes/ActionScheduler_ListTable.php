@@ -2,6 +2,7 @@
 
 /**
  * Implements the admin view of the actions.
+ *
  * @codeCoverageIgnore
  */
 class ActionScheduler_ListTable extends ActionScheduler_Abstract_ListTable {

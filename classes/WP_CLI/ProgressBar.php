@@ -38,7 +38,7 @@ class ProgressBar {
 	 * @param string  $message    Text to display before the progress bar.
 	 * @param integer $count      Total number of ticks to be performed.
 	 * @param integer $interval   Optional. The interval in milliseconds between updates. Default 100.
- 	 *
+	 *
 	 * @throws Exception When this is not run within WP CLI
 	 */
 	public function __construct( $message, $count, $interval = 100 ) {

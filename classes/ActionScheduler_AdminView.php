@@ -2,6 +2,7 @@
 
 /**
  * Class ActionScheduler_AdminView
+ *
  * @codeCoverageIgnore
  */
 class ActionScheduler_AdminView extends ActionScheduler_AdminView_Deprecated {

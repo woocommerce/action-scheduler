@@ -2,6 +2,7 @@
 
 /**
  * Class ActionScheduler_Logger
+ *
  * @codeCoverageIgnore
  */
 abstract class ActionScheduler_Logger {

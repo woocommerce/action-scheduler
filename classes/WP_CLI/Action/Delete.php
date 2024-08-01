@@ -35,7 +35,7 @@ class ActionScheduler_WPCLI_Action_Delete_Command extends ActionScheduler_WPCLI_
 		$this->action_ids             = array_map( 'absint', $args );
 		$this->action_counts['total'] = count( $this->action_ids );
 
-		add_action( 'action_scheduler_deleted_action', array( $this, 'action__deleted' ) );
+		add_action( 'action_scheduler_deleted_action', array( $this, 'on_action_deleted' ) );
 	}
 
 	/**
@@ -88,7 +88,7 @@ class ActionScheduler_WPCLI_Action_Delete_Command extends ActionScheduler_WPCLI_
 	 * @param int $action_id Action ID.
 	 * @return void
 	 */
-	public function action__deleted( $action_id ) {
+	public function on_action_deleted( $action_id ) {
 		if ( 'action_scheduler_deleted_action' !== current_action() ) {
 			return;
 		}

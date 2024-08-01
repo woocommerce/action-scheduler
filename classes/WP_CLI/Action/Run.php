@@ -37,10 +37,10 @@ class ActionScheduler_WPCLI_Action_Run_Command extends ActionScheduler_WPCLI_Com
 		$this->action_ids             = array_map( 'absint', $args );
 		$this->action_counts['total'] = count( $this->action_ids );
 
-		add_action( 'action_scheduler_execution_ignored', array( $this, 'action__ignored' ) );
-		add_action( 'action_scheduler_after_execute', array( $this, 'action__executed' ) );
-		add_action( 'action_scheduler_failed_execution', array( $this, 'action__failed' ), 10, 2 );
-		add_action( 'action_scheduler_failed_validation', array( $this, 'action__invalid' ), 10, 2 );
+		add_action( 'action_scheduler_execution_ignored', array( $this, 'on_action_ignored' ) );
+		add_action( 'action_scheduler_after_execute', array( $this, 'on_action_executed' ) );
+		add_action( 'action_scheduler_failed_execution', array( $this, 'on_action_failed' ), 10, 2 );
+		add_action( 'action_scheduler_failed_validation', array( $this, 'on_action_invalid' ), 10, 2 );
 	}
 
 	/**
@@ -109,7 +109,7 @@ class ActionScheduler_WPCLI_Action_Run_Command extends ActionScheduler_WPCLI_Com
 	 * @param int $action_id Action ID.
 	 * @return void
 	 */
-	public function action__ignored( $action_id ) {
+	public function on_action_ignored( $action_id ) {
 		if ( 'action_scheduler_execution_ignored' !== current_action() ) {
 			return;
 		}
@@ -130,7 +130,7 @@ class ActionScheduler_WPCLI_Action_Run_Command extends ActionScheduler_WPCLI_Com
 	 * @param int $action_id Action ID.
 	 * @return void
 	 */
-	public function action__executed( $action_id ) {
+	public function on_action_executed( $action_id ) {
 		if ( 'action_scheduler_after_execute' !== current_action() ) {
 			return;
 		}
@@ -152,7 +152,7 @@ class ActionScheduler_WPCLI_Action_Run_Command extends ActionScheduler_WPCLI_Com
 	 * @param \Exception $e         Exception.
 	 * @return void
 	 */
-	public function action__failed( $action_id, \Exception $e ) {
+	public function on_action_failed( $action_id, \Exception $e ) {
 		if ( 'action_scheduler_failed_execution' !== current_action() ) {
 			return;
 		}
@@ -174,7 +174,7 @@ class ActionScheduler_WPCLI_Action_Run_Command extends ActionScheduler_WPCLI_Com
 	 * @param \Exception $e         Exception.
 	 * @return void
 	 */
-	public function action__invalid( $action_id, \Exception $e ) {
+	public function on_action_invalid( $action_id, \Exception $e ) {
 		if ( 'action_scheduler_failed_validation' !== current_action() ) {
 			return;
 		}

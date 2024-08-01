@@ -23,8 +23,8 @@ class ActionScheduler_LogEntry {
 	/**
 	 * Constructor
 	 *
-	 * @param mixed  $action_id Action ID
-	 * @param string $message   Message
+	 * @param mixed  $action_id Action ID.
+	 * @param string $message   Message.
 	 * @param Datetime $date    Datetime object with the time when this log entry was created. If this parameter is
 	 *                          not provided a new Datetime object (with current time) will be created.
 	 */

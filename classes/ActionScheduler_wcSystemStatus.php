@@ -1,5 +1,7 @@
 <?php
 
+// phpcs:disable PEAR.NamingConventions.ValidClassName.Invalid
+
 /**
  * Class ActionScheduler_wcSystemStatus
  */

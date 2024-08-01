@@ -57,30 +57,6 @@ abstract class ActionScheduler_WPCLI_Command extends \WP_CLI_Command {
 	}
 
 	/**
-	 * Returns the recurrence of an action or 'Non-repeating'. The output is human readable.
-	 *
-	 * @see \ActionScheduler_ListTable::get_recurrence()
-	 * @param ActionScheduler_Action $action Action.
-	 *
-	 * @return string
-	 */
-	protected function get_recurrence( $action ) {
-		$schedule = $action->get_schedule();
-		if ( $schedule->is_recurring() ) {
-			$recurrence = $schedule->get_recurrence();
-
-			if ( is_numeric( $recurrence ) ) {
-				/* translators: %s: time interval */
-				return sprintf( __( 'Every %s', 'action-scheduler' ), self::human_interval( $recurrence ) );
-			} else {
-				return $recurrence;
-			}
-		}
-
-		return __( 'Non-repeating', 'action-scheduler' );
-	}
-
-	/**
 	 * Transforms arguments with '__' from CSV into expected arrays.
 	 *
 	 * @see \WP_CLI\CommandWithDBObject::process_csv_arguments_to_arrays()

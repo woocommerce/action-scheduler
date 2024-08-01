@@ -34,8 +34,8 @@ class ActionScheduler_WPCLI_Action_Next_Command extends ActionScheduler_WPCLI_Co
 			'group'   => $group,
 		);
 
-		if ( is_array( $args ) ) {
-			$params['args'] = $args;
+		if ( is_array( $callback_args ) ) {
+			$params['args'] = $callback_args;
 		}
 
 		$params['status'] = ActionScheduler_Store::STATUS_RUNNING;

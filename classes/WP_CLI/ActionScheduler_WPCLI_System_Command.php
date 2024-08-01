@@ -97,6 +97,7 @@ class ActionScheduler_WPCLI_System_Command {
 	public function version( array $args, array $assoc_args ) {
 		$all      = (bool) get_flag_value( $assoc_args, 'all' );
 		$instance = \ActionScheduler_Versions::instance();
+		$latest   = $this->get_latest_version( $instance );
 
 		if ( $all ) {
 			$versions = $instance->get_versions();
@@ -104,21 +105,28 @@ class ActionScheduler_WPCLI_System_Command {
 			$rows = array();
 
 			foreach ( $versions as $version => $callback ) {
+				$active = 'no';
+
+				if ( $version === $latest ) {
+					$active = 'yes';
+				}
+
 				$rows[ $version ] = array(
 					'version'  => $version,
 					'callback' => $callback,
+					'active'   => $active,
 				);
 			}
 
 			uksort( $rows, 'version_compare' );
 
-			$formatter = new \WP_CLI\Formatter( $assoc_args, array( 'version', 'callback' ) );
+			$formatter = new \WP_CLI\Formatter( $assoc_args, array( 'version', 'callback', 'active' ) );
 			$formatter->display_items( $rows );
 
 			return;
 		}
 
-		echo $this->get_latest_version( $instance );
+		echo $latest;
 	}
 
 	/**

@@ -83,12 +83,12 @@ class ActionScheduler_WPCLI_System_Command {
 	}
 
 	/**
-	 * Get latest or all system versions.
+	 * Display the active version, or all registered versions.
 	 *
 	 * ## OPTIONS
 	 *
 	 * [--all]
-	 * : Get all system versions.
+	 * : List all registered versions.
 	 *
 	 * @param array $args       Positional args.
 	 * @param array $assoc_args Keyed args.

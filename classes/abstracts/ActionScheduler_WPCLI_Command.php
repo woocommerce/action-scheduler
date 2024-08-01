@@ -60,7 +60,7 @@ abstract class ActionScheduler_WPCLI_Command extends \WP_CLI_Command {
 	 * Transforms arguments with '__' from CSV into expected arrays.
 	 *
 	 * @see \WP_CLI\CommandWithDBObject::process_csv_arguments_to_arrays()
-	 * @link https://github.com/wp-cli/entity-command/blob/6e0e77a297eefa3329b94bec16c15cf7528d343f/src/WP_CLI/CommandWithDBObject.php
+	 * @link https://github.com/wp-cli/entity-command/blob/c270cc9a2367cb8f5845f26a6b5e203397c91392/src/WP_CLI/CommandWithDBObject.php#L99
 	 * @return void
 	 */
 	protected function process_csv_arguments_to_arrays() {

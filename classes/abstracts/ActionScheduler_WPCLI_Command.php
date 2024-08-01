@@ -22,7 +22,7 @@ abstract class ActionScheduler_WPCLI_Command extends \WP_CLI_Command {
 	public function __construct( array $args, array $assoc_args ) {
 		if ( ! defined( 'WP_CLI' ) || ! constant( 'WP_CLI' ) ) {
 			/* translators: %s php class name */
-			throw new Exception( sprintf( __( 'The %s class can only be run within WP CLI.', 'action-scheduler' ), __CLASS__ ) );
+			throw new Exception( sprintf( __( 'The %s class can only be run within WP CLI.', 'action-scheduler' ), get_class( $this ) ) );
 		}
 
 		$this->args       = $args;

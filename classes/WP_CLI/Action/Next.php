@@ -1,5 +1,7 @@
 <?php
 
+// phpcs:disable WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaping output is not necessary in WP CLI.
+
 use function \WP_CLI\Utils\get_flag_value;
 
 /**
@@ -39,6 +41,7 @@ class ActionScheduler_WPCLI_Action_Next_Command extends ActionScheduler_WPCLI_Co
 		}
 
 		$params['status'] = ActionScheduler_Store::STATUS_RUNNING;
+		// phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_var_export
 		WP_CLI::debug( 'ActionScheduler()::store()->query_action( ' . var_export( $params, true ) . ' )' );
 
 		$action_id = ActionScheduler::store()->query_action( $params );
@@ -48,6 +51,7 @@ class ActionScheduler_WPCLI_Action_Next_Command extends ActionScheduler_WPCLI_Co
 		}
 
 		$params['status'] = ActionScheduler_Store::STATUS_PENDING;
+		// phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_var_export
 		WP_CLI::debug( 'ActionScheduler()::store()->query_action( ' . var_export( $params, true ) . ' )' );
 
 		$action_id = ActionScheduler::store()->query_action( $params );

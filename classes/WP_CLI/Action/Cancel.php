@@ -37,9 +37,9 @@ class ActionScheduler_WPCLI_Action_Cancel_Command extends ActionScheduler_WPCLI_
 	/**
 	 * Cancel single action.
 	 *
-	 * @param string $hook
-	 * @param array $callback_args
-	 * @param string $group
+	 * @param string $hook The hook that the job will trigger.
+	 * @param array  $callback_args Args that would have been passed to the job.
+	 * @param string $group The group the job is assigned to.
 	 * @return void
 	 */
 	protected function cancel_single( $hook, $callback_args, $group ) {
@@ -64,9 +64,9 @@ class ActionScheduler_WPCLI_Action_Cancel_Command extends ActionScheduler_WPCLI_
 	/**
 	 * Cancel all actions.
 	 *
-	 * @param string $hook
-	 * @param array $callback_args
-	 * @param string $group
+	 * @param string $hook The hook that the job will trigger.
+	 * @param array  $callback_args Args that would have been passed to the job.
+	 * @param string $group The group the job is assigned to.
 	 * @return void
 	 */
 	protected function cancel_all( $hook, $callback_args, $group ) {
@@ -101,7 +101,7 @@ class ActionScheduler_WPCLI_Action_Cancel_Command extends ActionScheduler_WPCLI_
 	 *
 	 * @param \Exception $e The error object.
 	 * @param bool       $multiple Boolean if multiple actions.
-	 * @throws \WP_CLI\ExitException
+	 * @throws \WP_CLI\ExitException When an error occurs.
 	 * @return void
 	 */
 	protected function print_error( \Exception $e, $multiple ) {

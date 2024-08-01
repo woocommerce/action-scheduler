@@ -5,10 +5,18 @@
  */
 class ActionScheduler_WPCLI_Action_Delete_Command extends ActionScheduler_WPCLI_Command {
 
-	/** @var int[] */
+	/**
+	 * Array of action IDs to delete.
+	 *
+	 * @var int[]
+	 */
 	protected $action_ids = array();
 
-	/** @var array<string, int> */
+	/**
+	 * Number of deleted, failed, and total actions deleted.
+	 *
+	 * @var array<string, int>
+	 */
 	protected $action_counts = array(
 		'deleted' => 0,
 		'failed'  => 0,
@@ -61,7 +69,7 @@ class ActionScheduler_WPCLI_Action_Delete_Command extends ActionScheduler_WPCLI_
 		$progress_bar->finish();
 
 		/* translators: %1$d: number of actions deleted */
-		$format = _n( 'Deleted %1$d action', 'Deleted %1$d actions', $this->action_counts['deleted'], 'action-scheduler' ) .', ';
+		$format = _n( 'Deleted %1$d action', 'Deleted %1$d actions', $this->action_counts['deleted'], 'action-scheduler' ) . ', ';
 		/* translators: %2$d: number of actions deletions failed */
 		$format .= _n( '%2$d failure.', '%2$d failures.', $this->action_counts['failed'], 'action-scheduler' );
 

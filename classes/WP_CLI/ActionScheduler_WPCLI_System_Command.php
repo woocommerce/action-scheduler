@@ -1,5 +1,7 @@
 <?php
 
+// phpcs:disable WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaping output is not necessary in WP CLI.
+
 use function \WP_CLI\Utils\get_flag_value;
 
 /**
@@ -11,7 +13,6 @@ class ActionScheduler_WPCLI_System_Command {
 	 * Data store for querying actions
 	 *
 	 * @var ActionScheduler_Store
-	 * @access protected
 	 */
 	protected $store;
 

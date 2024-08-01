@@ -5,10 +5,18 @@
  */
 class ActionScheduler_WPCLI_Action_Run_Command extends ActionScheduler_WPCLI_Command {
 
-	/** @var int[] */
+	/**
+	 * Array of action IDs to execute.
+	 *
+	 * @var int[]
+	 */
 	protected $action_ids = array();
 
-	/** @var array<string, int> */
+	/**
+	 * Number of executed, failed, ignored, invalid, and total actions.
+	 *
+	 * @var array<string, int>
+	 */
 	protected $action_counts = array(
 		'executed' => 0,
 		'failed'   => 0,

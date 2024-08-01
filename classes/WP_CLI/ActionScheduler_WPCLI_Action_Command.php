@@ -275,8 +275,7 @@ class ActionScheduler_WPCLI_Action_Command extends WP_CLI_Command {
 	 * default: 0
 	 * ---
 	 *
-	 * @param array $args       Positional arguments.
-	 * @param array $assoc_args Keyed arguments.
+	 * @param array $args Positional arguments.
 	 * @return void
 	 */
 	public function logs( array $args ) {

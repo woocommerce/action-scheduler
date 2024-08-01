@@ -229,11 +229,11 @@ class ActionScheduler_AdminView extends ActionScheduler_AdminView_Deprecated {
 					'<p>' .
 						__( 'Action Scheduler is a scalable, traceable job queue for background processing large sets of actions. Action Scheduler works by triggering an action hook to run at some time in the future. Scheduled actions can also be scheduled to run on a recurring schedule.', 'action-scheduler' ) .
 					'</p>' .
-					'<h3>' . __( 'WP CLI', 'action-scheduler' ) . '</h3>' .
+					'<h3>' . esc_html__( 'WP CLI', 'action-scheduler' ) . '</h3>' .
 					'<p>' .
 						sprintf(
 							/* translators: %1$s is WP CLI command (not translatable) */
-							__( 'WP CLI commands are available: execute %1$s for a list of available commands.', 'action-scheduler' ),
+							esc_html__( 'WP CLI commands are available: execute %1$s for a list of available commands.', 'action-scheduler' ),
 							'<code>wp help action-scheduler</code>'
 						) .
 					'</p>',

@@ -48,7 +48,7 @@ class ActionScheduler_WPCLI_Action_Cancel_Command extends ActionScheduler_WPCLI_
 		}
 
 		try {
-			$result = call_user_func( 'as_unschedule_action', $hook, $callback_args, $group );
+			$result = as_unschedule_action( $hook, $callback_args, $group );
 		} catch ( \Exception $e ) {
 			$this->print_error( $e, false );
 		}

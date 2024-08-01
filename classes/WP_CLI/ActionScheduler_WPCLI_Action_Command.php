@@ -183,7 +183,7 @@ class ActionScheduler_WPCLI_Action_Command extends WP_CLI_Command {
 	 * : Instead of returning the whole action, returns the value of a single field.
 	 *
 	 * [--fields=<fields>]
-	 * : Limit the output to specific fields. Defaults to all fields.
+	 * : Limit the output to specific fields (comma-separated). Defaults to all fields.
 	 *
 	 * [--format=<format>]
 	 * : Render output in a particular format.

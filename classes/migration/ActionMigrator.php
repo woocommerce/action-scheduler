@@ -68,7 +68,7 @@ class ActionMigrator {
 		try {
 
 			// Make sure the last attempt date is set correctly for completed and failed actions
-			$last_attempt_date = ( $status !== \ActionScheduler_Store::STATUS_PENDING ) ? $this->source->get_date( $source_action_id ) : null;
+			$last_attempt_date = ( \ActionScheduler_Store::STATUS_PENDING !== $status ) ? $this->source->get_date( $source_action_id ) : null;
 
 			$destination_action_id = $this->destination->save_action( $action, null, $last_attempt_date );
 		} catch ( \Exception $e ) {

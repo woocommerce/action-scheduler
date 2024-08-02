@@ -41,7 +41,7 @@ class ActionScheduler_WPCLI_Clean_Command extends WP_CLI_Command {
 
 		$batches_completed = 0;
 		$actions_deleted   = 0;
-		$unlimited         = $batches === 0;
+		$unlimited         = 0 === $batches;
 		try {
 			$lifespan = as_get_datetime_object( $before );
 		} catch ( Exception $e ) {

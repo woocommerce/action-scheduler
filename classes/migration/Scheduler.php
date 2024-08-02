@@ -40,7 +40,7 @@ class Scheduler {
 		$migration_runner = $this->get_migration_runner();
 		$count            = $migration_runner->run( $this->get_batch_size() );
 
-		if ( $count === 0 ) {
+		if ( 0 === $count ) {
 			$this->mark_complete();
 		} else {
 			$this->schedule_migration( time() + $this->get_schedule_interval() );

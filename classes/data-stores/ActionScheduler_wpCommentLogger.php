@@ -47,7 +47,7 @@ class ActionScheduler_wpCommentLogger extends ActionScheduler_Logger {
 	 */
 	public function get_entry( $entry_id ) {
 		$comment = $this->get_comment( $entry_id );
-		if ( empty($comment) || $comment->comment_type != self::TYPE ) {
+		if ( empty($comment) || self::TYPE !== $comment->comment_type ) {
 			return new ActionScheduler_NullLogEntry();
 		}
 

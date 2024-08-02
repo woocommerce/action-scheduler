@@ -91,7 +91,7 @@ class ActionScheduler_WPCLI_Scheduler_command extends WP_CLI_Command {
 
 		$batches_completed = 0;
 		$actions_completed = 0;
-		$unlimited         = $batches === 0;
+		$unlimited         = 0 === $batches;
 		if ( is_callable( [ ActionScheduler::store(), 'set_claim_filter' ] ) ) {
 			$exclude_groups = $this->parse_comma_separated_string( $exclude_groups );
 

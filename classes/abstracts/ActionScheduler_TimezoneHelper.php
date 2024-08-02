@@ -108,8 +108,8 @@ abstract class ActionScheduler_TimezoneHelper {
 			$tzstring = get_option('timezone_string');
 
 			if ( empty($tzstring) ) {
-				$gmt_offset = get_option('gmt_offset');
-				if ( $gmt_offset == 0 ) {
+				$gmt_offset = absint( get_option('gmt_offset') );
+				if ( 0 === $gmt_offset ) {
 					$tzstring = 'UTC';
 				} else {
 					$gmt_offset *= HOUR_IN_SECONDS;

@@ -51,6 +51,7 @@ class ActionScheduler_QueueRunner extends ActionScheduler_Abstract_QueueRunner {
 	 */
 	public function init() {
 
+		// phpcs:ignore WordPress.WP.CronInterval.CronSchedulesInterval
 		add_filter( 'cron_schedules', array( self::instance(), 'add_wp_cron_schedule' ) );
 
 		// Check for and remove any WP Cron hook scheduled by Action Scheduler < 3.0.0, which didn't include the $context param

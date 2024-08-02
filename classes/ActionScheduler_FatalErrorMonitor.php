@@ -82,7 +82,7 @@ class ActionScheduler_FatalErrorMonitor {
 	 * Handle unexpected shutdown.
 	 */
 	public function handle_unexpected_shutdown() {
-		$error = error_get_last()
+		$error = error_get_last();
 
 		if ( $error ) {
 			if ( in_array( $error['type'], array( E_ERROR, E_PARSE, E_COMPILE_ERROR, E_USER_ERROR, E_RECOVERABLE_ERROR ), true ) ) {

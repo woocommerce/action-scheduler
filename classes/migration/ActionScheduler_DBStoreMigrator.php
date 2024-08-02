@@ -23,7 +23,7 @@ class ActionScheduler_DBStoreMigrator extends ActionScheduler_DBStore {
 	 * @return string The action ID
 	 * @throws \RuntimeException When the action is not saved.
 	 */
-	public function save_action( ActionScheduler_Action $action, \DateTime $scheduled_date = null, \DateTime $last_attempt_date = null ){
+	public function save_action( ActionScheduler_Action $action, \DateTime $scheduled_date = null, \DateTime $last_attempt_date = null ) {
 		try {
 			/** @var \wpdb $wpdb */
 			global $wpdb;

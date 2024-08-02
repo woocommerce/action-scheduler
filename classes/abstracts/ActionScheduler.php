@@ -226,7 +226,7 @@ abstract class ActionScheduler {
 				__( '%s() was called before the Action Scheduler data store was initialized', 'action-scheduler' ),
 				esc_attr( $function_name )
 			);
-			_doing_it_wrong( $function_name, $message, '3.1.6' );
+			_doing_it_wrong( esc_html( $function_name ), esc_html( $message ), '3.1.6' );
 		}
 
 		return self::$data_store_initialized;

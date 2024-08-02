@@ -34,7 +34,7 @@ class ActionScheduler_Versions {
 
 	public function latest_version_callback() {
 		$latest = $this->latest_version();
-		if ( empty($latest) || !isset($this->versions[$latest]) ) {
+		if ( empty($latest) || ! isset($this->versions[$latest]) ) {
 			return '__return_null';
 		}
 		return $this->versions[$latest];

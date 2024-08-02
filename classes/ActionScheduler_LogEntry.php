@@ -8,12 +8,12 @@ class ActionScheduler_LogEntry {
 	/**
 	 * @var int $action_id
 	 */
-	protected $action_id =  '';
+	protected $action_id = '';
 
 	/**
 	 * @var string $message
 	 */
-	protected $message =  '';
+	protected $message = '';
 
 	/**
 	 * @var Datetime $date

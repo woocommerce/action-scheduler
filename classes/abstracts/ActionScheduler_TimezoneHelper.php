@@ -104,7 +104,7 @@ abstract class ActionScheduler_TimezoneHelper {
 		if ( $reset ) {
 			self::$local_timezone = NULL;
 		}
-		if ( !isset(self::$local_timezone) ) {
+		if ( ! isset(self::$local_timezone) ) {
 			$tzstring = get_option('timezone_string');
 
 			if ( empty($tzstring) ) {

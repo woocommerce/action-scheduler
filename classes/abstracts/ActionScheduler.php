@@ -15,7 +15,7 @@ abstract class ActionScheduler {
 	private static $data_store_initialized = false;
 
 	public static function factory() {
-		if ( !isset(self::$factory) ) {
+		if ( ! isset(self::$factory) ) {
 			self::$factory = new ActionScheduler_ActionFactory();
 		}
 		return self::$factory;

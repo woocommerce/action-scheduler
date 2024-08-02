@@ -76,7 +76,7 @@ class ActionScheduler_wpCommentLogger extends ActionScheduler_Logger {
 		$logs = array();
 		foreach ( $comments as $c ) {
 			$entry = $this->get_entry( $c );
-			if ( !empty($entry) ) {
+			if ( ! empty($entry) ) {
 				$logs[] = $entry;
 			}
 		}
@@ -94,7 +94,7 @@ class ActionScheduler_wpCommentLogger extends ActionScheduler_Logger {
 	 */
 	public function filter_comment_queries( $query ) {
 		foreach ( array('ID', 'parent', 'post_author', 'post_name', 'post_parent', 'type', 'post_type', 'post_id', 'post_ID') as $key ) {
-			if ( !empty($query->query_vars[$key]) ) {
+			if ( ! empty($query->query_vars[$key]) ) {
 				return; // don't slow down queries that wouldn't include action_log comments anyway
 			}
 		}
@@ -109,7 +109,7 @@ class ActionScheduler_wpCommentLogger extends ActionScheduler_Logger {
 	 * @return array
 	 */
 	public function filter_comment_query_clauses( $clauses, $query ) {
-		if ( !empty($query->query_vars['action_log_filter']) ) {
+		if ( ! empty($query->query_vars['action_log_filter']) ) {
 			$clauses['where'] .= $this->get_where_clause();
 		}
 		return $clauses;

@@ -309,11 +309,11 @@ abstract class ActionScheduler {
 	}
 
 	final public function __clone() {
-		trigger_error("Singleton. No cloning allowed!", E_USER_ERROR);
+		wp_trigger_error("Singleton. No cloning allowed!", E_USER_ERROR);
 	}
 
 	final public function __wakeup() {
-		trigger_error("Singleton. No serialization allowed!", E_USER_ERROR);
+		wp_trigger_error("Singleton. No serialization allowed!", E_USER_ERROR);
 	}
 
 	final private function __construct() {}

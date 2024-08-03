@@ -20,7 +20,7 @@ class ActionScheduler_InvalidActionException extends \InvalidArgumentException i
 			/* translators: 1: action ID 2: schedule */
 			__( 'Action [%1$s] has an invalid schedule: %2$s', 'action-scheduler' ),
 			$action_id,
-			var_export( $schedule, true )
+			var_export( $schedule, true ) // phpcs:ignore WordPress.PHP.DevelopmentFunctions
 		);
 
 		return new static( $message );
@@ -39,7 +39,7 @@ class ActionScheduler_InvalidActionException extends \InvalidArgumentException i
 			/* translators: 1: action ID 2: arguments */
 			__( 'Action [%1$s] has invalid arguments. It cannot be JSON decoded to an array. $args = %2$s', 'action-scheduler' ),
 			$action_id,
-			var_export( $args, true )
+			var_export( $args, true ) // phpcs:ignore WordPress.PHP.DevelopmentFunctions
 		);
 
 		return new static( $message );

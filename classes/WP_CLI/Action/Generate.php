@@ -10,6 +10,8 @@ class ActionScheduler_WPCLI_Action_Generate_Command extends ActionScheduler_WPCL
 	/**
 	 * Execute command.
 	 *
+	 * @todo support negative interval
+	 *
 	 * @return void
 	 */
 	public function execute() {

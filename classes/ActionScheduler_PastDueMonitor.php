@@ -10,8 +10,8 @@ class ActionScheduler_PastDueMonitor {
 
 	protected $threshold_seconds;
 	protected $threshold_minimum;
-	protected $check_interval;
-	protected $email_interval_seconds;
+	protected $interval_check;
+	protected $interval_email_seconds;
 	protected $num_pastdue_actions = 0;
 
 	/**
@@ -29,10 +29,11 @@ class ActionScheduler_PastDueMonitor {
 	}
 
 	public function init() {
-		$this->threshold_seconds      = absint( apply_filters( 'action_scheduler_pastdue_actions_seconds', DAY_IN_SECONDS ) );
-		$this->threshold_minimum      = absint( apply_filters( 'action_scheduler_pastdue_actions_min', 1 ) );
-		$this->check_interval         = absint( apply_filters( 'action_scheduler_pastdue_actions_check_interval', ( $this->threshold_seconds / 4 ) ) );
-		$this->email_interval_seconds = absint( apply_filters( 'action_scheduler_pastdue_actions_email_interval', HOUR_IN_SECONDS ) );
+		$this->threshold_seconds       = absint( apply_filters( 'action_scheduler_pastdue_actions_seconds', DAY_IN_SECONDS ) );
+		$this->threshold_minimum       = absint( apply_filters( 'action_scheduler_pastdue_actions_min', 1 ) );
+		$this->interval_check          = absint( apply_filters( 'action_scheduler_pastdue_actions_check_interval', ( $this->threshold_seconds / 4 ) ) );
+		$this->interval_email_seconds  = absint( apply_filters( 'action_scheduler_pastdue_actions_email_interval', HOUR_IN_SECONDS ) );
+		$this->threshold_email_minimum = absint( apply_filters( 'action_scheduler_pastdue_actions_email_min', $this->threshold_minimum ) )
 
 		add_action( 'action_scheduler_stored_action', array( $this, 'on_action_stored' ), 0 );
 
@@ -66,9 +67,7 @@ class ActionScheduler_PastDueMonitor {
 			return;
 		}
 
-		$threshold = absint( apply_filters( 'action_scheduler_pastdue_actions_email_min', $this->threshold_minimum ) );
-
-		if ( $this->num_pastdue_actions < $threshold ) {
+		if ( $this->num_pastdue_actions < $this->threshold_email_min ) {
 			return;
 		}
 
@@ -77,7 +76,7 @@ class ActionScheduler_PastDueMonitor {
 		$subject = '';
 		$message = '';
 
-		set_transient( 'action_scheduler_pastdue_actions_last_email', time(), $this->email_interval_seconds );
+		set_transient( 'action_scheduler_pastdue_actions_last_email', time(), $this->interval_email_seconds );
 
 		wp_mail( $to, $subject, $message, "From: $from" );
 	}
@@ -112,7 +111,7 @@ class ActionScheduler_PastDueMonitor {
 		$check = ( bool ) apply_filters( 'action_scheduler_pastdue_actions_check', $check, $this->num_pastdue_actions, $this->threshold_seconds, $this->threshold_minimum );
 
 		$transient = $check ? 'yes' : 'no';
-		set_transient( 'action_scheduler_pastdue_actions_critical', $transient, $this->check_interval );
+		set_transient( 'action_scheduler_pastdue_actions_critical', $transient, $this->interval_check );
 
 		return $check;
 	}

@@ -144,4 +144,22 @@ class ActionScheduler_AdminView_Deprecated {
 		_deprecated_function( __METHOD__, '2.0.0' );
 		return $messages;
 	}
+
+	/**
+	 * Action: admin_notices
+	 *
+	 * Maybe check past-due actions, and print notice.
+	 *
+	 * @uses $this->check_pastdue_actions()
+	 */
+	public function maybe_check_pastdue_actions() {
+		_deprecated_function( __METHOD__, '3.8.2' );
+	}
+
+	/**
+	 * Check past-due actions, and print notice.
+	 */
+	protected function check_pastdue_actions() {
+		_deprecated_function( __METHOD__, '3.8.2' );
+	}
 }

@@ -178,8 +178,6 @@ class Controller {
 
 	/**
 	 * Possibly hook the migration scheduler action.
-	 *
-	 * @author Jeremy Pry
 	 */
 	public function maybe_hook_migration() {
 		if ( ! $this->allow_migration() || \ActionScheduler_DataController::is_migration_complete() ) {

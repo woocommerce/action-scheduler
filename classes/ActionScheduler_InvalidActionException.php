@@ -29,8 +29,6 @@ class ActionScheduler_InvalidActionException extends \InvalidArgumentException i
 	/**
 	 * Create a new exception when the action's args cannot be decoded to an array.
 	 *
-	 * @author Jeremy Pry
-	 *
 	 * @param string $action_id The action ID with bad args.
 	 * @return static
 	 */

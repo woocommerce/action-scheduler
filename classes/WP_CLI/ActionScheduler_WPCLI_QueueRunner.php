@@ -39,8 +39,6 @@ class ActionScheduler_WPCLI_QueueRunner extends ActionScheduler_Abstract_QueueRu
 	/**
 	 * Set up the Queue before processing.
 	 *
-	 * @author Jeremy Pry
-	 *
 	 * @param int    $batch_size The batch size to process.
 	 * @param array  $hooks      The hooks being used to filter the actions claimed in this batch.
 	 * @param string $group      The group of actions to claim with this batch.
@@ -72,8 +70,6 @@ class ActionScheduler_WPCLI_QueueRunner extends ActionScheduler_Abstract_QueueRu
 
 	/**
 	 * Add our hooks to the appropriate actions.
-	 *
-	 * @author Jeremy Pry
 	 */
 	protected function add_hooks() {
 		add_action( 'action_scheduler_before_execute', array( $this, 'before_execute' ) );
@@ -83,8 +79,6 @@ class ActionScheduler_WPCLI_QueueRunner extends ActionScheduler_Abstract_QueueRu
 
 	/**
 	 * Set up the WP CLI progress bar.
-	 *
-	 * @author Jeremy Pry
 	 */
 	protected function setup_progress_bar() {
 		$count              = count( $this->actions );
@@ -97,8 +91,6 @@ class ActionScheduler_WPCLI_QueueRunner extends ActionScheduler_Abstract_QueueRu
 
 	/**
 	 * Process actions in the queue.
-	 *
-	 * @author Jeremy Pry
 	 *
 	 * @param string $context Optional runner context. Default 'WP CLI'.
 	 *
@@ -129,8 +121,6 @@ class ActionScheduler_WPCLI_QueueRunner extends ActionScheduler_Abstract_QueueRu
 	/**
 	 * Handle WP CLI message when the action is starting.
 	 *
-	 * @author Jeremy Pry
-	 *
 	 * @param $action_id
 	 */
 	public function before_execute( $action_id ) {
@@ -140,8 +130,6 @@ class ActionScheduler_WPCLI_QueueRunner extends ActionScheduler_Abstract_QueueRu
 
 	/**
 	 * Handle WP CLI message when the action has completed.
-	 *
-	 * @author Jeremy Pry
 	 *
 	 * @param int $action_id
 	 * @param null|ActionScheduler_Action $action The instance of the action. Default to null for backward compatibility.
@@ -157,8 +145,6 @@ class ActionScheduler_WPCLI_QueueRunner extends ActionScheduler_Abstract_QueueRu
 
 	/**
 	 * Handle WP CLI message when the action has failed.
-	 *
-	 * @author Jeremy Pry
 	 *
 	 * @param int       $action_id
 	 * @param Exception $exception

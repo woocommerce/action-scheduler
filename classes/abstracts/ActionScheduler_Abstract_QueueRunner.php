@@ -223,8 +223,6 @@ abstract class ActionScheduler_Abstract_QueueRunner extends ActionScheduler_Abst
 
 	/**
 	 * Run the queue cleaner.
-	 *
-	 * @author Jeremy Pry
 	 */
 	protected function run_cleanup() {
 		$this->cleaner->clean( 10 * $this->get_time_limit() );
@@ -364,7 +362,6 @@ abstract class ActionScheduler_Abstract_QueueRunner extends ActionScheduler_Abst
 	/**
 	 * Process actions in the queue.
 	 *
-	 * @author Jeremy Pry
 	 * @param string $context Optional identifier for the context in which this action is being processed, e.g. 'WP CLI' or 'WP Cron'
 	 *        Generally, this should be capitalised and not localised as it's a proper noun.
 	 * @return int The number of actions processed.

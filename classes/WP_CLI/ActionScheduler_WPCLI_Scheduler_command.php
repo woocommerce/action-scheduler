@@ -141,8 +141,6 @@ class ActionScheduler_WPCLI_Scheduler_command extends WP_CLI_Command {
 	/**
 	 * Print WP CLI message about how many actions are about to be processed.
 	 *
-	 * @author Jeremy Pry
-	 *
 	 * @param int $total
 	 */
 	protected function print_total_actions( $total ) {
@@ -158,8 +156,6 @@ class ActionScheduler_WPCLI_Scheduler_command extends WP_CLI_Command {
 	/**
 	 * Print WP CLI message about how many batches of actions were processed.
 	 *
-	 * @author Jeremy Pry
-	 *
 	 * @param int $batches_completed
 	 */
 	protected function print_total_batches( $batches_completed ) {
@@ -174,8 +170,6 @@ class ActionScheduler_WPCLI_Scheduler_command extends WP_CLI_Command {
 
 	/**
 	 * Convert an exception into a WP CLI error.
-	 *
-	 * @author Jeremy Pry
 	 *
 	 * @param Exception $e The error object.
 	 *
@@ -193,8 +187,6 @@ class ActionScheduler_WPCLI_Scheduler_command extends WP_CLI_Command {
 
 	/**
 	 * Print a success message with the number of completed actions.
-	 *
-	 * @author Jeremy Pry
 	 *
 	 * @param int $actions_completed
 	 */

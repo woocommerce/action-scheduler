@@ -208,7 +208,6 @@ class ActionScheduler_QueueCleaner {
 	 * Do all of the cleaning actions.
 	 *
 	 * @param int $time_limit The number of seconds to use as the timeout and failure period. Default 300 (5 minutes).
-	 * @author Jeremy Pry
 	 */
 	public function clean( $time_limit = 300 ) {
 		$this->delete_old_actions();
@@ -219,7 +218,6 @@ class ActionScheduler_QueueCleaner {
 	/**
 	 * Get the batch size for cleaning the queue.
 	 *
-	 * @author Jeremy Pry
 	 * @return int
 	 */
 	protected function get_batch_size() {

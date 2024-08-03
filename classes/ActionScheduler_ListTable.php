@@ -330,7 +330,7 @@ class ActionScheduler_ListTable extends ActionScheduler_Abstract_ListTable {
 	 * @return string
 	 */
 	protected function maybe_render_actions( $row, $column_name ) {
-		if ( 'pending' === strtolower( $row[ 'status_name' ] ) ) {
+		if ( 'pending' === strtolower( $row['status_name'] ) ) {
 			return parent::maybe_render_actions( $row, $column_name );
 		}
 

@@ -94,7 +94,7 @@ class ActionScheduler_wpCommentLogger extends ActionScheduler_Logger {
 	 */
 	public function filter_comment_queries( $query ) {
 		foreach ( array('ID', 'parent', 'post_author', 'post_name', 'post_parent', 'type', 'post_type', 'post_id', 'post_ID') as $key ) {
-			if ( ! empty($query->query_vars[$key]) ) {
+			if ( ! empty($query->query_vars[ $key ]) ) {
 				return; // don't slow down queries that wouldn't include action_log comments anyway
 			}
 		}

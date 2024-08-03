@@ -81,9 +81,9 @@ class Migration_Command extends WP_CLI_Command {
 		$runner = new Runner( $config );
 		$runner->init_destination();
 
-		$batch_size = isset( $assoc_args[ 'batch-size' ] ) ? (int) $assoc_args[ 'batch-size' ] : 100;
-		$free_on    = isset( $assoc_args[ 'free-memory-on' ] ) ? (int) $assoc_args[ 'free-memory-on' ] : 50;
-		$sleep      = isset( $assoc_args[ 'pause' ] ) ? (int) $assoc_args[ 'pause' ] : 0;
+		$batch_size = isset( $assoc_args['batch-size'] ) ? (int) $assoc_args['batch-size'] : 100;
+		$free_on    = isset( $assoc_args['free-memory-on'] ) ? (int) $assoc_args['free-memory-on'] : 50;
+		$sleep      = isset( $assoc_args['pause'] ) ? (int) $assoc_args['pause'] : 0;
 		\ActionScheduler_DataController::set_free_ticks( $free_on );
 		\ActionScheduler_DataController::set_sleep_time( $sleep );
 
@@ -114,7 +114,7 @@ class Migration_Command extends WP_CLI_Command {
 		] );
 
 		$config = Controller::instance()->get_migration_config_object();
-		$config->set_dry_run( ! empty( $args[ 'dry-run' ] ) );
+		$config->set_dry_run( ! empty( $args['dry-run'] ) );
 
 		return $config;
 	}

@@ -91,7 +91,7 @@ abstract class ActionScheduler {
 			$dir = $classes_dir . 'schema' . $d;
 		} elseif ( strpos( $class, 'ActionScheduler' ) === 0 ) {
 			$segments = explode( '_', $class );
-			$type = isset( $segments[ 1 ] ) ? $segments[ 1 ] : '';
+			$type = isset( $segments[1] ) ? $segments[1] : '';
 
 			switch ( $type ) {
 				case 'WPCLI':
@@ -281,7 +281,7 @@ abstract class ActionScheduler {
 		);
 
 		$segments = explode( '_', $class );
-		$segment = isset( $segments[ 1 ] ) ? $segments[ 1 ] : $class;
+		$segment = isset( $segments[1] ) ? $segments[1] : $class;
 
 		return isset( $migration_segments[ $segment ] ) && $migration_segments[ $segment ];
 	}
@@ -303,7 +303,7 @@ abstract class ActionScheduler {
 		);
 
 		$segments = explode( '_', $class );
-		$segment = isset( $segments[ 1 ] ) ? $segments[ 1 ] : $class;
+		$segment = isset( $segments[1] ) ? $segments[1] : $class;
 
 		return isset( $cli_segments[ $segment ] ) && $cli_segments[ $segment ];
 	}

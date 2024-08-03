@@ -413,7 +413,7 @@ class ActionScheduler_ListTable extends ActionScheduler_Abstract_ListTable {
 
 			$action = $this->store->fetch_action( $notification['action_id'] );
 			$action_hook_html = '<strong><code>' . $action->get_hook() . '</code></strong>';
-			if ( 1 == $notification['success'] ) {
+			if ( 1 === absint( $notification['success'] ) ) {
 				$class = 'updated';
 				switch ( $notification['row_action_type'] ) {
 					case 'run' :

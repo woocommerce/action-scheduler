@@ -31,7 +31,7 @@ class ActionScheduler_AdminView extends ActionScheduler_AdminView_Deprecated {
 	 * @codeCoverageIgnore
 	 */
 	public function init() {
-		if ( is_admin() && ( ! defined( 'DOING_AJAX' ) || false == DOING_AJAX ) ) {
+		if ( is_admin() && ( ! defined( 'DOING_AJAX' ) || false === DOING_AJAX ) ) {
 
 			if ( class_exists( 'WooCommerce' ) ) {
 				add_action( 'woocommerce_admin_status_content_action-scheduler', array( $this, 'render_admin_ui' ) );
@@ -220,7 +220,7 @@ class ActionScheduler_AdminView extends ActionScheduler_AdminView_Deprecated {
 	public function add_help_tabs() {
 		$screen = get_current_screen();
 
-		if ( ! $screen || self::$screen_id != $screen->id ) {
+		if ( ! $screen || self::$screen_id !== $screen->id ) {
 			return;
 		}
 

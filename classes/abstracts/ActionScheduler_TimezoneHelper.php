@@ -125,7 +125,7 @@ abstract class ActionScheduler_TimezoneHelper {
 						$is_dst = date( 'I' ); // phpcs:ignore WordPress.DateTime.RestrictedFunctions.date_date	 -- we are actually interested in the runtime timezone.
 						foreach ( timezone_abbreviations_list() as $abbr ) {
 							foreach ( $abbr as $city ) {
-								if ( $city['dst'] == $is_dst && $city['offset'] == $gmt_offset ) {
+								if ( absint( $city['dst'] ) === $is_dst && absint( $city['offset'] ) === $gmt_offset ) {
 									// If there's no valid timezone ID, keep looking.
 									if ( null === $city['timezone_id'] ) {
 										continue;

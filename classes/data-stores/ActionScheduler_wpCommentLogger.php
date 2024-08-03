@@ -63,7 +63,7 @@ class ActionScheduler_wpCommentLogger extends ActionScheduler_Logger {
 	 */
 	public function get_logs( $action_id ) {
 		$status = 'all';
-		if ( get_post_status($action_id) == 'trash' ) {
+		if ( get_post_status($action_id) === 'trash' ) {
 			$status = 'post-trashed';
 		}
 		$comments = get_comments(array(
@@ -180,7 +180,7 @@ class ActionScheduler_wpCommentLogger extends ActionScheduler_Logger {
 
 			foreach ( (array) $count as $row ) {
 				// Don't count post-trashed toward totals
-				if ( 'post-trashed' != $row['comment_approved'] && 'trash' != $row['comment_approved'] ) {
+				if ( 'post-trashed' !== $row['comment_approved'] && 'trash' !== $row['comment_approved'] ) {
 					$total += $row['num_comments'];
 				}
 				if ( isset( $approved[ $row['comment_approved'] ] ) ) {

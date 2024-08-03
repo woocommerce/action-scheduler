@@ -42,7 +42,7 @@ abstract class ActionScheduler {
 	}
 
 	public static function monitor() {
-		return ActionSchdeduler_PastDueMonitor::instance();
+		return ActionScheduler_PastDueMonitor::instance();
 	}
 
 	/**
@@ -186,6 +186,7 @@ abstract class ActionScheduler {
 			$store->init();
 			$logger->init();
 			$runner->init();
+			$monitor->init();
 			self::$data_store_initialized = true;
 
 			/**

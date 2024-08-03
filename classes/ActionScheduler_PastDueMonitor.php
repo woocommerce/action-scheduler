@@ -2,6 +2,7 @@
 
 /**
  * Class ActionScheduler_PastDueMonitor
+ *
  * @codeCoverageIgnore
  */
 class ActionScheduler_PastDueMonitor {
@@ -10,12 +11,15 @@ class ActionScheduler_PastDueMonitor {
 
 	protected $threshold_seconds;
 	protected $threshold_minimum;
+	protected $threshold_email_minimum;
 	protected $interval_check;
 	protected $interval_email_seconds;
 	protected $num_pastdue_actions = 0;
+	protected $query_args = array();
 
 	/**
 	 * @return ActionScheduler_PastDueMonitor
+	 *
 	 * @codeCoverageIgnore
 	 */
 	public static function instance() {
@@ -33,34 +37,20 @@ class ActionScheduler_PastDueMonitor {
 		$this->threshold_minimum       = absint( apply_filters( 'action_scheduler_pastdue_actions_min', 1 ) );
 		$this->interval_check          = absint( apply_filters( 'action_scheduler_pastdue_actions_check_interval', ( $this->threshold_seconds / 4 ) ) );
 		$this->interval_email_seconds  = absint( apply_filters( 'action_scheduler_pastdue_actions_email_interval', HOUR_IN_SECONDS ) );
-		$this->threshold_email_minimum = absint( apply_filters( 'action_scheduler_pastdue_actions_email_min', $this->threshold_minimum ) )
+		$this->threshold_email_minimum = absint( apply_filters( 'action_scheduler_pastdue_actions_email_min', $this->threshold_minimum ) );
 
-		add_action( 'action_scheduler_stored_action', array( $this, 'on_action_stored' ), 0 );
+		$this->maybe_send_email();
 
 		if ( is_admin() && ( ! defined( 'DOING_AJAX' ) || false == DOING_AJAX ) ) {
 			add_action( 'admin_notices', array( $this, 'action__admin_notices' ) );
 		}
 	}
 
-	/**
-	 * Action: action_scheduler_stored_action
-	 *
-	 * Run check on number of past-due actions,
-	 * and maybe send email notification.
-	 */
-	public function on_action_stored( $action_id ) {
-		if ( 'action_scheduler_stored_action' !== current_action() ) {
-			return;
-		}
-
+	protected function maybe_send_email() {
 		if ( ! $this->critical() ) {
 			return;
 		}
 
-		$this->maybe_send_email();
-	}
-
-	protected function maybe_send_email() {
 		$transient = get_transient( 'action_scheduler_pastdue_actions_last_email' );
 
 		if ( ! empty( $transient ) ) {
@@ -97,17 +87,17 @@ class ActionScheduler_PastDueMonitor {
 		}
 
 		# Scheduled actions query arguments.
-		$query_args = array(
-			'date'     => as_get_datetime_object( time() - $threshold_seconds ),
+		$this->query_args = array(
+			'date'     => as_get_datetime_object( time() - $this->threshold_seconds ),
 			'status'   => ActionScheduler_Store::STATUS_PENDING,
 			'per_page' => $this->threshold_minimum,
 		);
 
 		$store = ActionScheduler_Store::instance();
-		$this->num_pastdue_actions = ( int ) $store->query_actions( $query_args, 'count' );
+		$this->num_pastdue_actions = ( int ) $store->query_actions( $this->query_args, 'count' );
 
 		# Check if past-due actions count is greater than or equal to threshold.
-		$check = ( $num_pastdue_actions >= $this->threshold_minimum );
+		$check = ( $this->num_pastdue_actions >= $this->threshold_minimum );
 		$check = ( bool ) apply_filters( 'action_scheduler_pastdue_actions_check', $check, $this->num_pastdue_actions, $this->threshold_seconds, $this->threshold_minimum );
 
 		$transient = $check ? 'yes' : 'no';
@@ -157,7 +147,7 @@ class ActionScheduler_PastDueMonitor {
 		echo '</p></div>';
 
 		# Facilitate third-parties to evaluate and print notices.
-		do_action( 'action_scheduler_pastdue_actions_extra_notices', $query_args );
+		do_action( 'action_scheduler_pastdue_actions_extra_notices', $this->query_args );
 	}
 
 }

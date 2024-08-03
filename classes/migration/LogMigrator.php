@@ -25,11 +25,11 @@ class LogMigrator {
 	 * ActionMigrator constructor.
 	 *
 	 * @param ActionScheduler_Logger $source_logger Source logger object.
-	 * @param ActionScheduler_Logger $destination_Logger Destination logger object.
+	 * @param ActionScheduler_Logger $destination_logger Destination logger object.
 	 */
-	public function __construct( ActionScheduler_Logger $source_logger, ActionScheduler_Logger $destination_Logger ) {
+	public function __construct( ActionScheduler_Logger $source_logger, ActionScheduler_Logger $destination_logger ) {
 		$this->source      = $source_logger;
-		$this->destination = $destination_Logger;
+		$this->destination = $destination_logger;
 	}
 
 	/**

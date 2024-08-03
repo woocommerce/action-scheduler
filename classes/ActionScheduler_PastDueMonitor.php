@@ -80,10 +80,14 @@ class ActionScheduler_PastDueMonitor {
 			return $check;
 		}
 
-		$transient = get_transient( 'action_scheduler_pastdue_actions_critical' );
+		if ( ! empty( $this->num_pastdue_actions ) ) {
+			return true;
+		}
+
+		$transient = get_transient( 'action_scheduler_pastdue_actions_pause' );
 
 		if ( ! empty( $transient ) ) {
-			return 'yes' === $transient;
+			return false;
 		}
 
 		# Scheduled actions query arguments.
@@ -100,8 +104,9 @@ class ActionScheduler_PastDueMonitor {
 		$check = ( $this->num_pastdue_actions >= $this->threshold_minimum );
 		$check = ( bool ) apply_filters( 'action_scheduler_pastdue_actions_check', $check, $this->num_pastdue_actions, $this->threshold_seconds, $this->threshold_minimum );
 
-		$transient = $check ? 'yes' : 'no';
-		set_transient( 'action_scheduler_pastdue_actions_critical', $transient, $this->interval_check );
+		if ( ! $check ) {
+			set_transient( 'action_scheduler_pastdue_actions_pause', time(), $this->interval_check );
+		}
 
 		return $check;
 	}

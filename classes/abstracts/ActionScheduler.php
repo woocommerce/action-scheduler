@@ -41,6 +41,10 @@ abstract class ActionScheduler {
 		return ActionScheduler_AdminView::instance();
 	}
 
+	public static function monitor() {
+		return ActionSchdeduler_PastDueMonitor::instance();
+	}
+
 	/**
 	 * Get the absolute system path to the plugin directory, or a file therein
 	 * @static
@@ -146,6 +150,7 @@ abstract class ActionScheduler {
 		$logger     = self::logger();
 		$runner     = self::runner();
 		$admin_view = self::admin_view();
+		$monitor    = self::monitor();
 
 		// Ensure initialization on plugin activation.
 		if ( ! did_action( 'init' ) ) {
@@ -153,6 +158,7 @@ abstract class ActionScheduler {
 			add_action( 'init', array( $store, 'init' ), 1, 0 );
 			add_action( 'init', array( $logger, 'init' ), 1, 0 );
 			add_action( 'init', array( $runner, 'init' ), 1, 0 );
+			add_action( 'init', array( $monitor, 'init' ), 1, 0 );
 
 			add_action(
 				'init',

@@ -57,7 +57,7 @@ class ActionScheduler_PastDueMonitor {
 			return;
 		}
 
-		if ( $this->num_pastdue_actions < $this->threshold_email_min ) {
+		if ( $this->num_pastdue_actions < $this->threshold_email_minimum ) {
 			return;
 		}
 
@@ -70,7 +70,7 @@ class ActionScheduler_PastDueMonitor {
 		}
 
 		$to      = get_site_option( 'admin_email' );
-		$subject = sprintf( '%s: past-due scheduled actions', $sitename );
+		$subject = sprintf( 'Action Scheduler: past-due scheduled actions (%s)', $sitename );
 		$message = $this->message();
 
 		set_transient( 'action_scheduler_pastdue_actions_last_email', time(), $this->interval_email_seconds );

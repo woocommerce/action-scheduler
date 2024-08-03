@@ -61,14 +61,21 @@ class ActionScheduler_PastDueMonitor {
 			return;
 		}
 
-		$to      = get_bloginfo( 'admin_email' );
-		$from    = '';
-		$subject = '';
-		$message = '';
+		$sitename = wp_parse_url( network_home_url(), PHP_URL_HOST );
+
+		if ( null !== $sitename ) {
+			if ( str_starts_with( $sitename, 'www.' ) ) {
+				$sitename = substr( $sitename, 4 );
+			}
+		}
+
+		$to      = get_site_option( 'admin_email' );
+		$subject = sprintf( '%s: past-due scheduled actions', $sitename );
+		$message = $this->message();
 
 		set_transient( 'action_scheduler_pastdue_actions_last_email', time(), $this->interval_email_seconds );
 
-		wp_mail( $to, $subject, $message, "From: $from" );
+		wp_mail( $to, $subject, $message );
 	}
 
 	protected function critical() {
@@ -130,15 +137,23 @@ class ActionScheduler_PastDueMonitor {
 			return;
 		}
 
+		# Print notice.
+		echo '<div class="notice notice-warning"><p>';
+		echo $this->message();
+		echo '</p></div>';
+
+		# Facilitate third-parties to evaluate and print notices.
+		do_action( 'action_scheduler_pastdue_actions_extra_notices', $this->query_args );
+	}
+
+	protected function message() {
 		$actions_url = add_query_arg( array(
 			'page'   => 'action-scheduler',
 			'status' => 'past-due',
 			'order'  => 'asc',
 		), admin_url( 'tools.php' ) );
 
-		# Print notice.
-		echo '<div class="notice notice-warning"><p>';
-		printf(
+		return sprintf(
 			// translators: 1) is the number of affected actions, 2) is a link to an admin screen.
 			_n(
 				'<strong>Action Scheduler:</strong> %1$d <a href="%2$s">past-due action</a> found; something may be wrong. <a href="https://actionscheduler.org/faq/#my-site-has-past-due-actions-what-can-i-do" target="_blank">Read documentation &raquo;</a>',
@@ -147,12 +162,8 @@ class ActionScheduler_PastDueMonitor {
 				'action-scheduler'
 			),
 			$this->num_pastdue_actions,
-			esc_attr( esc_url( $actions_url ) )
+			esc_url( $actions_url )
 		);
-		echo '</p></div>';
-
-		# Facilitate third-parties to evaluate and print notices.
-		do_action( 'action_scheduler_pastdue_actions_extra_notices', $this->query_args );
 	}
 
 }

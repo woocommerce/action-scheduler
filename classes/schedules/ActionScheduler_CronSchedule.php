@@ -77,7 +77,7 @@ class ActionScheduler_CronSchedule extends ActionScheduler_Abstract_RecurringSch
 
 		return array_merge( $sleep_params, array(
 			'start_timestamp',
-			'cron'
+			'cron',
 		) );
 	}
 

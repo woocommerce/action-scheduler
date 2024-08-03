@@ -21,7 +21,7 @@ class ActionScheduler_wpPostStore_PostTypeRegistrar {
 			'public'       => false,
 			'map_meta_cap' => true,
 			'hierarchical' => false,
-			'supports'     => array('title', 'editor','comments'),
+			'supports'     => array('title', 'editor', 'comments'),
 			'rewrite'      => false,
 			'query_var'    => false,
 			'can_export'   => true,

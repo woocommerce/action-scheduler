@@ -193,7 +193,7 @@ abstract class ActionScheduler_Abstract_QueueRunner extends ActionScheduler_Abst
 			'date'         => date_create( 'now', timezone_open( 'UTC' ) )->format( 'Y-m-d H:i:s' ),
 			'date_compare' => '<',
 			'per_page'     => 1,
-			'offset'       => $consistent_failure_threshold - 1
+			'offset'       => $consistent_failure_threshold - 1,
 		);
 
 		$first_failing_action_id = $this->store->query_actions( $query_args );

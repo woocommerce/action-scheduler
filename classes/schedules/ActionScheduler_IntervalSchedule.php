@@ -57,7 +57,7 @@ class ActionScheduler_IntervalSchedule extends ActionScheduler_Abstract_Recurrin
 
 		return array_merge( $sleep_params, array(
 			'start_timestamp',
-			'interval_in_seconds'
+			'interval_in_seconds',
 		) );
 	}
 

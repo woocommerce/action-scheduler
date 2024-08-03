@@ -118,7 +118,7 @@ class ActionScheduler_ListTable extends ActionScheduler_Abstract_ListTable {
 
 		if ( empty( $request_status ) ) {
 			$this->sort_by[] = 'status';
-		} elseif ( in_array( $request_status, array( 'in-progress', 'failed' ) ) ) {
+		} elseif ( in_array( $request_status, array( 'in-progress', 'failed' ), true ) ) {
 			$this->columns  += array( 'claim_id' => __( 'Claim ID', 'action-scheduler' ) );
 			$this->sort_by[] = 'claim_id';
 		}
@@ -358,7 +358,7 @@ class ActionScheduler_ListTable extends ActionScheduler_Abstract_ListTable {
 
 			$found_tables = $wpdb->get_col( "SHOW TABLES LIKE '{$wpdb->prefix}actionscheduler%'" ); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 			foreach ( $table_list as $table_name ) {
-				if ( ! in_array( $wpdb->prefix . $table_name, $found_tables ) ) {
+				if ( ! in_array( $wpdb->prefix . $table_name, $found_tables, true ) ) {
 					$this->admin_notices[] = array(
 						'class'   => 'error',
 						'message' => __( 'It appears one or more database tables were missing. Attempting to re-create the missing table(s).' , 'action-scheduler' ),

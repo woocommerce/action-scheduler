@@ -43,7 +43,7 @@ class ActionScheduler_FatalErrorMonitor {
 
 	public function handle_unexpected_shutdown() {
 		if ( $error = error_get_last() ) {
-			if ( in_array( $error['type'], array( E_ERROR, E_PARSE, E_COMPILE_ERROR, E_USER_ERROR, E_RECOVERABLE_ERROR ) ) ) {
+			if ( in_array( $error['type'], array( E_ERROR, E_PARSE, E_COMPILE_ERROR, E_USER_ERROR, E_RECOVERABLE_ERROR ), true ) ) {
 				if ( ! empty($this->action_id) ) {
 					$this->store->mark_failure( $this->action_id );
 					do_action( 'action_scheduler_unexpected_shutdown', $this->action_id, $error );

@@ -222,7 +222,7 @@ AND `group_id` = %d
 			'extended_args',
 		);
 
-		return in_array( $column_name, $string_columns ) ? '%s' : '%d';
+		return in_array( $column_name, $string_columns, true ) ? '%s' : '%d';
 	}
 
 	/**

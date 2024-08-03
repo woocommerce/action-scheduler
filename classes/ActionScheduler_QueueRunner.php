@@ -164,7 +164,7 @@ class ActionScheduler_QueueRunner extends ActionScheduler_Abstract_QueueRunner {
 
 		foreach ( $claim->get_actions() as $action_id ) {
 			// bail if we lost the claim
-			if ( ! in_array( $action_id, $this->store->find_actions_by_claim_id( $claim->get_id() ) ) ) {
+			if ( ! in_array( $action_id, $this->store->find_actions_by_claim_id( $claim->get_id() ), true ) ) {
 				break;
 			}
 			$this->process_action( $action_id, $context );

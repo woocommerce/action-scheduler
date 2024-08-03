@@ -109,7 +109,7 @@ class ActionScheduler_WPCLI_QueueRunner extends ActionScheduler_Abstract_QueueRu
 		$this->setup_progress_bar();
 		foreach ( $this->actions as $action_id ) {
 			// Error if we lost the claim.
-			if ( ! in_array( $action_id, $this->store->find_actions_by_claim_id( $this->claim->get_id() ) ) ) {
+			if ( ! in_array( $action_id, $this->store->find_actions_by_claim_id( $this->claim->get_id() ), true ) ) {
 				WP_CLI::warning( __( 'The claim has been lost. Aborting current batch.', 'action-scheduler' ) );
 				break;
 			}

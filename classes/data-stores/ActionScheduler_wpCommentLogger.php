@@ -93,7 +93,7 @@ class ActionScheduler_wpCommentLogger extends ActionScheduler_Logger {
 	 * @param WP_Comment_Query $query
 	 */
 	public function filter_comment_queries( $query ) {
-		foreach ( array('ID', 'parent', 'post_author', 'post_name', 'post_parent', 'type', 'post_type', 'post_id', 'post_ID') as $key ) {
+		foreach ( array( 'ID', 'parent', 'post_author', 'post_name', 'post_parent', 'type', 'post_type', 'post_id', 'post_ID' ) as $key ) {
 			if ( ! empty($query->query_vars[ $key ]) ) {
 				return; // don't slow down queries that wouldn't include action_log comments anyway
 			}
@@ -176,7 +176,13 @@ class ActionScheduler_wpCommentLogger extends ActionScheduler_Logger {
 
 			$total = 0;
 			$stats = array();
-			$approved = array( '0' => 'moderated', '1' => 'approved', 'spam' => 'spam', 'trash' => 'trash', 'post-trashed' => 'post-trashed' );
+			$approved = array(
+				'0'            => 'moderated',
+				'1'            => 'approved',
+				'spam'         => 'spam',
+				'trash'        => 'trash',
+				'post-trashed' => 'post-trashed',
+			);
 
 			foreach ( (array) $count as $row ) {
 				// Don't count post-trashed toward totals

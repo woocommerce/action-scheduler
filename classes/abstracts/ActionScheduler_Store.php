@@ -241,7 +241,7 @@ abstract class ActionScheduler_Store extends ActionScheduler_Store_Deprecated {
 	 * @return string
 	 */
 	protected function validate_sql_comparator( $comparison_operator ) {
-		if ( in_array( $comparison_operator, array('!=', '>', '>=', '<', '<=', '='), true ) ) {
+		if ( in_array( $comparison_operator, array( '!=', '>', '>=', '<', '<=', '=' ), true ) ) {
 			return $comparison_operator;
 		}
 		return '=';

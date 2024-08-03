@@ -125,9 +125,9 @@ class ActionScheduler_ListTable extends ActionScheduler_Abstract_ListTable {
 
 		$this->row_actions = array(
 			'hook' => array(
-				'run' => array(
-					'name'  => __( 'Run', 'action-scheduler' ),
-					'desc'  => __( 'Process the action now as if it were run as part of a queue', 'action-scheduler' ),
+				'run'    => array(
+					'name' => __( 'Run', 'action-scheduler' ),
+					'desc' => __( 'Process the action now as if it were run as part of a queue', 'action-scheduler' ),
 				),
 				'cancel' => array(
 					'name'  => __( 'Cancel', 'action-scheduler' ),

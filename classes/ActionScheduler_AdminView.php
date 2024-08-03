@@ -202,7 +202,7 @@ class ActionScheduler_AdminView extends ActionScheduler_AdminView_Deprecated {
 				),
 				array(
 					'strong' => array(),
-					'a' => array( 'href', 'target' ),
+					'a'      => array( 'href', 'target' ),
 				)
 			),
 			absint( $num_pastdue_actions ),

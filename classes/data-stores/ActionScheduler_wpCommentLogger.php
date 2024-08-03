@@ -29,13 +29,13 @@ class ActionScheduler_wpCommentLogger extends ActionScheduler_Logger {
 		$comment_date_gmt = $date->format('Y-m-d H:i:s');
 		ActionScheduler_TimezoneHelper::set_local_timezone( $date );
 		$comment_data = array(
-			'comment_post_ID' => $action_id,
-			'comment_date' => $date->format('Y-m-d H:i:s'),
+			'comment_post_ID'  => $action_id,
+			'comment_date'     => $date->format('Y-m-d H:i:s'),
 			'comment_date_gmt' => $comment_date_gmt,
-			'comment_author' => self::AGENT,
-			'comment_content' => $message,
-			'comment_agent' => self::AGENT,
-			'comment_type' => self::TYPE,
+			'comment_author'   => self::AGENT,
+			'comment_content'  => $message,
+			'comment_agent'    => self::AGENT,
+			'comment_type'     => self::TYPE,
 		);
 		return wp_insert_comment($comment_data);
 	}
@@ -69,9 +69,9 @@ class ActionScheduler_wpCommentLogger extends ActionScheduler_Logger {
 		$comments = get_comments(array(
 			'post_id' => $action_id,
 			'orderby' => 'comment_date_gmt',
-			'order' => 'ASC',
-			'type' => self::TYPE,
-			'status' => $status,
+			'order'   => 'ASC',
+			'type'    => self::TYPE,
+			'status'  => $status,
 		));
 		$logs = array();
 		foreach ( $comments as $c ) {

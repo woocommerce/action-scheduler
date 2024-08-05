@@ -7,20 +7,69 @@
  */
 class ActionScheduler_PastDueMonitor {
 
-	const TRANSIENT_LAST_EMAIL = 'action_scheduler_pastdue_actions_last_email';
+	const TRANSIENT_LAST_EMAIL     = 'action_scheduler_pastdue_actions_last_email';
 	const TRANSIENT_CHECK_INTERVAL = 'action_scheduler_last_pastdue_actions_check';
 
+	/**
+	 * Instance.
+	 *
+	 * @var null|self
+	 */
 	private static $monitor = null;
 
+	/**
+	 * Number of seconds in the past to qualify as past-due action.
+	 *
+	 * @var int
+	 */
 	protected $threshold_seconds;
-	protected $threshold_minimum;
+
+	/**
+	 * Number of minimum past-due actions to display admin notice.
+	 *
+	 * @var int
+	 */
+	protected $threshold_admin_minimum;
+
+	/**
+	 * Number of minimum past-due actions to send email notice.
+	 *
+	 * @var int
+	 */
 	protected $threshold_email_minimum;
+
+	/**
+	 * Number of seconds before past-due actions check after
+	 * negative (not flooded) check.
+	 *
+	 * @var int
+	 */
 	protected $interval_check;
+
+	/**
+	 * Number of seconds between email notices.
+	 *
+	 * @var int
+	 */
 	protected $interval_email_seconds;
+
+	/**
+	 * Number of past-due actions (determined by thresholds).
+	 *
+	 * @var int
+	 */
 	protected $num_pastdue_actions = 0;
+
+	/**
+	 * Query arguments for past-due actions.
+	 *
+	 * @var array<string, string|int>
+	 */
 	protected $query_args = array();
 
 	/**
+	 * Get singleton instance.
+	 *
 	 * @return ActionScheduler_PastDueMonitor
 	 *
 	 * @codeCoverageIgnore
@@ -28,7 +77,7 @@ class ActionScheduler_PastDueMonitor {
 	public static function instance() {
 
 		if ( empty( self::$monitor ) ) {
-			$class = apply_filters( 'action_scheduler_pastdue_actions_monitor_class', 'ActionScheduler_PastDueMonitor' );
+			$class         = apply_filters( 'action_scheduler_pastdue_actions_monitor_class', 'ActionScheduler_PastDueMonitor' );
 			self::$monitor = new $class();
 		}
 
@@ -49,7 +98,7 @@ class ActionScheduler_PastDueMonitor {
 
 		add_action( 'action_scheduler_stored_action', array( $this, 'maybe_send_email' ) );
 
-		if ( is_admin() && ( ! defined( 'DOING_AJAX' ) || false == DOING_AJAX ) ) {
+		if ( is_admin() && ( ! defined( 'DOING_AJAX' ) || empty( DOING_AJAX ) ) ) {
 			add_action( 'admin_notices', array( $this, 'action__admin_notices' ) );
 		}
 	}
@@ -66,7 +115,7 @@ class ActionScheduler_PastDueMonitor {
 			return false;
 		}
 
-		# Scheduled actions query arguments.
+		// Scheduled actions query arguments.
 		$this->query_args = array(
 			'date'     => as_get_datetime_object( time() - $this->threshold_seconds ),
 			'status'   => ActionScheduler_Store::STATUS_PENDING,
@@ -74,13 +123,14 @@ class ActionScheduler_PastDueMonitor {
 		);
 
 		$store = ActionScheduler_Store::instance();
-		$this->num_pastdue_actions = ( int ) $store->query_actions( $this->query_args, 'count' );
 
-		# Check if past-due actions count is greater than or equal to threshold.
+		$this->num_pastdue_actions = absint( $store->query_actions( $this->query_args, 'count' ) );
+
+		// Check if past-due actions count is greater than or equal to threshold.
 		$flooded = ( $this->num_pastdue_actions >= $this->threshold_minimum );
-		$flooded = ( bool ) apply_filters( 'action_scheduler_pastdue_actions_check', $flooded, $this->num_pastdue_actions, $this->threshold_seconds, $this->threshold_minimum );
+		$flooded = (bool) apply_filters( 'action_scheduler_pastdue_actions_check', $flooded, $this->num_pastdue_actions, $this->threshold_seconds, $this->threshold_minimum );
 
-		# If not flooded, delay next check.
+		// If not flooded, delay next check.
 		if ( ! $flooded ) {
 			set_transient( self::TRANSIENT_CHECK_INTERVAL, time(), $this->interval_check );
 		}
@@ -133,12 +183,13 @@ class ActionScheduler_PastDueMonitor {
 		$to      = get_site_option( 'admin_email' );
 		$subject = sprintf( 'Action Scheduler: past-due scheduled actions (%s)', $sitename );
 		$message = $this->message();
+		$headers = array(
+			'Content-type: text/html; charset=UTF-8',
+		);
 
 		set_transient( self::TRANSIENT_LAST_EMAIL, time(), $this->interval_email_seconds );
 
-		wp_mail( $to, $subject, $message, array(
-			'Content-type: text/html; charset=UTF-8',
-		) );
+		wp_mail( $to, $subject, $message, $headers );
 	}
 
 	/**
@@ -151,7 +202,7 @@ class ActionScheduler_PastDueMonitor {
 			return;
 		}
 
-		# Filter to prevent showing notice (ex: inappropriate user).
+		// Filter to prevent showing notice (ex: inappropriate user).
 		if ( ! apply_filters( 'action_scheduler_check_pastdue_actions', current_user_can( 'manage_options' ) ) ) {
 			return;
 		}
@@ -168,12 +219,21 @@ class ActionScheduler_PastDueMonitor {
 			return;
 		}
 
-		# Print notice.
+		// Print notice.
 		echo '<div class="notice notice-warning"><p>';
-		echo $this->message();
+		echo wp_kses(
+			$this->message(),
+			array(
+				'strong' => array(),
+				'a'      => array(
+					'target' => true,
+					'href'   => true,
+				),
+			)
+		);
 		echo '</p></div>';
 
-		# Facilitate third-parties to evaluate and print notices.
+		// Facilitate third-parties to evaluate and print notices.
 		do_action( 'action_scheduler_pastdue_actions_extra_notices', $this->query_args );
 	}
 
@@ -183,11 +243,14 @@ class ActionScheduler_PastDueMonitor {
 	 * @return string
 	 */
 	protected function message() {
-		$actions_url = add_query_arg( array(
-			'page'   => 'action-scheduler',
-			'status' => 'past-due',
-			'order'  => 'asc',
-		), admin_url( 'tools.php' ) );
+		$actions_url = add_query_arg(
+			array(
+				'page'   => 'action-scheduler',
+				'status' => 'past-due',
+				'order'  => 'asc',
+			),
+			admin_url( 'tools.php' )
+		);
 
 		return sprintf(
 			// translators: 1) is the number of affected actions, 2) is a link to an admin screen.

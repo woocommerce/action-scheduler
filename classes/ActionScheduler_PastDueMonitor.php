@@ -96,7 +96,7 @@ class ActionScheduler_PastDueMonitor {
 		$this->interval_email_seconds  = absint( apply_filters( 'action_scheduler_pastdue_actions_email_interval', HOUR_IN_SECONDS ) );
 		$this->threshold_email_minimum = absint( apply_filters( 'action_scheduler_pastdue_actions_email_min', $this->threshold_minimum ) );
 
-		add_action( 'action_scheduler_stored_action', array( $this, 'maybe_send_email' ) );
+		add_action( 'action_scheduler_stored_action', array( $this, 'on_action_stored' ) );
 
 		if ( is_admin() && ( ! defined( 'DOING_AJAX' ) || empty( DOING_AJAX ) ) ) {
 			add_action( 'admin_notices', array( $this, 'action__admin_notices' ) );

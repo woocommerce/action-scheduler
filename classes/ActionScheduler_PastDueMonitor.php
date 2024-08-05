@@ -29,7 +29,7 @@ class ActionScheduler_PastDueMonitor {
 	 *
 	 * @var int
 	 */
-	protected $threshold_admin_minimum;
+	protected $threshold_minimum;
 
 	/**
 	 * Number of minimum past-due actions to send email notice.
@@ -130,10 +130,7 @@ class ActionScheduler_PastDueMonitor {
 		$flooded = ( $this->num_pastdue_actions >= $this->threshold_minimum );
 		$flooded = (bool) apply_filters( 'action_scheduler_pastdue_actions_check', $flooded, $this->num_pastdue_actions, $this->threshold_seconds, $this->threshold_minimum );
 
-		// If not flooded, delay next check.
-		if ( ! $flooded ) {
-			set_transient( self::TRANSIENT_CHECK_INTERVAL, time(), $this->interval_check );
-		}
+		set_transient( self::TRANSIENT_CHECK_INTERVAL, time(), $this->interval_check );
 
 		return $flooded;
 	}
@@ -141,11 +138,12 @@ class ActionScheduler_PastDueMonitor {
 	/**
 	 * Action: action_scheduler_stored_action
 	 *
-	 * Maybe send email notice of past-due actions over threshold.
+	 * Delete check interval transient, perform flooded check,
+	 * and maybe send email.
 	 *
 	 * @return void
 	 */
-	public function maybe_send_email() {
+	public function on_action_stored() {
 		if ( 'action_scheduler_stored_action' !== current_action() ) {
 			return;
 		}
@@ -158,10 +156,21 @@ class ActionScheduler_PastDueMonitor {
 			return;
 		}
 
+		delete_transient( self::TRANSIENT_CHECK_INTERVAL );
+
 		if ( ! $this->flooded() ) {
 			return;
 		}
 
+		$this->maybe_send_email();
+	}
+
+	/**
+	 * Maybe send email notice of past-due actions over threshold.
+	 *
+	 * @return void
+	 */
+	protected function maybe_send_email() {
 		$transient = get_transient( self::TRANSIENT_LAST_EMAIL );
 
 		if ( ! empty( $transient ) ) {

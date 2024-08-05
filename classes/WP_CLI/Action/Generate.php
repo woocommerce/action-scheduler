@@ -10,8 +10,6 @@ class ActionScheduler_WPCLI_Action_Generate_Command extends ActionScheduler_WPCL
 	/**
 	 * Execute command.
 	 *
-	 * @todo support negative interval
-	 *
 	 * @return void
 	 */
 	public function execute() {
@@ -19,7 +17,7 @@ class ActionScheduler_WPCLI_Action_Generate_Command extends ActionScheduler_WPCL
 		$schedule_start = $this->args[1];
 		$callback_args  = get_flag_value( $this->assoc_args, 'args', array() );
 		$group          = get_flag_value( $this->assoc_args, 'group', '' );
-		$interval       = absint( get_flag_value( $this->assoc_args, 'interval', 0 ) );
+		$interval       = (int) get_flag_value( $this->assoc_args, 'interval', 0 ); // avoid absint() to support negative intervals
 		$count          = absint( get_flag_value( $this->assoc_args, 'count', 1 ) );
 
 		if ( ! empty( $callback_args ) ) {

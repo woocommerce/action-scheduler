@@ -158,6 +158,9 @@ class ActionScheduler_PastDueMonitor {
 
 		delete_transient( self::TRANSIENT_CHECK_INTERVAL );
 
+		// Removing the callback before querying actions is necessary to prevent loop.
+		remove_action( 'action_scheduler_stored_action', array( $this, 'on_action_stored' ) );
+
 		if ( ! $this->flooded() ) {
 			return;
 		}

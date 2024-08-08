@@ -41,7 +41,7 @@ class LogMigrator {
 	public function migrate( $source_action_id, $destination_action_id ) {
 		$logs = $this->source->get_logs( $source_action_id );
 		foreach ( $logs as $log ) {
-			if ( $log->get_action_id() === $source_action_id ) {
+			if ( absint( $log->get_action_id() ) === $source_action_id ) {
 				$this->destination->log( $destination_action_id, $log->get_message(), $log->get_date() );
 			}
 		}

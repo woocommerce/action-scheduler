@@ -47,4 +47,3 @@ class ActionScheduler_wpPostStore_PostTypeRegistrar {
 		return $args;
 	}
 }
- 

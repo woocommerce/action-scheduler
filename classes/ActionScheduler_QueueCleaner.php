@@ -66,7 +66,6 @@ class ActionScheduler_QueueCleaner {
 			return array();
 		}
 
-
 		/**
 		 * Filter the statuses when cleaning the queue.
 		 *

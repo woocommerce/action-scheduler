@@ -10,6 +10,6 @@ class ActionScheduler_NullAction extends ActionScheduler_Action {
 	}
 
 	public function execute() {
-		// don't execute
+		// don't execute.
 	}
 }

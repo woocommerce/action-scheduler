@@ -69,7 +69,7 @@ class BatchFetcher {
 			Store::STATUS_CANCELED,
 			Store::STATUS_COMPLETE,
 			Store::STATUS_RUNNING,
-			'', // any other unanticipated status
+			'', // any other unanticipated status.
 		];
 
 		foreach ( $priorities as $status ) {

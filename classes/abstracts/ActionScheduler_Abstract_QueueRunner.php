@@ -256,7 +256,7 @@ abstract class ActionScheduler_Abstract_QueueRunner extends ActionScheduler_Abst
 
 		$time_limit = 30;
 
-		// Apply deprecated filter from deprecated get_maximum_execution_time() method
+		// Apply deprecated filter from deprecated get_maximum_execution_time() method.
 		if ( has_filter( 'action_scheduler_maximum_execution_time' ) ) {
 			_deprecated_function( 'action_scheduler_maximum_execution_time', '2.1.1', 'action_scheduler_queue_runner_time_limit' );
 			$time_limit = apply_filters( 'action_scheduler_maximum_execution_time', $time_limit );
@@ -318,7 +318,7 @@ abstract class ActionScheduler_Abstract_QueueRunner extends ActionScheduler_Abst
 		if ( function_exists( 'ini_get' ) ) {
 			$memory_limit = ini_get( 'memory_limit' );
 		} else {
-			$memory_limit = '128M'; // Sensible default, and minimum required by WooCommerce
+			$memory_limit = '128M'; // Sensible default, and minimum required by WooCommerce.
 		}
 
 		if ( ! $memory_limit || -1 === $memory_limit || '-1' === $memory_limit ) {

@@ -52,13 +52,13 @@ class ActionMigrator {
 		}
 
 		if ( is_null( $action ) || empty( $status ) || ! $action->get_schedule()->get_date() ) {
-			// null action or empty status means the fetch operation failed or the action didn't exist
-			// null schedule means it's missing vital data
-			// delete it and move on
+			// null action or empty status means the fetch operation failed or the action didn't exist.
+			// null schedule means it's missing vital data.
+			// delete it and move on.
 			try {
 				$this->source->delete_action( $source_action_id );
 			} catch ( \Exception $e ) {
-				// nothing to do, it didn't exist in the first place
+				// nothing to do, it didn't exist in the first place.
 			}
 			do_action( 'action_scheduler/no_action_to_migrate', $source_action_id, $this->source, $this->destination );
 
@@ -67,14 +67,14 @@ class ActionMigrator {
 
 		try {
 
-			// Make sure the last attempt date is set correctly for completed and failed actions
+			// Make sure the last attempt date is set correctly for completed and failed actions.
 			$last_attempt_date = ( $status !== \ActionScheduler_Store::STATUS_PENDING ) ? $this->source->get_date( $source_action_id ) : null;
 
 			$destination_action_id = $this->destination->save_action( $action, null, $last_attempt_date );
 		} catch ( \Exception $e ) {
 			do_action( 'action_scheduler/migrate_action_failed', $source_action_id, $this->source, $this->destination );
 
-			return 0; // could not save the action in the new store
+			return 0; // could not save the action in the new store.
 		}
 
 		try {
@@ -99,7 +99,7 @@ class ActionMigrator {
 
 			return $destination_action_id;
 		} catch ( \Exception $e ) {
-			// could not delete from the old store
+			// could not delete from the old store.
 			$this->source->mark_migrated( $source_action_id );
 			do_action( 'action_scheduler/migrate_action_incomplete', $source_action_id, $destination_action_id, $this->source, $this->destination );
 			do_action( 'action_scheduler/migrated_action', $source_action_id, $destination_action_id, $this->source, $this->destination );

@@ -141,7 +141,7 @@ abstract class ActionScheduler_Store extends ActionScheduler_Store_Deprecated {
 	public function extra_action_counts() {
 		$extra_actions = array();
 
-		$pastdue_action_counts = ( int ) $this->query_actions( array(
+		$pastdue_action_counts = (int) $this->query_actions( array(
 			'status' => self::STATUS_PENDING,
 			'date'   => as_get_datetime_object(),
 		), 'count' );

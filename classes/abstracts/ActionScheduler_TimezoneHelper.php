@@ -19,7 +19,7 @@ abstract class ActionScheduler_TimezoneHelper {
 	 */
 	public static function set_local_timezone( DateTime $date ) {
 
-		// Accept a DateTime for easier backward compatibility, even though we require methods on ActionScheduler_DateTime
+		// Accept a DateTime for easier backward compatibility, even though we require methods on ActionScheduler_DateTime.
 		if ( ! is_a( $date, 'ActionScheduler_DateTime' ) ) {
 			$date = as_get_datetime_object( $date->format( 'U' ) );
 		}
@@ -77,7 +77,7 @@ abstract class ActionScheduler_TimezoneHelper {
 			}
 		}
 
-		// No timezone string
+		// No timezone string.
 		return '';
 	}
 

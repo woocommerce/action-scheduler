@@ -53,7 +53,7 @@ class ActionScheduler_QueueRunner extends ActionScheduler_Abstract_QueueRunner {
 
 		add_filter( 'cron_schedules', array( self::instance(), 'add_wp_cron_schedule' ) );
 
-		// Check for and remove any WP Cron hook scheduled by Action Scheduler < 3.0.0, which didn't include the $context param
+		// Check for and remove any WP Cron hook scheduled by Action Scheduler < 3.0.0, which didn't include the $context param.
 		$next_timestamp = wp_next_scheduled( self::WP_CRON_HOOK );
 		if ( $next_timestamp ) {
 			wp_unschedule_event( $next_timestamp, self::WP_CRON_HOOK );
@@ -138,7 +138,7 @@ class ActionScheduler_QueueRunner extends ActionScheduler_Abstract_QueueRunner {
 			do {
 				$processed_actions_in_batch     = $this->do_batch( $batch_size, $context );
 				$this->processed_actions_count += $processed_actions_in_batch;
-			} while ( $processed_actions_in_batch > 0 && ! $this->batch_limits_exceeded( $this->processed_actions_count ) ); // keep going until we run out of actions, time, or memory
+			} while ( $processed_actions_in_batch > 0 && ! $this->batch_limits_exceeded( $this->processed_actions_count ) ); // keep going until we run out of actions, time, or memory.
 		}
 
 		do_action( 'action_scheduler_after_process_queue' );
@@ -162,7 +162,7 @@ class ActionScheduler_QueueRunner extends ActionScheduler_Abstract_QueueRunner {
 		$processed_actions = 0;
 
 		foreach ( $claim->get_actions() as $action_id ) {
-			// bail if we lost the claim
+			// bail if we lost the claim.
 			if ( ! in_array( $action_id, $this->store->find_actions_by_claim_id( $claim->get_id() ) ) ) {
 				break;
 			}
@@ -220,7 +220,7 @@ class ActionScheduler_QueueRunner extends ActionScheduler_Abstract_QueueRunner {
 
 	public function add_wp_cron_schedule( $schedules ) {
 		$schedules['every_minute'] = array(
-			'interval' => 60, // in seconds
+			'interval' => 60, // in seconds.
 			'display'  => __( 'Every minute', 'action-scheduler' ),
 		);
 

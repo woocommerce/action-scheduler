@@ -391,7 +391,7 @@ class ActionScheduler_ListTable extends ActionScheduler_Abstract_ListTable {
 
 			$async_request_lock_expiration = ActionScheduler::lock()->get_expiration( 'async-request-runner' );
 
-			// No lock set or lock expired
+			// No lock set or lock expired.
 			if ( false === $async_request_lock_expiration || $async_request_lock_expiration < time() ) {
 				$in_progress_url       = add_query_arg( 'status', 'in-progress', remove_query_arg( 'status' ) );
 				/* translators: %s: process URL */

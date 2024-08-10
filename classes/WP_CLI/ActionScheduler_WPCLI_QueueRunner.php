@@ -147,7 +147,7 @@ class ActionScheduler_WPCLI_QueueRunner extends ActionScheduler_Abstract_QueueRu
 	 * @param null|ActionScheduler_Action $action The instance of the action. Default to null for backward compatibility.
 	 */
 	public function after_execute( $action_id, $action = null ) {
-		// backward compatibility
+		// backward compatibility.
 		if ( null === $action ) {
 			$action = $this->store->fetch_action( $action_id );
 		}

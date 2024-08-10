@@ -104,7 +104,7 @@ class ActionScheduler_WPCLI_Scheduler_command extends WP_CLI_Command {
 			// Custom queue cleaner instance.
 			$cleaner = new ActionScheduler_QueueCleaner( null, $clean );
 
-			// Get the queue runner instance
+			// Get the queue runner instance.
 			$runner = new ActionScheduler_WPCLI_QueueRunner( null, null, $cleaner );
 
 			// Determine how many tasks will be run in the first batch.

@@ -95,7 +95,7 @@ class ActionScheduler_wpCommentLogger extends ActionScheduler_Logger {
 	public function filter_comment_queries( $query ) {
 		foreach ( array('ID', 'parent', 'post_author', 'post_name', 'post_parent', 'type', 'post_type', 'post_id', 'post_ID') as $key ) {
 			if ( !empty($query->query_vars[$key]) ) {
-				return; // don't slow down queries that wouldn't include action_log comments anyway
+				return; // don't slow down queries that wouldn't include action_log comments anyway.
 			}
 		}
 		$query->query_vars['action_log_filter'] = TRUE;
@@ -179,7 +179,7 @@ class ActionScheduler_wpCommentLogger extends ActionScheduler_Logger {
 			$approved = array( '0' => 'moderated', '1' => 'approved', 'spam' => 'spam', 'trash' => 'trash', 'post-trashed' => 'post-trashed' );
 
 			foreach ( (array) $count as $row ) {
-				// Don't count post-trashed toward totals
+				// Don't count post-trashed toward totals.
 				if ( 'post-trashed' != $row['comment_approved'] && 'trash' != $row['comment_approved'] ) {
 					$total += $row['num_comments'];
 				}
@@ -222,10 +222,10 @@ class ActionScheduler_wpCommentLogger extends ActionScheduler_Logger {
 		parent::init();
 
 		add_action( 'pre_get_comments', array( $this, 'filter_comment_queries' ), 10, 1 );
-		add_action( 'wp_count_comments', array( $this, 'filter_comment_count' ), 20, 2 ); // run after WC_Comments::wp_count_comments() to make sure we exclude order notes and action logs
+		add_action( 'wp_count_comments', array( $this, 'filter_comment_count' ), 20, 2 ); // run after WC_Comments::wp_count_comments() to make sure we exclude order notes and action logs.
 		add_action( 'comment_feed_where', array( $this, 'filter_comment_feed' ), 10, 2 );
 
-		// Delete comments count cache whenever there is a new comment or a comment status changes
+		// Delete comments count cache whenever there is a new comment or a comment status changes.
 		add_action( 'wp_insert_comment', array( $this, 'delete_comment_count_cache' ) );
 		add_action( 'wp_set_comment_status', array( $this, 'delete_comment_count_cache' ) );
 	}

@@ -151,7 +151,7 @@ abstract class ActionScheduler {
 		// Ensure initialization on plugin activation.
 		if ( ! did_action( 'init' ) ) {
 			// phpcs:ignore Squiz.PHP.CommentedOutCode
-			add_action( 'init', array( $admin_view, 'init' ), 0, 0 ); // run before $store::init()
+			add_action( 'init', array( $admin_view, 'init' ), 0, 0 ); // run before $store::init().
 			add_action( 'init', array( $store, 'init' ), 1, 0 );
 			add_action( 'init', array( $logger, 'init' ), 1, 0 );
 			add_action( 'init', array( $runner, 'init' ), 1, 0 );

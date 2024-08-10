@@ -399,7 +399,7 @@ AND `group_id` = %d
 		$query = wp_parse_args( $query, array(
 			'hook'                  => '',
 			'args'                  => null,
-			'partial_args_matching' => 'off', // can be 'like' or 'json'
+			'partial_args_matching' => 'off', // can be 'like' or 'json'.
 			'date'                  => null,
 			'date_compare'          => '<=',
 			'modified'              => null,

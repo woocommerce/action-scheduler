@@ -50,7 +50,7 @@ abstract class ActionScheduler {
 	public static function plugin_path( $path ) {
 		$base = dirname(self::$plugin_file);
 		if ( $path ) {
-			return trailingslashit($base).$path;
+			return trailingslashit($base) . $path;
 		} else {
 			return untrailingslashit($base);
 		}

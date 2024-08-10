@@ -435,15 +435,15 @@ AND `group_id` = %d
 			$sql .= " LEFT JOIN {$wpdb->actionscheduler_groups} g ON g.group_id=a.group_id";
 		}
 
-		$sql .= " WHERE 1=1";
+		$sql .= ' WHERE 1=1';
 
 		if ( ! empty( $query['group'] ) ) {
-			$sql          .= " AND g.slug=%s";
+			$sql          .= ' AND g.slug=%s';
 			$sql_params[] = $query['group'];
 		}
 
 		if ( ! empty( $query['hook'] ) ) {
-			$sql          .= " AND a.hook=%s";
+			$sql          .= ' AND a.hook=%s';
 			$sql_params[] = $query['hook'];
 		}
 
@@ -485,7 +485,7 @@ AND `group_id` = %d
 					}
 					break;
 				case 'off':
-					$sql          .= " AND a.args=%s";
+					$sql          .= ' AND a.args=%s';
 					$sql_params[] = $this->get_args_for_query( $query['args'] );
 					break;
 				default:

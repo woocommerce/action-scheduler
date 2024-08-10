@@ -25,11 +25,11 @@ class ActionMigrator {
 	/**
 	 * ActionMigrator constructor.
 	 *
-	 * @param ActionScheduler_Store $source_store Source store object.
-	 * @param ActionScheduler_Store $destination_store Destination store object.
-	 * @param LogMigrator           $log_migrator Log migrator object.
+	 * @param \ActionScheduler_Store $source_store Source store object.
+	 * @param \ActionScheduler_Store $destination_store Destination store object.
+	 * @param LogMigrator            $log_migrator Log migrator object.
 	 */
-	public function __construct( ActionScheduler_Store $source_store, ActionScheduler_Store $destination_store, LogMigrator $log_migrator ) {
+	public function __construct( \ActionScheduler_Store $source_store, \ActionScheduler_Store $destination_store, LogMigrator $log_migrator ) {
 		$this->source       = $source_store;
 		$this->destination  = $destination_store;
 		$this->log_migrator = $log_migrator;

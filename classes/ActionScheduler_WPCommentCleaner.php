@@ -90,7 +90,7 @@ class ActionScheduler_WPCommentCleaner {
 	public static function register_admin_notice() {
 		add_action( 'admin_notices', array( __CLASS__, 'print_admin_notice' ) );
 	}
-	
+
 	/**
 	 * Prints details about the orphaned action logs and includes information on where to learn more.
 	 */

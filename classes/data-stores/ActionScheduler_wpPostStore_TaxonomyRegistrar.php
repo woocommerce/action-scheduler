@@ -23,4 +23,3 @@ class ActionScheduler_wpPostStore_TaxonomyRegistrar {
 		return $args;
 	}
 }
- 

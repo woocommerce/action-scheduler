@@ -78,7 +78,7 @@ class ActionScheduler_HybridStore extends Store {
 			/** @var \wpdb $wpdb */
 			global $wpdb;
 			/**
-			 * A default date of '0000-00-00 00:00:00' is invalid in MySQL 5.7 when configured with 
+			 * A default date of '0000-00-00 00:00:00' is invalid in MySQL 5.7 when configured with
 			 * sql_mode including both STRICT_TRANS_TABLES and NO_ZERO_DATE.
 			 */
 			$default_date = new DateTime( 'tomorrow' );

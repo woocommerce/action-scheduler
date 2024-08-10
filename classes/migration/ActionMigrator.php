@@ -41,6 +41,7 @@ class ActionMigrator {
 	 * @param int $source_action_id Action ID.
 	 *
 	 * @return int 0|new action ID
+	 * @throws \RuntimeException when unable to delete action from the source store.
 	 */
 	public function migrate( $source_action_id ) {
 		try {

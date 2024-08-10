@@ -77,7 +77,7 @@ class ActionScheduler_DBStore extends ActionScheduler_Store {
 	 * @param bool                   $unique Whether the action should be unique.
 	 *
 	 * @return int Action ID.
-	 * @throws RuntimeException     Throws exception when saving the action fails.
+	 * @throws \RuntimeException     Throws exception when saving the action fails.
 	 */
 	private function save_action_to_db( ActionScheduler_Action $action, DateTime $date = null, $unique = false ) {
 		global $wpdb;
@@ -388,7 +388,8 @@ AND `group_id` = %d
 	 * @param string $select_or_count  Whether the SQL should select and return the IDs or just the row count.
 	 *
 	 * @return string SQL statement already properly escaped.
-	 * @throws InvalidArgumentException If the query is invalid.
+	 * @throws \InvalidArgumentException If the query is invalid.
+	 * @throws \RuntimeException when "unknown partial args matching value".
 	 */
 	protected function get_query_actions_sql( array $query, $select_or_count = 'select' ) {
 
@@ -1017,6 +1018,7 @@ AND `group_id` = %d
 	 * Release actions from a claim and delete the claim.
 	 *
 	 * @param ActionScheduler_ActionClaim $claim Claim object.
+	 * @throws \RuntimeException when unable to release actions from claim.
 	 */
 	public function release_claim( ActionScheduler_ActionClaim $claim ) {
 		/** @var \wpdb $wpdb */

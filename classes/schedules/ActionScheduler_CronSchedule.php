@@ -7,12 +7,16 @@ class ActionScheduler_CronSchedule extends ActionScheduler_Abstract_RecurringSch
 
 	/**
 	 * Deprecated property @see $this->__wakeup() for details.
-	 **/
+	 *
+	 * @var null
+	 */
 	private $start_timestamp = NULL;
 
 	/**
 	 * Deprecated property @see $this->__wakeup() for details.
-	 **/
+	 *
+	 * @var null
+	 */
 	private $cron = NULL;
 
 	/**

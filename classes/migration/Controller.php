@@ -19,6 +19,7 @@ use Action_Scheduler\WP_CLI\ProgressBar;
  * @codeCoverageIgnore
  */
 class Controller {
+	/** @var self */
 	private static $instance;
 
 	/** @var Action_Scheduler\Migration\Scheduler */

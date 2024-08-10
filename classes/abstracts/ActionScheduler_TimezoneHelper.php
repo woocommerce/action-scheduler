@@ -4,6 +4,8 @@
  * Class ActionScheduler_TimezoneHelper
  */
 abstract class ActionScheduler_TimezoneHelper {
+
+	/** @var null|DateTimeZone */
 	private static $local_timezone = NULL;
 
 	/**

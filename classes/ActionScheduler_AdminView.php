@@ -144,8 +144,8 @@ class ActionScheduler_AdminView extends ActionScheduler_AdminView_Deprecated {
 	protected function check_pastdue_actions() {
 
 		# Set thresholds.
-		$threshold_seconds = ( int ) apply_filters( 'action_scheduler_pastdue_actions_seconds', DAY_IN_SECONDS );
-		$threshold_min    = ( int ) apply_filters( 'action_scheduler_pastdue_actions_min', 1 );
+		$threshold_seconds = (int) apply_filters( 'action_scheduler_pastdue_actions_seconds', DAY_IN_SECONDS );
+		$threshold_min     = (int) apply_filters( 'action_scheduler_pastdue_actions_min', 1 );
 
 		// Set fallback value for past-due actions count.
 		$num_pastdue_actions = 0;
@@ -168,11 +168,11 @@ class ActionScheduler_AdminView extends ActionScheduler_AdminView_Deprecated {
 		# If no third-party preempted, run default check.
 		if ( is_null( $check ) ) {
 			$store = ActionScheduler_Store::instance();
-			$num_pastdue_actions = ( int ) $store->query_actions( $query_args, 'count' );
+			$num_pastdue_actions = (int) $store->query_actions( $query_args, 'count' );
 
 			# Check if past-due actions count is greater than or equal to threshold.
 			$check = ( $num_pastdue_actions >= $threshold_min );
-			$check = ( bool ) apply_filters( 'action_scheduler_pastdue_actions_check', $check, $num_pastdue_actions, $threshold_seconds, $threshold_min );
+			$check = (bool) apply_filters( 'action_scheduler_pastdue_actions_check', $check, $num_pastdue_actions, $threshold_seconds, $threshold_min );
 		}
 
 		# If check failed, set transient and abort.

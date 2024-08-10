@@ -9,6 +9,7 @@ class ActionScheduler_Versions {
 	 */
 	private static $instance = NULL;
 
+	/** @var array<string, callable> */
 	private $versions = array();
 
 	public function register( $version_string, $initialization_callback ) {

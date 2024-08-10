@@ -15,8 +15,11 @@ use Action_Scheduler\Migration\Controller;
 class ActionScheduler_HybridStore extends Store {
 	const DEMARKATION_OPTION = 'action_scheduler_hybrid_store_demarkation';
 
+	/** @var ActionScheduler_Store */
 	private $primary_store;
+	/** @var ActionScheduler_Store */
 	private $secondary_store;
+	/** @var Action_Scheduler\Migration\Runner */
 	private $migration_runner;
 
 	/**

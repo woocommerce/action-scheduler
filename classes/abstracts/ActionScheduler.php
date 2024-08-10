@@ -8,6 +8,7 @@ use Action_Scheduler\Migration\Controller;
  * @codeCoverageIgnore
  */
 abstract class ActionScheduler {
+	/** @var string */
 	private static $plugin_file = '';
 	/** @var ActionScheduler_ActionFactory */
 	private static $factory = NULL;

@@ -4,10 +4,13 @@
  * Class ActionScheduler_Action
  */
 class ActionScheduler_Action {
+	/** @var string */
 	protected $hook = '';
+	/** @var array<string, mixed> */
 	protected $args = array();
 	/** @var ActionScheduler_Schedule */
 	protected $schedule = NULL;
+	/** @var string */
 	protected $group = '';
 
 	/**

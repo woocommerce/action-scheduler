@@ -13,13 +13,13 @@ namespace Action_Scheduler\Migration;
  * @codeCoverageIgnore
  */
 class ActionMigrator {
-	/** var ActionScheduler_Store */
+	/** @var ActionScheduler_Store */
 	private $source;
 
-	/** var ActionScheduler_Store */
+	/** @var ActionScheduler_Store */
 	private $destination;
 
-	/** var LogMigrator */
+	/** @var LogMigrator */
 	private $log_migrator;
 
 	/**

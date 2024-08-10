@@ -7,7 +7,9 @@ class ActionScheduler_SimpleSchedule extends ActionScheduler_Abstract_Schedule {
 
 	/**
 	 * Deprecated property @see $this->__wakeup() for details.
-	 **/
+	 *
+	 * @var null
+	 */
 	private $timestamp = NULL;
 
 	/**

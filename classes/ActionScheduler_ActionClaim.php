@@ -4,7 +4,9 @@
  * Class ActionScheduler_ActionClaim
  */
 class ActionScheduler_ActionClaim {
+	/** @var string */
 	private $id = '';
+	/** @var int[] */
 	private $action_ids = array();
 
 	public function __construct( $id, array $action_ids ) {

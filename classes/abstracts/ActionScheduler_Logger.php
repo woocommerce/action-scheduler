@@ -5,6 +5,8 @@
  * @codeCoverageIgnore
  */
 abstract class ActionScheduler_Logger {
+
+	/** @var null|self */
 	private static $logger = NULL;
 
 	/**

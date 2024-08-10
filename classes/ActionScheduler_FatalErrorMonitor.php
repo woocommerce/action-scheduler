@@ -8,6 +8,7 @@ class ActionScheduler_FatalErrorMonitor {
 	private $claim = NULL;
 	/** @var ActionScheduler_Store */
 	private $store = NULL;
+	/** @var int */
 	private $action_id = 0;
 
 	public function __construct( ActionScheduler_Store $store ) {

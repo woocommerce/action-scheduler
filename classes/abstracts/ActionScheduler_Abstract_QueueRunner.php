@@ -46,6 +46,7 @@ abstract class ActionScheduler_Abstract_QueueRunner extends ActionScheduler_Abst
 	 * @param int $action_id The action ID to process.
 	 * @param string $context Optional identifier for the context in which this action is being processed, e.g. 'WP CLI' or 'WP Cron'
 	 *        Generally, this should be capitalised and not localised as it's a proper noun.
+	 * @throws \Exception when error running action.
 	 */
 	public function process_action( $action_id, $context = '' ) {
 		// Temporarily override the error handler while we process the current action.

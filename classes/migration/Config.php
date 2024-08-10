@@ -46,6 +46,7 @@ class Config {
 	 * Get the configured source store.
 	 *
 	 * @return ActionScheduler_Store
+	 * @throws \RuntimeException when source store is not configured.
 	 */
 	public function get_source_store() {
 		if ( empty( $this->source_store ) ) {
@@ -68,6 +69,7 @@ class Config {
 	 * Get the configured source logger.
 	 *
 	 * @return ActionScheduler_Logger
+	 * @throws \RuntimeException when source logger is not configured.
 	 */
 	public function get_source_logger() {
 		if ( empty( $this->source_logger ) ) {
@@ -90,6 +92,7 @@ class Config {
 	 * Get the configured destination store.
 	 *
 	 * @return ActionScheduler_Store
+	 * @throws \RuntimeException when destination store is not configured.
 	 */
 	public function get_destination_store() {
 		if ( empty( $this->destination_store ) ) {
@@ -112,6 +115,7 @@ class Config {
 	 * Get the configured destination logger.
 	 *
 	 * @return ActionScheduler_Logger
+	 * @throws \RuntimeException when destination logger is not configured.
 	 */
 	public function get_destination_logger() {
 		if ( empty( $this->destination_logger ) ) {

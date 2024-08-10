@@ -450,7 +450,7 @@ abstract class ActionScheduler_Store extends ActionScheduler_Store_Deprecated {
 	public function has_pending_actions_due() {
 		$pending_actions = $this->query_actions( array(
 			'date'    => as_get_datetime_object(),
-			'status'  => ActionScheduler_Store::STATUS_PENDING,
+			'status'  => self::STATUS_PENDING,
 			'orderby' => 'none',
 		) );
 

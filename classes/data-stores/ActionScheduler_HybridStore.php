@@ -381,10 +381,12 @@ class ActionScheduler_HybridStore extends Store {
 		return null;
 	}
 
-	/* * * * * * * * * * * * * * * * * * * * * * * * * * *
+	/**
+	 * * * * * * * * * * * * * * * * * * * * * * * * * * *
 	 * All claim-related functions should operate solely
 	 * on the primary store.
-	 * * * * * * * * * * * * * * * * * * * * * * * * * * */
+	 * * * * * * * * * * * * * * * * * * * * * * * * * * *
+	 */
 
 	/**
 	 * Get the claim count from the table data store.

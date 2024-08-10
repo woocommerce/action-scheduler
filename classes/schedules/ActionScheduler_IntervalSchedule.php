@@ -23,7 +23,7 @@ class ActionScheduler_IntervalSchedule extends ActionScheduler_Abstract_Recurrin
 	 * Calculate when this schedule should start after a given date & time using
 	 * the number of seconds between recurrences.
 	 *
-	 * @param DateTime $after
+	 * @param DateTime $after Timestamp.
 	 * @return DateTime
 	 */
 	protected function calculate_next( DateTime $after ) {

@@ -26,6 +26,14 @@ class ActionScheduler_Action {
 	 */
 	protected $priority = 10;
 
+	/**
+	 * Construct.
+	 *
+	 * @param string                        $hook Action's hook.
+	 * @param mixed[]                       $args Action's arguments.
+	 * @param null|ActionScheduler_Schedule $schedule Action's schedule.
+	 * @param string                        $group Action's group.
+	 */
 	public function __construct( $hook, array $args = array(), ActionScheduler_Schedule $schedule = NULL, $group = '' ) {
 		$schedule = empty( $schedule ) ? new ActionScheduler_NullSchedule() : $schedule;
 		$this->set_hook($hook);
@@ -60,16 +68,26 @@ class ActionScheduler_Action {
 	}
 
 	/**
-	 * @param string $hook
+	 * Set action's hook.
+	 *
+	 * @param string $hook Action's hook.
 	 */
 	protected function set_hook( $hook ) {
 		$this->hook = $hook;
 	}
 
+	/**
+	 * Get action's hook.
+	 */
 	public function get_hook() {
 		return $this->hook;
 	}
 
+	/**
+	 * Set action's schedule.
+	 *
+	 * @param ActionScheduler_Schedule $schedule Action's schedule.
+	 */
 	protected function set_schedule( ActionScheduler_Schedule $schedule ) {
 		$this->schedule = $schedule;
 	}
@@ -81,16 +99,26 @@ class ActionScheduler_Action {
 		return $this->schedule;
 	}
 
+	/**
+	 * Set action's args.
+	 *
+	 * @param mixed[] $args Action's arguments.
+	 */
 	protected function set_args( array $args ) {
 		$this->args = $args;
 	}
 
+	/**
+	 * Get action's args.
+	 */
 	public function get_args() {
 		return $this->args;
 	}
 
 	/**
-	 * @param string $group
+	 * Section action's group.
+	 *
+	 * @param string $group Action's group.
 	 */
 	protected function set_group( $group ) {
 		$this->group = $group;

@@ -30,6 +30,8 @@ class ActionScheduler_AdminView extends ActionScheduler_AdminView_Deprecated {
 	}
 
 	/**
+	 * Initialize.
+	 *
 	 * @codeCoverageIgnore
 	 */
 	public function init() {
@@ -47,6 +49,9 @@ class ActionScheduler_AdminView extends ActionScheduler_AdminView_Deprecated {
 		}
 	}
 
+	/**
+	 * Print system status report.
+	 */
 	public function system_status_report() {
 		$table = new ActionScheduler_wcSystemStatus( ActionScheduler::store() );
 		$table->render();

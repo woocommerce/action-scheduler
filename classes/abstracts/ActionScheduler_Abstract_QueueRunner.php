@@ -27,9 +27,9 @@ abstract class ActionScheduler_Abstract_QueueRunner extends ActionScheduler_Abst
 	/**
 	 * ActionScheduler_Abstract_QueueRunner constructor.
 	 *
-	 * @param ActionScheduler_Store             $store
-	 * @param ActionScheduler_FatalErrorMonitor $monitor
-	 * @param ActionScheduler_QueueCleaner      $cleaner
+	 * @param ActionScheduler_Store             $store Store object.
+	 * @param ActionScheduler_FatalErrorMonitor $monitor Monitor object.
+	 * @param ActionScheduler_QueueCleaner      $cleaner Cleaner object.
 	 */
 	public function __construct( ActionScheduler_Store $store = null, ActionScheduler_FatalErrorMonitor $monitor = null, ActionScheduler_QueueCleaner $cleaner = null ) {
 
@@ -43,10 +43,10 @@ abstract class ActionScheduler_Abstract_QueueRunner extends ActionScheduler_Abst
 	/**
 	 * Process an individual action.
 	 *
-	 * @param int $action_id The action ID to process.
+	 * @param int    $action_id The action ID to process.
 	 * @param string $context Optional identifier for the context in which this action is being processed, e.g. 'WP CLI' or 'WP Cron'
-	 *        Generally, this should be capitalised and not localised as it's a proper noun.
-	 * @throws \Exception when error running action.
+	 *                        Generally, this should be capitalised and not localised as it's a proper noun.
+	 * @throws \Exception When error running action.
 	 */
 	public function process_action( $action_id, $context = '' ) {
 		// Temporarily override the error handler while we process the current action.
@@ -142,8 +142,8 @@ abstract class ActionScheduler_Abstract_QueueRunner extends ActionScheduler_Abst
 	/**
 	 * Schedule the next instance of the action if necessary.
 	 *
-	 * @param ActionScheduler_Action $action
-	 * @param int $action_id
+	 * @param ActionScheduler_Action $action Action.
+	 * @param int                    $action_id Action ID.
 	 */
 	protected function schedule_next_instance( ActionScheduler_Action $action, $action_id ) {
 		// If a recurring action has been consistently failing, we may wish to stop rescheduling it.
@@ -289,7 +289,7 @@ abstract class ActionScheduler_Abstract_QueueRunner extends ActionScheduler_Abst
 	/**
 	 * Check if the host's max execution time is (likely) to be exceeded if processing more actions.
 	 *
-	 * @param int $processed_actions The number of actions processed so far - used to determine the likelihood of exceeding the time limit if processing another action
+	 * @param int $processed_actions The number of actions processed so far - used to determine the likelihood of exceeding the time limit if processing another action.
 	 * @return bool
 	 */
 	protected function time_likely_to_be_exceeded( $processed_actions ) {
@@ -354,7 +354,7 @@ abstract class ActionScheduler_Abstract_QueueRunner extends ActionScheduler_Abst
 	 *
 	 * Based on WC_Background_Process::batch_limits_exceeded()
 	 *
-	 * @param int $processed_actions The number of actions processed so far - used to determine the likelihood of exceeding the time limit if processing another action
+	 * @param int $processed_actions The number of actions processed so far - used to determine the likelihood of exceeding the time limit if processing another action.
 	 * @return bool
 	 */
 	protected function batch_limits_exceeded( $processed_actions ) {

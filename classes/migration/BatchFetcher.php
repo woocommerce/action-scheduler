@@ -31,7 +31,7 @@ class BatchFetcher {
 	/**
 	 * Retrieve a list of actions.
 	 *
-	 * @param int $count The number of actions to retrieve
+	 * @param int $count The number of actions to retrieve.
 	 *
 	 * @return int[] A list of action IDs
 	 */

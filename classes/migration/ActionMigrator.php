@@ -29,7 +29,7 @@ class ActionMigrator {
 	 * @param ActionScheduler_Store $destination_store Destination store object.
 	 * @param LogMigrator           $log_migrator Log migrator object.
 	 */
-	public function __construct( \ActionScheduler_Store $source_store, \ActionScheduler_Store $destination_store, LogMigrator $log_migrator ) {
+	public function __construct( ActionScheduler_Store $source_store, ActionScheduler_Store $destination_store, LogMigrator $log_migrator ) {
 		$this->source       = $source_store;
 		$this->destination  = $destination_store;
 		$this->log_migrator = $log_migrator;
@@ -41,7 +41,7 @@ class ActionMigrator {
 	 * @param int $source_action_id Action ID.
 	 *
 	 * @return int 0|new action ID
-	 * @throws \RuntimeException when unable to delete action from the source store.
+	 * @throws \RuntimeException When unable to delete action from the source store.
 	 */
 	public function migrate( $source_action_id ) {
 		try {

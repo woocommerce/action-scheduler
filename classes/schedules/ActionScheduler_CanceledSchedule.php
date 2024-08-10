@@ -13,7 +13,7 @@ class ActionScheduler_CanceledSchedule extends ActionScheduler_SimpleSchedule {
 	private $timestamp = NULL;
 
 	/**
-	 * @param DateTime $after
+	 * @param DateTime $after Timestamp.
 	 *
 	 * @return DateTime|null
 	 */
@@ -25,7 +25,7 @@ class ActionScheduler_CanceledSchedule extends ActionScheduler_SimpleSchedule {
 	 * Cancelled actions should never have a next schedule, even if get_next()
 	 * is called with $after < $this->scheduled_date.
 	 *
-	 * @param DateTime $after
+	 * @param DateTime $after Timestamp.
 	 * @return DateTime|null
 	 */
 	public function get_next( DateTime $after ) {

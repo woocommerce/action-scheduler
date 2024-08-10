@@ -14,7 +14,7 @@ abstract class ActionScheduler_TimezoneHelper {
 	 *
 	 * @since  2.1.0
 	 *
-	 * @param DateTime $date
+	 * @param DateTime $date Timestamp.
 	 * @return ActionScheduler_DateTime
 	 */
 	public static function set_local_timezone( DateTime $date ) {
@@ -44,6 +44,7 @@ abstract class ActionScheduler_TimezoneHelper {
 	 * timezone.
 	 *
 	 * @since 2.1.0
+	 * @param bool $reset Unused.
 	 * @return string PHP timezone string for the site or empty if no timezone string is available.
 	 */
 	protected static function get_local_timezone_string( $reset = false ) {
@@ -99,6 +100,9 @@ abstract class ActionScheduler_TimezoneHelper {
 	}
 
 	/**
+	 * Get local timezone.
+	 *
+	 * @param bool $reset Toggle to discard stored value.
 	 * @deprecated 2.1.0
 	 */
 	public static function get_local_timezone( $reset = FALSE ) {

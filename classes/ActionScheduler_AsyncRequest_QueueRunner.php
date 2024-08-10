@@ -35,7 +35,9 @@ class ActionScheduler_AsyncRequest_QueueRunner extends WP_Async_Request {
 	protected $action = 'async_request_queue_runner';
 
 	/**
-	 * Initiate new async request
+	 * Initiate new async request.
+	 *
+	 * @param ActionScheduler_Store $store Store object.
 	 */
 	public function __construct( ActionScheduler_Store $store ) {
 		parent::__construct();

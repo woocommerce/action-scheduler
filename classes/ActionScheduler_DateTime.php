@@ -34,7 +34,7 @@ class ActionScheduler_DateTime extends DateTime {
 	 *
 	 * This represents a fixed offset instead of a timezone setting.
 	 *
-	 * @param $offset
+	 * @param string|int $offset UTC offset value.
 	 */
 	public function setUtcOffset( $offset ) {
 		$this->utcOffset = intval( $offset );
@@ -54,7 +54,7 @@ class ActionScheduler_DateTime extends DateTime {
 	/**
 	 * Set the TimeZone associated with the DateTime
 	 *
-	 * @param DateTimeZone $timezone
+	 * @param DateTimeZone $timezone Timezone object.
 	 *
 	 * @return static
 	 * @link http://php.net/manual/en/datetime.settimezone.php

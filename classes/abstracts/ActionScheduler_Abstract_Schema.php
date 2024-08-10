@@ -67,7 +67,9 @@ abstract class ActionScheduler_Abstract_Schema {
 	}
 
 	/**
-	 * @param string $table The name of the table
+	 * Get table definition.
+	 *
+	 * @param string $table The name of the table.
 	 *
 	 * @return string The CREATE TABLE statement, suitable for passing to dbDelta
 	 */
@@ -124,7 +126,7 @@ abstract class ActionScheduler_Abstract_Schema {
 	/**
 	 * Update the schema for the given table
 	 *
-	 * @param string $table The name of the table to update
+	 * @param string $table The name of the table to update.
 	 *
 	 * @return void
 	 */
@@ -142,7 +144,9 @@ abstract class ActionScheduler_Abstract_Schema {
 	}
 
 	/**
-	 * @param string $table
+	 * Get full table name.
+	 *
+	 * @param string $table Table name.
 	 *
 	 * @return string The full name of the table, including the
 	 *                table prefix for the current blog

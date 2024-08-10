@@ -389,7 +389,7 @@ AND `group_id` = %d
 	 *
 	 * @return string SQL statement already properly escaped.
 	 * @throws \InvalidArgumentException If the query is invalid.
-	 * @throws \RuntimeException when "unknown partial args matching value".
+	 * @throws \RuntimeException When "unknown partial args matching value".
 	 */
 	protected function get_query_actions_sql( array $query, $select_or_count = 'select' ) {
 
@@ -824,7 +824,7 @@ AND `group_id` = %d
 	 * Set a claim filter.
 	 *
 	 * @param string $filter_name Claim filter name.
-	 * @param mixed $filter_values Values to filter.
+	 * @param mixed  $filter_values Values to filter.
 	 * @return void
 	 */
 	public function set_claim_filter( $filter_name, $filter_values ) {
@@ -1018,7 +1018,7 @@ AND `group_id` = %d
 	 * Release actions from a claim and delete the claim.
 	 *
 	 * @param ActionScheduler_ActionClaim $claim Claim object.
-	 * @throws \RuntimeException when unable to release actions from claim.
+	 * @throws \RuntimeException When unable to release actions from claim.
 	 */
 	public function release_claim( ActionScheduler_ActionClaim $claim ) {
 		/** @var \wpdb $wpdb */

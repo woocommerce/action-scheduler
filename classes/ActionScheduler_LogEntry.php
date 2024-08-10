@@ -29,7 +29,6 @@ class ActionScheduler_LogEntry {
 	 *                            not provided a new Datetime object (with current time) will be created.
 	 */
 	public function __construct( $action_id, $message, $date = null ) {
-
 		/*
 		 * ActionScheduler_wpCommentLogger::get_entry() previously passed a 3rd param of $comment->comment_type
 		 * to ActionScheduler_LogEntry::__construct(), goodness knows why, and the Follow-up Emails plugin

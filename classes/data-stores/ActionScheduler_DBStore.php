@@ -472,8 +472,8 @@ AND `group_id` = %d
 								$value_type
 							) );
 						}
-						$sql          .= ' AND JSON_EXTRACT(a.args, %s)='.$placeholder;
-						$sql_params[] = '$.'.$key;
+						$sql          .= ' AND JSON_EXTRACT(a.args, %s)=' . $placeholder;
+						$sql_params[] = '$.' . $key;
 						$sql_params[] = $value;
 					}
 					break;

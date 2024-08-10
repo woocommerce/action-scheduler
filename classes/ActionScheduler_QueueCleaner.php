@@ -158,7 +158,7 @@ class ActionScheduler_QueueCleaner {
 		if ( $timeout < 0 ) {
 			return;
 		}
-		$cutoff = as_get_datetime_object($timeout.' seconds ago');
+		$cutoff = as_get_datetime_object($timeout . ' seconds ago');
 		$actions_to_reset = $this->store->query_actions( array(
 			'status'           => ActionScheduler_Store::STATUS_PENDING,
 			'modified'         => $cutoff,
@@ -188,7 +188,7 @@ class ActionScheduler_QueueCleaner {
 		if ( $timeout < 0 ) {
 			return;
 		}
-		$cutoff = as_get_datetime_object($timeout.' seconds ago');
+		$cutoff = as_get_datetime_object($timeout . ' seconds ago');
 		$actions_to_reset = $this->store->query_actions( array(
 			'status'           => ActionScheduler_Store::STATUS_RUNNING,
 			'modified'         => $cutoff,

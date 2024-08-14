@@ -62,7 +62,7 @@ class System_Command {
 		 *
 		 * @link https://github.com/woocommerce/action-scheduler-disable-default-runner
 		 */
-		$runner_enabled = has_action( 'action_scheduler_run_queue', array( ActionScheduler::runner(), 'run' ) );
+		$runner_enabled = has_action( 'action_scheduler_run_queue', array( \ActionScheduler::runner(), 'run' ) );
 
 		\WP_CLI::line( sprintf( 'Data store: %s', $this->get_current_datastore() ) );
 		\WP_CLI::line( sprintf( 'Runner: %s%s', $this->get_current_runner(), ( $runner_enabled ? '' : ' (disabled)' ) ) );

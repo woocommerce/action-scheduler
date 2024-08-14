@@ -9,7 +9,7 @@ use function \WP_CLI\Utils\get_flag_value;
 /**
  * WP-CLI command: action-scheduler action next
  */
-class Next_Command extends ActionScheduler_WPCLI_Command {
+class Next_Command extends \ActionScheduler_WPCLI_Command {
 
 	/**
 	 * Execute command.
@@ -27,7 +27,7 @@ class Next_Command extends ActionScheduler_WPCLI_Command {
 		}
 
 		if ( $raw ) {
-			WP_CLI::line( as_next_scheduled_action( $hook, $callback_args, $group ) );
+			\WP_CLI::line( as_next_scheduled_action( $hook, $callback_args, $group ) );
 			return;
 		}
 
@@ -42,27 +42,30 @@ class Next_Command extends ActionScheduler_WPCLI_Command {
 			$params['args'] = $callback_args;
 		}
 
-		$params['status'] = ActionScheduler_Store::STATUS_RUNNING;
+		$params['status'] = \ActionScheduler_Store::STATUS_RUNNING;
 		// phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_var_export
-		WP_CLI::debug( 'ActionScheduler()::store()->query_action( ' . var_export( $params, true ) . ' )' );
+		\WP_CLI::debug( 'ActionScheduler()::store()->query_action( ' . var_export( $params, true ) . ' )' );
 
-		$action_id = ActionScheduler::store()->query_action( $params );
+		$store     = \ActionScheduler::store();
+		$action_id = $store->query_action( $params );
+
 		if ( $action_id ) {
 			echo $action_id;
 			return;
 		}
 
-		$params['status'] = ActionScheduler_Store::STATUS_PENDING;
+		$params['status'] = \ActionScheduler_Store::STATUS_PENDING;
 		// phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_var_export
-		WP_CLI::debug( 'ActionScheduler()::store()->query_action( ' . var_export( $params, true ) . ' )' );
+		\WP_CLI::debug( 'ActionScheduler()::store()->query_action( ' . var_export( $params, true ) . ' )' );
 
-		$action_id = ActionScheduler::store()->query_action( $params );
+		$action_id = $store->query_action( $params );
+
 		if ( $action_id ) {
 			echo $action_id;
 			return;
 		}
 
-		WP_CLI::warning( 'No matching next action.' );
+		\WP_CLI::warning( 'No matching next action.' );
 	}
 
 }

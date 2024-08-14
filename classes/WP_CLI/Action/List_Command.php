@@ -7,7 +7,7 @@ namespace Action_Scheduler\WP_CLI\Action;
 /**
  * WP-CLI command: action-scheduler action list
  */
-class List_Command extends ActionScheduler_WPCLI_Command {
+class List_Command extends \ActionScheduler_WPCLI_Command {
 
 	const PARAMETERS = array(
 		'hook',
@@ -73,7 +73,7 @@ class List_Command extends ActionScheduler_WPCLI_Command {
 			$params = 'array()';
 		}
 
-		WP_CLI::debug(
+		\WP_CLI::debug(
 			sprintf(
 				'as_get_scheduled_actions( %s, %s )',
 				$params,

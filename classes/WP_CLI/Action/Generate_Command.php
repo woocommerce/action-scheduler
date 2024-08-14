@@ -7,7 +7,7 @@ use function \WP_CLI\Utils\get_flag_value;
 /**
  * WP-CLI command: action-scheduler action generate
  */
-class Generate_Command extends ActionScheduler_WPCLI_Command {
+class Generate_Command extends \ActionScheduler_WPCLI_Command {
 
 	/**
 	 * Execute command.

@@ -5,7 +5,7 @@ namespace Action_Scheduler\WP_CLI\Action;
 /**
  * WP-CLI command: action-scheduler action create
  */
-class Create_Command extends ActionScheduler_WPCLI_Command {
+class Create_Command extends \ActionScheduler_WPCLI_Command {
 
 	const ASYNC_OPTS = array( 'async', 0 );
 

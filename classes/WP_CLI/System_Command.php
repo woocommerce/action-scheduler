@@ -1,5 +1,7 @@
 <?php
 
+namespace Action_Scheduler\WP_CLI;
+
 // phpcs:disable WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaping output is not necessary in WP CLI.
 
 use function \WP_CLI\Utils\get_flag_value;
@@ -7,7 +9,7 @@ use function \WP_CLI\Utils\get_flag_value;
 /**
  * System info WP-CLI commands for Action Scheduler.
  */
-class ActionScheduler_WPCLI_System_Command {
+class System_Command {
 
 	/**
 	 * Data store for querying actions

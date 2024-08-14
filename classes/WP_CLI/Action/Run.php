@@ -1,9 +1,11 @@
 <?php
 
+namespace Action_Scheduler\WP_CLI\Action;
+
 /**
  * WP-CLI command: action-scheduler action run
  */
-class ActionScheduler_WPCLI_Action_Run_Command extends ActionScheduler_WPCLI_Command {
+class Run_Command extends ActionScheduler_WPCLI_Command {
 
 	/**
 	 * Array of action IDs to execute.

@@ -197,7 +197,7 @@ abstract class ActionScheduler {
 		if ( defined( 'WP_CLI' ) && WP_CLI ) {
 			WP_CLI::add_command( 'action-scheduler', 'ActionScheduler_WPCLI_Scheduler_command' );
 			WP_CLI::add_command( 'action-scheduler', 'ActionScheduler_WPCLI_Clean_Command' );
-			WP_CLI::add_command( 'action-scheduler action', 'ActionScheduler_WPCLI_Action_Command' );
+			WP_CLI::add_command( 'action-scheduler action', '\Action_Scheduler\WP_CLI\Action_Command' );
 			WP_CLI::add_command( 'action-scheduler', 'ActionScheduler_WPCLI_System_Command' );
 			if ( ! ActionScheduler_DataController::is_migration_complete() && Controller::instance()->allow_migration() ) {
 				$command = new Migration_Command();

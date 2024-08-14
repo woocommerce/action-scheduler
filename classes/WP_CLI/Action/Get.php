@@ -1,9 +1,11 @@
 <?php
 
+namespace Action_Scheduler\WP_CLI\Action;
+
 /**
  * WP-CLI command: action-scheduler action get
  */
-class ActionScheduler_WPCLI_Action_Get_Command extends ActionScheduler_WPCLI_Command {
+class Get_Command extends ActionScheduler_WPCLI_Command {
 
 	/**
 	 * Execute command.

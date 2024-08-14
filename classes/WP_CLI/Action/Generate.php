@@ -1,11 +1,13 @@
 <?php
 
+namespace Action_Scheduler\WP_CLI\Action;
+
 use function \WP_CLI\Utils\get_flag_value;
 
 /**
  * WP-CLI command: action-scheduler action generate
  */
-class ActionScheduler_WPCLI_Action_Generate_Command extends ActionScheduler_WPCLI_Command {
+class Generate_Command extends ActionScheduler_WPCLI_Command {
 
 	/**
 	 * Execute command.

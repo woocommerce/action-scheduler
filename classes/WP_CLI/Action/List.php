@@ -1,11 +1,13 @@
 <?php
 
+namespace Action_Scheduler\WP_CLI\Action;
+
 // phpcs:disable WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaping output is not necessary in WP CLI.
 
 /**
  * WP-CLI command: action-scheduler action list
  */
-class ActionScheduler_WPCLI_Action_List_Command extends ActionScheduler_WPCLI_Command {
+class List_Command extends ActionScheduler_WPCLI_Command {
 
 	const PARAMETERS = array(
 		'hook',

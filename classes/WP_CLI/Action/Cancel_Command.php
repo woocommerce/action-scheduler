@@ -110,8 +110,8 @@ class Cancel_Command extends \ActionScheduler_WPCLI_Command {
 		\WP_CLI::error(
 			sprintf(
 				/* translators: %1$s: singular or plural %2$s: refers to the exception error message. */
-				__( 'There was an error cancelling the scheduled %1$s: %2$s', 'action-scheduler' ),
-				$multiple ? 'actions' : 'action',
+				__( 'There was an error cancelling the %1$s: %2$s', 'action-scheduler' ),
+				$multiple ? __( 'scheduled actions', 'action-scheduler' ) : __( 'scheduled action', 'action-scheduler' ),
 				$e->getMessage()
 			)
 		);

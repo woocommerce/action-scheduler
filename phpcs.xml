@@ -43,4 +43,11 @@
 		<exclude-pattern>lib/*</exclude-pattern>
 		<exclude-pattern>tests/*</exclude-pattern>
 	</rule>
+
+	<rule ref="PEAR.NamingConventions.ValidClassName.Invalid">
+		<exclude-pattern>classes/*</exclude-pattern>
+		<exclude-pattern>deprecated/*</exclude-pattern>
+		<exclude-pattern>lib/*</exclude-pattern>
+		<exclude-pattern>test/*</exclude-pattern>
+	</rule>
 </ruleset>

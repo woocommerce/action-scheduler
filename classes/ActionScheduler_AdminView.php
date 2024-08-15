@@ -6,8 +6,10 @@
  */
 class ActionScheduler_AdminView extends ActionScheduler_AdminView_Deprecated {
 
+	/** @var null|self */
 	private static $admin_view = NULL;
 
+	/** @var string */
 	private static $screen_id = 'tools_page_action-scheduler';
 
 	/** @var ActionScheduler_ListTable */
@@ -28,6 +30,8 @@ class ActionScheduler_AdminView extends ActionScheduler_AdminView_Deprecated {
 	}
 
 	/**
+	 * Initialize.
+	 *
 	 * @codeCoverageIgnore
 	 */
 	public function init() {
@@ -44,6 +48,9 @@ class ActionScheduler_AdminView extends ActionScheduler_AdminView_Deprecated {
 		}
 	}
 
+	/**
+	 * Print system status report.
+	 */
 	public function system_status_report() {
 		$table = new ActionScheduler_wcSystemStatus( ActionScheduler::store() );
 		$table->render();

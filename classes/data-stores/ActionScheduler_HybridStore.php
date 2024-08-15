@@ -15,8 +15,11 @@ use Action_Scheduler\Migration\Controller;
 class ActionScheduler_HybridStore extends Store {
 	const DEMARKATION_OPTION = 'action_scheduler_hybrid_store_demarkation';
 
+	/** @var ActionScheduler_Store */
 	private $primary_store;
+	/** @var ActionScheduler_Store */
 	private $secondary_store;
+	/** @var Action_Scheduler\Migration\Runner */
 	private $migration_runner;
 
 	/**
@@ -64,8 +67,8 @@ class ActionScheduler_HybridStore extends Store {
 	 * value to be one higher than the posts table to ensure that
 	 * there are no ID collisions.
 	 *
-	 * @param string $table_name
-	 * @param string $table_suffix
+	 * @param string $table_name Table name.
+	 * @param string $table_suffix Suffix of table name.
 	 *
 	 * @return void
 	 * @codeCoverageIgnore
@@ -78,7 +81,7 @@ class ActionScheduler_HybridStore extends Store {
 			/** @var \wpdb $wpdb */
 			global $wpdb;
 			/**
-			 * A default date of '0000-00-00 00:00:00' is invalid in MySQL 5.7 when configured with 
+			 * A default date of '0000-00-00 00:00:00' is invalid in MySQL 5.7 when configured with
 			 * sql_mode including both STRICT_TRANS_TABLES and NO_ZERO_DATE.
 			 */
 			$default_date = new DateTime( 'tomorrow' );
@@ -135,8 +138,8 @@ class ActionScheduler_HybridStore extends Store {
 	 * After it migrates, the secondary store will logically contain
 	 * the next matching action, so return the result thence.
 	 *
-	 * @param string $hook
-	 * @param array  $params
+	 * @param string $hook Action's hook.
+	 * @param array  $params Action's arguments.
 	 *
 	 * @return string
 	 */
@@ -154,7 +157,7 @@ class ActionScheduler_HybridStore extends Store {
 	 * If any are found, migrate them immediately. Then the secondary
 	 * store will contain the canonical results.
 	 *
-	 * @param array $query
+	 * @param array  $query Query arguments.
 	 * @param string $query_type Whether to select or count the results. Default, select.
 	 *
 	 * @return int[]
@@ -203,8 +206,10 @@ class ActionScheduler_HybridStore extends Store {
 	 * migrate them immediately, then ask the primary store for the
 	 * canonical claim.
 	 *
-	 * @param int           $max_actions
-	 * @param DateTime|null $before_date
+	 * @param int           $max_actions Maximum number of actions to claim.
+	 * @param null|DateTime $before_date Latest timestamp of actions to claim.
+	 * @param string[]      $hooks Hook of actions to claim.
+	 * @param string        $group Group of actions to claim.
 	 *
 	 * @return ActionScheduler_ActionClaim
 	 */
@@ -376,10 +381,12 @@ class ActionScheduler_HybridStore extends Store {
 		return null;
 	}
 
-	/* * * * * * * * * * * * * * * * * * * * * * * * * * *
+	/**
+	 * * * * * * * * * * * * * * * * * * * * * * * * * * *
 	 * All claim-related functions should operate solely
 	 * on the primary store.
-	 * * * * * * * * * * * * * * * * * * * * * * * * * * */
+	 * * * * * * * * * * * * * * * * * * * * * * * * * * *
+	 */
 
 	/**
 	 * Get the claim count from the table data store.

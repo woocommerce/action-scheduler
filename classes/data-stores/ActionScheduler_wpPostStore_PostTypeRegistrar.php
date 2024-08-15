@@ -5,6 +5,9 @@
  * @codeCoverageIgnore
  */
 class ActionScheduler_wpPostStore_PostTypeRegistrar {
+	/**
+	 * Registrar.
+	 */
 	public function register() {
 		register_post_type( ActionScheduler_wpPostStore::POST_TYPE, $this->post_type_args() );
 	}
@@ -47,4 +50,3 @@ class ActionScheduler_wpPostStore_PostTypeRegistrar {
 		return $args;
 	}
 }
- 

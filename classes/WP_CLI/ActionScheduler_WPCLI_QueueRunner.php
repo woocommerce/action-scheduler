@@ -21,11 +21,11 @@ class ActionScheduler_WPCLI_QueueRunner extends ActionScheduler_Abstract_QueueRu
 	/**
 	 * ActionScheduler_WPCLI_QueueRunner constructor.
 	 *
-	 * @param ActionScheduler_Store             $store
-	 * @param ActionScheduler_FatalErrorMonitor $monitor
-	 * @param ActionScheduler_QueueCleaner      $cleaner
+	 * @param ActionScheduler_Store             $store Store object.
+	 * @param ActionScheduler_FatalErrorMonitor $monitor Monitor object.
+	 * @param ActionScheduler_QueueCleaner      $cleaner Cleaner object.
 	 *
-	 * @throws Exception When this is not run within WP CLI
+	 * @throws Exception When this is not run within WP CLI.
 	 */
 	public function __construct( ActionScheduler_Store $store = null, ActionScheduler_FatalErrorMonitor $monitor = null, ActionScheduler_QueueCleaner $cleaner = null ) {
 		if ( ! ( defined( 'WP_CLI' ) && WP_CLI ) ) {
@@ -131,7 +131,7 @@ class ActionScheduler_WPCLI_QueueRunner extends ActionScheduler_Abstract_QueueRu
 	 *
 	 * @author Jeremy Pry
 	 *
-	 * @param $action_id
+	 * @param int $action_id Action ID.
 	 */
 	public function before_execute( $action_id ) {
 		/* translators: %s refers to the action ID */
@@ -143,11 +143,11 @@ class ActionScheduler_WPCLI_QueueRunner extends ActionScheduler_Abstract_QueueRu
 	 *
 	 * @author Jeremy Pry
 	 *
-	 * @param int $action_id
+	 * @param int                         $action_id ActionID.
 	 * @param null|ActionScheduler_Action $action The instance of the action. Default to null for backward compatibility.
 	 */
 	public function after_execute( $action_id, $action = null ) {
-		// backward compatibility
+		// backward compatibility.
 		if ( null === $action ) {
 			$action = $this->store->fetch_action( $action_id );
 		}
@@ -160,8 +160,8 @@ class ActionScheduler_WPCLI_QueueRunner extends ActionScheduler_Abstract_QueueRu
 	 *
 	 * @author Jeremy Pry
 	 *
-	 * @param int       $action_id
-	 * @param Exception $exception
+	 * @param int       $action_id Action ID.
+	 * @param Exception $exception Exception.
 	 * @throws \WP_CLI\ExitException With failure message.
 	 */
 	public function action_failed( $action_id, $exception ) {
@@ -175,7 +175,7 @@ class ActionScheduler_WPCLI_QueueRunner extends ActionScheduler_Abstract_QueueRu
 	/**
 	 * Sleep and help avoid hitting memory limit
 	 *
-	 * @param int $sleep_time Amount of seconds to sleep
+	 * @param int $sleep_time Amount of seconds to sleep.
 	 * @deprecated 3.0.0
 	 */
 	protected function stop_the_insanity( $sleep_time = 0 ) {

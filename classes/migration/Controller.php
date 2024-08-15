@@ -19,6 +19,7 @@ use Action_Scheduler\WP_CLI\ProgressBar;
  * @codeCoverageIgnore
  */
 class Controller {
+	/** @var self */
 	private static $instance;
 
 	/** @var Action_Scheduler\Migration\Scheduler */
@@ -171,7 +172,7 @@ class Controller {
 		add_action( 'init', array( $this, 'maybe_hook_migration' ) );
 		add_action( 'wp_loaded', array( $this, 'schedule_migration' ) );
 
-		// Action Scheduler may be displayed as a Tools screen or WooCommerce > Status administration screen
+		// Action Scheduler may be displayed as a Tools screen or WooCommerce > Status administration screen.
 		add_action( 'load-tools_page_action-scheduler', array( $this, 'hook_admin_notices' ), 10, 0 );
 		add_action( 'load-woocommerce_page_wc-status', array( $this, 'hook_admin_notices' ), 10, 0 );
 	}

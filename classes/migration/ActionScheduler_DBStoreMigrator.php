@@ -16,9 +16,9 @@ class ActionScheduler_DBStoreMigrator extends ActionScheduler_DBStore {
 	 * it can't have been attempted yet, but migrated completed actions will have an attempted date, so we need to save
 	 * that when first saving the action.
 	 *
-	 * @param ActionScheduler_Action $action
-	 * @param \DateTime $scheduled_date Optional date of the first instance to store.
-	 * @param \DateTime $last_attempt_date Optional date the action was last attempted.
+	 * @param ActionScheduler_Action $action Action to migrate.
+	 * @param null|\DateTime         $scheduled_date Optional date of the first instance to store.
+	 * @param null|\DateTime         $last_attempt_date Optional date the action was last attempted.
 	 *
 	 * @return string The action ID
 	 * @throws \RuntimeException When the action is not saved.

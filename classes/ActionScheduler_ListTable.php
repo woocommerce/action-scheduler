@@ -76,9 +76,9 @@ class ActionScheduler_ListTable extends ActionScheduler_Abstract_ListTable {
 	/**
 	 * Sets the current data store object into `store->action` and initialises the object.
 	 *
-	 * @param ActionScheduler_Store $store
-	 * @param ActionScheduler_Logger $logger
-	 * @param ActionScheduler_QueueRunner $runner
+	 * @param ActionScheduler_Store       $store Store object.
+	 * @param ActionScheduler_Logger      $logger Logger object.
+	 * @param ActionScheduler_QueueRunner $runner Runner object.
 	 */
 	public function __construct( ActionScheduler_Store $store, ActionScheduler_Logger $logger, ActionScheduler_QueueRunner $runner ) {
 
@@ -225,8 +225,9 @@ class ActionScheduler_ListTable extends ActionScheduler_Abstract_ListTable {
 		}
 
 		$output = '';
+		$num_time_periods = count( self::$time_periods );
 
-		for ( $time_period_index = 0, $periods_included = 0, $seconds_remaining = $interval; $time_period_index < count( self::$time_periods ) && $seconds_remaining > 0 && $periods_included < $periods_to_include; $time_period_index++ ) {
+		for ( $time_period_index = 0, $periods_included = 0, $seconds_remaining = $interval; $time_period_index < $num_time_periods && $seconds_remaining > 0 && $periods_included < $periods_to_include; $time_period_index++ ) {
 
 			$periods_in_interval = floor( $seconds_remaining / self::$time_periods[ $time_period_index ]['seconds'] );
 
@@ -246,7 +247,7 @@ class ActionScheduler_ListTable extends ActionScheduler_Abstract_ListTable {
 	/**
 	 * Returns the recurrence of an action or 'Non-repeating'. The output is human readable.
 	 *
-	 * @param ActionScheduler_Action $action
+	 * @param ActionScheduler_Action $action Action object.
 	 *
 	 * @return string
 	 */
@@ -269,7 +270,7 @@ class ActionScheduler_ListTable extends ActionScheduler_Abstract_ListTable {
 	/**
 	 * Serializes the argument of an action to render it in a human friendly format.
 	 *
-	 * @param array $row The array representation of the current row of the table
+	 * @param array $row The array representation of the current row of the table.
 	 *
 	 * @return string
 	 */
@@ -311,8 +312,8 @@ class ActionScheduler_ListTable extends ActionScheduler_Abstract_ListTable {
 	/**
 	 * Prints the logs entries inline. We do so to avoid loading Javascript and other hacks to show it in a modal.
 	 *
-	 * @param ActionScheduler_LogEntry $log_entry
-	 * @param DateTimezone $timezone
+	 * @param ActionScheduler_LogEntry $log_entry Log entry object.
+	 * @param DateTimezone             $timezone Timestamp.
 	 * @return string
 	 */
 	protected function get_log_entry_html( ActionScheduler_LogEntry $log_entry, DateTimezone $timezone ) {
@@ -324,8 +325,8 @@ class ActionScheduler_ListTable extends ActionScheduler_Abstract_ListTable {
 	/**
 	 * Only display row actions for pending actions.
 	 *
-	 * @param array  $row         Row to render
-	 * @param string $column_name Current row
+	 * @param array  $row         Row to render.
+	 * @param string $column_name Current row.
 	 *
 	 * @return string
 	 */
@@ -390,7 +391,7 @@ class ActionScheduler_ListTable extends ActionScheduler_Abstract_ListTable {
 
 			$async_request_lock_expiration = ActionScheduler::lock()->get_expiration( 'async-request-runner' );
 
-			// No lock set or lock expired
+			// No lock set or lock expired.
 			if ( false === $async_request_lock_expiration || $async_request_lock_expiration < time() ) {
 				$in_progress_url       = add_query_arg( 'status', 'in-progress', remove_query_arg( 'status' ) );
 				/* translators: %s: process URL */
@@ -449,7 +450,7 @@ class ActionScheduler_ListTable extends ActionScheduler_Abstract_ListTable {
 	/**
 	 * Prints the scheduled date in a human friendly format.
 	 *
-	 * @param array $row The array representation of the current row of the table
+	 * @param array $row The array representation of the current row of the table.
 	 *
 	 * @return string
 	 */
@@ -460,7 +461,7 @@ class ActionScheduler_ListTable extends ActionScheduler_Abstract_ListTable {
 	/**
 	 * Get the scheduled date in a human friendly format.
 	 *
-	 * @param ActionScheduler_Schedule $schedule
+	 * @param ActionScheduler_Schedule $schedule Action's schedule.
 	 * @return string
 	 */
 	protected function get_schedule_display_string( ActionScheduler_Schedule $schedule ) {
@@ -492,13 +493,13 @@ class ActionScheduler_ListTable extends ActionScheduler_Abstract_ListTable {
 	}
 
 	/**
-	 * Bulk delete
+	 * Bulk delete.
 	 *
 	 * Deletes actions based on their ID. This is the handler for the bulk delete. It assumes the data
 	 * properly validated by the callee and it will delete the actions without any extra validation.
 	 *
-	 * @param array $ids
-	 * @param string $ids_sql Inherited and unused
+	 * @param int[]  $ids Action IDs.
+	 * @param string $ids_sql Inherited and unused.
 	 */
 	protected function bulk_delete( array $ids, $ids_sql ) {
 		foreach ( $ids as $id ) {
@@ -523,7 +524,7 @@ class ActionScheduler_ListTable extends ActionScheduler_Abstract_ListTable {
 	 * Implements the logic behind running an action. ActionScheduler_Abstract_ListTable validates the request and their
 	 * parameters are valid.
 	 *
-	 * @param int $action_id
+	 * @param int $action_id Action ID.
 	 */
 	protected function row_action_cancel( $action_id ) {
 		$this->process_row_action( $action_id, 'cancel' );
@@ -533,7 +534,7 @@ class ActionScheduler_ListTable extends ActionScheduler_Abstract_ListTable {
 	 * Implements the logic behind running an action. ActionScheduler_Abstract_ListTable validates the request and their
 	 * parameters are valid.
 	 *
-	 * @param int $action_id
+	 * @param int $action_id Action ID.
 	 */
 	protected function row_action_run( $action_id ) {
 		$this->process_row_action( $action_id, 'run' );
@@ -560,7 +561,7 @@ class ActionScheduler_ListTable extends ActionScheduler_Abstract_ListTable {
 	/**
 	 * Implements the logic behind processing an action once an action link is clicked on the list table.
 	 *
-	 * @param int $action_id
+	 * @param int    $action_id Action ID.
 	 * @param string $row_action_type The type of action to perform on the action.
 	 */
 	protected function process_row_action( $action_id, $row_action_type ) {

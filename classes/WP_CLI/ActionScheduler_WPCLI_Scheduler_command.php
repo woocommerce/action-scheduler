@@ -104,7 +104,7 @@ class ActionScheduler_WPCLI_Scheduler_command extends WP_CLI_Command {
 			// Custom queue cleaner instance.
 			$cleaner = new ActionScheduler_QueueCleaner( null, $clean );
 
-			// Get the queue runner instance
+			// Get the queue runner instance.
 			$runner = new ActionScheduler_WPCLI_QueueRunner( null, null, $cleaner );
 
 			// Determine how many tasks will be run in the first batch.
@@ -141,7 +141,7 @@ class ActionScheduler_WPCLI_Scheduler_command extends WP_CLI_Command {
 	/**
 	 * Print WP CLI message about how many actions are about to be processed.
 	 *
-	 * @param int $total
+	 * @param int $total Number of actions found.
 	 */
 	protected function print_total_actions( $total ) {
 		WP_CLI::log(
@@ -156,7 +156,7 @@ class ActionScheduler_WPCLI_Scheduler_command extends WP_CLI_Command {
 	/**
 	 * Print WP CLI message about how many batches of actions were processed.
 	 *
-	 * @param int $batches_completed
+	 * @param int $batches_completed Number of completed batches.
 	 */
 	protected function print_total_batches( $batches_completed ) {
 		WP_CLI::log(
@@ -188,7 +188,7 @@ class ActionScheduler_WPCLI_Scheduler_command extends WP_CLI_Command {
 	/**
 	 * Print a success message with the number of completed actions.
 	 *
-	 * @param int $actions_completed
+	 * @param int $actions_completed Number of completed actions.
 	 */
 	protected function print_success( $actions_completed ) {
 		WP_CLI::success(

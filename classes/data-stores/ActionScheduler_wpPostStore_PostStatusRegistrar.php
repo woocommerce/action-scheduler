@@ -5,6 +5,10 @@
  * @codeCoverageIgnore
  */
 class ActionScheduler_wpPostStore_PostStatusRegistrar {
+
+	/**
+	 * Registrar.
+	 */
 	public function register() {
 		register_post_status( ActionScheduler_Store::STATUS_RUNNING, array_merge( $this->post_status_args(), $this->post_status_running_labels() ) );
 		register_post_status( ActionScheduler_Store::STATUS_FAILED, array_merge( $this->post_status_args(), $this->post_status_failed_labels() ) );

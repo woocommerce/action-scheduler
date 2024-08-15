@@ -66,7 +66,6 @@ class ActionScheduler_QueueCleaner {
 			return array();
 		}
 
-
 		/**
 		 * Filter the statuses when cleaning the queue.
 		 *
@@ -83,7 +82,7 @@ class ActionScheduler_QueueCleaner {
 	 * @param string[] $statuses_to_purge List of action statuses to purge. Defaults to canceled, complete.
 	 * @param DateTime $cutoff_date Date limit for selecting actions. Defaults to 31 days ago.
 	 * @param int|null $batch_size Maximum number of actions per status to delete. Defaults to 20.
-	 * @param string $context Calling process context. Defaults to `old`.
+	 * @param string   $context Calling process context. Defaults to `old`.
 	 * @return array Actions deleted.
 	 */
 	public function clean_actions( array $statuses_to_purge, DateTime $cutoff_date, $batch_size = null, $context = 'old' ) {
@@ -111,8 +110,10 @@ class ActionScheduler_QueueCleaner {
 	}
 
 	/**
-	 * @param int[] $actions_to_delete List of action IDs to delete.
-	 * @param int $lifespan Minimum scheduled age in seconds of the actions being deleted.
+	 * Delete actions.
+	 *
+	 * @param int[]  $actions_to_delete List of action IDs to delete.
+	 * @param int    $lifespan Minimum scheduled age in seconds of the actions being deleted.
 	 * @param string $context Context of the delete request.
 	 * @return array Deleted action IDs.
 	 */
@@ -159,7 +160,7 @@ class ActionScheduler_QueueCleaner {
 		if ( $timeout < 0 ) {
 			return;
 		}
-		$cutoff = as_get_datetime_object($timeout.' seconds ago');
+		$cutoff = as_get_datetime_object($timeout . ' seconds ago');
 		$actions_to_reset = $this->store->query_actions( array(
 			'status'           => ActionScheduler_Store::STATUS_PENDING,
 			'modified'         => $cutoff,
@@ -189,7 +190,7 @@ class ActionScheduler_QueueCleaner {
 		if ( $timeout < 0 ) {
 			return;
 		}
-		$cutoff = as_get_datetime_object($timeout.' seconds ago');
+		$cutoff = as_get_datetime_object($timeout . ' seconds ago');
 		$actions_to_reset = $this->store->query_actions( array(
 			'status'           => ActionScheduler_Store::STATUS_RUNNING,
 			'modified'         => $cutoff,

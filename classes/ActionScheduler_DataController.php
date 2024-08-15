@@ -154,7 +154,7 @@ class ActionScheduler_DataController {
 		$wp_object_cache->cache          = array();
 
 		if ( is_callable( array( $wp_object_cache, '__remoteset' ) ) ) {
-			call_user_func( array( $wp_object_cache, '__remoteset' ) ); // important
+			call_user_func( array( $wp_object_cache, '__remoteset' ) ); // important!
 		}
 	}
 

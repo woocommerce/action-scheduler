@@ -42,10 +42,10 @@ class ActionScheduler_WPCommentCleaner {
 
 		// While there are orphaned logs left in the comments table, we need to attach the callbacks which filter comment counts.
 		add_action( 'pre_get_comments', array( self::$wp_comment_logger, 'filter_comment_queries' ), 10, 1 );
-		add_action( 'wp_count_comments', array( self::$wp_comment_logger, 'filter_comment_count' ), 20, 2 ); // run after WC_Comments::wp_count_comments() to make sure we exclude order notes and action logs
+		add_action( 'wp_count_comments', array( self::$wp_comment_logger, 'filter_comment_count' ), 20, 2 ); // run after WC_Comments::wp_count_comments() to make sure we exclude order notes and action logs.
 		add_action( 'comment_feed_where', array( self::$wp_comment_logger, 'filter_comment_feed' ), 10, 2 );
 
-		// Action Scheduler may be displayed as a Tools screen or WooCommerce > Status administration screen
+		// Action Scheduler may be displayed as a Tools screen or WooCommerce > Status administration screen.
 		add_action( 'load-tools_page_action-scheduler', array( __CLASS__, 'register_admin_notice' ) );
 		add_action( 'load-woocommerce_page_wc-status', array( __CLASS__, 'register_admin_notice' ) );
 	}
@@ -90,7 +90,7 @@ class ActionScheduler_WPCommentCleaner {
 	public static function register_admin_notice() {
 		add_action( 'admin_notices', array( __CLASS__, 'print_admin_notice' ) );
 	}
-	
+
 	/**
 	 * Prints details about the orphaned action logs and includes information on where to learn more.
 	 */

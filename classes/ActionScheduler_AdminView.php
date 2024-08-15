@@ -6,8 +6,10 @@
  */
 class ActionScheduler_AdminView extends ActionScheduler_AdminView_Deprecated {
 
+	/** @var null|self */
 	private static $admin_view = NULL;
 
+	/** @var string */
 	private static $screen_id = 'tools_page_action-scheduler';
 
 	/** @var ActionScheduler_ListTable */
@@ -28,6 +30,8 @@ class ActionScheduler_AdminView extends ActionScheduler_AdminView_Deprecated {
 	}
 
 	/**
+	 * Initialize.
+	 *
 	 * @codeCoverageIgnore
 	 */
 	public function init() {
@@ -45,6 +49,9 @@ class ActionScheduler_AdminView extends ActionScheduler_AdminView_Deprecated {
 		}
 	}
 
+	/**
+	 * Print system status report.
+	 */
 	public function system_status_report() {
 		$table = new ActionScheduler_wcSystemStatus( ActionScheduler::store() );
 		$table->render();
@@ -119,20 +126,20 @@ class ActionScheduler_AdminView extends ActionScheduler_AdminView_Deprecated {
 	 */
 	public function maybe_check_pastdue_actions() {
 
-		# Filter to prevent checking actions (ex: inappropriate user).
+		// Filter to prevent checking actions (ex: inappropriate user).
 		if ( ! apply_filters( 'action_scheduler_check_pastdue_actions', current_user_can( 'manage_options' ) ) ) {
 			return;
 		}
 
-		# Get last check transient.
+		// Get last check transient.
 		$last_check = get_transient( 'action_scheduler_last_pastdue_actions_check' );
 
-		# If transient exists, we're within interval, so bail.
+		// If transient exists, we're within interval, so bail.
 		if ( ! empty( $last_check ) ) {
 			return;
 		}
 
-		# Perform the check.
+		// Perform the check.
 		$this->check_pastdue_actions();
 	}
 
@@ -143,9 +150,9 @@ class ActionScheduler_AdminView extends ActionScheduler_AdminView_Deprecated {
 	 */
 	protected function check_pastdue_actions() {
 
-		# Set thresholds.
-		$threshold_seconds = ( int ) apply_filters( 'action_scheduler_pastdue_actions_seconds', DAY_IN_SECONDS );
-		$threshold_min    = ( int ) apply_filters( 'action_scheduler_pastdue_actions_min', 1 );
+		// Set thresholds.
+		$threshold_seconds = (int) apply_filters( 'action_scheduler_pastdue_actions_seconds', DAY_IN_SECONDS );
+		$threshold_min     = (int) apply_filters( 'action_scheduler_pastdue_actions_min', 1 );
 
 		// Set fallback value for past-due actions count.
 		$num_pastdue_actions = 0;
@@ -158,24 +165,24 @@ class ActionScheduler_AdminView extends ActionScheduler_AdminView_Deprecated {
 			return;
 		}
 
-		# Scheduled actions query arguments.
+		// Scheduled actions query arguments.
 		$query_args = array(
 			'date'     => as_get_datetime_object( time() - $threshold_seconds ),
 			'status'   => ActionScheduler_Store::STATUS_PENDING,
 			'per_page' => $threshold_min,
 		);
 
-		# If no third-party preempted, run default check.
+		// If no third-party preempted, run default check.
 		if ( is_null( $check ) ) {
 			$store = ActionScheduler_Store::instance();
-			$num_pastdue_actions = ( int ) $store->query_actions( $query_args, 'count' );
+			$num_pastdue_actions = (int) $store->query_actions( $query_args, 'count' );
 
-			# Check if past-due actions count is greater than or equal to threshold.
+			// Check if past-due actions count is greater than or equal to threshold.
 			$check = ( $num_pastdue_actions >= $threshold_min );
-			$check = ( bool ) apply_filters( 'action_scheduler_pastdue_actions_check', $check, $num_pastdue_actions, $threshold_seconds, $threshold_min );
+			$check = (bool) apply_filters( 'action_scheduler_pastdue_actions_check', $check, $num_pastdue_actions, $threshold_seconds, $threshold_min );
 		}
 
-		# If check failed, set transient and abort.
+		// If check failed, set transient and abort.
 		if ( ! boolval( $check ) ) {
 			$interval = apply_filters( 'action_scheduler_pastdue_actions_check_interval', round( $threshold_seconds / 4 ), $threshold_seconds );
 			set_transient( 'action_scheduler_last_pastdue_actions_check', time(), $interval );
@@ -189,7 +196,7 @@ class ActionScheduler_AdminView extends ActionScheduler_AdminView_Deprecated {
 			'order'  => 'asc',
 		), admin_url( 'tools.php' ) );
 
-		# Print notice.
+		// Print notice.
 		echo '<div class="notice notice-warning"><p>';
 		printf(
 			// translators: 1) is the number of affected actions, 2) is a link to an admin screen.
@@ -204,7 +211,7 @@ class ActionScheduler_AdminView extends ActionScheduler_AdminView_Deprecated {
 		);
 		echo '</p></div>';
 
-		# Facilitate third-parties to evaluate and print notices.
+		// Facilitate third-parties to evaluate and print notices.
 		do_action( 'action_scheduler_pastdue_actions_extra_notices', $query_args );
 	}
 

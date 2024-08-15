@@ -93,7 +93,7 @@ class Migration_Command extends WP_CLI_Command {
 		} while ( $actions_processed > 0 );
 
 		if ( ! $config->get_dry_run() ) {
-			// let the scheduler know that there's nothing left to do
+			// let the scheduler know that there's nothing left to do.
 			$scheduler = new Scheduler();
 			$scheduler->mark_complete();
 		}

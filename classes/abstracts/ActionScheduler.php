@@ -8,12 +8,16 @@ use Action_Scheduler\Migration\Controller;
  * @codeCoverageIgnore
  */
 abstract class ActionScheduler {
+	/** @var string */
 	private static $plugin_file = '';
 	/** @var ActionScheduler_ActionFactory */
 	private static $factory = NULL;
 	/** @var bool */
 	private static $data_store_initialized = false;
 
+	/**
+	 * Factory.
+	 */
 	public static function factory() {
 		if ( !isset(self::$factory) ) {
 			self::$factory = new ActionScheduler_ActionFactory();
@@ -21,22 +25,37 @@ abstract class ActionScheduler {
 		return self::$factory;
 	}
 
+	/**
+	 * Get Store instance.
+	 */
 	public static function store() {
 		return ActionScheduler_Store::instance();
 	}
 
+	/**
+	 * Get Lock instance.
+	 */
 	public static function lock() {
 		return ActionScheduler_Lock::instance();
 	}
 
+	/**
+	 * Get Logger instance.
+	 */
 	public static function logger() {
 		return ActionScheduler_Logger::instance();
 	}
 
+	/**
+	 * Get QueueRunner instance.
+	 */
 	public static function runner() {
 		return ActionScheduler_QueueRunner::instance();
 	}
 
+	/**
+	 * Get AdminView instance.
+	 */
 	public static function admin_view() {
 		return ActionScheduler_AdminView::instance();
 	}
@@ -44,13 +63,13 @@ abstract class ActionScheduler {
 	/**
 	 * Get the absolute system path to the plugin directory, or a file therein
 	 * @static
-	 * @param string $path
+	 * @param string $path Path relative to plugin directory.
 	 * @return string
 	 */
 	public static function plugin_path( $path ) {
 		$base = dirname(self::$plugin_file);
 		if ( $path ) {
-			return trailingslashit($base).$path;
+			return trailingslashit($base) . $path;
 		} else {
 			return untrailingslashit($base);
 		}
@@ -59,13 +78,18 @@ abstract class ActionScheduler {
 	/**
 	 * Get the absolute URL to the plugin directory, or a file therein
 	 * @static
-	 * @param string $path
+	 * @param string $path Path relative to plugin directory.
 	 * @return string
 	 */
 	public static function plugin_url( $path ) {
 		return plugins_url($path, self::$plugin_file);
 	}
 
+	/**
+	 * Autoload.
+	 *
+	 * @param string $class Class name.
+	 */
 	public static function autoload( $class ) {
 		$d           = DIRECTORY_SEPARATOR;
 		$classes_dir = self::plugin_path( 'classes' . $d );
@@ -128,7 +152,7 @@ abstract class ActionScheduler {
 	 * Initialize the plugin
 	 *
 	 * @static
-	 * @param string $plugin_file
+	 * @param string $plugin_file Plugin file path.
 	 */
 	public static function init( $plugin_file ) {
 		self::$plugin_file = $plugin_file;
@@ -149,7 +173,8 @@ abstract class ActionScheduler {
 
 		// Ensure initialization on plugin activation.
 		if ( ! did_action( 'init' ) ) {
-			add_action( 'init', array( $admin_view, 'init' ), 0, 0 ); // run before $store::init()
+			// phpcs:ignore Squiz.PHP.CommentedOutCode
+			add_action( 'init', array( $admin_view, 'init' ), 0, 0 ); // run before $store::init().
 			add_action( 'init', array( $store, 'init' ), 1, 0 );
 			add_action( 'init', array( $logger, 'init' ), 1, 0 );
 			add_action( 'init', array( $runner, 'init' ), 1, 0 );
@@ -308,18 +333,33 @@ abstract class ActionScheduler {
 		return isset( $cli_segments[ $segment ] ) && $cli_segments[ $segment ];
 	}
 
+	/**
+	 * Clone.
+	 */
 	final public function __clone() {
-		trigger_error("Singleton. No cloning allowed!", E_USER_ERROR);
+		trigger_error('Singleton. No cloning allowed!', E_USER_ERROR);
 	}
 
+	/**
+	 * Wakeup.
+	 */
 	final public function __wakeup() {
-		trigger_error("Singleton. No serialization allowed!", E_USER_ERROR);
+		trigger_error('Singleton. No serialization allowed!', E_USER_ERROR);
 	}
 
+	/**
+	 * Construct.
+	 */
 	final private function __construct() {}
 
 	/** Deprecated **/
 
+	/**
+	 * Get DateTime object.
+	 *
+	 * @param null|string $when     Date/time string.
+	 * @param string      $timezone Timezone string.
+	 */
 	public static function get_datetime_object( $when = null, $timezone = 'UTC' ) {
 		_deprecated_function( __METHOD__, '2.0', 'wcs_add_months()' );
 		return as_get_datetime_object( $when, $timezone );

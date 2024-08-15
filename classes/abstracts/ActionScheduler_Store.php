@@ -448,12 +448,15 @@ abstract class ActionScheduler_Store extends ActionScheduler_Store_Deprecated {
 	 * @return string
 	 */
 	public function has_pending_actions_due() {
-		$pending_actions = $this->query_actions( array(
-			'per_page' => 1,
-			'date'     => as_get_datetime_object(),
-			'status'   => self::STATUS_PENDING,
-			'orderby'  => 'none',
-		), 'count' );
+		$pending_actions = $this->query_actions(
+			array(
+				'per_page' => 1,
+				'date'     => as_get_datetime_object(),
+				'status'   => self::STATUS_PENDING,
+				'orderby'  => 'none',
+			),
+			'count'
+		);
 
 		return ! empty( $pending_actions );
 	}

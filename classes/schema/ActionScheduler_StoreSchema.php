@@ -52,7 +52,6 @@ class ActionScheduler_StoreSchema extends ActionScheduler_Abstract_Schema {
 		switch ( $table ) {
 
 			case self::ACTIONS_TABLE:
-
 				return "CREATE TABLE {$table_name} (
 				        action_id bigint(20) unsigned NOT NULL auto_increment,
 				        hook varchar(191) NOT NULL,
@@ -79,7 +78,6 @@ class ActionScheduler_StoreSchema extends ActionScheduler_Abstract_Schema {
 				        ) $charset_collate";
 
 			case self::CLAIMS_TABLE:
-
 				return "CREATE TABLE {$table_name} (
 				        claim_id bigint(20) unsigned NOT NULL auto_increment,
 				        date_created_gmt datetime NULL default '{$default_date}',
@@ -88,7 +86,6 @@ class ActionScheduler_StoreSchema extends ActionScheduler_Abstract_Schema {
 				        ) $charset_collate";
 
 			case self::GROUPS_TABLE:
-
 				return "CREATE TABLE {$table_name} (
 				        group_id bigint(20) unsigned NOT NULL auto_increment,
 				        slug varchar(255) NOT NULL,

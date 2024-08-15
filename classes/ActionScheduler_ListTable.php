@@ -417,15 +417,15 @@ class ActionScheduler_ListTable extends ActionScheduler_Abstract_ListTable {
 			if ( 1 == $notification['success'] ) {
 				$class = 'updated';
 				switch ( $notification['row_action_type'] ) {
-					case 'run' :
+					case 'run':
 						/* translators: %s: action HTML */
 						$action_message_html = sprintf( __( 'Successfully executed action: %s', 'action-scheduler' ), $action_hook_html );
 						break;
-					case 'cancel' :
+					case 'cancel':
 						/* translators: %s: action HTML */
 						$action_message_html = sprintf( __( 'Successfully canceled action: %s', 'action-scheduler' ), $action_hook_html );
 						break;
-					default :
+					default:
 						/* translators: %s: action HTML */
 						$action_message_html = sprintf( __( 'Successfully processed change for action: %s', 'action-scheduler' ), $action_hook_html );
 						break;
@@ -567,10 +567,10 @@ class ActionScheduler_ListTable extends ActionScheduler_Abstract_ListTable {
 	protected function process_row_action( $action_id, $row_action_type ) {
 		try {
 			switch ( $row_action_type ) {
-				case 'run' :
+				case 'run':
 					$this->runner->process_action( $action_id, 'Admin List Table' );
 					break;
-				case 'cancel' :
+				case 'cancel':
 					$this->store->cancel_action( $action_id );
 					break;
 			}

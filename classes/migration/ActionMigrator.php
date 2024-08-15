@@ -80,10 +80,10 @@ class ActionMigrator {
 
 		try {
 			switch ( $status ) {
-				case \ActionScheduler_Store::STATUS_FAILED :
+				case \ActionScheduler_Store::STATUS_FAILED:
 					$this->destination->mark_failure( $destination_action_id );
 					break;
-				case \ActionScheduler_Store::STATUS_CANCELED :
+				case \ActionScheduler_Store::STATUS_CANCELED:
 					$this->destination->cancel_action( $destination_action_id );
 					break;
 			}

@@ -43,7 +43,6 @@ class ActionScheduler_LoggerSchema extends ActionScheduler_Abstract_Schema {
 		switch ( $table ) {
 
 			case self::LOG_TABLE:
-
 				$default_date = ActionScheduler_StoreSchema::DEFAULT_DATE;
 				return "CREATE TABLE $table_name (
 				        log_id bigint(20) unsigned NOT NULL auto_increment,

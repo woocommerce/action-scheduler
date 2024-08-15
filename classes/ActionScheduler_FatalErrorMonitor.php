@@ -8,12 +8,23 @@ class ActionScheduler_FatalErrorMonitor {
 	private $claim = NULL;
 	/** @var ActionScheduler_Store */
 	private $store = NULL;
+	/** @var int */
 	private $action_id = 0;
 
+	/**
+	 * Construct.
+	 *
+	 * @param ActionScheduler_Store $store Action store.
+	 */
 	public function __construct( ActionScheduler_Store $store ) {
 		$this->store = $store;
 	}
 
+	/**
+	 * Start monitoring.
+	 *
+	 * @param ActionScheduler_ActionClaim $claim Claimed actions.
+	 */
 	public function attach( ActionScheduler_ActionClaim $claim ) {
 		$this->claim = $claim;
 		add_action( 'shutdown', array( $this, 'handle_unexpected_shutdown' ) );
@@ -23,6 +34,9 @@ class ActionScheduler_FatalErrorMonitor {
 		add_action( 'action_scheduler_failed_execution',  array( $this, 'untrack_action' ), 0, 0 );
 	}
 
+	/**
+	 * Stop monitoring.
+	 */
 	public function detach() {
 		$this->claim = NULL;
 		$this->untrack_action();
@@ -33,16 +47,29 @@ class ActionScheduler_FatalErrorMonitor {
 		remove_action( 'action_scheduler_failed_execution',  array( $this, 'untrack_action' ), 0 );
 	}
 
+	/**
+	 * Track specified action.
+	 *
+	 * @param int $action_id Action ID to track.
+	 */
 	public function track_current_action( $action_id ) {
 		$this->action_id = $action_id;
 	}
 
+	/**
+	 * Un-track action.
+	 */
 	public function untrack_action() {
 		$this->action_id = 0;
 	}
 
+	/**
+	 * Handle unexpected shutdown.
+	 */
 	public function handle_unexpected_shutdown() {
-		if ( $error = error_get_last() ) {
+		$error = error_get_last();
+
+		if ( $error ) {
 			if ( in_array( $error['type'], array( E_ERROR, E_PARSE, E_COMPILE_ERROR, E_USER_ERROR, E_RECOVERABLE_ERROR ) ) ) {
 				if ( !empty($this->action_id) ) {
 					$this->store->mark_failure( $this->action_id );

@@ -16,7 +16,7 @@ use ActionScheduler_Store as Store;
  * @codeCoverageIgnore
  */
 class BatchFetcher {
-	/** var ActionScheduler_Store */
+	/** @var ActionScheduler_Store */
 	private $store;
 
 	/**
@@ -31,7 +31,7 @@ class BatchFetcher {
 	/**
 	 * Retrieve a list of actions.
 	 *
-	 * @param int $count The number of actions to retrieve
+	 * @param int $count The number of actions to retrieve.
 	 *
 	 * @return int[] A list of action IDs
 	 */
@@ -69,7 +69,7 @@ class BatchFetcher {
 			Store::STATUS_CANCELED,
 			Store::STATUS_COMPLETE,
 			Store::STATUS_RUNNING,
-			'', // any other unanticipated status
+			'', // any other unanticipated status.
 		];
 
 		foreach ( $priorities as $status ) {

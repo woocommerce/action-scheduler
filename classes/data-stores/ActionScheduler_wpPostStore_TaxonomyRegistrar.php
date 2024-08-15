@@ -5,10 +5,17 @@
  * @codeCoverageIgnore
  */
 class ActionScheduler_wpPostStore_TaxonomyRegistrar {
+
+	/**
+	 * Registrar.
+	 */
 	public function register() {
 		register_taxonomy( ActionScheduler_wpPostStore::GROUP_TAXONOMY, ActionScheduler_wpPostStore::POST_TYPE, $this->taxonomy_args() );
 	}
 
+	/**
+	 * Get taxonomy arguments.
+	 */
 	protected function taxonomy_args() {
 		$args = array(
 			'label' => __( 'Action Group', 'action-scheduler' ),
@@ -23,4 +30,3 @@ class ActionScheduler_wpPostStore_TaxonomyRegistrar {
 		return $args;
 	}
 }
- 

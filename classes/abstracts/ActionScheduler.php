@@ -143,7 +143,7 @@ abstract class ActionScheduler {
 		}
 
 		if ( file_exists( $dir . "{$class}.php" ) ) {
-			include( $dir . "{$class}.php" );
+			include $dir . "{$class}.php";
 			return;
 		}
 	}
@@ -163,7 +163,7 @@ abstract class ActionScheduler {
 		 */
 		do_action( 'action_scheduler_pre_init' );
 
-		require_once( self::plugin_path( 'functions.php' ) );
+		require_once self::plugin_path( 'functions.php' );
 		ActionScheduler_DataController::init();
 
 		$store      = self::store();
@@ -216,7 +216,7 @@ abstract class ActionScheduler {
 		}
 
 		if ( apply_filters( 'action_scheduler_load_deprecated_functions', true ) ) {
-			require_once( self::plugin_path( 'deprecated/functions.php' ) );
+			require_once self::plugin_path( 'deprecated/functions.php' );
 		}
 
 		if ( defined( 'WP_CLI' ) && WP_CLI ) {

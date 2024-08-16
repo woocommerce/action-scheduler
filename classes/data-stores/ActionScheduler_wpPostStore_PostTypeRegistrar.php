@@ -46,7 +46,7 @@ class ActionScheduler_wpPostStore_PostTypeRegistrar {
 			),
 		);
 
-		$args = apply_filters('action_scheduler_post_type_args', $args);
+		$args = apply_filters( 'action_scheduler_post_type_args', $args );
 		return $args;
 	}
 }

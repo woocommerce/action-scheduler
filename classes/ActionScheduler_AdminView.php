@@ -22,7 +22,7 @@ class ActionScheduler_AdminView extends ActionScheduler_AdminView_Deprecated {
 	public static function instance() {
 
 		if ( empty( self::$admin_view ) ) {
-			$class = apply_filters('action_scheduler_admin_view_class', 'ActionScheduler_AdminView');
+			$class = apply_filters( 'action_scheduler_admin_view_class', 'ActionScheduler_AdminView' );
 			self::$admin_view = new $class();
 		}
 

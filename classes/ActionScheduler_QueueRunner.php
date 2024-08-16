@@ -22,8 +22,8 @@ class ActionScheduler_QueueRunner extends ActionScheduler_Abstract_QueueRunner {
 	 * @codeCoverageIgnore
 	 */
 	public static function instance() {
-		if ( empty(self::$runner) ) {
-			$class = apply_filters('action_scheduler_queue_runner_class', 'ActionScheduler_QueueRunner');
+		if ( empty( self::$runner ) ) {
+			$class = apply_filters( 'action_scheduler_queue_runner_class', 'ActionScheduler_QueueRunner' );
 			self::$runner = new $class();
 		}
 		return self::$runner;
@@ -158,8 +158,8 @@ class ActionScheduler_QueueRunner extends ActionScheduler_Abstract_QueueRunner {
 	 * @return int The number of actions processed.
 	 */
 	protected function do_batch( $size = 100, $context = '' ) {
-		$claim = $this->store->stake_claim($size);
-		$this->monitor->attach($claim);
+		$claim = $this->store->stake_claim( $size );
+		$this->monitor->attach( $claim );
 		$processed_actions = 0;
 
 		foreach ( $claim->get_actions() as $action_id ) {
@@ -174,7 +174,7 @@ class ActionScheduler_QueueRunner extends ActionScheduler_Abstract_QueueRunner {
 				break;
 			}
 		}
-		$this->store->release_claim($claim);
+		$this->store->release_claim( $claim );
 		$this->monitor->detach();
 		$this->clear_caches();
 		return $processed_actions;

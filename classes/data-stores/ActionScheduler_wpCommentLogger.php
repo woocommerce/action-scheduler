@@ -17,7 +17,7 @@ class ActionScheduler_wpCommentLogger extends ActionScheduler_Logger {
 	 * @return string The log entry ID
 	 */
 	public function log( $action_id, $message, DateTime $date = NULL ) {
-		if ( empty($date) ) {
+		if ( empty( $date ) ) {
 			$date = as_get_datetime_object();
 		} else {
 			$date = as_get_datetime_object( clone $date );
@@ -35,18 +35,18 @@ class ActionScheduler_wpCommentLogger extends ActionScheduler_Logger {
 	 */
 	protected function create_wp_comment( $action_id, $message, DateTime $date ) {
 
-		$comment_date_gmt = $date->format('Y-m-d H:i:s');
+		$comment_date_gmt = $date->format( 'Y-m-d H:i:s' );
 		ActionScheduler_TimezoneHelper::set_local_timezone( $date );
 		$comment_data = array(
 			'comment_post_ID' => $action_id,
-			'comment_date' => $date->format('Y-m-d H:i:s'),
+			'comment_date' => $date->format( 'Y-m-d H:i:s' ),
 			'comment_date_gmt' => $comment_date_gmt,
 			'comment_author' => self::AGENT,
 			'comment_content' => $message,
 			'comment_agent' => self::AGENT,
 			'comment_type' => self::TYPE,
 		);
-		return wp_insert_comment($comment_data);
+		return wp_insert_comment( $comment_data );
 	}
 
 	/**
@@ -58,7 +58,7 @@ class ActionScheduler_wpCommentLogger extends ActionScheduler_Logger {
 	 */
 	public function get_entry( $entry_id ) {
 		$comment = $this->get_comment( $entry_id );
-		if ( empty($comment) || $comment->comment_type != self::TYPE ) {
+		if ( empty( $comment ) || $comment->comment_type != self::TYPE ) {
 			return new ActionScheduler_NullLogEntry();
 		}
 
@@ -76,7 +76,7 @@ class ActionScheduler_wpCommentLogger extends ActionScheduler_Logger {
 	 */
 	public function get_logs( $action_id ) {
 		$status = 'all';
-		if ( get_post_status($action_id) == 'trash' ) {
+		if ( get_post_status( $action_id ) == 'trash' ) {
 			$status = 'post-trashed';
 		}
 		$comments = get_comments(array(
@@ -89,7 +89,7 @@ class ActionScheduler_wpCommentLogger extends ActionScheduler_Logger {
 		$logs = array();
 		foreach ( $comments as $c ) {
 			$entry = $this->get_entry( $c );
-			if ( !empty($entry) ) {
+			if ( !empty( $entry ) ) {
 				$logs[] = $entry;
 			}
 		}
@@ -114,7 +114,7 @@ class ActionScheduler_wpCommentLogger extends ActionScheduler_Logger {
 	 */
 	public function filter_comment_queries( $query ) {
 		foreach ( array('ID', 'parent', 'post_author', 'post_name', 'post_parent', 'type', 'post_type', 'post_id', 'post_ID') as $key ) {
-			if ( !empty($query->query_vars[$key]) ) {
+			if ( !empty( $query->query_vars[$key] ) ) {
 				return; // don't slow down queries that wouldn't include action_log comments anyway.
 			}
 		}
@@ -131,7 +131,7 @@ class ActionScheduler_wpCommentLogger extends ActionScheduler_Logger {
 	 * @return array
 	 */
 	public function filter_comment_query_clauses( $clauses, $query ) {
-		if ( !empty($query->query_vars['action_log_filter']) ) {
+		if ( !empty( $query->query_vars['action_log_filter'] ) ) {
 			$clauses['where'] .= $this->get_where_clause();
 		}
 		return $clauses;
@@ -258,14 +258,14 @@ class ActionScheduler_wpCommentLogger extends ActionScheduler_Logger {
 	 * Defer comment counting.
 	 */
 	public function disable_comment_counting() {
-		wp_defer_comment_counting(true);
+		wp_defer_comment_counting( true );
 	}
 
 	/**
 	 * Enable comment counting.
 	 */
 	public function enable_comment_counting() {
-		wp_defer_comment_counting(false);
+		wp_defer_comment_counting( false );
 	}
 
 }

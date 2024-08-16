@@ -15,8 +15,8 @@ abstract class ActionScheduler_Logger {
 	 * @return ActionScheduler_Logger
 	 */
 	public static function instance() {
-		if ( empty(self::$logger) ) {
-			$class = apply_filters('action_scheduler_logger_class', 'ActionScheduler_wpCommentLogger');
+		if ( empty( self::$logger ) ) {
+			$class = apply_filters( 'action_scheduler_logger_class', 'ActionScheduler_wpCommentLogger' );
 			self::$logger = new $class();
 		}
 		return self::$logger;

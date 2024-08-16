@@ -96,7 +96,7 @@ class ActionScheduler_WPCLI_Scheduler_command extends WP_CLI_Command {
 			$exclude_groups = $this->parse_comma_separated_string( $exclude_groups );
 
 			if ( ! empty( $exclude_groups ) ) {
-				ActionScheduler::store()->set_claim_filter('exclude-groups', $exclude_groups );
+				ActionScheduler::store()->set_claim_filter( 'exclude-groups', $exclude_groups );
 			}
 		}
 

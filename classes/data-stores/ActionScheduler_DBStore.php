@@ -412,7 +412,7 @@ AND `group_id` = %d
 			'offset'                => 0,
 			'orderby'               => 'date',
 			'order'                 => 'ASC',
-		 ) );
+		) );
 
 		/** @var \wpdb $wpdb */
 		global $wpdb;

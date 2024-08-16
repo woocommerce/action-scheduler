@@ -50,4 +50,10 @@
 		<exclude-pattern>lib/*</exclude-pattern>
 		<exclude-pattern>test/*</exclude-pattern>
 	</rule>
+
+	<rule ref="PEAR.Functions.FunctionCallSignature">
+		<exclude name="PEAR.Functions.FunctionCallSignature.ContentAfterOpenBracket" />
+		<exclude name="PEAR.Functions.FunctionCallSignature.MultipleArguments" />
+		<exclude name="PEAR.Functions.FunctionCallSignature.CloseBracketLine" />
+	</rule>
 </ruleset>

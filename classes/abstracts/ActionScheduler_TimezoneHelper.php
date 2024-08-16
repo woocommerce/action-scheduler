@@ -110,11 +110,11 @@ abstract class ActionScheduler_TimezoneHelper {
 		if ( $reset ) {
 			self::$local_timezone = NULL;
 		}
-		if ( !isset(self::$local_timezone) ) {
-			$tzstring = get_option('timezone_string');
+		if ( !isset( self::$local_timezone ) ) {
+			$tzstring = get_option( 'timezone_string' );
 
-			if ( empty($tzstring) ) {
-				$gmt_offset = get_option('gmt_offset');
+			if ( empty( $tzstring ) ) {
+				$gmt_offset = get_option( 'gmt_offset' );
 				if ( $gmt_offset == 0 ) {
 					$tzstring = 'UTC';
 				} else {
@@ -151,7 +151,7 @@ abstract class ActionScheduler_TimezoneHelper {
 				}
 			}
 
-			self::$local_timezone = new DateTimeZone($tzstring);
+			self::$local_timezone = new DateTimeZone( $tzstring );
 		}
 		return self::$local_timezone;
 	}

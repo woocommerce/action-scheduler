@@ -19,7 +19,7 @@ abstract class ActionScheduler {
 	 * Factory.
 	 */
 	public static function factory() {
-		if ( !isset(self::$factory) ) {
+		if ( !isset( self::$factory ) ) {
 			self::$factory = new ActionScheduler_ActionFactory();
 		}
 		return self::$factory;
@@ -67,11 +67,11 @@ abstract class ActionScheduler {
 	 * @return string
 	 */
 	public static function plugin_path( $path ) {
-		$base = dirname(self::$plugin_file);
+		$base = dirname( self::$plugin_file );
 		if ( $path ) {
-			return trailingslashit($base) . $path;
+			return trailingslashit( $base ) . $path;
 		} else {
-			return untrailingslashit($base);
+			return untrailingslashit( $base );
 		}
 	}
 
@@ -82,7 +82,7 @@ abstract class ActionScheduler {
 	 * @return string
 	 */
 	public static function plugin_url( $path ) {
-		return plugins_url($path, self::$plugin_file);
+		return plugins_url( $path, self::$plugin_file );
 	}
 
 	/**
@@ -337,14 +337,14 @@ abstract class ActionScheduler {
 	 * Clone.
 	 */
 	final public function __clone() {
-		trigger_error('Singleton. No cloning allowed!', E_USER_ERROR);
+		trigger_error( 'Singleton. No cloning allowed!', E_USER_ERROR );
 	}
 
 	/**
 	 * Wakeup.
 	 */
 	final public function __wakeup() {
-		trigger_error('Singleton. No serialization allowed!', E_USER_ERROR);
+		trigger_error( 'Singleton. No serialization allowed!', E_USER_ERROR );
 	}
 
 	/**

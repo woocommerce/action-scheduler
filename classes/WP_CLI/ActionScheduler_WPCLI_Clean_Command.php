@@ -81,7 +81,7 @@ class ActionScheduler_WPCLI_Clean_Command extends WP_CLI_Command {
 	 *
 	 * @param int $batches_processed Number of batches processed.
 	 */
-	protected function print_total_batches( int $batches_processed ) {
+	protected function print_total_batches( $batches_processed ) {
 		WP_CLI::log(
 			sprintf(
 				/* translators: %d refers to the total number of batches processed */
@@ -113,7 +113,7 @@ class ActionScheduler_WPCLI_Clean_Command extends WP_CLI_Command {
 	 *
 	 * @param int $actions_deleted Number of deleted actions.
 	 */
-	protected function print_success( int $actions_deleted ) {
+	protected function print_success( $actions_deleted ) {
 		WP_CLI::success(
 			sprintf(
 				/* translators: %d refers to the total number of actions deleted */

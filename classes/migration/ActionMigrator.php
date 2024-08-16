@@ -70,7 +70,7 @@ class ActionMigrator {
 			// delete it and move on.
 			try {
 				$this->source->delete_action( $source_action_id );
-			} catch ( \Exception $e ) {
+			} catch ( \Exception $e ) { // phpcs:ignore Generic.CodeAnalysis.EmptyStatement.DetectedCatch
 				// nothing to do, it didn't exist in the first place.
 			}
 			do_action( 'action_scheduler/no_action_to_migrate', $source_action_id, $this->source, $this->destination );

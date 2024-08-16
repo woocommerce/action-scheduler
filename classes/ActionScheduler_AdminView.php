@@ -85,7 +85,7 @@ class ActionScheduler_AdminView extends ActionScheduler_AdminView_Deprecated {
 			'action-scheduler',
 			array( $this, 'render_admin_ui' )
 		);
-		add_action( 'load-' . $hook_suffix , array( $this, 'process_admin_ui' ) );
+		add_action( 'load-' . $hook_suffix, array( $this, 'process_admin_ui' ) );
 	}
 
 	/**

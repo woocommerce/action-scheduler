@@ -13,6 +13,9 @@ class ActionScheduler_CanceledSchedule extends ActionScheduler_SimpleSchedule {
 	private $timestamp = null;
 
 	/**
+	 * Calculate when this schedule should start after a given date & time using
+	 * the number of seconds between recurrences.
+	 *
 	 * @param DateTime $after Timestamp.
 	 *
 	 * @return DateTime|null
@@ -33,6 +36,8 @@ class ActionScheduler_CanceledSchedule extends ActionScheduler_SimpleSchedule {
 	}
 
 	/**
+	 * Check if a recurring action.
+	 *
 	 * @return bool
 	 */
 	public function is_recurring() {

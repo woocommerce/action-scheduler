@@ -20,6 +20,8 @@ abstract class ActionScheduler_Abstract_Schedule extends ActionScheduler_Schedul
 	protected $scheduled_timestamp = null;
 
 	/**
+	 * Construct.
+	 *
 	 * @param DateTime $date The date & time to run the action.
 	 */
 	public function __construct( DateTime $date ) {
@@ -67,6 +69,7 @@ abstract class ActionScheduler_Abstract_Schedule extends ActionScheduler_Schedul
 
 	/**
 	 * For PHP 5.2 compat, since DateTime objects can't be serialized
+	 *
 	 * @return array
 	 */
 	public function __sleep() {

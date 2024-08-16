@@ -5,10 +5,18 @@
  */
 class ActionScheduler_QueueCleaner {
 
-	/** @var int */
+	/**
+	 * Batch size.
+	 *
+	 * @var int
+	 */
 	protected $batch_size;
 
-	/** @var ActionScheduler_Store */
+	/**
+	 * Store instance.
+	 *
+	 * @var ActionScheduler_Store
+	 */
 	private $store = null;
 
 	/**
@@ -19,7 +27,9 @@ class ActionScheduler_QueueCleaner {
 	private $month_in_seconds = 2678400;
 
 	/**
-	 * @var string[] Default list of statuses purged by the cleaner process.
+	 * Default list of statuses purged by the cleaner process.
+	 *
+	 * @var string[]
 	 */
 	private $default_statuses_to_purge = [
 		ActionScheduler_Store::STATUS_COMPLETE,
@@ -139,7 +149,6 @@ class ActionScheduler_QueueCleaner {
 				 * @param int $lifespan The retention period, in seconds, for old actions
 				 * @param int $count_of_actions_to_delete The number of old actions being deleted in this batch
 				 * @since 2.0.0
-				 *
 				 */
 				do_action( "action_scheduler_failed_{$context}_action_deletion", $action_id, $e, $lifespan, count( $actions_to_delete ) );
 			}

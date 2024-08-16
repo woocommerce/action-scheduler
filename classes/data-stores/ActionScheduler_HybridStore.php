@@ -15,23 +15,37 @@ use Action_Scheduler\Migration\Controller;
 class ActionScheduler_HybridStore extends Store {
 	const DEMARKATION_OPTION = 'action_scheduler_hybrid_store_demarkation';
 
-	/** @var ActionScheduler_Store */
+	/**
+	 * Primary store instance.
+	 *
+	 * @var ActionScheduler_Store
+	 */
 	private $primary_store;
-	/** @var ActionScheduler_Store */
+
+	/**
+	 * Secondary store instance.
+	 *
+	 * @var ActionScheduler_Store
+	 */
 	private $secondary_store;
-	/** @var Action_Scheduler\Migration\Runner */
+
+	/**
+	 * Migration runner instance.
+	 *
+	 * @var Action_Scheduler\Migration\Runner
+	 */
 	private $migration_runner;
 
 	/**
-	 * @var int The dividing line between IDs of actions created
-	 *          by the primary and secondary stores.
-	 *
 	 * Methods that accept an action ID will compare the ID against
 	 * this to determine which store will contain that ID. In almost
 	 * all cases, the ID should come from the primary store, but if
 	 * client code is bypassing the API functions and fetching IDs
 	 * from elsewhere, then there is a chance that an unmigrated ID
 	 * might be requested.
+	 *
+	 * @var int The dividing line between IDs of actions created
+	 *          by the primary and secondary stores.
 	 */
 	private $demarkation_id = 0;
 
@@ -78,7 +92,11 @@ class ActionScheduler_HybridStore extends Store {
 			if ( empty( $this->demarkation_id ) ) {
 				$this->demarkation_id = $this->set_demarkation_id();
 			}
-			/** @var \wpdb $wpdb */
+			/**
+			 * Global wpdb instance.
+			 *
+			 * @var \wpdb $wpdb
+			 */
 			global $wpdb;
 			/**
 			 * A default date of '0000-00-00 00:00:00' is invalid in MySQL 5.7 when configured with
@@ -122,7 +140,11 @@ class ActionScheduler_HybridStore extends Store {
 	 */
 	private function set_demarkation_id( $id = null ) {
 		if ( empty( $id ) ) {
-			/** @var \wpdb $wpdb */
+			/**
+			 * Global wpdb instance.
+			 *
+			 * @var \wpdb $wpdb
+			 */
 			global $wpdb;
 			$id = (int) $wpdb->get_var( "SELECT MAX(ID) FROM $wpdb->posts" );
 			$id ++;

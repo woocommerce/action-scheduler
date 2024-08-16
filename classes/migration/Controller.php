@@ -19,19 +19,40 @@ use Action_Scheduler\WP_CLI\ProgressBar;
  * @codeCoverageIgnore
  */
 class Controller {
-	/** @var self */
+
+	/**
+	 * Instance.
+	 *
+	 * @var self
+	 */
 	private static $instance;
 
-	/** @var Action_Scheduler\Migration\Scheduler */
+	/**
+	 * Migration scheduler instance.
+	 *
+	 * @var Action_Scheduler\Migration\Scheduler
+	 */
 	private $migration_scheduler;
 
-	/** @var string */
+	/**
+	 * Store class name.
+	 *
+	 * @var string
+	 */
 	private $store_classname;
 
-	/** @var string */
+	/**
+	 * Logger class name.
+	 *
+	 * @var string
+	 */
 	private $logger_classname;
 
-	/** @var bool */
+	/**
+	 * Switch to migrate custom store.
+	 *
+	 * @var bool
+	 */
 	private $migrate_custom_store;
 
 	/**

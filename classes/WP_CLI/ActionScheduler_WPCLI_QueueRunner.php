@@ -9,13 +9,25 @@ use Action_Scheduler\WP_CLI\ProgressBar;
  */
 class ActionScheduler_WPCLI_QueueRunner extends ActionScheduler_Abstract_QueueRunner {
 
-	/** @var array */
+	/**
+	 * Action IDs to execute.
+	 *
+	 * @var array
+	 */
 	protected $actions;
 
-	/** @var  ActionScheduler_ActionClaim */
+	/**
+	 * ActionClaim object.
+	 *
+	 * @var ActionScheduler_ActionClaim
+	 */
 	protected $claim;
 
-	/** @var \cli\progress\Bar */
+	/**
+	 * Progress bar object.
+	 *
+	 * @var \cli\progress\Bar
+	 */
 	protected $progress_bar;
 
 	/**

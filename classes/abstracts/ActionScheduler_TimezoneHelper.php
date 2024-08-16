@@ -5,7 +5,11 @@
  */
 abstract class ActionScheduler_TimezoneHelper {
 
-	/** @var null|DateTimeZone */
+	/**
+	 * Local timezone object.
+	 *
+	 * @var null|DateTimeZone
+	 */
 	private static $local_timezone = null;
 
 	/**

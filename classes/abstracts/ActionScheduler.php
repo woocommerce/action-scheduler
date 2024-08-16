@@ -5,14 +5,30 @@ use Action_Scheduler\Migration\Controller;
 
 /**
  * Class ActionScheduler
+ *
  * @codeCoverageIgnore
  */
 abstract class ActionScheduler {
-	/** @var string */
+
+	/**
+	 * Plugin file path.
+	 *
+	 * @var string
+	 */
 	private static $plugin_file = '';
-	/** @var ActionScheduler_ActionFactory */
+
+	/**
+	 * Factory instance.
+	 *
+	 * @var ActionScheduler_ActionFactory
+	 */
 	private static $factory = null;
-	/** @var bool */
+
+	/**
+	 * Data store init indicator.
+	 *
+	 * @var bool
+	 */
 	private static $data_store_initialized = false;
 
 	/**
@@ -62,6 +78,7 @@ abstract class ActionScheduler {
 
 	/**
 	 * Get the absolute system path to the plugin directory, or a file therein
+	 *
 	 * @static
 	 * @param string $path Path relative to plugin directory.
 	 * @return string
@@ -77,6 +94,7 @@ abstract class ActionScheduler {
 
 	/**
 	 * Get the absolute URL to the plugin directory, or a file therein
+	 *
 	 * @static
 	 * @param string $path Path relative to plugin directory.
 	 * @return string

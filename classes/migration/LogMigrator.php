@@ -15,10 +15,18 @@ use ActionScheduler_Logger;
  * @codeCoverageIgnore
  */
 class LogMigrator {
-	/** @var ActionScheduler_Logger */
+	/**
+	 * Source logger instance.
+	 *
+	 * @var ActionScheduler_Logger
+	 */
 	private $source;
 
-	/** @var ActionScheduler_Logger */
+	/**
+	 * Destination logger instance.
+	 *
+	 * @var ActionScheduler_Logger
+	 */
 	private $destination;
 
 	/**

@@ -13,6 +13,9 @@ class ActionScheduler_SimpleSchedule extends ActionScheduler_Abstract_Schedule {
 	private $timestamp = null;
 
 	/**
+	 * Get the date & time this schedule was created to run, or calculate when it should be run
+	 * after a given date & time.
+	 *
 	 * @param DateTime $after Timestamp.
 	 *
 	 * @return DateTime|null
@@ -22,6 +25,8 @@ class ActionScheduler_SimpleSchedule extends ActionScheduler_Abstract_Schedule {
 	}
 
 	/**
+	 * Check if action is recurring.
+	 *
 	 * @return bool
 	 */
 	public function is_recurring() {

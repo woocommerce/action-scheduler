@@ -2,11 +2,16 @@
 
 /**
  * Class ActionScheduler_Logger
+ *
  * @codeCoverageIgnore
  */
 abstract class ActionScheduler_Logger {
 
-	/** @var null|self */
+	/**
+	 * Instance.
+	 *
+	 * @var null|self
+	 */
 	private static $logger = null;
 
 	/**

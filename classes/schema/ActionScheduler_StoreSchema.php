@@ -14,7 +14,9 @@ class ActionScheduler_StoreSchema extends ActionScheduler_Abstract_Schema {
 	const DEFAULT_DATE  = '0000-00-00 00:00:00';
 
 	/**
-	 * @var int Increment this value to trigger a schema update.
+	 * Increment this value to trigger a schema update.
+	 *
+	 * @var int
 	 */
 	protected $schema_version = 7;
 

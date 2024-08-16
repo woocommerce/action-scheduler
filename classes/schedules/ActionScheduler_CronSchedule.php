@@ -53,6 +53,8 @@ class ActionScheduler_CronSchedule extends ActionScheduler_Abstract_RecurringSch
 	}
 
 	/**
+	 * Get the recurrence between each time an action is run using this schedule.
+	 *
 	 * @return string
 	 */
 	public function get_recurrence() {

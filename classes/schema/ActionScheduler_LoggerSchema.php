@@ -11,7 +11,9 @@ class ActionScheduler_LoggerSchema extends ActionScheduler_Abstract_Schema {
 	const LOG_TABLE = 'actionscheduler_logs';
 
 	/**
-	 * @var int Increment this value to trigger a schema update.
+	 * Increment this value to trigger a schema update.
+	 *
+	 * @var int
 	 */
 	protected $schema_version = 3;
 

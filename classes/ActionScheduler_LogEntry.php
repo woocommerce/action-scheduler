@@ -6,16 +6,22 @@
 class ActionScheduler_LogEntry {
 
 	/**
+	 * Action ID.
+	 *
 	 * @var int $action_id
 	 */
 	protected $action_id =  '';
 
 	/**
+	 * Message.
+	 *
 	 * @var string $message
 	 */
 	protected $message =  '';
 
 	/**
+	 * Date.
+	 *
 	 * @var Datetime $date
 	 */
 	protected $date;

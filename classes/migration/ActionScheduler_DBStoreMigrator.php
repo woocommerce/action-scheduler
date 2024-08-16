@@ -25,7 +25,11 @@ class ActionScheduler_DBStoreMigrator extends ActionScheduler_DBStore {
 	 */
 	public function save_action( ActionScheduler_Action $action, \DateTime $scheduled_date = null, \DateTime $last_attempt_date = null ) {
 		try {
-			/** @var \wpdb $wpdb */
+			/**
+			 * Global wpdb instance.
+			 *
+			 * @var \wpdb $wpdb
+			 */
 			global $wpdb;
 
 			$action_id = parent::save_action( $action, $scheduled_date );

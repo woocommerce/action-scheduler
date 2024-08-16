@@ -17,19 +17,39 @@ namespace Action_Scheduler\WP_CLI;
  */
 class ProgressBar {
 
-	/** @var integer */
+	/**
+	 * Current count of ticks.
+	 *
+	 * @var integer
+	 */
 	protected $total_ticks;
 
-	/** @var integer */
+	/**
+	 * Total number of ticks to be performed.
+	 *
+	 * @var integer
+	 */
 	protected $count;
 
-	/** @var integer */
+	/**
+	 * Progress bar refresh interval.
+	 *
+	 * @var integer
+	 */
 	protected $interval;
 
-	/** @var string */
+	/**
+	 * Progress bar's message.
+	 *
+	 * @var string
+	 */
 	protected $message;
 
-	/** @var \cli\progress\Bar */
+	/**
+	 * Instance of WP CLI's progress\Bar object.
+	 *
+	 * @var \cli\progress\Bar
+	 */
 	protected $progress_bar;
 
 	/**

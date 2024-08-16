@@ -16,7 +16,7 @@ class ActionScheduler_ActionClaim {
 	 * @param int[]  $action_ids Action IDs.
 	 */
 	public function __construct( $id, array $action_ids ) {
-		$this->id = $id;
+		$this->id         = $id;
 		$this->action_ids = $action_ids;
 	}
 

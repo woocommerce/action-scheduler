@@ -88,7 +88,7 @@ class Migration_Command extends WP_CLI_Command {
 		\ActionScheduler_DataController::set_sleep_time( $sleep );
 
 		do {
-			$actions_processed     = $runner->run( $batch_size );
+			$actions_processed      = $runner->run( $batch_size );
 			$this->total_processed += $actions_processed;
 		} while ( $actions_processed > 0 );
 

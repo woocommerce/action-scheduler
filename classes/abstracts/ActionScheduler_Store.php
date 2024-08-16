@@ -474,7 +474,7 @@ abstract class ActionScheduler_Store extends ActionScheduler_Store_Deprecated {
 	 */
 	public static function instance() {
 		if ( empty( self::$store ) ) {
-			$class = apply_filters( 'action_scheduler_store_class', self::DEFAULT_CLASS );
+			$class       = apply_filters( 'action_scheduler_store_class', self::DEFAULT_CLASS );
 			self::$store = new $class();
 		}
 		return self::$store;

@@ -5,7 +5,7 @@
  */
 class ActionScheduler_wpCommentLogger extends ActionScheduler_Logger {
 	const AGENT = 'ActionScheduler';
-	const TYPE = 'action_log';
+	const TYPE  = 'action_log';
 
 	/**
 	 * Create log entry.
@@ -86,7 +86,7 @@ class ActionScheduler_wpCommentLogger extends ActionScheduler_Logger {
 			'type' => self::TYPE,
 			'status' => $status,
 		));
-		$logs = array();
+		$logs     = array();
 		foreach ( $comments as $c ) {
 			$entry = $this->get_entry( $c );
 			if ( !empty($entry) ) {
@@ -196,8 +196,8 @@ class ActionScheduler_wpCommentLogger extends ActionScheduler_Logger {
 
 			$count = $wpdb->get_results( "SELECT comment_approved, COUNT( * ) AS num_comments FROM {$wpdb->comments} WHERE comment_type NOT IN('order_note','action_log') GROUP BY comment_approved", ARRAY_A );
 
-			$total = 0;
-			$stats = array();
+			$total    = 0;
+			$stats    = array();
 			$approved = array( '0' => 'moderated', '1' => 'approved', 'spam' => 'spam', 'trash' => 'trash', 'post-trashed' => 'post-trashed' );
 
 			foreach ( (array) $count as $row ) {

@@ -38,8 +38,8 @@ class ActionScheduler_LoggerSchema extends ActionScheduler_Abstract_Schema {
 	 */
 	protected function get_table_definition( $table ) {
 		global $wpdb;
-		$table_name       = $wpdb->$table;
-		$charset_collate  = $wpdb->get_charset_collate();
+		$table_name      = $wpdb->$table;
+		$charset_collate = $wpdb->get_charset_collate();
 		switch ( $table ) {
 
 			case self::LOG_TABLE:

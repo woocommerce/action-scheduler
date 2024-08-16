@@ -224,7 +224,7 @@ class ActionScheduler_ListTable extends ActionScheduler_Abstract_ListTable {
 			return __( 'Now!', 'action-scheduler' );
 		}
 
-		$output = '';
+		$output           = '';
 		$num_time_periods = count( self::$time_periods );
 
 		for ( $time_period_index = 0, $periods_included = 0, $seconds_remaining = $interval; $time_period_index < $num_time_periods && $seconds_remaining > 0 && $periods_included < $periods_to_include; $time_period_index++ ) {
@@ -235,7 +235,7 @@ class ActionScheduler_ListTable extends ActionScheduler_Abstract_ListTable {
 				if ( ! empty( $output ) ) {
 					$output .= ' ';
 				}
-				$output .= sprintf( translate_nooped_plural( self::$time_periods[ $time_period_index ]['names'], $periods_in_interval, 'action-scheduler' ), $periods_in_interval );
+				$output            .= sprintf( translate_nooped_plural( self::$time_periods[ $time_period_index ]['names'], $periods_in_interval, 'action-scheduler' ), $periods_in_interval );
 				$seconds_remaining -= $periods_in_interval * self::$time_periods[ $time_period_index ]['seconds'];
 				$periods_included++;
 			}
@@ -393,7 +393,7 @@ class ActionScheduler_ListTable extends ActionScheduler_Abstract_ListTable {
 
 			// No lock set or lock expired.
 			if ( false === $async_request_lock_expiration || $async_request_lock_expiration < time() ) {
-				$in_progress_url       = add_query_arg( 'status', 'in-progress', remove_query_arg( 'status' ) );
+				$in_progress_url = add_query_arg( 'status', 'in-progress', remove_query_arg( 'status' ) );
 				/* translators: %s: process URL */
 				$async_request_message = sprintf( __( 'A new queue has begun processing. <a href="%s">View actions in-progress &raquo;</a>', 'action-scheduler' ), esc_url( $in_progress_url ) );
 			} else {
@@ -412,7 +412,7 @@ class ActionScheduler_ListTable extends ActionScheduler_Abstract_ListTable {
 		if ( is_array( $notification ) ) {
 			delete_transient( 'action_scheduler_admin_notice' );
 
-			$action = $this->store->fetch_action( $notification['action_id'] );
+			$action           = $this->store->fetch_action( $notification['action_id'] );
 			$action_hook_html = '<strong><code>' . $action->get_hook() . '</code></strong>';
 			if ( 1 == $notification['success'] ) {
 				$class = 'updated';
@@ -574,10 +574,10 @@ class ActionScheduler_ListTable extends ActionScheduler_Abstract_ListTable {
 					$this->store->cancel_action( $action_id );
 					break;
 			}
-			$success = 1;
+			$success       = 1;
 			$error_message = '';
 		} catch ( Exception $e ) {
-			$success = 0;
+			$success       = 0;
 			$error_message = $e->getMessage();
 		}
 

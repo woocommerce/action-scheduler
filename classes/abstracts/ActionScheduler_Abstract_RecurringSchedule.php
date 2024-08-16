@@ -73,7 +73,7 @@ abstract class ActionScheduler_Abstract_RecurringSchedule extends ActionSchedule
 	 * @return array
 	 */
 	public function __sleep() {
-		$sleep_params = parent::__sleep();
+		$sleep_params          = parent::__sleep();
 		$this->first_timestamp = $this->first_date->getTimestamp();
 		return array_merge( $sleep_params, array(
 			'first_timestamp',

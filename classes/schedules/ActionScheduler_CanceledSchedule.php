@@ -10,7 +10,7 @@ class ActionScheduler_CanceledSchedule extends ActionScheduler_SimpleSchedule {
 	 *
 	 * @var null
 	 */
-	private $timestamp = NULL;
+	private $timestamp = null;
 
 	/**
 	 * @param DateTime $after Timestamp.

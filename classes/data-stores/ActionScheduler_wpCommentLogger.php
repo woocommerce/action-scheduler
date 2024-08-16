@@ -16,7 +16,7 @@ class ActionScheduler_wpCommentLogger extends ActionScheduler_Logger {
 	 *
 	 * @return string The log entry ID
 	 */
-	public function log( $action_id, $message, DateTime $date = NULL ) {
+	public function log( $action_id, $message, DateTime $date = null ) {
 		if ( empty($date) ) {
 			$date = as_get_datetime_object();
 		} else {
@@ -118,7 +118,7 @@ class ActionScheduler_wpCommentLogger extends ActionScheduler_Logger {
 				return; // don't slow down queries that wouldn't include action_log comments anyway.
 			}
 		}
-		$query->query_vars['action_log_filter'] = TRUE;
+		$query->query_vars['action_log_filter'] = true;
 		add_filter( 'comments_clauses', array( $this, 'filter_comment_query_clauses' ), 10, 2 );
 	}
 

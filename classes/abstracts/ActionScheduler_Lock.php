@@ -8,7 +8,7 @@
 abstract class ActionScheduler_Lock {
 
 	/** @var ActionScheduler_Lock */
-	private static $locker = NULL;
+	private static $locker = null;
 
 	/** @var int */
 	protected static $lock_duration = MINUTE_IN_SECONDS;

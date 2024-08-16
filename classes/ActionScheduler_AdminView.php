@@ -145,8 +145,6 @@ class ActionScheduler_AdminView extends ActionScheduler_AdminView_Deprecated {
 
 	/**
 	 * Check past-due actions, and print notice.
-	 *
-	 * @todo update $link_url to "Past-due" filter when released (see issue #510, PR #511)
 	 */
 	protected function check_pastdue_actions() {
 

@@ -362,7 +362,7 @@ class ActionScheduler_ListTable extends ActionScheduler_Abstract_ListTable {
 				if ( ! in_array( $wpdb->prefix . $table_name, $found_tables ) ) {
 					$this->admin_notices[] = array(
 						'class'   => 'error',
-						'message' => __( 'It appears one or more database tables were missing. Attempting to re-create the missing table(s).' , 'action-scheduler' ),
+						'message' => __( 'It appears one or more database tables were missing. Attempting to re-create the missing table(s).', 'action-scheduler' ),
 					);
 					$this->recreate_tables();
 					parent::display_admin_notices();

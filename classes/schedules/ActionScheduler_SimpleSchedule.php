@@ -10,7 +10,7 @@ class ActionScheduler_SimpleSchedule extends ActionScheduler_Abstract_Schedule {
 	 *
 	 * @var null|DateTime
 	 */
-	private $timestamp = NULL;
+	private $timestamp = null;
 
 	/**
 	 * @param DateTime $after Timestamp.

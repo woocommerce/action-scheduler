@@ -11,7 +11,7 @@ abstract class ActionScheduler {
 	/** @var string */
 	private static $plugin_file = '';
 	/** @var ActionScheduler_ActionFactory */
-	private static $factory = NULL;
+	private static $factory = null;
 	/** @var bool */
 	private static $data_store_initialized = false;
 

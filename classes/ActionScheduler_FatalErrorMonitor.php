@@ -5,9 +5,9 @@
  */
 class ActionScheduler_FatalErrorMonitor {
 	/** @var ActionScheduler_ActionClaim */
-	private $claim = NULL;
+	private $claim = null;
 	/** @var ActionScheduler_Store */
-	private $store = NULL;
+	private $store = null;
 	/** @var int */
 	private $action_id = 0;
 
@@ -38,7 +38,7 @@ class ActionScheduler_FatalErrorMonitor {
 	 * Stop monitoring.
 	 */
 	public function detach() {
-		$this->claim = NULL;
+		$this->claim = null;
 		$this->untrack_action();
 		remove_action( 'shutdown', array( $this, 'handle_unexpected_shutdown' ) );
 		remove_action( 'action_scheduler_before_execute', array( $this, 'track_current_action' ), 0 );

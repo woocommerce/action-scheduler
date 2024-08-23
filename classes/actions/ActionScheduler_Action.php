@@ -9,7 +9,7 @@ class ActionScheduler_Action {
 	/** @var array<string, mixed> */
 	protected $args = array();
 	/** @var ActionScheduler_Schedule */
-	protected $schedule = NULL;
+	protected $schedule = null;
 	/** @var string */
 	protected $group = '';
 
@@ -34,7 +34,7 @@ class ActionScheduler_Action {
 	 * @param null|ActionScheduler_Schedule $schedule Action's schedule.
 	 * @param string                        $group Action's group.
 	 */
-	public function __construct( $hook, array $args = array(), ActionScheduler_Schedule $schedule = NULL, $group = '' ) {
+	public function __construct( $hook, array $args = array(), ActionScheduler_Schedule $schedule = null, $group = '' ) {
 		$schedule = empty( $schedule ) ? new ActionScheduler_NullSchedule() : $schedule;
 		$this->set_hook($hook);
 		$this->set_schedule($schedule);
@@ -135,7 +135,7 @@ class ActionScheduler_Action {
 	 * @return bool If the action has been finished
 	 */
 	public function is_finished() {
-		return FALSE;
+		return false;
 	}
 
 	/**

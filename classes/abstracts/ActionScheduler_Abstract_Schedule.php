@@ -10,14 +10,14 @@ abstract class ActionScheduler_Abstract_Schedule extends ActionScheduler_Schedul
 	 *
 	 * @var DateTime
 	 */
-	private $scheduled_date = NULL;
+	private $scheduled_date = null;
 
 	/**
 	 * Timestamp equivalent of @see $this->scheduled_date
 	 *
 	 * @var int
 	 */
-	protected $scheduled_timestamp = NULL;
+	protected $scheduled_timestamp = null;
 
 	/**
 	 * @param DateTime $date The date & time to run the action.

@@ -15,14 +15,14 @@ abstract class ActionScheduler_Abstract_RecurringSchedule extends ActionSchedule
 	 *
 	 * @var DateTime
 	 */
-	private $first_date = NULL;
+	private $first_date = null;
 
 	/**
 	 * Timestamp equivalent of @see $this->first_date
 	 *
 	 * @var int
 	 */
-	protected $first_timestamp = NULL;
+	protected $first_timestamp = null;
 
 	/**
 	 * The recurrence between each time an action is run using this schedule.

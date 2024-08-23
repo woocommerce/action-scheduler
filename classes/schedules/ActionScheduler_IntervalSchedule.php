@@ -10,14 +10,14 @@ class ActionScheduler_IntervalSchedule extends ActionScheduler_Abstract_Recurrin
 	 *
 	 * @var null
 	 */
-	private $start_timestamp = NULL;
+	private $start_timestamp = null;
 
 	/**
 	 * Deprecated property @see $this->__wakeup() for details.
 	 *
 	 * @var null
 	 */
-	private $interval_in_seconds = NULL;
+	private $interval_in_seconds = null;
 
 	/**
 	 * Calculate when this schedule should start after a given date & time using

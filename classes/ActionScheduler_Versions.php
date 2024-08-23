@@ -7,7 +7,7 @@ class ActionScheduler_Versions {
 	/**
 	 * @var ActionScheduler_Versions
 	 */
-	private static $instance = NULL;
+	private static $instance = null;
 
 	/** @var array<string, callable> */
 	private $versions = array();
@@ -20,10 +20,10 @@ class ActionScheduler_Versions {
 	 */
 	public function register( $version_string, $initialization_callback ) {
 		if ( isset($this->versions[$version_string]) ) {
-			return FALSE;
+			return false;
 		}
 		$this->versions[$version_string] = $initialization_callback;
-		return TRUE;
+		return true;
 	}
 
 	/**

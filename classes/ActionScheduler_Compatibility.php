@@ -85,7 +85,7 @@ class ActionScheduler_Compatibility {
 	 * @param int $limit The time limit in seconds.
 	 */
 	public static function raise_time_limit( $limit = 0 ) {
-		$limit = (int) $limit;
+		$limit              = (int) $limit;
 		$max_execution_time = (int) ini_get( 'max_execution_time' );
 
 		// If the max execution time is already set to zero (unlimited), there is no reason to make a further change.

@@ -119,7 +119,7 @@ abstract class ActionScheduler_TimezoneHelper {
 					$tzstring = 'UTC';
 				} else {
 					$gmt_offset *= HOUR_IN_SECONDS;
-					$tzstring   = timezone_name_from_abbr( '', $gmt_offset, 1 );
+					$tzstring    = timezone_name_from_abbr( '', $gmt_offset, 1 );
 
 					// If there's no timezone string, try again with no DST.
 					if ( false === $tzstring ) {

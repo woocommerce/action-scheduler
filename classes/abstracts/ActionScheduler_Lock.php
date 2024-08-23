@@ -56,7 +56,7 @@ abstract class ActionScheduler_Lock {
 	 */
 	public static function instance() {
 		if ( empty( self::$locker ) ) {
-			$class = apply_filters( 'action_scheduler_lock_class', 'ActionScheduler_OptionLock' );
+			$class        = apply_filters( 'action_scheduler_lock_class', 'ActionScheduler_OptionLock' );
 			self::$locker = new $class();
 		}
 		return self::$locker;

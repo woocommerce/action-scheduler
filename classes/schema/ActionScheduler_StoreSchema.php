@@ -43,12 +43,16 @@ class ActionScheduler_StoreSchema extends ActionScheduler_Abstract_Schema {
 	 */
 	protected function get_table_definition( $table ) {
 		global $wpdb;
-		$table_name       = $wpdb->$table;
-		$charset_collate  = $wpdb->get_charset_collate();
+
+		$table_name      = $wpdb->$table;
+		$charset_collate = $wpdb->get_charset_collate();
+
 		// phpcs:ignore Squiz.PHP.CommentedOutCode
 		$max_index_length = 191; // @see wp_get_db_schema()
-		$hook_status_scheduled_date_gmt_max_index_length = $max_index_length - 20 - 8; // - status, - scheduled_date_gmt
 		$default_date     = self::DEFAULT_DATE;
+
+		$hook_status_scheduled_date_gmt_max_index_length = $max_index_length - 20 - 8; // - status, - scheduled_date_gmt
+
 		switch ( $table ) {
 
 			case self::ACTIONS_TABLE:

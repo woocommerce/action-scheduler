@@ -70,7 +70,7 @@ class Runner {
 	 * @return int Size of batch processed.
 	 */
 	public function run( $batch_size = 10 ) {
-		$batch = $this->batch_fetcher->fetch( $batch_size );
+		$batch      = $this->batch_fetcher->fetch( $batch_size );
 		$batch_size = count( $batch );
 
 		if ( ! $batch_size ) {

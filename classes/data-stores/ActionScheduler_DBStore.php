@@ -147,7 +147,7 @@ class ActionScheduler_DBStore extends ActionScheduler_Store {
 		$placeholder_sql = implode( ', ', $placeholders );
 		$where_clause    = $this->build_where_clause_for_insert( $data, $table_name, $unique );
 		// phpcs:disable WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare	 -- $column_sql and $where_clause are already prepared. $placeholder_sql is hardcoded.
-		$insert_query    = $wpdb->prepare(
+		$insert_query = $wpdb->prepare(
 			"
 INSERT INTO $table_name ( $column_sql )
 SELECT $placeholder_sql FROM DUAL
@@ -429,7 +429,7 @@ AND `group_id` = %d
 		}
 
 		$sql        = ( 'count' === $select_or_count ) ? 'SELECT count(a.action_id)' : 'SELECT a.action_id';
-		$sql        .= " FROM {$wpdb->actionscheduler_actions} a";
+		$sql       .= " FROM {$wpdb->actionscheduler_actions} a";
 		$sql_params = array();
 
 		if ( ! empty( $query['group'] ) || 'group' === $query['orderby'] ) {
@@ -439,12 +439,12 @@ AND `group_id` = %d
 		$sql .= ' WHERE 1=1';
 
 		if ( ! empty( $query['group'] ) ) {
-			$sql          .= ' AND g.slug=%s';
+			$sql         .= ' AND g.slug=%s';
 			$sql_params[] = $query['group'];
 		}
 
 		if ( ! empty( $query['hook'] ) ) {
-			$sql          .= ' AND a.hook=%s';
+			$sql         .= ' AND a.hook=%s';
 			$sql_params[] = $query['hook'];
 		}
 
@@ -473,20 +473,20 @@ AND `group_id` = %d
 								$value_type
 							) );
 						}
-						$sql          .= ' AND JSON_EXTRACT(a.args, %s)=' . $placeholder;
+						$sql         .= ' AND JSON_EXTRACT(a.args, %s)=' . $placeholder;
 						$sql_params[] = '$.' . $key;
 						$sql_params[] = $value;
 					}
 					break;
 				case 'like':
 					foreach ( $query['args'] as $key => $value ) {
-						$sql          .= ' AND a.args LIKE %s';
+						$sql         .= ' AND a.args LIKE %s';
 						$json_partial = $wpdb->esc_like( trim( wp_json_encode( array( $key => $value ) ), '{}' ) );
 						$sql_params[] = "%{$json_partial}%";
 					}
 					break;
 				case 'off':
-					$sql          .= ' AND a.args=%s';
+					$sql         .= ' AND a.args=%s';
 					$sql_params[] = $this->get_args_for_query( $query['args'] );
 					break;
 				default:
@@ -864,8 +864,8 @@ AND `group_id` = %d
 		/** @var \wpdb $wpdb */
 		global $wpdb;
 
-		$now    = as_get_datetime_object();
-		$date   = is_null( $before_date ) ? $now : clone $before_date;
+		$now  = as_get_datetime_object();
+		$date = is_null( $before_date ) ? $now : clone $before_date;
 		// can't use $wpdb->update() because of the <= condition.
 		$update = "UPDATE {$wpdb->actionscheduler_actions} SET claim_id=%d, last_attempt_gmt=%s, last_attempt_local=%s";
 		$params = array(
@@ -892,13 +892,13 @@ AND `group_id` = %d
 
 		if ( ! empty( $hooks ) ) {
 			$placeholders = array_fill( 0, count( $hooks ), '%s' );
-			$where        .= ' AND hook IN (' . join( ', ', $placeholders ) . ')';
+			$where       .= ' AND hook IN (' . join( ', ', $placeholders ) . ')';
 			$params       = array_merge( $params, array_values( $hooks ) );
 		}
 
 		$group_operator = 'IN';
 		if ( empty( $group ) ) {
-			$group = $this->get_claim_filter( 'exclude-groups' );
+			$group          = $this->get_claim_filter( 'exclude-groups' );
 			$group_operator = 'NOT IN';
 		}
 
@@ -922,7 +922,7 @@ AND `group_id` = %d
 			}
 
 			$id_list = implode( ',', array_map( 'intval', $group_ids ) );
-			$where   .= " AND group_id {$group_operator} ( $id_list )";
+			$where  .= " AND group_id {$group_operator} ( $id_list )";
 		}
 
 		/**

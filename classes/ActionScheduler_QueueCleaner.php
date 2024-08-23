@@ -33,7 +33,7 @@ class ActionScheduler_QueueCleaner {
 	 * @param int                   $batch_size The batch size.
 	 */
 	public function __construct( ActionScheduler_Store $store = null, $batch_size = 20 ) {
-		$this->store = $store ? $store : ActionScheduler_Store::instance();
+		$this->store      = $store ? $store : ActionScheduler_Store::instance();
 		$this->batch_size = $batch_size;
 	}
 
@@ -157,10 +157,13 @@ class ActionScheduler_QueueCleaner {
 	 */
 	public function reset_timeouts( $time_limit = 300 ) {
 		$timeout = apply_filters( 'action_scheduler_timeout_period', $time_limit );
+
 		if ( $timeout < 0 ) {
 			return;
 		}
+
 		$cutoff = as_get_datetime_object($timeout . ' seconds ago');
+
 		$actions_to_reset = $this->store->query_actions( array(
 			'status'           => ActionScheduler_Store::STATUS_PENDING,
 			'modified'         => $cutoff,
@@ -187,10 +190,13 @@ class ActionScheduler_QueueCleaner {
 	 */
 	public function mark_failures( $time_limit = 300 ) {
 		$timeout = apply_filters( 'action_scheduler_failure_period', $time_limit );
+
 		if ( $timeout < 0 ) {
 			return;
 		}
+
 		$cutoff = as_get_datetime_object($timeout . ' seconds ago');
+
 		$actions_to_reset = $this->store->query_actions( array(
 			'status'           => ActionScheduler_Store::STATUS_RUNNING,
 			'modified'         => $cutoff,

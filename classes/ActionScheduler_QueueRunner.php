@@ -23,7 +23,7 @@ class ActionScheduler_QueueRunner extends ActionScheduler_Abstract_QueueRunner {
 	 */
 	public static function instance() {
 		if ( empty(self::$runner) ) {
-			$class = apply_filters('action_scheduler_queue_runner_class', 'ActionScheduler_QueueRunner');
+			$class        = apply_filters('action_scheduler_queue_runner_class', 'ActionScheduler_QueueRunner');
 			self::$runner = new $class();
 		}
 		return self::$runner;

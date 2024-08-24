@@ -60,7 +60,7 @@ class BatchFetcher {
 	 */
 	private function get_query_strategies( $count ) {
 		$now  = as_get_datetime_object();
-		$args = (
+		$args = array(
 			'date'     => $now,
 			'per_page' => $count,
 			'offset'   => 0,

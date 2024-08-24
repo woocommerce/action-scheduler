@@ -38,11 +38,11 @@ class ActionScheduler_DBStore extends ActionScheduler_Store {
 	 *
 	 * @var array
 	 */
-	protected $claim_filters = [
+	protected $claim_filters = array(
 		'group'          => '',
 		'hooks'          => '',
 		'exclude-groups' => '',
-	];
+	);
 
 	/**
 	 * Initialize the data store

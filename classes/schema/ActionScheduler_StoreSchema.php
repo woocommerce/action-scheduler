@@ -24,11 +24,11 @@ class ActionScheduler_StoreSchema extends ActionScheduler_Abstract_Schema {
 	 * Construct.
 	 */
 	public function __construct() {
-		$this->tables = [
+		$this->tables = array(
 			self::ACTIONS_TABLE,
 			self::CLAIMS_TABLE,
 			self::GROUPS_TABLE,
-		];
+		);
 	}
 
 	/**

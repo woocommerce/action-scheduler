@@ -21,9 +21,9 @@ class ActionScheduler_LoggerSchema extends ActionScheduler_Abstract_Schema {
 	 * Construct.
 	 */
 	public function __construct() {
-		$this->tables = [
+		$this->tables = array(
 			self::LOG_TABLE,
-		];
+		);
 	}
 
 	/**

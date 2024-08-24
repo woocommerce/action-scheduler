@@ -35,10 +35,10 @@ class ActionScheduler_DBStoreMigrator extends ActionScheduler_DBStore {
 			$action_id = parent::save_action( $action, $scheduled_date );
 
 			if ( null !== $last_attempt_date ) {
-				$data = [
+				$data = array(
 					'last_attempt_gmt'   => $this->get_scheduled_date_string( $action, $last_attempt_date ),
 					'last_attempt_local' => $this->get_scheduled_date_string_local( $action, $last_attempt_date ),
-				];
+				);
 
 				$wpdb->update( $wpdb->actionscheduler_actions, $data, array( 'action_id' => $action_id ), array( '%s', '%s' ), array( '%d' ) );
 			}

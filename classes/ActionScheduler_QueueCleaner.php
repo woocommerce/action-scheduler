@@ -31,10 +31,10 @@ class ActionScheduler_QueueCleaner {
 	 *
 	 * @var string[]
 	 */
-	private $default_statuses_to_purge = [
+	private $default_statuses_to_purge = array(
 		ActionScheduler_Store::STATUS_COMPLETE,
 		ActionScheduler_Store::STATUS_CANCELED,
-	];
+	);
 
 	/**
 	 * ActionScheduler_QueueCleaner constructor.
@@ -99,11 +99,13 @@ class ActionScheduler_QueueCleaner {
 		$batch_size = $batch_size !== null ? $batch_size : $this->batch_size;
 		$cutoff     = $cutoff_date !== null ? $cutoff_date : as_get_datetime_object( $this->month_in_seconds . ' seconds ago' );
 		$lifespan   = time() - $cutoff->getTimestamp();
+
 		if ( empty( $statuses_to_purge ) ) {
 			$statuses_to_purge = $this->default_statuses_to_purge;
 		}
 
-		$deleted_actions = [];
+		$deleted_actions = array();
+
 		foreach ( $statuses_to_purge as $status ) {
 			$actions_to_delete = $this->store->query_actions( array(
 				'status'           => $status,
@@ -128,7 +130,8 @@ class ActionScheduler_QueueCleaner {
 	 * @return array Deleted action IDs.
 	 */
 	private function delete_actions( array $actions_to_delete, $lifespan = null, $context = 'old' ) {
-		$deleted_actions = [];
+		$deleted_actions = array();
+
 		if ( $lifespan === null ) {
 			$lifespan = $this->month_in_seconds;
 		}

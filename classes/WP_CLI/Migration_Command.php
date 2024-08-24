@@ -36,38 +36,38 @@ class Migration_Command extends WP_CLI_Command {
 			return;
 		}
 
-		WP_CLI::add_command( 'action-scheduler migrate', [ $this, 'migrate' ], [
+		WP_CLI::add_command( 'action-scheduler migrate', array( $this, 'migrate' ), array(
 			'shortdesc' => 'Migrates actions to the DB tables store',
-			'synopsis'  => [
-				[
+			'synopsis'  => array(
+				array(
 					'type'        => 'assoc',
 					'name'        => 'batch-size',
 					'optional'    => true,
 					'default'     => 100,
 					'description' => 'The number of actions to process in each batch',
-				],
-				[
+				),
+				array(
 					'type'        => 'assoc',
 					'name'        => 'free-memory-on',
 					'optional'    => true,
 					'default'     => 50,
 					'description' => 'The number of actions to process between freeing memory. 0 disables freeing memory',
-				],
-				[
+				),
+				array(
 					'type'        => 'assoc',
 					'name'        => 'pause',
 					'optional'    => true,
 					'default'     => 0,
 					'description' => 'The number of seconds to pause when freeing memory',
-				],
-				[
+				),
+				array(
 					'type'        => 'flag',
 					'name'        => 'dry-run',
 					'optional'    => true,
 					'description' => 'Reports on the actions that would have been migrated, but does not change any data',
-				],
-			],
-		] );
+				),
+			),
+		) );
 	}
 
 	/**
@@ -113,9 +113,9 @@ class Migration_Command extends WP_CLI_Command {
 	 * @return ActionScheduler\Migration\Config
 	 */
 	private function get_migration_config( $args ) {
-		$args = wp_parse_args( $args, [
+		$args = wp_parse_args( $args, array(
 			'dry-run' => false,
-		] );
+		) );
 
 		$config = Controller::instance()->get_migration_config_object();
 		$config->set_dry_run( ! empty( $args[ 'dry-run' ] ) );

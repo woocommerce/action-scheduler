@@ -71,6 +71,7 @@ class ActionMigrator {
 			// delete it and move on.
 			try {
 				$this->source->delete_action( $source_action_id );
+			// phpcs:ignore Generic.CodeAnalysis.EmptyStatement
 			} catch ( \Exception $e ) {
 				// nothing to do, it didn't exist in the first place.
 			}

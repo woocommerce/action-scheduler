@@ -4,9 +4,19 @@
  * Class ActionScheduler_ActionClaim
  */
 class ActionScheduler_ActionClaim {
-	/** @var string */
+
+	/**
+	 * Claim ID.
+	 *
+	 * @var string
+	 */
 	private $id = '';
-	/** @var int[] */
+
+	/**
+	 * Action IDs that have been claimed.
+	 *
+	 * @var int[]
+	 */
 	private $action_ids = array();
 
 	/**

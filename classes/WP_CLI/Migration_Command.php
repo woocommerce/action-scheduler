@@ -21,7 +21,11 @@ use WP_CLI_Command;
  */
 class Migration_Command extends WP_CLI_Command {
 
-	/** @var int */
+	/**
+	 * Count of processed actions.
+	 *
+	 * @var int
+	 */
 	private $total_processed = 0;
 
 	/**

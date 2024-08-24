@@ -32,6 +32,8 @@ class ActionScheduler_IntervalSchedule extends ActionScheduler_Abstract_Recurrin
 	}
 
 	/**
+	 * Get recurrence.
+	 *
 	 * @return int
 	 */
 	public function interval_in_seconds() {

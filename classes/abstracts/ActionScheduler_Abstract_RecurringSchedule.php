@@ -35,6 +35,8 @@ abstract class ActionScheduler_Abstract_RecurringSchedule extends ActionSchedule
 	protected $recurrence;
 
 	/**
+	 * Construct.
+	 *
 	 * @param DateTime      $date The date & time to run the action.
 	 * @param mixed         $recurrence The data used to determine the schedule's recurrence.
 	 * @param DateTime|null $first (Optional) The date & time the first instance of this interval schedule ran. Default null, meaning this is the first instance.
@@ -46,6 +48,8 @@ abstract class ActionScheduler_Abstract_RecurringSchedule extends ActionSchedule
 	}
 
 	/**
+	 * Indicate is recurring.
+	 *
 	 * @return bool
 	 */
 	public function is_recurring() {
@@ -62,6 +66,8 @@ abstract class ActionScheduler_Abstract_RecurringSchedule extends ActionSchedule
 	}
 
 	/**
+	 * Get schedule's recurrence.
+	 *
 	 * @return string
 	 */
 	public function get_recurrence() {
@@ -70,6 +76,7 @@ abstract class ActionScheduler_Abstract_RecurringSchedule extends ActionSchedule
 
 	/**
 	 * For PHP 5.2 compat, since DateTime objects can't be serialized
+	 *
 	 * @return array
 	 */
 	public function __sleep() {

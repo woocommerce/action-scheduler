@@ -4,12 +4,19 @@
  * Class ActionScheduler_Versions
  */
 class ActionScheduler_Versions {
+
 	/**
+	 * Instance.
+	 *
 	 * @var ActionScheduler_Versions
 	 */
 	private static $instance = null;
 
-	/** @var array<string, callable> */
+	/**
+	 * Registered versions.
+	 *
+	 * @var array<string, callable>
+	 */
 	private $versions = array();
 
 	/**
@@ -57,6 +64,8 @@ class ActionScheduler_Versions {
 	}
 
 	/**
+	 * Instance.
+	 *
 	 * @return ActionScheduler_Versions
 	 * @codeCoverageIgnore
 	 */
@@ -68,6 +77,8 @@ class ActionScheduler_Versions {
 	}
 
 	/**
+	 * Initialize latest version.
+	 *
 	 * @codeCoverageIgnore
 	 */
 	public static function initialize_latest_version() {

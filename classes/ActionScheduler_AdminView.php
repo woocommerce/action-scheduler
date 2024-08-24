@@ -2,20 +2,35 @@
 
 /**
  * Class ActionScheduler_AdminView
+ *
  * @codeCoverageIgnore
  */
 class ActionScheduler_AdminView extends ActionScheduler_AdminView_Deprecated {
 
-	/** @var null|self */
+	/**
+	 * Instance.
+	 *
+	 * @var null|self
+	 */
 	private static $admin_view = null;
 
-	/** @var string */
+	/**
+	 * Screen ID.
+	 *
+	 * @var string
+	 */
 	private static $screen_id = 'tools_page_action-scheduler';
 
-	/** @var ActionScheduler_ListTable */
+	/**
+	 * ListTable instance.
+	 *
+	 * @var ActionScheduler_ListTable
+	 */
 	protected $list_table;
 
 	/**
+	 * Instance.
+	 *
 	 * @return ActionScheduler_AdminView
 	 * @codeCoverageIgnore
 	 */

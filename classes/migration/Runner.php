@@ -13,28 +13,61 @@ namespace Action_Scheduler\Migration;
  * @codeCoverageIgnore
  */
 class Runner {
-	/** @var ActionScheduler_Store */
+
+	/**
+	 * Source store instance.
+	 *
+	 * @var ActionScheduler_Store
+	 */
 	private $source_store;
 
-	/** @var ActionScheduler_Store */
+	/**
+	 * Destination store instance.
+	 *
+	 * @var ActionScheduler_Store
+	 */
 	private $destination_store;
 
-	/** @var ActionScheduler_Logger */
+	/**
+	 * Source logger instance.
+	 *
+	 * @var ActionScheduler_Logger
+	 */
 	private $source_logger;
 
-	/** @var ActionScheduler_Logger */
+	/**
+	 * Destination logger instance.
+	 *
+	 * @var ActionScheduler_Logger
+	 */
 	private $destination_logger;
 
-	/** @var BatchFetcher */
+	/**
+	 * BatchFetcher instance.
+	 *
+	 * @var BatchFetcher
+	 */
 	private $batch_fetcher;
 
-	/** @var ActionMigrator */
+	/**
+	 * ActionMigrator instance.
+	 *
+	 * @var ActionMigrator
+	 */
 	private $action_migrator;
 
-	/** @var LogMigrator */
+	/**
+	 * LogMigrator instance.
+	 *
+	 * @var LogMigrator
+	 */
 	private $log_migrator;
 
-	/** @var ProgressBar */
+	/**
+	 * ProgressBar instance.
+	 *
+	 * @var ProgressBar
+	 */
 	private $progress_bar;
 
 	/**

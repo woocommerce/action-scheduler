@@ -5,13 +5,25 @@
  */
 abstract class ActionScheduler_Abstract_QueueRunner extends ActionScheduler_Abstract_QueueRunner_Deprecated {
 
-	/** @var ActionScheduler_QueueCleaner */
+	/**
+	 * Cleaner instance.
+	 *
+	 * @var ActionScheduler_QueueCleaner
+	 */
 	protected $cleaner;
 
-	/** @var ActionScheduler_FatalErrorMonitor */
+	/**
+	 * Monitor instance.
+	 *
+	 * @var ActionScheduler_FatalErrorMonitor
+	 */
 	protected $monitor;
 
-	/** @var ActionScheduler_Store */
+	/**
+	 * Store instance.
+	 *
+	 * @var ActionScheduler_Store
+	 */
 	protected $store;
 
 	/**

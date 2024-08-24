@@ -2,6 +2,7 @@
 
 /**
  * Class ActionScheduler_wpPostStore_TaxonomyRegistrar
+ *
  * @codeCoverageIgnore
  */
 class ActionScheduler_wpPostStore_TaxonomyRegistrar {

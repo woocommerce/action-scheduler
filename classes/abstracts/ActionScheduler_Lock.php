@@ -7,10 +7,18 @@
  */
 abstract class ActionScheduler_Lock {
 
-	/** @var ActionScheduler_Lock */
+	/**
+	 * Instance.
+	 *
+	 * @var ActionScheduler_Lock
+	 */
 	private static $locker = null;
 
-	/** @var int */
+	/**
+	 * Duration of lock.
+	 *
+	 * @var int
+	 */
 	protected static $lock_duration = MINUTE_IN_SECONDS;
 
 	/**
@@ -52,6 +60,8 @@ abstract class ActionScheduler_Lock {
 	}
 
 	/**
+	 * Instance.
+	 *
 	 * @return ActionScheduler_Lock
 	 */
 	public static function instance() {

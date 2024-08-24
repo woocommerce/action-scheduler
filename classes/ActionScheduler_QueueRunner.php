@@ -8,16 +8,30 @@ class ActionScheduler_QueueRunner extends ActionScheduler_Abstract_QueueRunner {
 
 	const WP_CRON_SCHEDULE = 'every_minute';
 
-	/** @var ActionScheduler_AsyncRequest_QueueRunner */
+	/**
+	 * Async runner instance.
+	 *
+	 * @var ActionScheduler_AsyncRequest_QueueRunner
+	 */
 	protected $async_request;
 
-	/** @var ActionScheduler_QueueRunner  */
+	/**
+	 * Instance.
+	 *
+	 * @var ActionScheduler_QueueRunner
+	 */
 	private static $runner = null;
 
-	/** @var int  */
+	/**
+	 * Count of actions processed.
+	 *
+	 * @var int
+	 */
 	private $processed_actions_count = 0;
 
 	/**
+	 * Instance.
+	 *
 	 * @return ActionScheduler_QueueRunner
 	 * @codeCoverageIgnore
 	 */
@@ -48,6 +62,8 @@ class ActionScheduler_QueueRunner extends ActionScheduler_Abstract_QueueRunner {
 	}
 
 	/**
+	 * Initialize.
+	 *
 	 * @codeCoverageIgnore
 	 */
 	public function init() {
@@ -121,7 +137,7 @@ class ActionScheduler_QueueRunner extends ActionScheduler_Abstract_QueueRunner {
 	 * that was the only context in which this method was run, and the self::WP_CRON_HOOK hook had no context
 	 * passed along with it. New code calling this method directly, or by triggering the self::WP_CRON_HOOK,
 	 * should set a context as the first parameter. For an example of this, refer to the code seen in
-	 * @see ActionScheduler_AsyncRequest_QueueRunner::handle()
+	 * ActionScheduler_AsyncRequest_QueueRunner::handle().
 	 *
 	 * @param string $context Optional identifier for the context in which this action is being processed, e.g. 'WP CLI' or 'WP Cron'
 	 *        Generally, this should be capitalised and not localised as it's a proper noun.

@@ -16,7 +16,12 @@ use ActionScheduler_Store as Store;
  * @codeCoverageIgnore
  */
 class BatchFetcher {
-	/** @var ActionScheduler_Store */
+
+	/**
+	 * Store instance.
+	 *
+	 * @var ActionScheduler_Store
+	 */
 	private $store;
 
 	/**

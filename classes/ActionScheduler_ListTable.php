@@ -2,6 +2,7 @@
 
 /**
  * Implements the admin view of the actions.
+ *
  * @codeCoverageIgnore
  */
 class ActionScheduler_ListTable extends ActionScheduler_Abstract_ListTable {
@@ -49,9 +50,10 @@ class ActionScheduler_ListTable extends ActionScheduler_Abstract_ListTable {
 	protected $runner;
 
 	/**
-	 * Bulk actions. The key of the array is the method name of the implementation:
+	 * Bulk actions.
 	 *
-	 *     bulk_<key>(array $ids, string $sql_in).
+	 * The key of the array is the method name of the implementation:
+	 * bulk_<key>(array $ids, string $sql_in).
 	 *
 	 * See the comments in the parent class for further details
 	 *

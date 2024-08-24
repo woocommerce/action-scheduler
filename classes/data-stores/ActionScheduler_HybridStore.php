@@ -15,14 +15,30 @@ use Action_Scheduler\Migration\Controller;
 class ActionScheduler_HybridStore extends Store {
 	const DEMARKATION_OPTION = 'action_scheduler_hybrid_store_demarkation';
 
-	/** @var ActionScheduler_Store */
+	/**
+	 * Primary store instance.
+	 *
+	 * @var ActionScheduler_Store
+	 */
 	private $primary_store;
-	/** @var ActionScheduler_Store */
+
+	/**
+	 * Secondary store instance.
+	 *
+	 * @var ActionScheduler_Store
+	 */
 	private $secondary_store;
-	/** @var Action_Scheduler\Migration\Runner */
+
+	/**
+	 * Migration runner instance.
+	 *
+	 * @var Action_Scheduler\Migration\Runner
+	 */
 	private $migration_runner;
 
 	/**
+	 * Demarkation ID.
+	 *
 	 * @var int The dividing line between IDs of actions created
 	 *          by the primary and secondary stores.
 	 *
@@ -78,8 +94,13 @@ class ActionScheduler_HybridStore extends Store {
 			if ( empty( $this->demarkation_id ) ) {
 				$this->demarkation_id = $this->set_demarkation_id();
 			}
-			/** @var \wpdb $wpdb */
+
+			/**
+			 * Global.
+			 *
+			 * @var \wpdb $wpdb */
 			global $wpdb;
+
 			/**
 			 * A default date of '0000-00-00 00:00:00' is invalid in MySQL 5.7 when configured with
 			 * sql_mode including both STRICT_TRANS_TABLES and NO_ZERO_DATE.
@@ -122,11 +143,17 @@ class ActionScheduler_HybridStore extends Store {
 	 */
 	private function set_demarkation_id( $id = null ) {
 		if ( empty( $id ) ) {
-			/** @var \wpdb $wpdb */
+			/**
+			 * Global.
+			 *
+			 * @var \wpdb $wpdb
+			 */
 			global $wpdb;
+
 			$id = (int) $wpdb->get_var( "SELECT MAX(ID) FROM $wpdb->posts" );
 			$id ++;
 		}
+
 		update_option( self::DEMARKATION_OPTION, $id );
 
 		return $id;

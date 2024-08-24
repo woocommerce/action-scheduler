@@ -13,6 +13,8 @@ class ActionScheduler_SimpleSchedule extends ActionScheduler_Abstract_Schedule {
 	private $timestamp = null;
 
 	/**
+	 * Calculate time to next run.
+	 *
 	 * @param DateTime $after Timestamp.
 	 *
 	 * @return DateTime|null
@@ -22,6 +24,8 @@ class ActionScheduler_SimpleSchedule extends ActionScheduler_Abstract_Schedule {
 	}
 
 	/**
+	 * Recurring indicator.
+	 *
 	 * @return bool
 	 */
 	public function is_recurring() {

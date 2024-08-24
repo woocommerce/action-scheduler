@@ -2,6 +2,7 @@
 
 /**
  * Class ActionScheduler_Store
+ *
  * @codeCoverageIgnore
  */
 abstract class ActionScheduler_Store extends ActionScheduler_Store_Deprecated {
@@ -12,13 +13,23 @@ abstract class ActionScheduler_Store extends ActionScheduler_Store_Deprecated {
 	const STATUS_CANCELED = 'canceled';
 	const DEFAULT_CLASS   = 'ActionScheduler_wpPostStore';
 
-	/** @var ActionScheduler_Store */
+	/**
+	 * Store instance.
+	 *
+	 * @var ActionScheduler_Store
+	 */
 	private static $store = null;
 
-	/** @var int */
+	/**
+	 * Maximum length of args.
+	 *
+	 * @var int
+	 */
 	protected static $max_args_length = 191;
 
 	/**
+	 * Save action.
+	 *
 	 * @param ActionScheduler_Action $action Action to save.
 	 * @param null|DateTime          $scheduled_date Optional Date of the first instance
 	 *                                               to store. Otherwise uses the first date of the action's
@@ -470,6 +481,8 @@ abstract class ActionScheduler_Store extends ActionScheduler_Store_Deprecated {
 	public function mark_migrated( $action_id ) {}
 
 	/**
+	 * Instance.
+	 *
 	 * @return ActionScheduler_Store
 	 */
 	public static function instance() {

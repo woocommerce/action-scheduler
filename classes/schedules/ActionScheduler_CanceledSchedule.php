@@ -13,7 +13,9 @@ class ActionScheduler_CanceledSchedule extends ActionScheduler_SimpleSchedule {
 	private $timestamp = null;
 
 	/**
-	 * @param DateTime $after Timestamp.
+	 * Timestamp.
+	 *
+	 * @param DateTime $after
 	 *
 	 * @return DateTime|null
 	 */
@@ -33,6 +35,8 @@ class ActionScheduler_CanceledSchedule extends ActionScheduler_SimpleSchedule {
 	}
 
 	/**
+	 * Indicate not returning.
+	 *
 	 * @return bool
 	 */
 	public function is_recurring() {

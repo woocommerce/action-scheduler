@@ -53,6 +53,8 @@ class ActionScheduler_CronSchedule extends ActionScheduler_Abstract_RecurringSch
 	}
 
 	/**
+	 * Get recurrence.
+	 *
 	 * @return string
 	 */
 	public function get_recurrence() {

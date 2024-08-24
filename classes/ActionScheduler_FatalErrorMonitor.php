@@ -4,11 +4,26 @@
  * Class ActionScheduler_FatalErrorMonitor
  */
 class ActionScheduler_FatalErrorMonitor {
-	/** @var ActionScheduler_ActionClaim */
+
+	/**
+	 * Claim instance.
+	 *
+	 * @var ActionScheduler_ActionClaim
+	 */
 	private $claim = null;
-	/** @var ActionScheduler_Store */
+
+	/**
+	 * Store instance.
+	 *
+	 * @var ActionScheduler_Store
+	 */
 	private $store = null;
-	/** @var int */
+
+	/**
+	 * Action's ID.
+	 *
+	 * @var int
+	 */
 	private $action_id = 0;
 
 	/**

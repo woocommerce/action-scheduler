@@ -29,13 +29,25 @@ class ActionScheduler_DataController {
 	/** Migration minimum required PHP version. */
 	const MIN_PHP_VERSION = '5.5';
 
-	/** @var ActionScheduler_DataController */
+	/**
+	 * Instance.
+	 *
+	 * @var ActionScheduler_DataController
+	 */
 	private static $instance;
 
-	/** @var int */
+	/**
+	 * Number of seconds to pause before resuming.
+	 *
+	 * @var int
+	 */
 	private static $sleep_time = 0;
 
-	/** @var int */
+	/**
+	 * Number of ticks to free memory.
+	 *
+	 * @var int
+	 */
 	private static $free_ticks = 50;
 
 	/**
@@ -137,6 +149,8 @@ class ActionScheduler_DataController {
 		\WP_CLI::warning( __( 'Attempting to reduce used memory...', 'action-scheduler' ) );
 
 		/**
+		 * Globals.
+		 *
 		 * @var $wpdb            \wpdb
 		 * @var $wp_object_cache \WP_Object_Cache
 		 */

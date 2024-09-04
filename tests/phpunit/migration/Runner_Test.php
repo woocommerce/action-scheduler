@@ -11,7 +11,7 @@ use ActionScheduler_wpPostStore as PostStore;
  * @group migration
  */
 class Runner_Test extends ActionScheduler_UnitTestCase {
-	public function setUp() {
+	protected function setUp(): void {
 		parent::setUp();
 		if ( ! taxonomy_exists( PostStore::GROUP_TAXONOMY ) ) {
 			// register the post type and taxonomy necessary for the store to work

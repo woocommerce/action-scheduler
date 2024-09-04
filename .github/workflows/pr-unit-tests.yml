@@ -55,27 +55,11 @@ jobs:
 
       - name: Setup PHPUnit 
         run: |
-          # PHPUnit 5.7 when using PHP 5.6 - 7.0.
-          if [ "$(php -r "echo version_compare( PHP_VERSION, '7.1', '<' );")" ]; then
-            curl -L https://phar.phpunit.de/phpunit-5.7.phar -o /tmp/phpunit
-            OVERWRITE=1
-          # PHPUnit 7.5 when using PHP 7.1 - 7.4.
-          elif [ "$(php -r "echo version_compare( PHP_VERSION, '8.0', '<' );")" ]; then
-            curl -L https://phar.phpunit.de/phpunit-7.5.phar -o /tmp/phpunit
-            OVERWRITE=1
-          # PHPUnit 7.5 (Custom Fork) when using PHP 8.0+.
-          else
-            curl -L https://github.com/woocommerce/phpunit/archive/add-compatibility-with-php8-to-phpunit-7.zip -o /tmp/phpunit-7.5-fork.zip
-            unzip -d /tmp/phpunit-fork /tmp/phpunit-7.5-fork.zip
-            composer --working-dir=/tmp/phpunit-fork/phpunit-add-compatibility-with-php8-to-phpunit-7 install
+          # PHPUnit 7.5 when using PHP 7.4.
+          if [ "$(php -r "echo version_compare( PHP_VERSION, '8.0', '<' );")" ]; then
             rm ./vendor/bin/phpunit
-            ln -sf /tmp/phpunit-fork/phpunit-add-compatibility-with-php8-to-phpunit-7/phpunit ./vendor/bin/phpunit
-          fi
-          
-          if [ $OVERWRITE ]; then
-            rm ./vendor/bin/phpunit
-            chmod +x /tmp/phpunit
-            mv /tmp/phpunit ./vendor/bin/phpunit
+            curl -L https://phar.phpunit.de/phpunit-7.5.phar -o ./vendor/bin/phpunit
+            chmod +x ./vendor/bin/phpunit
           fi
 
       - name: Init DB and WP

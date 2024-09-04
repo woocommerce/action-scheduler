@@ -14,7 +14,7 @@ use ActionScheduler_wpPostStore as PostStore;
 class ActionScheduler_HybridStore_Test extends ActionScheduler_UnitTestCase {
 	private $demarkation_id = 1000;
 
-	public function setUp() {
+	protected function setUp(): void {
 		parent::setUp();
 		if ( ! taxonomy_exists( PostStore::GROUP_TAXONOMY ) ) {
 			// register the post type and taxonomy necessary for the store to work
@@ -26,7 +26,7 @@ class ActionScheduler_HybridStore_Test extends ActionScheduler_UnitTestCase {
 		$hybrid->set_autoincrement( '', ActionScheduler_StoreSchema::ACTIONS_TABLE );
 	}
 
-	public function tearDown() {
+	protected function tearDown(): void {
 		parent::tearDown();
 
 		// reset the autoincrement index

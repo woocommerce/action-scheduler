@@ -8,7 +8,7 @@ class as_get_scheduled_actions_Test extends ActionScheduler_UnitTestCase {
 	private $args = array();
 	private $groups = array();
 
-	public function setUp() {
+	protected function setUp(): void {
 		parent::setUp();
 
 		$store = ActionScheduler::store();
@@ -97,4 +97,3 @@ class as_get_scheduled_actions_Test extends ActionScheduler_UnitTestCase {
 		$this->assertCount(1, $actions);
 	}
 }
- 

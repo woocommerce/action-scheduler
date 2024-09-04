@@ -8,7 +8,7 @@ use Action_Scheduler\Tests\DataStores\AbstractStoreTest;
  */
 class ActionScheduler_DBStore_Test extends AbstractStoreTest {
 
-	public function setUp() {
+	protected function setUp(): void {
 		global $wpdb;
 
 		// Delete all actions before each test.

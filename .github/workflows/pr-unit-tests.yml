@@ -13,12 +13,6 @@ jobs:
         php: [ '7.4', '8.0', '8.3' ]
         wp: [ '6.4', '6.5', 'latest', 'nightly' ]
         multisite: [ '0', '1' ]
-        exclude:
-          # WordPress 6.6+ requires PHP 7.2+
-          - php: 7.0
-            wp: latest
-          - php: 7.0
-            wp: nightly
             
     services:
       database:

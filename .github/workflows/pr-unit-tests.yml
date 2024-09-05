@@ -10,8 +10,8 @@ jobs:
       fail-fast: false
       matrix:
         # We test against the earliest and latest PHP versions for each major supported version.
-        php: [ '7.0', '7.4', '8.0', '8.1', '8.2' ]
-        wp: [ '6.3', '6.4', '6.5', 'latest', 'nightly' ]
+        php: [ '7.0', '7.4', '8.0', '8.3' ]
+        wp: [ '6.4', '6.5', 'latest', 'nightly' ]
         multisite: [ '0', '1' ]
         exclude:
           # WordPress 6.6+ requires PHP 7.2+
@@ -19,7 +19,6 @@ jobs:
             wp: latest
           - php: 7.0
             wp: nightly
-            
     services:
       database:
         image: mysql:5.6

@@ -76,7 +76,7 @@ class ActionScheduler_WPCommentCleaner {
 			}
 		}
 
-		update_option( self::$has_logs_option_key, $has_logs );
+		update_option( self::$has_logs_option_key, $has_logs, true );
 	}
 
 	/**

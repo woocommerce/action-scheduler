@@ -68,6 +68,20 @@ class ActionScheduler_PastDueMonitor {
 	protected $query_args = array();
 
 	/**
+	 * Notification methods.
+	 *
+	 * @var array<string, bool>
+	 */
+	protected $notify_methods = array();
+
+	/**
+	 * Email address to send notification.
+	 *
+	 * @var string
+	 */
+	protected $notify_email_to;
+
+	/**
 	 * Get singleton instance.
 	 *
 	 * @return ActionScheduler_PastDueMonitor
@@ -95,12 +109,76 @@ class ActionScheduler_PastDueMonitor {
 		$this->interval_check          = absint( apply_filters( 'action_scheduler_pastdue_actions_check_interval', ( $this->threshold_seconds / 4 ) ) );
 		$this->interval_email_seconds  = absint( apply_filters( 'action_scheduler_pastdue_actions_email_interval', HOUR_IN_SECONDS ) );
 		$this->threshold_email_minimum = absint( apply_filters( 'action_scheduler_pastdue_actions_email_min', $this->threshold_minimum ) );
+		$this->notify_methods          = $this->notify_methods();
+
+		$notify_email_to = apply_filters( 'action_scheduler_pastdue_monitor_notify_email_to', get_site_option( 'admin_email' ) );
+
+		if ( ! is_string( $notify_email_to ) || ! is_email( $notify_email_to ) ) {
+			trigger_error( 'Invalid email address provided for past-due actions flooded email notification: using site\'s administrator email address.', E_USER_WARNING );
+			$notify_email_to = get_site_option( 'admin_email' );
+		}
+
+		$this->notify_email_to = $notify_email_to;
 
 		add_action( 'action_scheduler_stored_action', array( $this, 'on_action_stored' ) );
 
 		if ( is_admin() && ( ! defined( 'DOING_AJAX' ) || empty( DOING_AJAX ) ) ) {
 			add_action( 'admin_notices', array( $this, 'action__admin_notices' ) );
 		}
+	}
+
+	/**
+	 * Check if notification method enabled.
+	 *
+	 * @param string $method
+	 * @return bool
+	 */
+	protected function notify( $method ) {
+		return ! empty( $this->notify_methods[ $method ] );
+	}
+
+	/**
+	 * Get enabled notification methods.
+	 *
+	 * @return array<string, bool>
+	 */
+	protected function notify_methods() {
+		$all = array(
+			'admin' => true,
+			'email' => true,
+		);
+
+		$default          = $all;
+		$default['admin'] = function_exists( 'current_user_can' ) && current_user_can( 'manage_options' );
+		$methods          = $default;
+
+		// Apply deprecated filter.
+		if ( has_filter( 'action_scheduler_check_pastdue_actions' ) ) {
+			$methods['admin'] = apply_filters_deprecated(
+				'action_scheduler_check_pastdue_actions',
+				array( $methods['admin'] ),
+				'', // todo: add version number
+				'action_scheduler_pastdue_monitor_notify'
+			);
+		}
+
+		// Allow site devs to specify notification preference.
+		$methods = apply_filters( 'action_scheduler_pastdue_monitor_notify', $methods );
+
+		// Support for scalar and bool values (ex: `__return_false`).
+		if ( is_scalar( $methods ) || is_bool( $methods ) ) {
+			return boolval( $methods ) ? $all : array();
+		}
+
+		// Insist on an array.
+		if ( ! is_array( $methods ) ) {
+			return $default;
+		}
+
+		// Clear out unsupported methods.
+		$methods = array_intersect_key( $methods, $all );
+
+		return $methods;
 	}
 
 	/**
@@ -174,6 +252,10 @@ class ActionScheduler_PastDueMonitor {
 	 * @return void
 	 */
 	protected function maybe_send_email() {
+		if ( ! $this->notify( 'email' ) ) {
+			return;
+		}
+
 		$transient = get_transient( self::TRANSIENT_LAST_EMAIL );
 
 		if ( ! empty( $transient ) ) {
@@ -192,7 +274,7 @@ class ActionScheduler_PastDueMonitor {
 			}
 		}
 
-		$to      = get_site_option( 'admin_email' );
+		$to      = $this->notify_email_to;
 		$subject = sprintf( 'Action Scheduler: past-due scheduled actions (%s)', $sitename );
 		$message = $this->message();
 		$headers = array(
@@ -202,6 +284,8 @@ class ActionScheduler_PastDueMonitor {
 		set_transient( self::TRANSIENT_LAST_EMAIL, time(), $this->interval_email_seconds );
 
 		wp_mail( $to, $subject, $message, $headers );
+
+		do_action( 'action_scheduler_pastdue_monitor_notified_email' );
 	}
 
 	/**
@@ -214,8 +298,7 @@ class ActionScheduler_PastDueMonitor {
 			return;
 		}
 
-		// Filter to prevent showing notice (ex: inappropriate user).
-		if ( ! apply_filters( 'action_scheduler_check_pastdue_actions', current_user_can( 'manage_options' ) ) ) {
+		if ( ! $this->notify( 'admin' ) ) {
 			return;
 		}
 

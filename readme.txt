@@ -47,6 +47,12 @@ Collaboration is cool. We'd love to work with you to improve Action Scheduler. [
 
 == Changelog ==
 
+= 3.8.2 - 2024-09-12 =
+* Add missing parameter to the `pre_as_enqueue_async_action` hook.
+* Bump minimum PHP version to 7.0.
+* Bump minimum WordPress version to 6.4.
+* Make the batch size adjustable during processing.
+
 = 3.8.1 - 2024-06-20 =
 * Fix typos.
 * Improve the messaging in our unidentified action exceptions.

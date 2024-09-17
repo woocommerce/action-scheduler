@@ -163,6 +163,16 @@ class ActionScheduler_PastDueMonitor {
 		}
 
 		// Allow site devs to specify notification preference.
+		/**
+		 * Allow site devs to specify the active notification methods.
+		 *
+		 * Default:
+		 *   array( 'admin' => true, 'email' => true )
+		 *
+		 * Supported:
+		 * - array
+		 * - boolean: true = enable all, false = disable all
+		 */
 		$methods = apply_filters( 'action_scheduler_pastdue_monitor_notify', $methods );
 
 		// Support for scalar and bool values (ex: `__return_false`).

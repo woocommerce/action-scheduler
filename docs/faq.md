@@ -126,4 +126,4 @@ add_filter( 'as_async_request_queue_runner_post_args', 'eg_define_custom_user_ag
 
 Actions that are past-due have missed their scheduled date; because of [how WP Cron works](https://developer.wordpress.org/plugins/cron/), it is normal to have some past-due actions.
 
-If there are several past-due actions more than one day old, there may be something wrong with your site. If you need help determining the issue and are a WooCommerce.com customer, please [contact us](https://woocommerce.com/contact-us/).
+If there are several past-due actions more than one day old, there may be something wrong with your site. If you are using WooCommerce and need help determining the issue, please [contact us on our forum page](https://wordpress.org/support/plugin/woocommerce/).

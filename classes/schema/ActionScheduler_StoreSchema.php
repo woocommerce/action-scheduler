@@ -34,6 +34,7 @@ class ActionScheduler_StoreSchema extends ActionScheduler_Abstract_Schema {
 	 */
 	public function init() {
 		add_action( 'action_scheduler_before_schema_update', array( $this, 'update_schema_5_0' ), 10, 2 );
+		add_action( 'action_scheduler_before_schema_update', array( $this, 'update_schema_7_0' ), 10, 2 );
 	}
 
 	/**
@@ -67,7 +68,7 @@ class ActionScheduler_StoreSchema extends ActionScheduler_Abstract_Schema {
 				        last_attempt_gmt datetime NULL default '{$default_date}',
 				        last_attempt_local datetime NULL default '{$default_date}',
 				        claim_id bigint(20) unsigned NOT NULL default '0',
-				        extended_args varchar(8000) DEFAULT NULL,
+				        extended_args longtext,
 				        PRIMARY KEY  (action_id),
 				        KEY hook_status_scheduled_date_gmt (hook($hook_status_scheduled_date_gmt_max_index_length), status, scheduled_date_gmt),
 				        KEY status_scheduled_date_gmt (status, scheduled_date_gmt),
@@ -136,5 +137,25 @@ class ActionScheduler_StoreSchema extends ActionScheduler_Abstract_Schema {
 			$wpdb->query( $query ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
 		}
 		// phpcs:enable WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+	}
+
+	/**
+	 * Update the actions table schema, changing `$extended_args` fields to be longtext.
+	 *
+	 * @param string $table Name of table being updated.
+	 * @param string $db_version The existing schema version of the table.
+	 */
+	public function update_schema_7_0( $table, $db_version ) {
+		global $wpdb;
+
+		if ( 'actionscheduler_actions' !== $table || version_compare( $db_version, '7', '>=' ) ) {
+			return;
+		}
+
+		$table_name   = $wpdb->prefix . 'actionscheduler_actions';
+		$table_list   = $wpdb->get_col( "SHOW TABLES LIKE '${table_name}'" );
+		if ( ! empty( $table_list ) ) {
+			$wpdb->query( "ALTER TABLE ${table_name} MODIFY COLUMN extended_args longtext" ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
+		}
 	}
 }

@@ -931,6 +931,8 @@ AND `group_id` = %d
 		 * @since 3.4.0
 		 *
 		 * @param string $order_by_sql
+		 * @param string $claim_id Claim Id.
+		 * @param array  $hooks Hooks to filter for.
 		 */
 		$order    = apply_filters( 'action_scheduler_claim_actions_order_by', 'ORDER BY priority ASC, attempts ASC, scheduled_date_gmt ASC, action_id ASC', $claim_id, $hooks );
 		$params[] = $limit;

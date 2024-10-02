@@ -929,6 +929,7 @@ AND `group_id` = %d
 		 * Sets the order-by clause used in the action claim query.
 		 *
 		 * @since 3.4.0
+		 * @since 3.8.3 Made $claim_id and $hooks available.
 		 *
 		 * @param string $order_by_sql
 		 * @param string $claim_id Claim Id.

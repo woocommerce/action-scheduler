@@ -9,13 +9,25 @@ use Action_Scheduler\WP_CLI\ProgressBar;
  */
 class ActionScheduler_WPCLI_QueueRunner extends ActionScheduler_Abstract_QueueRunner {
 
-	/** @var array */
+	/**
+	 * Claimed actions.
+	 *
+	 * @var array
+	 */
 	protected $actions;
 
-	/** @var  ActionScheduler_ActionClaim */
+	/**
+	 * ActionScheduler_ActionClaim instance.
+	 *
+	 * @var ActionScheduler_ActionClaim
+	 */
 	protected $claim;
 
-	/** @var \cli\progress\Bar */
+	/**
+	 * Progress bar instance.
+	 *
+	 * @var \cli\progress\Bar
+	 */
 	protected $progress_bar;
 
 	/**
@@ -38,8 +50,6 @@ class ActionScheduler_WPCLI_QueueRunner extends ActionScheduler_Abstract_QueueRu
 
 	/**
 	 * Set up the Queue before processing.
-	 *
-	 * @author Jeremy Pry
 	 *
 	 * @param int    $batch_size The batch size to process.
 	 * @param array  $hooks      The hooks being used to filter the actions claimed in this batch.
@@ -72,8 +82,6 @@ class ActionScheduler_WPCLI_QueueRunner extends ActionScheduler_Abstract_QueueRu
 
 	/**
 	 * Add our hooks to the appropriate actions.
-	 *
-	 * @author Jeremy Pry
 	 */
 	protected function add_hooks() {
 		add_action( 'action_scheduler_before_execute', array( $this, 'before_execute' ) );
@@ -83,8 +91,6 @@ class ActionScheduler_WPCLI_QueueRunner extends ActionScheduler_Abstract_QueueRu
 
 	/**
 	 * Set up the WP CLI progress bar.
-	 *
-	 * @author Jeremy Pry
 	 */
 	protected function setup_progress_bar() {
 		$count              = count( $this->actions );
@@ -98,8 +104,6 @@ class ActionScheduler_WPCLI_QueueRunner extends ActionScheduler_Abstract_QueueRu
 	/**
 	 * Process actions in the queue.
 	 *
-	 * @author Jeremy Pry
-	 *
 	 * @param string $context Optional runner context. Default 'WP CLI'.
 	 *
 	 * @return int The number of actions processed.
@@ -109,7 +113,7 @@ class ActionScheduler_WPCLI_QueueRunner extends ActionScheduler_Abstract_QueueRu
 		$this->setup_progress_bar();
 		foreach ( $this->actions as $action_id ) {
 			// Error if we lost the claim.
-			if ( ! in_array( $action_id, $this->store->find_actions_by_claim_id( $this->claim->get_id() ) ) ) {
+			if ( ! in_array( $action_id, $this->store->find_actions_by_claim_id( $this->claim->get_id() ), true ) ) {
 				WP_CLI::warning( __( 'The claim has been lost. Aborting current batch.', 'action-scheduler' ) );
 				break;
 			}
@@ -129,8 +133,6 @@ class ActionScheduler_WPCLI_QueueRunner extends ActionScheduler_Abstract_QueueRu
 	/**
 	 * Handle WP CLI message when the action is starting.
 	 *
-	 * @author Jeremy Pry
-	 *
 	 * @param int $action_id Action ID.
 	 */
 	public function before_execute( $action_id ) {
@@ -140,8 +142,6 @@ class ActionScheduler_WPCLI_QueueRunner extends ActionScheduler_Abstract_QueueRu
 
 	/**
 	 * Handle WP CLI message when the action has completed.
-	 *
-	 * @author Jeremy Pry
 	 *
 	 * @param int                         $action_id ActionID.
 	 * @param null|ActionScheduler_Action $action The instance of the action. Default to null for backward compatibility.
@@ -157,8 +157,6 @@ class ActionScheduler_WPCLI_QueueRunner extends ActionScheduler_Abstract_QueueRu
 
 	/**
 	 * Handle WP CLI message when the action has failed.
-	 *
-	 * @author Jeremy Pry
 	 *
 	 * @param int       $action_id Action ID.
 	 * @param Exception $exception Exception.

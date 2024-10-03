@@ -1,5 +1,4 @@
 <?php
-// phpcs:disable Squiz.Commenting.FileComment.MissingPackageTag
 /**
  * Deprecated API functions for scheduling actions
  *

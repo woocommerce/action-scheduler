@@ -41,7 +41,7 @@ class ActionScheduler_WPCLI_Clean_Command extends WP_CLI_Command {
 
 		$batches_completed = 0;
 		$actions_deleted   = 0;
-		$unlimited         = $batches === 0;
+		$unlimited         = 0 === $batches;
 		try {
 			$lifespan = as_get_datetime_object( $before );
 		} catch ( Exception $e ) {
@@ -58,7 +58,7 @@ class ActionScheduler_WPCLI_Clean_Command extends WP_CLI_Command {
 					sleep( $sleep );
 				}
 
-				$deleted = count( $cleaner->clean_actions( $status, $lifespan, null,'CLI' ) );
+				$deleted = count( $cleaner->clean_actions( $status, $lifespan, null, 'CLI' ) );
 				if ( $deleted <= 0 ) {
 					break;
 				}
@@ -95,8 +95,6 @@ class ActionScheduler_WPCLI_Clean_Command extends WP_CLI_Command {
 	 * Convert an exception into a WP CLI error.
 	 *
 	 * @param Exception $e The error object.
-	 *
-	 * @throws \WP_CLI\ExitException
 	 */
 	protected function print_error( Exception $e ) {
 		WP_CLI::error(

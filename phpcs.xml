@@ -43,4 +43,8 @@
 		<exclude-pattern>lib/*</exclude-pattern>
 		<exclude-pattern>tests/*</exclude-pattern>
 	</rule>
+
+	<rule ref="PEAR.NamingConventions.ValidClassName.Invalid">
+		<exclude-pattern>classes/ActionScheduler_wcSystemStatus.php</exclude-pattern>
+	</rule>
 </ruleset>

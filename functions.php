@@ -127,7 +127,8 @@ function as_schedule_recurring_action( $timestamp, $interval_in_seconds, $hook, 
 
 	// We expect an integer and allow it to be passed using float and string types, but otherwise
 	// should reject unexpected values.
-	if ( ! is_numeric( $interval_in_seconds ) || $interval_in_seconds !== $interval ) {
+	// phpcs:ignore WordPress.PHP.StrictComparisons.LooseComparison
+	if ( ! is_numeric( $interval_in_seconds ) || $interval_in_seconds != $interval ) {
 		_doing_it_wrong(
 			__METHOD__,
 			sprintf(

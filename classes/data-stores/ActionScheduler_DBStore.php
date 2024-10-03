@@ -929,10 +929,13 @@ AND `group_id` = %d
 		 * Sets the order-by clause used in the action claim query.
 		 *
 		 * @since 3.4.0
+		 * @since 3.8.3 Made $claim_id and $hooks available.
 		 *
 		 * @param string $order_by_sql
+		 * @param string $claim_id Claim Id.
+		 * @param array  $hooks Hooks to filter for.
 		 */
-		$order    = apply_filters( 'action_scheduler_claim_actions_order_by', 'ORDER BY priority ASC, attempts ASC, scheduled_date_gmt ASC, action_id ASC' );
+		$order    = apply_filters( 'action_scheduler_claim_actions_order_by', 'ORDER BY priority ASC, attempts ASC, scheduled_date_gmt ASC, action_id ASC', $claim_id, $hooks );
 		$params[] = $limit;
 
 		$sql           = $wpdb->prepare( "{$update} {$where} {$order} LIMIT %d", $params ); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQLPlaceholders

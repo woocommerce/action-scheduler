@@ -8,24 +8,39 @@ class ActionScheduler_QueueRunner extends ActionScheduler_Abstract_QueueRunner {
 
 	const WP_CRON_SCHEDULE = 'every_minute';
 
-	/** @var ActionScheduler_AsyncRequest_QueueRunner */
+	/**
+	 * ActionScheduler_AsyncRequest_QueueRunner instance.
+	 *
+	 * @var ActionScheduler_AsyncRequest_QueueRunner
+	 */
 	protected $async_request;
 
-	/** @var ActionScheduler_QueueRunner  */
+	/**
+	 * ActionScheduler_QueueRunner instance.
+	 *
+	 * @var ActionScheduler_QueueRunner
+	 */
 	private static $runner = null;
 
-	/** @var int  */
+	/**
+	 * Number of processed actions.
+	 *
+	 * @var int
+	 */
 	private $processed_actions_count = 0;
 
 	/**
+	 * Get instance.
+	 *
 	 * @return ActionScheduler_QueueRunner
 	 * @codeCoverageIgnore
 	 */
 	public static function instance() {
-		if ( empty(self::$runner) ) {
-			$class = apply_filters('action_scheduler_queue_runner_class', 'ActionScheduler_QueueRunner');
+		if ( empty( self::$runner ) ) {
+			$class        = apply_filters( 'action_scheduler_queue_runner_class', 'ActionScheduler_QueueRunner' );
 			self::$runner = new $class();
 		}
+
 		return self::$runner;
 	}
 
@@ -48,11 +63,13 @@ class ActionScheduler_QueueRunner extends ActionScheduler_Abstract_QueueRunner {
 	}
 
 	/**
+	 * Initialize.
+	 *
 	 * @codeCoverageIgnore
 	 */
 	public function init() {
 
-		add_filter( 'cron_schedules', array( self::instance(), 'add_wp_cron_schedule' ) );
+		add_filter( 'cron_schedules', array( self::instance(), 'add_wp_cron_schedule' ) ); // phpcs:ignore WordPress.WP.CronInterval.CronSchedulesInterval
 
 		// Check for and remove any WP Cron hook scheduled by Action Scheduler < 3.0.0, which didn't include the $context param.
 		$next_timestamp = wp_next_scheduled( self::WP_CRON_HOOK );
@@ -121,6 +138,7 @@ class ActionScheduler_QueueRunner extends ActionScheduler_Abstract_QueueRunner {
 	 * that was the only context in which this method was run, and the self::WP_CRON_HOOK hook had no context
 	 * passed along with it. New code calling this method directly, or by triggering the self::WP_CRON_HOOK,
 	 * should set a context as the first parameter. For an example of this, refer to the code seen in
+	 *
 	 * @see ActionScheduler_AsyncRequest_QueueRunner::handle()
 	 *
 	 * @param string $context Optional identifier for the context in which this action is being processed, e.g. 'WP CLI' or 'WP Cron'
@@ -158,13 +176,13 @@ class ActionScheduler_QueueRunner extends ActionScheduler_Abstract_QueueRunner {
 	 * @return int The number of actions processed.
 	 */
 	protected function do_batch( $size = 100, $context = '' ) {
-		$claim = $this->store->stake_claim($size);
-		$this->monitor->attach($claim);
+		$claim = $this->store->stake_claim( $size );
+		$this->monitor->attach( $claim );
 		$processed_actions = 0;
 
 		foreach ( $claim->get_actions() as $action_id ) {
 			// bail if we lost the claim.
-			if ( ! in_array( $action_id, $this->store->find_actions_by_claim_id( $claim->get_id() ) ) ) {
+			if ( ! in_array( $action_id, $this->store->find_actions_by_claim_id( $claim->get_id() ), true ) ) {
 				break;
 			}
 			$this->process_action( $action_id, $context );
@@ -174,7 +192,7 @@ class ActionScheduler_QueueRunner extends ActionScheduler_Abstract_QueueRunner {
 				break;
 			}
 		}
-		$this->store->release_claim($claim);
+		$this->store->release_claim( $claim );
 		$this->monitor->detach();
 		$this->clear_caches();
 		return $processed_actions;

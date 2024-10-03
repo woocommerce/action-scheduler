@@ -11,7 +11,9 @@
 class ActionScheduler_AdminView_Deprecated {
 
 	/**
-	 * @param array $args
+	 * Adjust parameters for custom post type.
+	 *
+	 * @param array $args Args.
 	 */
 	public function action_scheduler_post_type_args( $args ) {
 		_deprecated_function( __METHOD__, '2.0.0' );

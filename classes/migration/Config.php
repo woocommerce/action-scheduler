@@ -17,22 +17,46 @@ use ActionScheduler_Store as Store;
  * A config builder for the ActionScheduler\Migration\Runner class
  */
 class Config {
-	/** @var ActionScheduler_Store */
+	/**
+	 * Source store instance.
+	 *
+	 * @var ActionScheduler_Store
+	 */
 	private $source_store;
 
-	/** @var ActionScheduler_Logger */
+	/**
+	 * Source logger instance.
+	 *
+	 * @var ActionScheduler_Logger
+	 */
 	private $source_logger;
 
-	/** @var ActionScheduler_Store */
+	/**
+	 * Destination store instance.
+	 *
+	 * @var ActionScheduler_Store
+	 */
 	private $destination_store;
 
-	/** @var ActionScheduler_Logger */
+	/**
+	 * Destination logger instance.
+	 *
+	 * @var ActionScheduler_Logger
+	 */
 	private $destination_logger;
 
-	/** @var Progress bar */
+	/**
+	 * Progress bar object.
+	 *
+	 * @var Action_Scheduler\WP_CLI\ProgressBar
+	 */
 	private $progress_bar;
 
-	/** @var bool */
+	/**
+	 * Flag indicating a dryrun.
+	 *
+	 * @var bool
+	 */
 	private $dry_run = false;
 
 	/**

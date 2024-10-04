@@ -50,7 +50,7 @@ class ActionScheduler_UnitTestCase extends WP_UnitTestCase {
 			$result = $this->createResult();
 		}
 
-		$this->existing_timezone = date_default_timezone_get()
+		$this->existing_timezone = date_default_timezone_get();
 
 		if ( 'UTC' !== $this->existing_timezone ) {
 			date_default_timezone_set( 'UTC' );

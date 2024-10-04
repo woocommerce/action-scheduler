@@ -16,6 +16,6 @@ class ActionScheduler_FinishedAction extends ActionScheduler_Action {
 	 * Get finished state.
 	 */
 	public function is_finished() {
-		return TRUE;
+		return true;
 	}
 }

@@ -43,4 +43,8 @@
 		<exclude-pattern>lib/*</exclude-pattern>
 		<exclude-pattern>tests/*</exclude-pattern>
 	</rule>
+
+	<rule ref="PEAR.NamingConventions.ValidClassName.Invalid">
+		<exclude-pattern>classes/data-stores/ActionScheduler_wpPostStore_PostTypeRegistrar.php</exclude-pattern>
+	</rule>
 </ruleset>

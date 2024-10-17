@@ -32,7 +32,7 @@ class ActionScheduler_QueueCleaner {
 	 * @param ActionScheduler_Store $store      The store instance.
 	 * @param int                   $batch_size The batch size.
 	 */
-	public function __construct( ActionScheduler_Store $store = null, $batch_size = 20 ) {
+	public function __construct( ?ActionScheduler_Store $store = null, $batch_size = 20 ) {
 		$this->store = $store ? $store : ActionScheduler_Store::instance();
 		$this->batch_size = $batch_size;
 	}

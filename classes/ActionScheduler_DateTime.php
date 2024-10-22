@@ -15,7 +15,7 @@ class ActionScheduler_DateTime extends DateTime {
 	 *
 	 * @var int
 	 */
-	protected $utcOffset = 0;
+	protected $utcOffset = 0; // phpcs:ignore WordPress.NamingConventions.ValidVariableName.PropertyNotSnakeCase
 
 	/**
 	 * Get the unix timestamp of the current object.
@@ -37,7 +37,7 @@ class ActionScheduler_DateTime extends DateTime {
 	 * @param string|int $offset UTC offset value.
 	 */
 	public function setUtcOffset( $offset ) {
-		$this->utcOffset = intval( $offset );
+		$this->utcOffset = intval( $offset ); // phpcs:ignore WordPress.NamingConventions.ValidVariableName.UsedPropertyNotSnakeCase
 	}
 
 	/**
@@ -48,7 +48,7 @@ class ActionScheduler_DateTime extends DateTime {
 	 */
 	#[\ReturnTypeWillChange]
 	public function getOffset() {
-		return $this->utcOffset ? $this->utcOffset : parent::getOffset();
+		return $this->utcOffset ? $this->utcOffset : parent::getOffset(); // phpcs:ignore WordPress.NamingConventions.ValidVariableName.UsedPropertyNotSnakeCase
 	}
 
 	/**
@@ -61,7 +61,7 @@ class ActionScheduler_DateTime extends DateTime {
 	 */
 	#[\ReturnTypeWillChange]
 	public function setTimezone( $timezone ) {
-		$this->utcOffset = 0;
+		$this->utcOffset = 0; // phpcs:ignore WordPress.NamingConventions.ValidVariableName.UsedPropertyNotSnakeCase
 		parent::setTimezone( $timezone );
 
 		return $this;

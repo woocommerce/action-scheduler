@@ -15,7 +15,7 @@ class ActionScheduler_DateTime extends DateTime {
 	 *
 	 * @var int
 	 */
-	protected $utc_offset = 0;
+	protected $utcOffset = 0;
 
 	/**
 	 * Get the unix timestamp of the current object.
@@ -37,7 +37,7 @@ class ActionScheduler_DateTime extends DateTime {
 	 * @param string|int $offset UTC offset value.
 	 */
 	public function setUtcOffset( $offset ) {
-		$this->utc_offset = intval( $offset );
+		$this->utcOffset = intval( $offset );
 	}
 
 	/**
@@ -48,7 +48,7 @@ class ActionScheduler_DateTime extends DateTime {
 	 */
 	#[\ReturnTypeWillChange]
 	public function getOffset() {
-		return $this->utc_offset ? $this->utc_offset : parent::getOffset();
+		return $this->utcOffset ? $this->utcOffset : parent::getOffset();
 	}
 
 	/**
@@ -61,7 +61,7 @@ class ActionScheduler_DateTime extends DateTime {
 	 */
 	#[\ReturnTypeWillChange]
 	public function setTimezone( $timezone ) {
-		$this->utc_offset = 0;
+		$this->utcOffset = 0;
 		parent::setTimezone( $timezone );
 
 		return $this;

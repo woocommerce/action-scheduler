@@ -39,7 +39,7 @@ Some of the known host time limits are:
 
 ## Increasing Batch Size
 
-By default, Action Scheduler will claim a batch of 25 actions. This small batch size is because the default time limit is only 30 seconds; however, if you know your actions are processing very quickly, e.g. taking microseconds not seconds, or that you have more than 30 seconds available to process each batch, increasing the batch size can slightly improve performance.
+By default, Action Scheduler will claim a batch of 25 actions. This small batch size is because the default time limit is only 30 seconds; however, if you know your actions are processing very quickly, e.g. taking milliseconds not seconds, or that you have more than 30 seconds available to process each batch, increasing the batch size can slightly improve performance.
 
 This is because claiming a batch has some overhead, so the less often a batch needs to be claimed, the faster actions can be processed.
 

@@ -1,7 +1,4 @@
 <?php
-/**
- * ActionScheduler_Mock_AsyncRequest_QueueRunner
- */
 
 defined( 'ABSPATH' ) || exit;
 

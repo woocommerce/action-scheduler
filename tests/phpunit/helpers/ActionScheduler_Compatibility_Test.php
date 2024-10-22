@@ -1,4 +1,6 @@
 <?php
+// phpcs:disable WordPress.PHP.IniSet.max_execution_time_Blacklisted
+
 /**
  * @group helpers
  */

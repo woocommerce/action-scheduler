@@ -35,7 +35,7 @@ class ActionScheduler_CanceledSchedule extends ActionScheduler_SimpleSchedule {
 	}
 
 	/**
-	 * Action is not recurreing.
+	 * Action is not recurring.
 	 *
 	 * @return bool
 	 */

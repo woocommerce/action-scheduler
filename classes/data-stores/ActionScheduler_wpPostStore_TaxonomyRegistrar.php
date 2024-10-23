@@ -2,6 +2,7 @@
 
 /**
  * Class ActionScheduler_wpPostStore_TaxonomyRegistrar
+ *
  * @codeCoverageIgnore
  */
 class ActionScheduler_wpPostStore_TaxonomyRegistrar {
@@ -18,12 +19,12 @@ class ActionScheduler_wpPostStore_TaxonomyRegistrar {
 	 */
 	protected function taxonomy_args() {
 		$args = array(
-			'label' => __( 'Action Group', 'action-scheduler' ),
-			'public' => false,
-			'hierarchical' => false,
+			'label'             => __( 'Action Group', 'action-scheduler' ),
+			'public'            => false,
+			'hierarchical'      => false,
 			'show_admin_column' => true,
-			'query_var' => false,
-			'rewrite' => false,
+			'query_var'         => false,
+			'rewrite'           => false,
 		);
 
 		$args = apply_filters( 'action_scheduler_taxonomy_args', $args );

@@ -13,7 +13,7 @@ class ActionScheduler_OptionLock_Test extends ActionScheduler_UnitTestCase {
 
 	public function test_is_locked() {
 		$lock      = ActionScheduler::lock();
-		$lock_type = md5( rand() );
+		$lock_type = md5( wp_rand() );
 
 		$this->assertFalse( $lock->is_locked( $lock_type ) );
 
@@ -23,7 +23,7 @@ class ActionScheduler_OptionLock_Test extends ActionScheduler_UnitTestCase {
 
 	public function test_set() {
 		$lock      = ActionScheduler::lock();
-		$lock_type = md5( rand() );
+		$lock_type = md5( wp_rand() );
 
 		$lock->set( $lock_type );
 		$this->assertTrue( $lock->is_locked( $lock_type ) );
@@ -31,7 +31,7 @@ class ActionScheduler_OptionLock_Test extends ActionScheduler_UnitTestCase {
 
 	public function test_get_expiration() {
 		$lock      = ActionScheduler::lock();
-		$lock_type = md5( rand() );
+		$lock_type = md5( wp_rand() );
 
 		$lock->set( $lock_type );
 

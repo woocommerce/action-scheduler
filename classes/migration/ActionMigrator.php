@@ -13,13 +13,25 @@ namespace Action_Scheduler\Migration;
  * @codeCoverageIgnore
  */
 class ActionMigrator {
-	/** @var ActionScheduler_Store */
+	/**
+	 * Source store instance.
+	 *
+	 * @var ActionScheduler_Store
+	 */
 	private $source;
 
-	/** @var ActionScheduler_Store */
+	/**
+	 * Destination store instance.
+	 *
+	 * @var ActionScheduler_Store
+	 */
 	private $destination;
 
-	/** @var LogMigrator */
+	/**
+	 * LogMigrator instance.
+	 *
+	 * @var LogMigrator
+	 */
 	private $log_migrator;
 
 	/**
@@ -58,10 +70,10 @@ class ActionMigrator {
 			// delete it and move on.
 			try {
 				$this->source->delete_action( $source_action_id );
-			} catch ( \Exception $e ) {
+			} catch ( \Exception $e ) { // phpcs:ignore Generic.CodeAnalysis.EmptyStatement.DetectedCatch
 				// nothing to do, it didn't exist in the first place.
 			}
-			do_action( 'action_scheduler/no_action_to_migrate', $source_action_id, $this->source, $this->destination );
+			do_action( 'action_scheduler/no_action_to_migrate', $source_action_id, $this->source, $this->destination ); // phpcs:ignore WordPress.NamingConventions.ValidHookName.UseUnderscores
 
 			return 0;
 		}
@@ -69,21 +81,21 @@ class ActionMigrator {
 		try {
 
 			// Make sure the last attempt date is set correctly for completed and failed actions.
-			$last_attempt_date = ( $status !== \ActionScheduler_Store::STATUS_PENDING ) ? $this->source->get_date( $source_action_id ) : null;
+			$last_attempt_date = ( \ActionScheduler_Store::STATUS_PENDING !== $status ) ? $this->source->get_date( $source_action_id ) : null;
 
 			$destination_action_id = $this->destination->save_action( $action, null, $last_attempt_date );
 		} catch ( \Exception $e ) {
-			do_action( 'action_scheduler/migrate_action_failed', $source_action_id, $this->source, $this->destination );
+			do_action( 'action_scheduler/migrate_action_failed', $source_action_id, $this->source, $this->destination ); // phpcs:ignore WordPress.NamingConventions.ValidHookName.UseUnderscores
 
 			return 0; // could not save the action in the new store.
 		}
 
 		try {
 			switch ( $status ) {
-				case \ActionScheduler_Store::STATUS_FAILED :
+				case \ActionScheduler_Store::STATUS_FAILED:
 					$this->destination->mark_failure( $destination_action_id );
 					break;
-				case \ActionScheduler_Store::STATUS_CANCELED :
+				case \ActionScheduler_Store::STATUS_CANCELED:
 					$this->destination->cancel_action( $destination_action_id );
 					break;
 			}
@@ -96,14 +108,17 @@ class ActionMigrator {
 				// translators: %s is an action ID.
 				throw new \RuntimeException( sprintf( __( 'Unable to remove source migrated action %s', 'action-scheduler' ), $source_action_id ) );
 			}
-			do_action( 'action_scheduler/migrated_action', $source_action_id, $destination_action_id, $this->source, $this->destination );
+			do_action( 'action_scheduler/migrated_action', $source_action_id, $destination_action_id, $this->source, $this->destination ); // phpcs:ignore WordPress.NamingConventions.ValidHookName.UseUnderscores
 
 			return $destination_action_id;
 		} catch ( \Exception $e ) {
 			// could not delete from the old store.
 			$this->source->mark_migrated( $source_action_id );
+
+			// phpcs:disable WordPress.NamingConventions.ValidHookName.UseUnderscores
 			do_action( 'action_scheduler/migrate_action_incomplete', $source_action_id, $destination_action_id, $this->source, $this->destination );
 			do_action( 'action_scheduler/migrated_action', $source_action_id, $destination_action_id, $this->source, $this->destination );
+			// phpcs:enable
 
 			return $destination_action_id;
 		}

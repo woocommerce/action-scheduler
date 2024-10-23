@@ -44,7 +44,8 @@
 		<exclude-pattern>tests/*</exclude-pattern>
 	</rule>
 
-	<rule ref="PEAR.NamingConventions.ValidClassName">
+	<rule ref="PEAR.NamingConventions.ValidClassName.Invalid">
+		<exclude-pattern>classes/ActionScheduler_wcSystemStatus.php</exclude-pattern>
 		<exclude-pattern>tests/phpunit/procedural_api/wc_get_scheduled_actions_Test.php</exclude-pattern>
 	</rule>
 

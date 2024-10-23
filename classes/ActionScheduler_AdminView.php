@@ -2,27 +2,42 @@
 
 /**
  * Class ActionScheduler_AdminView
+ *
  * @codeCoverageIgnore
  */
 class ActionScheduler_AdminView extends ActionScheduler_AdminView_Deprecated {
 
-	/** @var null|self */
-	private static $admin_view = NULL;
+	/**
+	 * Instance.
+	 *
+	 * @var null|self
+	 */
+	private static $admin_view = null;
 
-	/** @var string */
+	/**
+	 * Screen ID.
+	 *
+	 * @var string
+	 */
 	private static $screen_id = 'tools_page_action-scheduler';
 
-	/** @var ActionScheduler_ListTable */
+	/**
+	 * ActionScheduler_ListTable instance.
+	 *
+	 * @var ActionScheduler_ListTable
+	 */
 	protected $list_table;
 
 	/**
+	 * Get instance.
+	 *
 	 * @return ActionScheduler_AdminView
 	 * @codeCoverageIgnore
 	 */
 	public static function instance() {
 
 		if ( empty( self::$admin_view ) ) {
-			$class = apply_filters('action_scheduler_admin_view_class', 'ActionScheduler_AdminView');
+			$class            = apply_filters( 'action_scheduler_admin_view_class', 'ActionScheduler_AdminView' );
 			self::$admin_view = new $class();
 		}
 
@@ -35,7 +50,7 @@ class ActionScheduler_AdminView extends ActionScheduler_AdminView_Deprecated {
 	 * @codeCoverageIgnore
 	 */
 	public function init() {
-		if ( is_admin() && ( ! defined( 'DOING_AJAX' ) || false == DOING_AJAX ) ) {
+		if ( is_admin() && ( ! defined( 'DOING_AJAX' ) || ! DOING_AJAX ) ) {
 
 			if ( class_exists( 'WooCommerce' ) ) {
 				add_action( 'woocommerce_admin_status_content_action-scheduler', array( $this, 'render_admin_ui' ) );
@@ -84,7 +99,7 @@ class ActionScheduler_AdminView extends ActionScheduler_AdminView_Deprecated {
 			'action-scheduler',
 			array( $this, 'render_admin_ui' )
 		);
-		add_action( 'load-' . $hook_suffix , array( $this, 'process_admin_ui' ) );
+		add_action( 'load-' . $hook_suffix, array( $this, 'process_admin_ui' ) );
 	}
 
 	/**
@@ -122,7 +137,7 @@ class ActionScheduler_AdminView extends ActionScheduler_AdminView_Deprecated {
 	public function add_help_tabs() {
 		$screen = get_current_screen();
 
-		if ( ! $screen || self::$screen_id != $screen->id ) {
+		if ( ! $screen || self::$screen_id !== $screen->id ) {
 			return;
 		}
 

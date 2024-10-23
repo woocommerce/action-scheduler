@@ -18,13 +18,13 @@ class ActionScheduler_wpPostStore_Test extends AbstractStoreTest {
 	}
 
 	public function test_create_action() {
-		$time = as_get_datetime_object();
-		$schedule = new ActionScheduler_SimpleSchedule($time);
-		$action = new ActionScheduler_Action( ActionScheduler_Callbacks::HOOK_WITH_CALLBACK, array(), $schedule );
-		$store = new ActionScheduler_wpPostStore();
-		$action_id = $store->save_action($action);
+		$time      = as_get_datetime_object();
+		$schedule  = new ActionScheduler_SimpleSchedule( $time );
+		$action    = new ActionScheduler_Action( ActionScheduler_Callbacks::HOOK_WITH_CALLBACK, array(), $schedule );
+		$store     = new ActionScheduler_wpPostStore();
+		$action_id = $store->save_action( $action );
 
-		$this->assertNotEmpty($action_id);
+		$this->assertNotEmpty( $action_id );
 	}
 
 	public function test_create_action_with_scheduled_date() {
@@ -39,31 +39,33 @@ class ActionScheduler_wpPostStore_Test extends AbstractStoreTest {
 	}
 
 	public function test_retrieve_action() {
-		$time = as_get_datetime_object();
-		$schedule = new ActionScheduler_SimpleSchedule($time);
-		$action = new ActionScheduler_Action( ActionScheduler_Callbacks::HOOK_WITH_CALLBACK, array(), $schedule, 'my_group' );
-		$store = new ActionScheduler_wpPostStore();
-		$action_id = $store->save_action($action);
+		$time      = as_get_datetime_object();
+		$schedule  = new ActionScheduler_SimpleSchedule( $time );
+		$action    = new ActionScheduler_Action( ActionScheduler_Callbacks::HOOK_WITH_CALLBACK, array(), $schedule, 'my_group' );
+		$store     = new ActionScheduler_wpPostStore();
+		$action_id = $store->save_action( $action );
+		$retrieved = $store->fetch_action( $action_id );
 
-		$retrieved = $store->fetch_action($action_id);
-		$this->assertEquals($action->get_hook(), $retrieved->get_hook());
-		$this->assertEqualSets($action->get_args(), $retrieved->get_args());
+		$this->assertEquals( $action->get_hook(), $retrieved->get_hook() );
+		$this->assertEqualSets( $action->get_args(), $retrieved->get_args() );
 		$this->assertEquals( $action->get_schedule()->get_date()->getTimestamp(), $retrieved->get_schedule()->get_date()->getTimestamp() );
-		$this->assertEquals($action->get_group(), $retrieved->get_group());
+		$this->assertEquals( $action->get_group(), $retrieved->get_group() );
 	}
 
 	/**
 	 * @dataProvider provide_bad_args
 	 *
-	 * @param string $content
+	 * @param string $content Post content.
 	 */
 	public function test_action_bad_args( $content ) {
 		$store   = new ActionScheduler_wpPostStore();
-		$post_id = wp_insert_post( array(
-			'post_type'    => ActionScheduler_wpPostStore::POST_TYPE,
-			'post_status'  => ActionScheduler_Store::STATUS_PENDING,
-			'post_content' => $content,
-		) );
+		$post_id = wp_insert_post(
+			array(
+				'post_type'    => ActionScheduler_wpPostStore::POST_TYPE,
+				'post_status'  => ActionScheduler_Store::STATUS_PENDING,
+				'post_content' => $content,
+			)
+		);
 
 		$fetched = $store->fetch_action( $post_id );
 		$this->assertInstanceOf( 'ActionScheduler_NullSchedule', $fetched->get_schedule() );
@@ -76,11 +78,11 @@ class ActionScheduler_wpPostStore_Test extends AbstractStoreTest {
 	}
 
 	public function test_cancel_action() {
-		$time = as_get_datetime_object();
-		$schedule = new ActionScheduler_SimpleSchedule($time);
-		$action = new ActionScheduler_Action( ActionScheduler_Callbacks::HOOK_WITH_CALLBACK, array(), $schedule, 'my_group' );
-		$store = new ActionScheduler_wpPostStore();
-		$action_id = $store->save_action($action);
+		$time      = as_get_datetime_object();
+		$schedule  = new ActionScheduler_SimpleSchedule( $time );
+		$action    = new ActionScheduler_Action( ActionScheduler_Callbacks::HOOK_WITH_CALLBACK, array(), $schedule, 'my_group' );
+		$store     = new ActionScheduler_wpPostStore();
+		$action_id = $store->save_action( $action );
 		$store->cancel_action( $action_id );
 
 		$fetched = $store->fetch_action( $action_id );
@@ -128,12 +130,14 @@ class ActionScheduler_wpPostStore_Test extends AbstractStoreTest {
 
 	public function test_claim_actions() {
 		$created_actions = array();
-		$store = new ActionScheduler_wpPostStore();
-		for ( $i = 3 ; $i > -3 ; $i-- ) {
-			$time = as_get_datetime_object($i.' hours');
-			$schedule = new ActionScheduler_SimpleSchedule($time);
-			$action = new ActionScheduler_Action( ActionScheduler_Callbacks::HOOK_WITH_CALLBACK, array($i), $schedule, 'my_group' );
-			$created_actions[] = $store->save_action($action);
+		$store           = new ActionScheduler_wpPostStore();
+
+		for ( $i = 3; $i > -3; $i-- ) {
+			$time     = as_get_datetime_object( $i . ' hours' );
+			$schedule = new ActionScheduler_SimpleSchedule( $time );
+			$action   = new ActionScheduler_Action( ActionScheduler_Callbacks::HOOK_WITH_CALLBACK, array( $i ), $schedule, 'my_group' );
+
+			$created_actions[] = $store->save_action( $action );
 		}
 
 		$claim = $store->stake_claim();
@@ -169,12 +173,14 @@ class ActionScheduler_wpPostStore_Test extends AbstractStoreTest {
 
 	public function test_duplicate_claim() {
 		$created_actions = array();
-		$store = new ActionScheduler_wpPostStore();
-		for ( $i = 0 ; $i > -3 ; $i-- ) {
-			$time = as_get_datetime_object($i.' hours');
-			$schedule = new ActionScheduler_SimpleSchedule($time);
-			$action = new ActionScheduler_Action( ActionScheduler_Callbacks::HOOK_WITH_CALLBACK, array($i), $schedule, 'my_group' );
-			$created_actions[] = $store->save_action($action);
+		$store           = new ActionScheduler_wpPostStore();
+
+		for ( $i = 0; $i > -3; $i-- ) {
+			$time     = as_get_datetime_object( $i . ' hours' );
+			$schedule = new ActionScheduler_SimpleSchedule( $time );
+			$action   = new ActionScheduler_Action( ActionScheduler_Callbacks::HOOK_WITH_CALLBACK, array( $i ), $schedule, 'my_group' );
+
+			$created_actions[] = $store->save_action( $action );
 		}
 
 		$claim1 = $store->stake_claim();
@@ -185,12 +191,14 @@ class ActionScheduler_wpPostStore_Test extends AbstractStoreTest {
 
 	public function test_release_claim() {
 		$created_actions = array();
-		$store = new ActionScheduler_wpPostStore();
-		for ( $i = 0 ; $i > -3 ; $i-- ) {
-			$time = as_get_datetime_object($i.' hours');
-			$schedule = new ActionScheduler_SimpleSchedule($time);
-			$action = new ActionScheduler_Action( ActionScheduler_Callbacks::HOOK_WITH_CALLBACK, array($i), $schedule, 'my_group' );
-			$created_actions[] = $store->save_action($action);
+		$store           = new ActionScheduler_wpPostStore();
+
+		for ( $i = 0; $i > -3; $i-- ) {
+			$time     = as_get_datetime_object( $i . ' hours' );
+			$schedule = new ActionScheduler_SimpleSchedule( $time );
+			$action   = new ActionScheduler_Action( ActionScheduler_Callbacks::HOOK_WITH_CALLBACK, array( $i ), $schedule, 'my_group' );
+
+			$created_actions[] = $store->save_action( $action );
 		}
 
 		$claim1 = $store->stake_claim();
@@ -203,12 +211,14 @@ class ActionScheduler_wpPostStore_Test extends AbstractStoreTest {
 
 	public function test_search() {
 		$created_actions = array();
-		$store = new ActionScheduler_wpPostStore();
-		for ( $i = -3 ; $i <= 3 ; $i++ ) {
-			$time = as_get_datetime_object($i.' hours');
-			$schedule = new ActionScheduler_SimpleSchedule($time);
-			$action = new ActionScheduler_Action( ActionScheduler_Callbacks::HOOK_WITH_CALLBACK, array($i), $schedule, 'my_group' );
-			$created_actions[] = $store->save_action($action);
+		$store           = new ActionScheduler_wpPostStore();
+
+		for ( $i = -3; $i <= 3; $i++ ) {
+			$time     = as_get_datetime_object( $i . ' hours' );
+			$schedule = new ActionScheduler_SimpleSchedule( $time );
+			$action   = new ActionScheduler_Action( ActionScheduler_Callbacks::HOOK_WITH_CALLBACK, array( $i ), $schedule, 'my_group' );
+
+			$created_actions[] = $store->save_action( $action );
 		}
 
 		$next_no_args = $store->find_action( ActionScheduler_Callbacks::HOOK_WITH_CALLBACK );
@@ -222,8 +232,9 @@ class ActionScheduler_wpPostStore_Test extends AbstractStoreTest {
 	}
 
 	public function test_search_by_group() {
-		$store = new ActionScheduler_wpPostStore();
-		$schedule = new ActionScheduler_SimpleSchedule(as_get_datetime_object('tomorrow'));
+		$store    = new ActionScheduler_wpPostStore();
+		$schedule = new ActionScheduler_SimpleSchedule( as_get_datetime_object( 'tomorrow' ) );
+
 		$abc = $store->save_action( new ActionScheduler_Action( ActionScheduler_Callbacks::HOOK_WITH_CALLBACK, array( 1 ), $schedule, 'abc' ) );
 		$def = $store->save_action( new ActionScheduler_Action( ActionScheduler_Callbacks::HOOK_WITH_CALLBACK, array( 1 ), $schedule, 'def' ) );
 		$ghi = $store->save_action( new ActionScheduler_Action( ActionScheduler_Callbacks::HOOK_WITH_CALLBACK, array( 1 ), $schedule, 'ghi' ) );
@@ -236,72 +247,74 @@ class ActionScheduler_wpPostStore_Test extends AbstractStoreTest {
 	public function test_post_author() {
 		$current_user = get_current_user_id();
 
-		$time = as_get_datetime_object();
-		$schedule = new ActionScheduler_SimpleSchedule($time);
-		$action = new ActionScheduler_Action( ActionScheduler_Callbacks::HOOK_WITH_CALLBACK, array(), $schedule );
-		$store = new ActionScheduler_wpPostStore();
-		$action_id = $store->save_action($action);
+		$time      = as_get_datetime_object();
+		$schedule  = new ActionScheduler_SimpleSchedule( $time );
+		$action    = new ActionScheduler_Action( ActionScheduler_Callbacks::HOOK_WITH_CALLBACK, array(), $schedule );
+		$store     = new ActionScheduler_wpPostStore();
+		$action_id = $store->save_action( $action );
 
-		$post = get_post($action_id);
-		$this->assertEquals(0, $post->post_author);
+		$post = get_post( $action_id );
+		$this->assertEquals( 0, $post->post_author );
 
-		$new_user = $this->factory->user->create_object(array(
-			'user_login' => __FUNCTION__,
-			'user_pass' => md5(rand()),
-		));
+		$new_user = $this->factory->user->create_object(
+			array(
+				'user_login' => __FUNCTION__,
+				'user_pass'  => md5( wp_rand() ),
+			)
+		);
+
 		wp_set_current_user( $new_user );
 
+		$schedule  = new ActionScheduler_SimpleSchedule( $time );
+		$action    = new ActionScheduler_Action( ActionScheduler_Callbacks::HOOK_WITH_CALLBACK, array(), $schedule );
+		$action_id = $store->save_action( $action );
+		$post      = get_post( $action_id );
+		$this->assertEquals( 0, $post->post_author );
 
-		$schedule = new ActionScheduler_SimpleSchedule($time);
-		$action = new ActionScheduler_Action( ActionScheduler_Callbacks::HOOK_WITH_CALLBACK, array(), $schedule );
-		$action_id = $store->save_action($action);
-		$post = get_post($action_id);
-		$this->assertEquals(0, $post->post_author);
-
-		wp_set_current_user($current_user);
+		wp_set_current_user( $current_user );
 	}
 
 	/**
 	 * @issue 13
 	 */
 	public function test_post_status_for_recurring_action() {
-		$time = as_get_datetime_object('10 minutes');
-		$schedule = new ActionScheduler_IntervalSchedule($time, HOUR_IN_SECONDS);
-		$action = new ActionScheduler_Action( ActionScheduler_Callbacks::HOOK_WITH_CALLBACK, array(), $schedule );
-		$store = new ActionScheduler_wpPostStore();
-		$action_id = $store->save_action($action);
+		$time      = as_get_datetime_object( '10 minutes' );
+		$schedule  = new ActionScheduler_IntervalSchedule( $time, HOUR_IN_SECONDS );
+		$action    = new ActionScheduler_Action( ActionScheduler_Callbacks::HOOK_WITH_CALLBACK, array(), $schedule );
+		$store     = new ActionScheduler_wpPostStore();
+		$action_id = $store->save_action( $action );
 
-		$action = $store->fetch_action($action_id);
+		$action = $store->fetch_action( $action_id );
 		$action->execute();
 		$store->mark_complete( $action_id );
 
-		$next = $action->get_schedule()->get_next( as_get_datetime_object() );
+		$next          = $action->get_schedule()->get_next( as_get_datetime_object() );
 		$new_action_id = $store->save_action( $action, $next );
 
-		$this->assertEquals('publish', get_post_status($action_id));
-		$this->assertEquals('pending', get_post_status($new_action_id));
+		$this->assertEquals( 'publish', get_post_status( $action_id ) );
+		$this->assertEquals( 'pending', get_post_status( $new_action_id ) );
 	}
 
 	public function test_get_run_date() {
-		$time = as_get_datetime_object('-10 minutes');
-		$schedule = new ActionScheduler_IntervalSchedule($time, HOUR_IN_SECONDS);
-		$action = new ActionScheduler_Action( ActionScheduler_Callbacks::HOOK_WITH_CALLBACK, array(), $schedule );
-		$store = new ActionScheduler_wpPostStore();
-		$action_id = $store->save_action($action);
+		$time      = as_get_datetime_object( '-10 minutes' );
+		$schedule  = new ActionScheduler_IntervalSchedule( $time, HOUR_IN_SECONDS );
+		$action    = new ActionScheduler_Action( ActionScheduler_Callbacks::HOOK_WITH_CALLBACK, array(), $schedule );
+		$store     = new ActionScheduler_wpPostStore();
+		$action_id = $store->save_action( $action );
 
-		$this->assertEquals( $store->get_date($action_id)->getTimestamp(), $time->getTimestamp() );
+		$this->assertEquals( $store->get_date( $action_id )->getTimestamp(), $time->getTimestamp() );
 
-		$action = $store->fetch_action($action_id);
+		$action = $store->fetch_action( $action_id );
 		$action->execute();
 		$now = as_get_datetime_object();
 		$store->mark_complete( $action_id );
 
-		$this->assertEquals( $store->get_date( $action_id )->getTimestamp(), $now->getTimestamp(), '', 1 ); // allow timestamp to be 1 second off for older versions of PHP
+		$this->assertEquals( $store->get_date( $action_id )->getTimestamp(), $now->getTimestamp(), '', 1 ); // allow timestamp to be 1 second off for older versions of PHP.
 
-		$next = $action->get_schedule()->get_next( $now );
+		$next          = $action->get_schedule()->get_next( $now );
 		$new_action_id = $store->save_action( $action, $next );
 
-		$this->assertEquals( (int)($now->getTimestamp()) + HOUR_IN_SECONDS, $store->get_date($new_action_id)->getTimestamp() );
+		$this->assertEquals( (int) ( $now->getTimestamp() ) + HOUR_IN_SECONDS, $store->get_date( $new_action_id )->getTimestamp() );
 	}
 
 	public function test_claim_actions_by_hooks() {
@@ -316,28 +329,28 @@ class ActionScheduler_wpPostStore_Test extends AbstractStoreTest {
 		// Claiming no hooks should include all actions.
 		$claim = $store->stake_claim( 10 );
 		$this->assertEquals( 2, count( $claim->get_actions() ) );
-		$this->assertTrue( in_array( $action1, $claim->get_actions() ) );
-		$this->assertTrue( in_array( $action2, $claim->get_actions() ) );
+		$this->assertTrue( in_array( $action1, $claim->get_actions(), true ) );
+		$this->assertTrue( in_array( $action2, $claim->get_actions(), true ) );
 		$store->release_claim( $claim );
 
-		// Claiming a hook should claim only actions with that hook
+		// Claiming a hook should claim only actions with that hook.
 		$claim = $store->stake_claim( 10, null, array( $hook1 ) );
 		$this->assertEquals( 1, count( $claim->get_actions() ) );
-		$this->assertTrue( in_array( $action1, $claim->get_actions() ) );
+		$this->assertTrue( in_array( $action1, $claim->get_actions(), true ) );
 		$store->release_claim( $claim );
 
-		// Claiming two hooks should claim actions with either of those hooks
+		// Claiming two hooks should claim actions with either of those hooks.
 		$claim = $store->stake_claim( 10, null, array( $hook1, $hook2 ) );
 		$this->assertEquals( 2, count( $claim->get_actions() ) );
-		$this->assertTrue( in_array( $action1, $claim->get_actions() ) );
-		$this->assertTrue( in_array( $action2, $claim->get_actions() ) );
+		$this->assertTrue( in_array( $action1, $claim->get_actions(), true ) );
+		$this->assertTrue( in_array( $action2, $claim->get_actions(), true ) );
 		$store->release_claim( $claim );
 
-		// Claiming two hooks should claim actions with either of those hooks
+		// Claiming two hooks should claim actions with either of those hooks.
 		$claim = $store->stake_claim( 10, null, array( __METHOD__ . '_hook_3' ) );
 		$this->assertEquals( 0, count( $claim->get_actions() ) );
-		$this->assertFalse( in_array( $action1, $claim->get_actions() ) );
-		$this->assertFalse( in_array( $action2, $claim->get_actions() ) );
+		$this->assertFalse( in_array( $action1, $claim->get_actions(), true ) );
+		$this->assertFalse( in_array( $action2, $claim->get_actions(), true ) );
 		$store->release_claim( $claim );
 	}
 
@@ -345,7 +358,7 @@ class ActionScheduler_wpPostStore_Test extends AbstractStoreTest {
 	 * @issue 121
 	 */
 	public function test_claim_actions_by_group() {
-		$group1   = md5( rand() );
+		$group1   = md5( wp_rand() );
 		$store    = new ActionScheduler_wpPostStore();
 		$schedule = new ActionScheduler_SimpleSchedule( as_get_datetime_object( '-1 hour' ) );
 
@@ -355,14 +368,14 @@ class ActionScheduler_wpPostStore_Test extends AbstractStoreTest {
 		// Claiming no group should include all actions.
 		$claim = $store->stake_claim( 10 );
 		$this->assertEquals( 2, count( $claim->get_actions() ) );
-		$this->assertTrue( in_array( $action1, $claim->get_actions() ) );
-		$this->assertTrue( in_array( $action2, $claim->get_actions() ) );
+		$this->assertTrue( in_array( $action1, $claim->get_actions(), true ) );
+		$this->assertTrue( in_array( $action2, $claim->get_actions(), true ) );
 		$store->release_claim( $claim );
 
 		// Claiming a group should claim only actions in that group.
 		$claim = $store->stake_claim( 10, null, array(), $group1 );
 		$this->assertEquals( 1, count( $claim->get_actions() ) );
-		$this->assertTrue( in_array( $action1, $claim->get_actions() ) );
+		$this->assertTrue( in_array( $action1, $claim->get_actions(), true ) );
 		$store->release_claim( $claim );
 	}
 
@@ -370,8 +383,8 @@ class ActionScheduler_wpPostStore_Test extends AbstractStoreTest {
 		$hook1    = __FUNCTION__ . '_hook_1';
 		$hook2    = __FUNCTION__ . '_hook_2';
 		$hook3    = __FUNCTION__ . '_hook_3';
-		$group1   = 'group_' . md5( rand() );
-		$group2   = 'group_' . md5( rand() );
+		$group1   = 'group_' . md5( wp_rand() );
+		$group2   = 'group_' . md5( wp_rand() );
 		$store    = new ActionScheduler_wpPostStore();
 		$schedule = new ActionScheduler_SimpleSchedule( as_get_datetime_object( '-1 hour' ) );
 
@@ -382,28 +395,28 @@ class ActionScheduler_wpPostStore_Test extends AbstractStoreTest {
 		// Claiming no hooks or group should include all actions.
 		$claim = $store->stake_claim( 10 );
 		$this->assertEquals( 3, count( $claim->get_actions() ) );
-		$this->assertTrue( in_array( $action1, $claim->get_actions() ) );
-		$this->assertTrue( in_array( $action2, $claim->get_actions() ) );
+		$this->assertTrue( in_array( $action1, $claim->get_actions(), true ) );
+		$this->assertTrue( in_array( $action2, $claim->get_actions(), true ) );
 		$store->release_claim( $claim );
 
 		// Claiming a group and hook should claim only actions in that group.
 		$claim = $store->stake_claim( 10, null, array( $hook1 ), $group1 );
 		$this->assertEquals( 1, count( $claim->get_actions() ) );
-		$this->assertTrue( in_array( $action1, $claim->get_actions() ) );
+		$this->assertTrue( in_array( $action1, $claim->get_actions(), true ) );
 		$store->release_claim( $claim );
 
 		// Claiming a group and hook should claim only actions with that hook in that group.
 		$claim = $store->stake_claim( 10, null, array( $hook2 ), $group1 );
 		$this->assertEquals( 0, count( $claim->get_actions() ) );
-		$this->assertFalse( in_array( $action1, $claim->get_actions() ) );
-		$this->assertFalse( in_array( $action2, $claim->get_actions() ) );
+		$this->assertFalse( in_array( $action1, $claim->get_actions(), true ) );
+		$this->assertFalse( in_array( $action2, $claim->get_actions(), true ) );
 		$store->release_claim( $claim );
 
 		// Claiming a group and hook should claim only actions with that hook in that group.
 		$claim = $store->stake_claim( 10, null, array( $hook1, $hook2 ), $group2 );
 		$this->assertEquals( 0, count( $claim->get_actions() ) );
-		$this->assertFalse( in_array( $action1, $claim->get_actions() ) );
-		$this->assertFalse( in_array( $action2, $claim->get_actions() ) );
+		$this->assertFalse( in_array( $action1, $claim->get_actions(), true ) );
+		$this->assertFalse( in_array( $action2, $claim->get_actions(), true ) );
 		$store->release_claim( $claim );
 	}
 
@@ -450,7 +463,7 @@ class ActionScheduler_wpPostStore_Test extends AbstractStoreTest {
 		};
 
 		add_filter( 'query', $simulate_unexpected_db_behavior );
-		$claim = $store->stake_claim( 10, null, array(), $group );
+		$claim           = $store->stake_claim( 10, null, array(), $group );
 		$claimed_actions = $claim->get_actions();
 		$this->assertCount( 2, $claimed_actions );
 

@@ -43,4 +43,12 @@
 		<exclude-pattern>lib/*</exclude-pattern>
 		<exclude-pattern>tests/*</exclude-pattern>
 	</rule>
+
+	<rule ref="PEAR.NamingConventions.ValidClassName">
+		<exclude-pattern>tests/phpunit/procedural_api/wc_get_scheduled_actions_Test.php</exclude-pattern>
+	</rule>
+
+	<rule ref="Squiz.Commenting.FunctionComment.Missing">
+		<exclude-pattern>tests/*</exclude-pattern>
+	</rule>
 </ruleset>

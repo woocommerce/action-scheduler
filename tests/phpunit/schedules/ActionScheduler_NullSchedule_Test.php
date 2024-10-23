@@ -15,4 +15,3 @@ class ActionScheduler_NullSchedule_Test extends ActionScheduler_UnitTestCase {
 		$this->assertFalse( $schedule->is_recurring() );
 	}
 }
- 

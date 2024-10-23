@@ -26,11 +26,11 @@ abstract class AbstractStoreTest extends ActionScheduler_UnitTestCase {
 	abstract protected function get_store();
 
 	public function test_get_status() {
-		$time = as_get_datetime_object('-10 minutes');
-		$schedule = new ActionScheduler_IntervalSchedule($time, HOUR_IN_SECONDS);
-		$action = new ActionScheduler_Action( ActionScheduler_Callbacks::HOOK_WITH_CALLBACK, array(), $schedule);
-		$store = $this->get_store();
-		$action_id = $store->save_action($action);
+		$time      = as_get_datetime_object( '-10 minutes' );
+		$schedule  = new ActionScheduler_IntervalSchedule( $time, HOUR_IN_SECONDS );
+		$action    = new ActionScheduler_Action( ActionScheduler_Callbacks::HOOK_WITH_CALLBACK, array(), $schedule );
+		$store     = $this->get_store();
+		$action_id = $store->save_action( $action );
 
 		$this->assertEquals( ActionScheduler_Store::STATUS_PENDING, $store->get_status( $action_id ) );
 
@@ -41,15 +41,16 @@ abstract class AbstractStoreTest extends ActionScheduler_UnitTestCase {
 		$this->assertEquals( ActionScheduler_Store::STATUS_FAILED, $store->get_status( $action_id ) );
 	}
 
-	/* Start tests for \ActionScheduler_Store::query_actions() */
+	// Start tests for \ActionScheduler_Store::query_actions().
 
+	// phpcs:ignore Squiz.Commenting.FunctionComment.WrongStyle
 	public function test_query_actions_query_type_arg_invalid_option() {
 		$this->expectException( InvalidArgumentException::class );
 		$this->get_store()->query_actions( array( 'hook' => ActionScheduler_Callbacks::HOOK_WITH_CALLBACK ), 'invalid' );
 	}
 
 	public function test_query_actions_query_type_arg_valid_options() {
-		$store = $this->get_store();
+		$store    = $this->get_store();
 		$schedule = new ActionScheduler_SimpleSchedule( as_get_datetime_object( 'tomorrow' ) );
 
 		$action_id_1 = $store->save_action( new ActionScheduler_Action( ActionScheduler_Callbacks::HOOK_WITH_CALLBACK, array( 1 ), $schedule ) );
@@ -60,7 +61,7 @@ abstract class AbstractStoreTest extends ActionScheduler_UnitTestCase {
 	}
 
 	public function test_query_actions_by_single_status() {
-		$store = $this->get_store();
+		$store    = $this->get_store();
 		$schedule = new ActionScheduler_SimpleSchedule( as_get_datetime_object( 'tomorrow' ) );
 
 		$this->assertEquals( 0, $store->query_actions( array( 'status' => ActionScheduler_Store::STATUS_PENDING ), 'count' ) );
@@ -75,7 +76,7 @@ abstract class AbstractStoreTest extends ActionScheduler_UnitTestCase {
 	}
 
 	public function test_query_actions_by_array_status() {
-		$store = $this->get_store();
+		$store    = $this->get_store();
 		$schedule = new ActionScheduler_SimpleSchedule( as_get_datetime_object( 'tomorrow' ) );
 
 		$this->assertEquals(
@@ -113,6 +114,7 @@ abstract class AbstractStoreTest extends ActionScheduler_UnitTestCase {
 		);
 	}
 
-	/* End tests for \ActionScheduler_Store::query_actions() */
+	// phpcs:ignore Squiz.PHP.CommentedOutCode.Found
+	// End tests for \ActionScheduler_Store::query_actions().
 
 }

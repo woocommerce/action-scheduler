@@ -11,7 +11,7 @@ class BatchFetcher_Test extends ActionScheduler_UnitTestCase {
 	public function setUp() {
 		parent::setUp();
 		if ( ! taxonomy_exists( PostStore::GROUP_TAXONOMY ) ) {
-			// register the post type and taxonomy necessary for the store to work
+			// register the post type and taxonomy necessary for the store to work.
 			$store = new PostStore();
 			$store->init();
 		}
@@ -27,18 +27,18 @@ class BatchFetcher_Test extends ActionScheduler_UnitTestCase {
 
 	public function test_get_due_before_future() {
 		$store  = new PostStore();
-		$due    = [];
-		$future = [];
+		$due    = array();
+		$future = array();
 
 		for ( $i = 0; $i < 5; $i ++ ) {
 			$time     = as_get_datetime_object( $i + 1 . ' minutes' );
 			$schedule = new ActionScheduler_SimpleSchedule( $time );
-			$action   = new ActionScheduler_Action( ActionScheduler_Callbacks::HOOK_WITH_CALLBACK, [], $schedule );
+			$action   = new ActionScheduler_Action( ActionScheduler_Callbacks::HOOK_WITH_CALLBACK, array(), $schedule );
 			$future[] = $store->save_action( $action );
 
 			$time     = as_get_datetime_object( $i + 1 . ' minutes ago' );
 			$schedule = new ActionScheduler_SimpleSchedule( $time );
-			$action   = new ActionScheduler_Action( ActionScheduler_Callbacks::HOOK_WITH_CALLBACK, [], $schedule );
+			$action   = new ActionScheduler_Action( ActionScheduler_Callbacks::HOOK_WITH_CALLBACK, array(), $schedule );
 			$due[]    = $store->save_action( $action );
 		}
 
@@ -49,21 +49,20 @@ class BatchFetcher_Test extends ActionScheduler_UnitTestCase {
 		$this->assertEqualSets( $due, $actions );
 	}
 
-
 	public function test_get_future_before_complete() {
 		$store    = new PostStore();
-		$future   = [];
-		$complete = [];
+		$future   = array();
+		$complete = array();
 
 		for ( $i = 0; $i < 5; $i ++ ) {
 			$time     = as_get_datetime_object( $i + 1 . ' minutes' );
 			$schedule = new ActionScheduler_SimpleSchedule( $time );
-			$action   = new ActionScheduler_Action( ActionScheduler_Callbacks::HOOK_WITH_CALLBACK, [], $schedule );
+			$action   = new ActionScheduler_Action( ActionScheduler_Callbacks::HOOK_WITH_CALLBACK, array(), $schedule );
 			$future[] = $store->save_action( $action );
 
 			$time       = as_get_datetime_object( $i + 1 . ' minutes ago' );
 			$schedule   = new ActionScheduler_SimpleSchedule( $time );
-			$action     = new ActionScheduler_FinishedAction( ActionScheduler_Callbacks::HOOK_WITH_CALLBACK, [], $schedule );
+			$action     = new ActionScheduler_FinishedAction( ActionScheduler_Callbacks::HOOK_WITH_CALLBACK, array(), $schedule );
 			$complete[] = $store->save_action( $action );
 		}
 

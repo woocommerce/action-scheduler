@@ -45,6 +45,8 @@
 	</rule>
 
 	<rule ref="PEAR.NamingConventions.ValidClassName">
+		<exclude-pattern>classes/data-stores/ActionScheduler_wpPostStore.php</exclude-pattern>
+		<exclude-pattern>classes/ActionScheduler_wcSystemStatus.php</exclude-pattern>
 		<exclude-pattern>tests/phpunit/procedural_api/wc_get_scheduled_actions_Test.php</exclude-pattern>
 	</rule>
 

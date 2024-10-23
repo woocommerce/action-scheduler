@@ -11,7 +11,6 @@ class ActionScheduler_AsyncRequest_QueueRunner extends WP_Async_Request {
 	 * Data store for querying actions
 	 *
 	 * @var ActionScheduler_Store
-	 * @access protected
 	 */
 	protected $store;
 
@@ -19,7 +18,6 @@ class ActionScheduler_AsyncRequest_QueueRunner extends WP_Async_Request {
 	 * Prefix for ajax hooks
 	 *
 	 * @var string
-	 * @access protected
 	 */
 	protected $prefix = 'as';
 
@@ -27,7 +25,6 @@ class ActionScheduler_AsyncRequest_QueueRunner extends WP_Async_Request {
 	 * Action for ajax hooks
 	 *
 	 * @var string
-	 * @access protected
 	 */
 	protected $action = 'async_request_queue_runner';
 

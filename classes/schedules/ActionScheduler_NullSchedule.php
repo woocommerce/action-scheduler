@@ -5,7 +5,11 @@
  */
 class ActionScheduler_NullSchedule extends ActionScheduler_SimpleSchedule {
 
-	/** @var DateTime|null */
+	/**
+	 * DateTime instance.
+	 *
+	 * @var DateTime|null
+	 */
 	protected $scheduled_date;
 
 	/**
@@ -18,7 +22,8 @@ class ActionScheduler_NullSchedule extends ActionScheduler_SimpleSchedule {
 	}
 
 	/**
-	 * This schedule has no scheduled DateTime, so we need to override the parent __sleep()
+	 * This schedule has no scheduled DateTime, so we need to override the parent __sleep().
+	 *
 	 * @return array
 	 */
 	public function __sleep() {

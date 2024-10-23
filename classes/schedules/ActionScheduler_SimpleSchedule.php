@@ -10,9 +10,12 @@ class ActionScheduler_SimpleSchedule extends ActionScheduler_Abstract_Schedule {
 	 *
 	 * @var null|DateTime
 	 */
-	private $timestamp = NULL;
+	private $timestamp = null;
 
 	/**
+	 * Calculate when this schedule should start after a given date & time using
+	 * the number of seconds between recurrences.
+	 *
 	 * @param DateTime $after Timestamp.
 	 *
 	 * @return DateTime|null
@@ -22,6 +25,8 @@ class ActionScheduler_SimpleSchedule extends ActionScheduler_Abstract_Schedule {
 	}
 
 	/**
+	 * Schedule is not recurring.
+	 *
 	 * @return bool
 	 */
 	public function is_recurring() {
@@ -47,9 +52,12 @@ class ActionScheduler_SimpleSchedule extends ActionScheduler_Abstract_Schedule {
 
 		$this->timestamp = $this->scheduled_timestamp;
 
-		return array_merge( $sleep_params, array(
-			'timestamp',
-		) );
+		return array_merge(
+			$sleep_params,
+			array(
+				'timestamp',
+			)
+		);
 	}
 
 	/**

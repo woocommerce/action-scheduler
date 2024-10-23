@@ -1,5 +1,8 @@
 <?php
 
+/**
+ * ActionScheduler_Callbacks class.
+ */
 class ActionScheduler_Callbacks {
 	/**
 	 * Scheduled action hook that can be used when we want to simulate an action
@@ -11,14 +14,14 @@ class ActionScheduler_Callbacks {
 	 * Setup callbacks for different types of hook.
 	 */
 	public static function add_callbacks() {
-		add_action( ActionScheduler_Callbacks::HOOK_WITH_CALLBACK, array( __CLASS__, 'empty_callback') );
+		add_action( self::HOOK_WITH_CALLBACK, array( __CLASS__, 'empty_callback' ) );
 	}
 
 	/**
 	 * Remove callbacks.
 	 */
 	public static function remove_callbacks() {
-		remove_action( ActionScheduler_Callbacks::HOOK_WITH_CALLBACK, array( __CLASS__, 'empty_callback' ) );
+		remove_action( self::HOOK_WITH_CALLBACK, array( __CLASS__, 'empty_callback' ) );
 	}
 
 	/**

@@ -1,7 +1,4 @@
 <?php
-/**
- * ActionScheduler_Mocker
- */
 
 defined( 'ABSPATH' ) || exit;
 
@@ -13,7 +10,7 @@ class ActionScheduler_Mocker {
 	/**
 	 * Do not run queues via async requests.
 	 *
-	 * @param ActionScheduler_Store $store
+	 * @param null|ActionScheduler_Store $store Store instance.
 	 */
 	public static function get_queue_runner( ActionScheduler_Store $store = null ) {
 
@@ -27,7 +24,7 @@ class ActionScheduler_Mocker {
 	/**
 	 * Get an instance of the mock queue runner
 	 *
-	 * @param ActionScheduler_Store $store
+	 * @param ActionScheduler_Store $store Store instance.
 	 */
 	protected static function get_async_request_queue_runner( ActionScheduler_Store $store ) {
 		return new ActionScheduler_Mock_AsyncRequest_QueueRunner( $store );

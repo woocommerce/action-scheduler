@@ -13,17 +13,23 @@
 abstract class ActionScheduler_Abstract_Schema {
 
 	/**
-	 * @var int Increment this value in derived class to trigger a schema update.
+	 * Increment this value in derived class to trigger a schema update.
+	 *
+	 * @var int
 	 */
 	protected $schema_version = 1;
 
 	/**
-	 * @var string Schema version stored in database.
+	 * Schema version stored in database.
+	 *
+	 * @var string
 	 */
 	protected $db_version;
 
 	/**
-	 * @var array Names of tables that will be registered by this class.
+	 * Names of tables that will be registered by this class.
+	 *
+	 * @var array
 	 */
 	protected $tables = array();
 
@@ -137,7 +143,7 @@ abstract class ActionScheduler_Abstract_Schema {
 			$updated = dbDelta( $definition );
 			foreach ( $updated as $updated_table => $update_description ) {
 				if ( strpos( $update_description, 'Created table' ) === 0 ) {
-					do_action( 'action_scheduler/created_table', $updated_table, $table );
+					do_action( 'action_scheduler/created_table', $updated_table, $table ); // phpcs:ignore WordPress.NamingConventions.ValidHookName.UseUnderscores
 				}
 			}
 		}

@@ -6,16 +6,22 @@
 class ActionScheduler_LogEntry {
 
 	/**
+	 * Action's ID for log entry.
+	 *
 	 * @var int $action_id
 	 */
-	protected $action_id =  '';
+	protected $action_id = '';
 
 	/**
+	 * Log entry's message.
+	 *
 	 * @var string $message
 	 */
-	protected $message =  '';
+	protected $message = '';
 
 	/**
+	 * Log entry's date.
+	 *
 	 * @var Datetime $date
 	 */
 	protected $date;
@@ -43,7 +49,7 @@ class ActionScheduler_LogEntry {
 
 		$this->action_id = $action_id;
 		$this->message   = $message;
-		$this->date      = $date ? $date : new Datetime;
+		$this->date      = $date ? $date : new Datetime();
 	}
 
 	/**

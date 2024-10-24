@@ -172,6 +172,8 @@ class ActionScheduler_WPCLI_Scheduler_command extends WP_CLI_Command {
 	 * Convert an exception into a WP CLI error.
 	 *
 	 * @param Exception $e The error object.
+	 *
+	 * @throws \WP_ClI\ExitException Under some conditions WP CLI may throw an exception.
 	 */
 	protected function print_error( Exception $e ) {
 		WP_CLI::error(

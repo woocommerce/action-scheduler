@@ -5,6 +5,7 @@ namespace Action_Scheduler\Tests\DataStores;
 use ActionScheduler_Action;
 use ActionScheduler_Callbacks;
 use ActionScheduler_IntervalSchedule;
+use ActionScheduler_Mocker;
 use ActionScheduler_SimpleSchedule;
 use ActionScheduler_Store;
 use ActionScheduler_UnitTestCase;
@@ -117,4 +118,46 @@ abstract class AbstractStoreTest extends ActionScheduler_UnitTestCase {
 	// phpcs:ignore Squiz.PHP.CommentedOutCode.Found
 	// End tests for \ActionScheduler_Store::query_actions().
 
+	/**
+	 * The `has_pending_actions_due` method should return a boolean value depending on whether there are
+	 * pending actions.
+	 *
+	 * @return void
+	 */
+	public function test_has_pending_actions_due() {
+		$store  = $this->get_store();
+		$runner = ActionScheduler_Mocker::get_queue_runner( $store );
+
+		for ( $i = - 3; $i <= 3; $i ++ ) {
+			// Some past actions, some future actions.
+			$time     = as_get_datetime_object( $i . ' hours' );
+			$schedule = new ActionScheduler_SimpleSchedule( $time );
+			$action   = new ActionScheduler_Action( ActionScheduler_Callbacks::HOOK_WITH_CALLBACK, [ $i ], $schedule, 'my_group' );
+
+			$store->save_action( $action );
+		}
+		$this->assertTrue( $store->has_pending_actions_due() );
+
+		$runner->run();
+		$this->assertFalse( $store->has_pending_actions_due() );
+	}
+
+	/**
+	 * The `has_pending_actions_due` method should return false when all pending actions are in the future.
+	 *
+	 * @return void
+	 */
+	public function test_has_pending_actions_due_only_future_actions() {
+		$store = $this->get_store();
+
+		for ( $i = 1; $i <= 3; $i ++ ) {
+			// Only future actions.
+			$time     = as_get_datetime_object( $i . ' hours' );
+			$schedule = new ActionScheduler_SimpleSchedule( $time );
+			$action   = new ActionScheduler_Action( ActionScheduler_Callbacks::HOOK_WITH_CALLBACK, [ $i ], $schedule, 'my_group' );
+
+			$store->save_action( $action );
+		}
+		$this->assertFalse( $store->has_pending_actions_due() );
+	}
 }

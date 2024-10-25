@@ -2,12 +2,17 @@
 
 /**
  * Class ActionScheduler_Logger
+ *
  * @codeCoverageIgnore
  */
 abstract class ActionScheduler_Logger {
 
-	/** @var null|self */
-	private static $logger = NULL;
+	/**
+	 * Instance.
+	 *
+	 * @var null|self
+	 */
+	private static $logger = null;
 
 	/**
 	 * Get instance.
@@ -15,8 +20,8 @@ abstract class ActionScheduler_Logger {
 	 * @return ActionScheduler_Logger
 	 */
 	public static function instance() {
-		if ( empty(self::$logger) ) {
-			$class = apply_filters('action_scheduler_logger_class', 'ActionScheduler_wpCommentLogger');
+		if ( empty( self::$logger ) ) {
+			$class        = apply_filters( 'action_scheduler_logger_class', 'ActionScheduler_wpCommentLogger' );
 			self::$logger = new $class();
 		}
 		return self::$logger;
@@ -31,7 +36,7 @@ abstract class ActionScheduler_Logger {
 	 *
 	 * @return string The log entry ID
 	 */
-	abstract public function log( $action_id, $message, DateTime $date = NULL );
+	abstract public function log( $action_id, $message, DateTime $date = null );
 
 	/**
 	 * Get action's log entry.
@@ -125,9 +130,9 @@ abstract class ActionScheduler_Logger {
 	 *
 	 * @param int                         $action_id Action ID.
 	 * @param null|ActionScheduler_Action $action Action.
-	 * @param string                      $context Action exeuction context.
+	 * @param string                      $context Action execution context.
 	 */
-	public function log_completed_action( $action_id, $action = NULL, $context = '' ) {
+	public function log_completed_action( $action_id, $action = null, $context = '' ) {
 		if ( ! empty( $context ) ) {
 			/* translators: %s: context */
 			$message = sprintf( __( 'action complete via %s', 'action-scheduler' ), $context );
@@ -210,7 +215,7 @@ abstract class ActionScheduler_Logger {
 	 * @param string         $action_id Action ID.
 	 * @param null|Exception $exception The exception which occurred when fetching the action. NULL by default for backward compatibility.
 	 */
-	public function log_failed_fetch_action( $action_id, Exception $exception = NULL ) {
+	public function log_failed_fetch_action( $action_id, Exception $exception = null ) {
 
 		if ( ! is_null( $exception ) ) {
 			/* translators: %s: exception message */

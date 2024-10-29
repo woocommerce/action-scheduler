@@ -10,7 +10,7 @@ class ActionScheduler_TimezoneHelper_Test extends ActionScheduler_UnitTestCase {
 	 *
 	 * @dataProvider local_timezone_provider
 	 *
-	 * @param $timezone_string
+	 * @param string $timezone_string Timezone.
 	 */
 	public function test_local_timezone_strings( $timezone_string ) {
 		$timezone_filter = function ( $tz ) use ( $timezone_string ) {
@@ -27,6 +27,11 @@ class ActionScheduler_TimezoneHelper_Test extends ActionScheduler_UnitTestCase {
 		remove_filter( 'option_timezone_string', $timezone_filter );
 	}
 
+	/**
+	 * Get timezone strings.
+	 *
+	 * @return array[]
+	 */
 	public function local_timezone_provider() {
 		return array(
 			array( 'America/New_York' ),
@@ -40,7 +45,7 @@ class ActionScheduler_TimezoneHelper_Test extends ActionScheduler_UnitTestCase {
 	 *
 	 * @dataProvider local_timezone_offsets_provider
 	 *
-	 * @param $gmt_offset
+	 * @param string $gmt_offset GMT offset.
 	 */
 	public function test_local_timezone_offsets( $gmt_offset ) {
 		$gmt_filter = function ( $gmt ) use ( $gmt_offset ) {
@@ -59,6 +64,11 @@ class ActionScheduler_TimezoneHelper_Test extends ActionScheduler_UnitTestCase {
 		$this->assertEquals( $offset_in_seconds, $date->getOffsetTimestamp() - $date->getTimestamp() );
 	}
 
+	/**
+	 * Get timezone offsets.
+	 *
+	 * @return array[]
+	 */
 	public function local_timezone_offsets_provider() {
 		return array(
 			array( '-11' ),

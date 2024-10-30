@@ -49,6 +49,8 @@
 	</rule>
 
 	<rule ref="PEAR.NamingConventions.ValidClassName">
+		<exclude-pattern>tests/phpunit/logging/ActionScheduler_wpCommentLogger_Test.php</exclude-pattern>
+		<exclude-pattern>classes/data-stores/ActionScheduler_wpPostStore_PostStatusRegistrar.php</exclude-pattern>
 		<exclude-pattern>classes/data-stores/ActionScheduler_wpPostStore_TaxonomyRegistrar.php</exclude-pattern>
 		<exclude-pattern>tests/phpunit/jobstore/ActionScheduler_wpPostStore_Test.php</exclude-pattern>
 		<exclude-pattern>classes/data-stores/ActionScheduler_wpCommentLogger.php</exclude-pattern>

@@ -66,7 +66,13 @@ class ActionScheduler_WPCommentCleaner {
 	 * Attached to the migration complete hook 'action_scheduler/migration_complete'.
 	 */
 	public static function maybe_schedule_cleanup() {
-		if ( (bool) get_comments( array( 'type' => ActionScheduler_wpCommentLogger::TYPE, 'number' => 1, 'fields' => 'ids' ) ) ) {
+		$args = array(
+			'type'   => ActionScheduler_wpCommentLogger::TYPE,
+			'number' => 1,
+			'fields' => 'ids',
+		);
+
+		if ( (bool) get_comments( $args ) ) {
 			update_option( self::$has_logs_option_key, 'yes' );
 
 			if ( ! as_next_scheduled_action( self::$cleanup_hook ) ) {
@@ -80,7 +86,15 @@ class ActionScheduler_WPCommentCleaner {
 	 */
 	public static function delete_all_action_comments() {
 		global $wpdb;
-		$wpdb->delete( $wpdb->comments, array( 'comment_type' => ActionScheduler_wpCommentLogger::TYPE, 'comment_agent' => ActionScheduler_wpCommentLogger::AGENT ) );
+
+		$wpdb->delete(
+			$wpdb->comments,
+			array(
+				'comment_type'  => ActionScheduler_wpCommentLogger::TYPE,
+				'comment_agent' => ActionScheduler_wpCommentLogger::AGENT,
+			)
+		);
+
 		delete_option( self::$has_logs_option_key );
 	}
 

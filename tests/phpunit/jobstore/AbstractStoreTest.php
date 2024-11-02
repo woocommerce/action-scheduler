@@ -132,7 +132,7 @@ abstract class AbstractStoreTest extends ActionScheduler_UnitTestCase {
 			// Some past actions, some future actions.
 			$time     = as_get_datetime_object( $i . ' hours' );
 			$schedule = new ActionScheduler_SimpleSchedule( $time );
-			$action   = new ActionScheduler_Action( ActionScheduler_Callbacks::HOOK_WITH_CALLBACK, [ $i ], $schedule, 'my_group' );
+			$action   = new ActionScheduler_Action( ActionScheduler_Callbacks::HOOK_WITH_CALLBACK, array( $i ), $schedule, 'my_group' );
 
 			$store->save_action( $action );
 		}
@@ -154,7 +154,7 @@ abstract class AbstractStoreTest extends ActionScheduler_UnitTestCase {
 			// Only future actions.
 			$time     = as_get_datetime_object( $i . ' hours' );
 			$schedule = new ActionScheduler_SimpleSchedule( $time );
-			$action   = new ActionScheduler_Action( ActionScheduler_Callbacks::HOOK_WITH_CALLBACK, [ $i ], $schedule, 'my_group' );
+			$action   = new ActionScheduler_Action( ActionScheduler_Callbacks::HOOK_WITH_CALLBACK, array( $i ), $schedule, 'my_group' );
 
 			$store->save_action( $action );
 		}

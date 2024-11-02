@@ -17,7 +17,7 @@ class ActionScheduler_NullSchedule extends ActionScheduler_SimpleSchedule {
 	 *
 	 * @param null|DateTime $date The date & time to run the action.
 	 */
-	public function __construct( DateTime $date = null ) {
+	public function __construct( ?DateTime $date = null ) {
 		$this->scheduled_date = null;
 	}
 

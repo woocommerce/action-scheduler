@@ -39,11 +39,11 @@ abstract class ActionScheduler_Abstract_QueueRunner extends ActionScheduler_Abst
 	/**
 	 * ActionScheduler_Abstract_QueueRunner constructor.
 	 *
-	 * @param ActionScheduler_Store             $store Store object.
-	 * @param ActionScheduler_FatalErrorMonitor $monitor Monitor object.
-	 * @param ActionScheduler_QueueCleaner      $cleaner Cleaner object.
+	 * @param ActionScheduler_Store|null             $store Store object.
+	 * @param ActionScheduler_FatalErrorMonitor|null $monitor Monitor object.
+	 * @param ActionScheduler_QueueCleaner|null      $cleaner Cleaner object.
 	 */
-	public function __construct( ActionScheduler_Store $store = null, ActionScheduler_FatalErrorMonitor $monitor = null, ActionScheduler_QueueCleaner $cleaner = null ) {
+	public function __construct( ?ActionScheduler_Store $store = null, ?ActionScheduler_FatalErrorMonitor $monitor = null, ?ActionScheduler_QueueCleaner $cleaner = null ) {
 
 		$this->created_time = microtime( true );
 

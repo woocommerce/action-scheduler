@@ -1,5 +1,6 @@
 <?php
 // phpcs:disable WordPress.DateTime.RestrictedFunctions.timezone_change_date_default_timezone_set
+// phpcs:disable Generic.Classes.DuplicateClassName.Found
 
 /**
  * Class ActionScheduler_UnitTestCase

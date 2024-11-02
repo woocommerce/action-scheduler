@@ -41,7 +41,7 @@ abstract class ActionScheduler_Abstract_RecurringSchedule extends ActionSchedule
 	 * @param mixed         $recurrence The data used to determine the schedule's recurrence.
 	 * @param DateTime|null $first (Optional) The date & time the first instance of this interval schedule ran. Default null, meaning this is the first instance.
 	 */
-	public function __construct( DateTime $date, $recurrence, DateTime $first = null ) {
+	public function __construct( DateTime $date, $recurrence, ?DateTime $first = null ) {
 		parent::__construct( $date );
 		$this->first_date = empty( $first ) ? $date : $first;
 		$this->recurrence = $recurrence;

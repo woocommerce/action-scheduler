@@ -10,13 +10,13 @@ class ActionScheduler_wpCommentLogger extends ActionScheduler_Logger {
 	/**
 	 * Create log entry.
 	 *
-	 * @param string   $action_id Action ID.
-	 * @param string   $message   Action log's message.
-	 * @param DateTime $date      Action log's timestamp.
+	 * @param string        $action_id Action ID.
+	 * @param string        $message   Action log's message.
+	 * @param DateTime|null $date      Action log's timestamp.
 	 *
 	 * @return string The log entry ID
 	 */
-	public function log( $action_id, $message, DateTime $date = null ) {
+	public function log( $action_id, $message, ?DateTime $date = null ) {
 		if ( empty( $date ) ) {
 			$date = as_get_datetime_object();
 		} else {

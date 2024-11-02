@@ -5,7 +5,7 @@ Stable tag: 3.8.2
 License: GPLv3
 Requires at least: 6.4
 Tested up to: 6.7
-Requires PHP: 7.0
+Requires PHP: 7.1
 
 Action Scheduler - Job Queue for WordPress
 

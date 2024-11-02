@@ -53,7 +53,7 @@ class ActionScheduler_Action {
 	 * @param null|ActionScheduler_Schedule $schedule Action's schedule.
 	 * @param string                        $group Action's group.
 	 */
-	public function __construct( $hook, array $args = array(), ActionScheduler_Schedule $schedule = null, $group = '' ) {
+	public function __construct( $hook, array $args = array(), ?ActionScheduler_Schedule $schedule = null, $group = '' ) {
 		$schedule = empty( $schedule ) ? new ActionScheduler_NullSchedule() : $schedule;
 		$this->set_hook( $hook );
 		$this->set_schedule( $schedule );

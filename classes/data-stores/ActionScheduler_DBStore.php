@@ -59,12 +59,12 @@ class ActionScheduler_DBStore extends ActionScheduler_Store {
 	 * Save an action, checks if this is a unique action before actually saving.
 	 *
 	 * @param ActionScheduler_Action $action         Action object.
-	 * @param \DateTime              $scheduled_date Optional schedule date. Default null.
+	 * @param DateTime|null          $scheduled_date Optional schedule date. Default null.
 	 *
 	 * @return int                  Action ID.
 	 * @throws RuntimeException     Throws exception when saving the action fails.
 	 */
-	public function save_unique_action( ActionScheduler_Action $action, \DateTime $scheduled_date = null ) {
+	public function save_unique_action( ActionScheduler_Action $action, ?DateTime $scheduled_date = null ) {
 		return $this->save_action_to_db( $action, $scheduled_date, true );
 	}
 
@@ -72,12 +72,12 @@ class ActionScheduler_DBStore extends ActionScheduler_Store {
 	 * Save an action. Can save duplicate action as well, prefer using `save_unique_action` instead.
 	 *
 	 * @param ActionScheduler_Action $action Action object.
-	 * @param \DateTime              $scheduled_date Optional schedule date. Default null.
+	 * @param DateTime|null          $scheduled_date Optional schedule date. Default null.
 	 *
 	 * @return int Action ID.
 	 * @throws RuntimeException     Throws exception when saving the action fails.
 	 */
-	public function save_action( ActionScheduler_Action $action, \DateTime $scheduled_date = null ) {
+	public function save_action( ActionScheduler_Action $action, ?DateTime $scheduled_date = null ) {
 		return $this->save_action_to_db( $action, $scheduled_date, false );
 	}
 
@@ -91,7 +91,7 @@ class ActionScheduler_DBStore extends ActionScheduler_Store {
 	 * @return int Action ID.
 	 * @throws \RuntimeException     Throws exception when saving the action fails.
 	 */
-	private function save_action_to_db( ActionScheduler_Action $action, DateTime $date = null, $unique = false ) {
+	private function save_action_to_db( ActionScheduler_Action $action, ?DateTime $date = null, $unique = false ) {
 		global $wpdb;
 
 		try {
@@ -847,14 +847,14 @@ AND `group_id` = %d
 	/**
 	 * Stake a claim on actions.
 	 *
-	 * @param int       $max_actions Maximum number of action to include in claim.
-	 * @param \DateTime $before_date Jobs must be schedule before this date. Defaults to now.
-	 * @param array     $hooks Hooks to filter for.
-	 * @param string    $group Group to filter for.
+	 * @param int           $max_actions Maximum number of action to include in claim.
+	 * @param DateTime|null $before_date Jobs must be schedule before this date. Defaults to now.
+	 * @param array         $hooks Hooks to filter for.
+	 * @param string        $group Group to filter for.
 	 *
 	 * @return ActionScheduler_ActionClaim
 	 */
-	public function stake_claim( $max_actions = 10, \DateTime $before_date = null, $hooks = array(), $group = '' ) {
+	public function stake_claim( $max_actions = 10, ?DateTime $before_date = null, $hooks = array(), $group = '' ) {
 		$claim_id = $this->generate_claim_id();
 
 		$this->claim_before_date = $before_date;
@@ -914,17 +914,17 @@ AND `group_id` = %d
 	/**
 	 * Mark actions claimed.
 	 *
-	 * @param string    $claim_id Claim Id.
-	 * @param int       $limit Number of action to include in claim.
-	 * @param \DateTime $before_date Should use UTC timezone.
-	 * @param array     $hooks Hooks to filter for.
-	 * @param string    $group Group to filter for.
+	 * @param string        $claim_id Claim Id.
+	 * @param int           $limit Number of action to include in claim.
+	 * @param DateTime|null $before_date Should use UTC timezone.
+	 * @param array         $hooks Hooks to filter for.
+	 * @param string        $group Group to filter for.
 	 *
 	 * @return int The number of actions that were claimed.
 	 * @throws \InvalidArgumentException Throws InvalidArgumentException if group doesn't exist.
 	 * @throws \RuntimeException Throws RuntimeException if unable to claim action.
 	 */
-	protected function claim_actions( $claim_id, $limit, \DateTime $before_date = null, $hooks = array(), $group = '' ) {
+	protected function claim_actions( $claim_id, $limit, ?DateTime $before_date = null, $hooks = array(), $group = '' ) {
 		/**
 		 * Global.
 		 *

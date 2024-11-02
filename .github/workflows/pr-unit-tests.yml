@@ -10,16 +10,16 @@ jobs:
       fail-fast: false
       matrix:
         # We test against the earliest and latest PHP versions for each major supported version.
-        php: [ '7.0', '7.4', '8.0', '8.3' ]
+        php: [ '7.1', '7.4', '8.0', '8.3' ]
         wp: [ '6.4', '6.5', '6.6', 'latest', 'nightly' ]
         multisite: [ '0', '1' ]
         exclude:
           # WordPress 6.6+ requires PHP 7.2+
-          - php: 7.0
+          - php: 7.1
             wp: 6.6
-          - php: 7.0
+          - php: 7.1
             wp: latest
-          - php: 7.0
+          - php: 7.1
             wp: nightly
     services:
       database:
@@ -62,12 +62,8 @@ jobs:
 
       - name: Setup PHPUnit 
         run: |
-          # PHPUnit 5.7 when using PHP 5.6 - 7.0.
-          if [ "$(php -r "echo version_compare( PHP_VERSION, '7.1', '<' );")" ]; then
-            curl -L https://phar.phpunit.de/phpunit-5.7.phar -o /tmp/phpunit
-            OVERWRITE=1
           # PHPUnit 7.5 when using PHP 7.1 - 7.4.
-          elif [ "$(php -r "echo version_compare( PHP_VERSION, '8.0', '<' );")" ]; then
+          if [ "$(php -r "echo version_compare( PHP_VERSION, '8.0', '<' );")" ]; then
             curl -L https://phar.phpunit.de/phpunit-7.5.phar -o /tmp/phpunit
             OVERWRITE=1
           # PHPUnit 7.5 (Custom Fork) when using PHP 8.0+.

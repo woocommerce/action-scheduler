@@ -44,19 +44,16 @@
 		<exclude-pattern>tests/*</exclude-pattern>
 	</rule>
 
-	<rule ref="PEAR.NamingConventions.ValidClassName.Invalid">
-		<exclude-pattern>classes/WP_CLI/ActionScheduler_WPCLI_Scheduler_command.php</exclude-pattern>
-	</rule>
-
 	<rule ref="PEAR.NamingConventions.ValidClassName">
-		<exclude-pattern>tests/phpunit/logging/ActionScheduler_wpCommentLogger_Test.php</exclude-pattern>
-		<exclude-pattern>classes/data-stores/ActionScheduler_wpPostStore_PostStatusRegistrar.php</exclude-pattern>
-		<exclude-pattern>classes/data-stores/ActionScheduler_wpPostStore_TaxonomyRegistrar.php</exclude-pattern>
-		<exclude-pattern>tests/phpunit/jobstore/ActionScheduler_wpPostStore_Test.php</exclude-pattern>
-		<exclude-pattern>classes/data-stores/ActionScheduler_wpCommentLogger.php</exclude-pattern>
-		<exclude-pattern>classes/data-stores/ActionScheduler_wpPostStore_PostTypeRegistrar.php</exclude-pattern>
-		<exclude-pattern>classes/data-stores/ActionScheduler_wpPostStore.php</exclude-pattern>
 		<exclude-pattern>classes/ActionScheduler_wcSystemStatus.php</exclude-pattern>
+		<exclude-pattern>classes/data-stores/ActionScheduler_wpCommentLogger.php</exclude-pattern>
+		<exclude-pattern>classes/data-stores/ActionScheduler_wpPostStore.php</exclude-pattern>
+		<exclude-pattern>classes/data-stores/ActionScheduler_wpPostStore_PostStatusRegistrar.php</exclude-pattern>
+		<exclude-pattern>classes/data-stores/ActionScheduler_wpPostStore_PostTypeRegistrar.php</exclude-pattern>
+		<exclude-pattern>classes/data-stores/ActionScheduler_wpPostStore_TaxonomyRegistrar.php</exclude-pattern>
+		<exclude-pattern>classes/WP_CLI/ActionScheduler_WPCLI_Scheduler_command.php</exclude-pattern>
+		<exclude-pattern>tests/phpunit/jobstore/ActionScheduler_wpPostStore_Test.php</exclude-pattern>
+		<exclude-pattern>tests/phpunit/logging/ActionScheduler_wpCommentLogger_Test.php</exclude-pattern>
 		<exclude-pattern>tests/phpunit/procedural_api/wc_get_scheduled_actions_Test.php</exclude-pattern>
 	</rule>
 

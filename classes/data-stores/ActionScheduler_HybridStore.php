@@ -54,9 +54,9 @@ class ActionScheduler_HybridStore extends Store {
 	/**
 	 * ActionScheduler_HybridStore constructor.
 	 *
-	 * @param Config $config Migration config object.
+	 * @param Config|null $config Migration config object.
 	 */
-	public function __construct( Config $config = null ) {
+	public function __construct( ?Config $config = null ) {
 		$this->demarkation_id = (int) get_option( self::DEMARKATION_OPTION, 0 );
 		if ( empty( $config ) ) {
 			$config = Controller::instance()->get_migration_config_object();
@@ -240,7 +240,7 @@ class ActionScheduler_HybridStore extends Store {
 	 *
 	 * @return ActionScheduler_ActionClaim
 	 */
-	public function stake_claim( $max_actions = 10, DateTime $before_date = null, $hooks = array(), $group = '' ) {
+	public function stake_claim( $max_actions = 10, ?DateTime $before_date = null, $hooks = array(), $group = '' ) {
 		$claim = $this->secondary_store->stake_claim( $max_actions, $before_date, $hooks, $group );
 
 		$claimed_actions = $claim->get_actions();
@@ -266,11 +266,11 @@ class ActionScheduler_HybridStore extends Store {
 	 * Save an action to the primary store.
 	 *
 	 * @param ActionScheduler_Action $action Action object to be saved.
-	 * @param DateTime               $date Optional. Schedule date. Default null.
+	 * @param DateTime|null          $date Optional. Schedule date. Default null.
 	 *
 	 * @return int The action ID
 	 */
-	public function save_action( ActionScheduler_Action $action, DateTime $date = null ) {
+	public function save_action( ActionScheduler_Action $action, ?DateTime $date = null ) {
 		return $this->primary_store->save_action( $action, $date );
 	}
 

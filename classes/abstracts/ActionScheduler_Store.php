@@ -37,7 +37,7 @@ abstract class ActionScheduler_Store extends ActionScheduler_Store_Deprecated {
 	 *
 	 * @return int The action ID
 	 */
-	abstract public function save_action( ActionScheduler_Action $action, DateTime $scheduled_date = null );
+	abstract public function save_action( ActionScheduler_Action $action, ?DateTime $scheduled_date = null );
 
 	/**
 	 * Get action.
@@ -202,14 +202,14 @@ abstract class ActionScheduler_Store extends ActionScheduler_Store_Deprecated {
 	/**
 	 * Make a claim.
 	 *
-	 * @param int      $max_actions Maximum number of actions to claim.
-	 * @param DateTime $before_date Claim only actions schedule before the given date. Defaults to now.
-	 * @param array    $hooks       Claim only actions with a hook or hooks.
-	 * @param string   $group       Claim only actions in the given group.
+	 * @param int           $max_actions Maximum number of actions to claim.
+	 * @param DateTime|null $before_date Claim only actions schedule before the given date. Defaults to now.
+	 * @param array         $hooks       Claim only actions with a hook or hooks.
+	 * @param string        $group       Claim only actions in the given group.
 	 *
 	 * @return ActionScheduler_ActionClaim
 	 */
-	abstract public function stake_claim( $max_actions = 10, DateTime $before_date = null, $hooks = array(), $group = '' );
+	abstract public function stake_claim( $max_actions = 10, ?DateTime $before_date = null, $hooks = array(), $group = '' );
 
 	/**
 	 * Get claim count.
@@ -298,7 +298,7 @@ abstract class ActionScheduler_Store extends ActionScheduler_Store_Deprecated {
 	 * @param null|DateTime          $scheduled_date Action's schedule date (optional).
 	 * @return string
 	 */
-	protected function get_scheduled_date_string( ActionScheduler_Action $action, DateTime $scheduled_date = null ) {
+	protected function get_scheduled_date_string( ActionScheduler_Action $action, ?DateTime $scheduled_date = null ) {
 		$next = is_null( $scheduled_date ) ? $action->get_schedule()->get_date() : $scheduled_date;
 
 		if ( ! $next ) {
@@ -313,11 +313,11 @@ abstract class ActionScheduler_Store extends ActionScheduler_Store_Deprecated {
 	/**
 	 * Get the time MySQL formatted date/time string for an action's (next) scheduled date.
 	 *
-	 * @param ActionScheduler_Action $action Action.
-	 * @param null|DateTime          $scheduled_date Action's scheduled date (optional).
+	 * @param ActionScheduler_Action|null $action Action.
+	 * @param null|DateTime               $scheduled_date Action's scheduled date (optional).
 	 * @return string
 	 */
-	protected function get_scheduled_date_string_local( ActionScheduler_Action $action, DateTime $scheduled_date = null ) {
+	protected function get_scheduled_date_string_local( ActionScheduler_Action $action, ?DateTime $scheduled_date = null ) {
 		$next = is_null( $scheduled_date ) ? $action->get_schedule()->get_date() : $scheduled_date;
 
 		if ( ! $next ) {

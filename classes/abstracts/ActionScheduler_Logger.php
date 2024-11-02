@@ -30,13 +30,13 @@ abstract class ActionScheduler_Logger {
 	/**
 	 * Create log entry.
 	 *
-	 * @param string   $action_id Action ID.
-	 * @param string   $message   Log message.
-	 * @param DateTime $date      Log date.
+	 * @param string        $action_id Action ID.
+	 * @param string        $message   Log message.
+	 * @param DateTime|null $date      Log date.
 	 *
 	 * @return string The log entry ID
 	 */
-	abstract public function log( $action_id, $message, DateTime $date = null );
+	abstract public function log( $action_id, $message, ?DateTime $date = null );
 
 	/**
 	 * Get action's log entry.
@@ -215,7 +215,7 @@ abstract class ActionScheduler_Logger {
 	 * @param string         $action_id Action ID.
 	 * @param null|Exception $exception The exception which occurred when fetching the action. NULL by default for backward compatibility.
 	 */
-	public function log_failed_fetch_action( $action_id, Exception $exception = null ) {
+	public function log_failed_fetch_action( $action_id, ?Exception $exception = null ) {
 
 		if ( ! is_null( $exception ) ) {
 			/* translators: %s: exception message */

@@ -86,4 +86,8 @@ class ActionScheduler_Versions {
 		$self = self::instance();
 		call_user_func( $self->latest_version_callback() );
 	}
+
+	public function active_source() {
+		return trailingslashit( dirname( __DIR__ ) );
+	}
 }

@@ -12,7 +12,7 @@ class ActionScheduler_Mocker {
 	 *
 	 * @param null|ActionScheduler_Store $store Store instance.
 	 */
-	public static function get_queue_runner( ActionScheduler_Store $store = null ) {
+	public static function get_queue_runner( ?ActionScheduler_Store $store = null ) {
 
 		if ( ! $store ) {
 			$store = ActionScheduler_Store::instance();

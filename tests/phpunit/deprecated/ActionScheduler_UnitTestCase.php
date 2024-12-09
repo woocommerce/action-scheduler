@@ -45,7 +45,7 @@ class ActionScheduler_UnitTestCase extends WP_UnitTestCase {
 	 *
 	 * @param null|PHPUnit_Framework_TestResult $result Test result.
 	 */
-	public function run( PHPUnit_Framework_TestResult $result = null ) {
+	public function run( ?PHPUnit_Framework_TestResult $result = null ) {
 
 		if ( is_null( $result ) ) {
 			$result = $this->createResult();

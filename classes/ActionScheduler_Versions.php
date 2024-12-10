@@ -19,6 +19,13 @@ class ActionScheduler_Versions {
 	private $versions = array();
 
 	/**
+	 * Registered sources.
+	 *
+	 * @var array<string, string>
+	 */
+	private $sources = array();
+
+	/**
 	 * Register version's callback.
 	 *
 	 * @param string   $version_string          Action Scheduler version.
@@ -28,7 +35,13 @@ class ActionScheduler_Versions {
 		if ( isset( $this->versions[ $version_string ] ) ) {
 			return false;
 		}
+
+		// phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_debug_backtrace
+		$backtrace = debug_backtrace( DEBUG_BACKTRACE_IGNORE_ARGS );
+		$source    = $backtrace[0]['file'];
+
 		$this->versions[ $version_string ] = $initialization_callback;
+		$this->sources[ $source ]          = $version_string;
 		return true;
 	}
 
@@ -37,6 +50,15 @@ class ActionScheduler_Versions {
 	 */
 	public function get_versions() {
 		return $this->versions;
+	}
+
+	/**
+	 * Get registered sources.
+	 *
+	 * @return array<string, string>
+	 */
+	public function get_sources() {
+		return $this->sources;
 	}
 
 	/**
@@ -87,6 +109,11 @@ class ActionScheduler_Versions {
 		call_user_func( $self->latest_version_callback() );
 	}
 
+	/**
+	 * Get directory of active source.
+	 *
+	 * @return string
+	 */
 	public function active_source() {
 		return trailingslashit( dirname( __DIR__ ) );
 	}

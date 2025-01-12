@@ -16,7 +16,7 @@
  *
  * @return int The action ID. Zero if there was an error scheduling the action.
  */
-function as_enqueue_async_action( $hook, $args = array(), $group = '', $unique = false, $priority = 10 ) {
+function as_enqueue_async_acspetion( $hook, $args = array(), $group = '', $unique = false, $priority = 10 ) {
 	if ( ! ActionScheduler::is_initialized( __FUNCTION__ ) ) {
 		return 0;
 	}
@@ -492,4 +492,92 @@ function as_get_datetime_object( $date_string = null, $timezone = 'UTC' ) {
 		$date = new ActionScheduler_DateTime( null === $date_string ? 'now' : $date_string, new DateTimeZone( $timezone ) );
 	}
 	return $date;
+}
+
+/**
+ * Run all queued actions for a given hook, arguments, and group.
+ *
+ * @param string $hook The hook that the actions are associated with.
+ * @param array  $args Optional. An array of arguments to filter the actions. Default is an empty array.
+ * @param string $group Optional. The group the actions are assigned to. Default is an empty string.
+ */
+function as_run_queued_actions($hook, $args = array(), $group = '') {
+    if (!ActionScheduler::is_initialized(__FUNCTION__)) {
+        return;
+    }
+
+    $params = array(
+        'hook'    => $hook,
+        'status'  => ActionScheduler_Store::STATUS_PENDING,
+        'orderby' => 'date',
+        'order'   => 'ASC',
+        'group'   => $group,
+    );
+
+    if (is_array($args)) {
+        $params['args'] = $args;
+    }
+
+    $actions = ActionScheduler::store()->query_actions($params);
+
+    $queue_runner = ActionScheduler::runner();
+
+    foreach ($actions as $action_id) {
+        try {
+            $queue_runner->process_action($action_id);
+        } catch (Exception $exception) {
+            ActionScheduler::logger()->log(
+                $action_id,
+                sprintf(
+                    'Caught exception while running action "%1$s": %2$s',
+                    $hook,
+                    $exception->getMessage()
+                )
+            );
+        }
+    }
+}
+
+/**
+ * Run the next queued action for a given hook, arguments, and group.
+ *
+ * @param string $hook The hook that the action is associated with.
+ * @param array  $args Optional. An array of arguments to filter the action. Default is an empty array.
+ * @param string $group Optional. The group the action is assigned to. Default is an empty string.
+ */
+function as_run_next_queued_action($hook, $args = array(), $group = '') {
+    if (!ActionScheduler::is_initialized(__FUNCTION__)) {
+        return;
+    }
+
+    $params = array(
+        'hook'    => $hook,
+        'status'  => ActionScheduler_Store::STATUS_PENDING,
+        'orderby' => 'date',
+        'order'   => 'ASC',
+        'group'   => $group,
+    );
+
+    if (is_array($args)) {
+        $params['args'] = $args;
+    }
+
+    $action_id = ActionScheduler::store()->query_action($params);
+
+    if ($action_id) {
+        $queue_runner = ActionScheduler::runner();
+
+        try {
+            $queue_runner->process_action($action_id);
+        } catch (Exception $exception) {
+            ActionScheduler::logger()->log(
+                $action_id,
+                sprintf(
+                    'Caught exception while running action "%1$s": %2$s',
+                    $hook,
+                    $exception->getMessage()
+                )
+            );
+        }
+    }
 }

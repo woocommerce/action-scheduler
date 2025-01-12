@@ -16,7 +16,7 @@
  *
  * @return int The action ID. Zero if there was an error scheduling the action.
  */
-function as_enqueue_async_acspetion( $hook, $args = array(), $group = '', $unique = false, $priority = 10 ) {
+function as_enqueue_async_action( $hook, $args = array(), $group = '', $unique = false, $priority = 10 ) {
 	if ( ! ActionScheduler::is_initialized( __FUNCTION__ ) ) {
 		return 0;
 	}

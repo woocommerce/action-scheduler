@@ -47,6 +47,9 @@ Collaboration is cool. We'd love to work with you to improve Action Scheduler. [
 
 == Changelog ==
 
+= 3.9.2 - 2025-xx-xx =
+* Fixed fatal errors by moving version info methods to a new class and deprecating conflicting ones in ActionScheduler_Versions
+
 = 3.9.1 - 2025-01-21 =
 * A number of new WP CLI commands have been added, making it easier to manage actions in the terminal and from scripts.
 * New wp action-scheduler source command to help determine how Action Scheduler is being loaded.

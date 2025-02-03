@@ -1,6 +1,6 @@
 *** Changelog ***
 
-= 3.9.2 - 2025-xx-xx =
+= 3.9.2 - 2025-02-03 =
 * Fixed fatal errors by moving version info methods to a new class and deprecating conflicting ones in ActionScheduler_Versions
 
 = 3.9.1 - 2025-01-21 =

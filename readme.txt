@@ -29,7 +29,7 @@ If your plugin needs background processing, especially of large sets of tasks, A
 
 ## Learn More
 
-To learn more about how to Action Scheduler works, and how to use it in your plugin, check out the docs on [ActionScheduler.org](https://actionscheduler.org).
+To learn more about how Action Scheduler works, and how to use it in your plugin, check out the docs on [ActionScheduler.org](https://actionscheduler.org).
 
 There you will find:
 

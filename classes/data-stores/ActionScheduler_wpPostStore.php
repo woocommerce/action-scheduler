@@ -791,24 +791,41 @@ class ActionScheduler_wpPostStore extends ActionScheduler_Store {
 	}
 
 	/**
-	 * Release claim.
+	 * Release pending actions from a claim.
 	 *
 	 * @param ActionScheduler_ActionClaim $claim Claim object to release.
 	 * @return void
 	 * @throws RuntimeException When the claim is not unlocked.
 	 */
 	public function release_claim( ActionScheduler_ActionClaim $claim ) {
-		$action_ids = $this->find_actions_by_claim_id( $claim->get_id() );
-		if ( empty( $action_ids ) ) {
-			return; // nothing to do.
-		}
-		$action_id_string = implode( ',', array_map( 'intval', $action_ids ) );
 		/**
 		 * Global wpdb object.
 		 *
 		 * @var wpdb $wpdb
 		 */
 		global $wpdb;
+
+		$claim_id = $claim->get_id();
+		if ( trim( $claim_id ) === '' ) {
+			// Verify that the claim_id is valid before attempting to release it.
+			return;
+		}
+
+		// Only attempt to release pending actions to be claimed again. Running and complete actions are no longer relevant outside of admin/analytics.
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+		$action_ids = $wpdb->get_col(
+			$wpdb->prepare(
+				"SELECT ID, post_date_gmt FROM {$wpdb->posts} WHERE post_type = %s AND post_password = %s AND post_status = %s",
+				self::POST_TYPE,
+				$claim_id,
+				self::STATUS_PENDING
+			)
+		);
+
+		if ( empty( $action_ids ) ) {
+			return; // nothing to do.
+		}
+		$action_id_string = implode( ',', array_map( 'intval', $action_ids ) );
 
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 		$result = $wpdb->query(

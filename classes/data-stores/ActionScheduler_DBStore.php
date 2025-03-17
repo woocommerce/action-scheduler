@@ -1094,7 +1094,7 @@ AND `group_id` = %d
 	}
 
 	/**
-	 * Release actions from a claim and delete the claim.
+	 * Release pending actions from a claim and delete the claim.
 	 *
 	 * @param ActionScheduler_ActionClaim $claim Claim object.
 	 * @throws \RuntimeException When unable to release actions from claim.
@@ -1107,14 +1107,21 @@ AND `group_id` = %d
 		 */
 		global $wpdb;
 
+		if ( 0 === intval( $claim->get_id() ) ) {
+			// Verify that the claim_id is valid before attempting to release it.
+			return;
+		}
+
 		/**
 		 * Deadlock warning: This function modifies actions to release them from claims that have been processed. Earlier, we used to it in a atomic query, i.e. we would update all actions belonging to a particular claim_id with claim_id = 0.
 		 * While this was functionally correct, it would cause deadlock, since this update query will hold a lock on the claim_id_.. index on the action table.
 		 * This allowed the possibility of a race condition, where the claimer query is also running at the same time, then the claimer query will also try to acquire a lock on the claim_id_.. index, and in this case if claim release query has already progressed to the point of acquiring the lock, but have not updated yet, it would cause a deadlock.
 		 *
 		 * We resolve this by getting all the actions_id that we want to release claim from in a separate query, and then releasing the claim on each of them. This way, our lock is acquired on the action_id index instead of the claim_id index. Note that the lock on claim_id will still be acquired, but it will only when we actually make the update, rather than when we select the actions.
+		 *
+		 * We only release pending actions in order for them to be claimed by another process.
 		 */
-		$action_ids = $wpdb->get_col( $wpdb->prepare( "SELECT action_id FROM {$wpdb->actionscheduler_actions} WHERE claim_id = %d", $claim->get_id() ) );
+		$action_ids = $wpdb->get_col( $wpdb->prepare( "SELECT action_id FROM {$wpdb->actionscheduler_actions} WHERE claim_id = %d AND status = %s", $claim->get_id(), self::STATUS_PENDING ) );
 
 		$row_updates = 0;
 		if ( count( $action_ids ) > 0 ) {

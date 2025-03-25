@@ -184,7 +184,7 @@ class ActionScheduler_QueueCleaner {
 				'modified_compare' => '<=',
 				'claimed'          => true,
 				'per_page'         => $this->get_batch_size(),
-				'orderby'          => 'none',
+				'orderby'          => 'modified', // ordering by modified coerces the optimizer to use `status_last_attempt_gmt` index.
 			)
 		);
 

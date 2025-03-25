@@ -20,7 +20,7 @@ class ActionScheduler_StoreSchema extends ActionScheduler_Abstract_Schema {
 	 *
 	 * @var int
 	 */
-	protected $schema_version = 7;
+	protected $schema_version = 8;
 
 	/**
 	 * Construct.
@@ -56,8 +56,28 @@ class ActionScheduler_StoreSchema extends ActionScheduler_Abstract_Schema {
 		$hook_status_scheduled_date_gmt_max_index_length = $max_index_length - 20 - 8; // - status, - scheduled_date_gmt
 
 		switch ( $table ) {
-
 			case self::ACTIONS_TABLE:
+				/*
+				 *
+				 * INDEX AUDIT - the following indexes need to be reviewed for usage/quality. Initial review doesn't show usage.
+				 * - args - not a great index, no reported usage in index usage summary during testing
+				 * - group_id - not a great index, no reported usage in index usage summary during testing
+				 * - last_attempt_gmt - no reported usage in index usage summary during testing
+				 *
+				 *
+				 * INDEXES KEPT:
+				 * - scheduled_date_gmt - used on action scheduler listing page for "All" actions.
+				 * - status_scheduled_date_gmt - used by status report: ActionScheduler_wcSystemStatus->get_oldest_and_newest()
+				 * - hook_status_scheduled_date_gmt - scheduling checks
+				 *
+				 * INDEXES REMOVED:
+				 * - claim_id_status_scheduled_date_gmt - other indexes are sufficient to replace this.
+				 *
+ 				 * INDEXES ADDED:
+				 * - claim_id_status_priority_scheduled_date_gmt - improved index for staking claims on actions.
+				 * - status_last_attempt_gmt - used for QueueCleaner::clean_actions()
+				 * - status_claim_id - used calculate distinct claim_ids to determine current claims being processed.
+				 */
 				return "CREATE TABLE {$table_name} (
 				        action_id bigint(20) unsigned NOT NULL auto_increment,
 				        hook varchar(191) NOT NULL,
@@ -80,7 +100,9 @@ class ActionScheduler_StoreSchema extends ActionScheduler_Abstract_Schema {
 				        KEY args (args($max_index_length)),
 				        KEY group_id (group_id),
 				        KEY last_attempt_gmt (last_attempt_gmt),
-				        KEY `claim_id_status_scheduled_date_gmt` (`claim_id`, `status`, `scheduled_date_gmt`)
+				        KEY `claim_id_status_priority_scheduled_date_gmt` (`claim_id`,`status`,`priority`,`scheduled_date_gmt`)
+				        KEY `status_last_attempt_gmt` (`status`,`last_attempt_gmt`)
+				        KEY `status_claim_id` (`status`,`claim_id`)
 				        ) $charset_collate";
 
 			case self::CLAIMS_TABLE:

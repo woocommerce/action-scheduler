@@ -936,12 +936,13 @@ AND `group_id` = %d
 		$date = is_null( $before_date ) ? $now : clone $before_date;
 		// can't use $wpdb->update() because of the <= condition.
 		$update = "UPDATE {$wpdb->actionscheduler_actions} SET claim_id=%d, last_attempt_gmt=%s, last_attempt_local=%s";
-		$params = array(
+		$update_params = array(
 			$claim_id,
 			$now->format( 'Y-m-d H:i:s' ),
 			current_time( 'mysql' ),
 		);
 
+		$where_params = array();
 		// Set claim filters.
 		if ( ! empty( $hooks ) ) {
 			$this->set_claim_filter( 'hooks', $hooks );
@@ -955,13 +956,13 @@ AND `group_id` = %d
 		}
 
 		$where    = 'WHERE claim_id = 0 AND scheduled_date_gmt <= %s AND status=%s';
-		$params[] = $date->format( 'Y-m-d H:i:s' );
-		$params[] = self::STATUS_PENDING;
+		$where_params[] = $date->format( 'Y-m-d H:i:s' );
+		$where_params[] = self::STATUS_PENDING;
 
 		if ( ! empty( $hooks ) ) {
 			$placeholders = array_fill( 0, count( $hooks ), '%s' );
 			$where       .= ' AND hook IN (' . join( ', ', $placeholders ) . ')';
-			$params       = array_merge( $params, array_values( $hooks ) );
+			$where_params       = array_merge( $where_params, array_values( $hooks ) );
 		}
 
 		$group_operator = 'IN';
@@ -977,7 +978,7 @@ AND `group_id` = %d
 			if ( empty( $group_ids ) ) {
 				throw new InvalidArgumentException(
 					sprintf(
-						/* translators: %s: group name(s) */
+					/* translators: %s: group name(s) */
 						_n(
 							'The group "%s" does not exist.',
 							'The groups "%s" do not exist.',
@@ -993,36 +994,90 @@ AND `group_id` = %d
 			$where  .= " AND group_id {$group_operator} ( $id_list )";
 		}
 
-		/**
-		 * Sets the order-by clause used in the action claim query.
-		 *
-		 * @since 3.4.0
-		 * @since 3.8.3 Made $claim_id and $hooks available.
-		 *
-		 * @param string $order_by_sql
-		 * @param string $claim_id Claim Id.
-		 * @param array  $hooks Hooks to filter for.
-		 */
-		$order    = apply_filters( 'action_scheduler_claim_actions_order_by', 'ORDER BY priority ASC, attempts ASC, scheduled_date_gmt ASC, action_id ASC', $claim_id, $hooks );
-		$params[] = $limit;
+		$use_priorities = true;
+		$total_rows_affected = 0;
+		if ( $use_priorities ) {
+			$pending_priorities = $wpdb->get_col( $wpdb->prepare( "SELECT DISTINCT priority FROM {$wpdb->actionscheduler_actions} FORCE INDEX (claim_id_status_priority_scheduled_date_gmt) {$where} ORDER BY priority", $where_params ) );
+			if ( empty( $pending_priorities ) ) {
+				return 0;
+			}
 
-		$sql           = $wpdb->prepare( "{$update} {$where} {$order} LIMIT %d", $params ); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQLPlaceholders
-		$rows_affected = $wpdb->query( $sql ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
-		if ( false === $rows_affected ) {
-			$error = empty( $wpdb->last_error )
-				? _x( 'unknown', 'database error', 'action-scheduler' )
-				: $wpdb->last_error;
-
-			throw new \RuntimeException(
-				sprintf(
+			foreach ( $pending_priorities as $pending_priority ) {
+				$sql           = $wpdb->prepare( "{$update} {$where} AND priority = %d LIMIT %d",
+					[
+						...$update_params,
+						...$where_params,
+						$pending_priority,
+						$limit
+					]
+				); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQLPlaceholders
+				$rows_affected = $wpdb->query( $sql ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+				if ( false === $rows_affected ) {
+					$error = sprintf(
 					/* translators: %s database error. */
-					__( 'Unable to claim actions. Database error: %s.', 'action-scheduler' ),
-					$error
-				)
-			);
+						__( 'Unable to claim actions. Database error: %s.', 'action-scheduler' ),
+						empty( $wpdb->last_error ) ? _x( 'unknown', 'database error', 'action-scheduler' ) : $wpdb->last_error
+					);
+
+					if ( $total_rows_affected === 0 ) {
+						// Throw an exception if we weren't able to claim any actions at all to reflect previous behavior,
+						// otherwise, just trigger a WARNING so the claimed actions can still be processed.
+						throw new \RuntimeException(
+							$error
+						);
+					}
+					// Trigger an error notice and allow the claim to proceed.
+					wp_trigger_error( __METHOD__, $error );
+					break;
+				}
+				$limit               -= $rows_affected;
+				$total_rows_affected += $rows_affected;
+				if ( $limit < 1 ) {
+					break;
+				}
+
+			}
+		} else {
+			/**
+			 * Sets the order-by clause used in the action claim query.
+			 *
+			 * @param string $order_by_sql
+			 * @param string $claim_id Claim Id.
+			 * @param array $hooks Hooks to filter for.
+			 *
+			 * @since 3.8.3 Made $claim_id and $hooks available.
+			 *
+			 * @since 3.4.0
+			 */
+			//$order    = apply_filters( 'action_scheduler_claim_actions_order_by', 'ORDER BY priority ASC, attempts ASC, scheduled_date_gmt ASC, action_id ASC', $claim_id, $hooks );
+			// take out schedule_date and action_id to see if that improves it.  Next step is to potentially assign priority and not order by it or attempts.
+			$order = apply_filters( 'action_scheduler_claim_actions_order_by', 'ORDER BY priority ASC', $claim_id, $hooks );
+
+			$sql = $wpdb->prepare(
+				"{$update} {$where} {$order} LIMIT %d",
+				[
+					...$update_params,
+					...$where_params,
+					$limit
+				]
+			); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQLPlaceholders
+
+			$total_rows_affected = $wpdb->query( $sql ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+			if ( false === $total_rows_affected ) {
+				$error = empty( $wpdb->last_error )
+					? _x( 'unknown', 'database error', 'action-scheduler' )
+					: $wpdb->last_error;
+				throw new \RuntimeException(
+					sprintf(
+						/* translators: %s database error. */
+						__( 'Unable to claim actions. Database error: %s.', 'action-scheduler' ),
+						$error
+					)
+				);
+			}
 		}
 
-		return (int) $rows_affected;
+		return (int) $total_rows_affected;
 	}
 
 	/**
@@ -1094,7 +1149,7 @@ AND `group_id` = %d
 	}
 
 	/**
-	 * Release actions from a claim and delete the claim.
+	 * Release pending actions from a claim and delete the claim.
 	 *
 	 * @param ActionScheduler_ActionClaim $claim Claim object.
 	 * @throws \RuntimeException When unable to release actions from claim.
@@ -1107,6 +1162,12 @@ AND `group_id` = %d
 		 */
 		global $wpdb;
 
+		if ( 0 === intval( $claim->get_id() ) ) {
+			// Verify that the claim_id is valid before attempting to release the actions tied to it in case a failed query
+			// created the invalid claim.
+			return;
+		}
+
 		/**
 		 * Deadlock warning: This function modifies actions to release them from claims that have been processed. Earlier, we used to it in a atomic query, i.e. we would update all actions belonging to a particular claim_id with claim_id = 0.
 		 * While this was functionally correct, it would cause deadlock, since this update query will hold a lock on the claim_id_.. index on the action table.
@@ -1114,7 +1175,7 @@ AND `group_id` = %d
 		 *
 		 * We resolve this by getting all the actions_id that we want to release claim from in a separate query, and then releasing the claim on each of them. This way, our lock is acquired on the action_id index instead of the claim_id index. Note that the lock on claim_id will still be acquired, but it will only when we actually make the update, rather than when we select the actions.
 		 */
-		$action_ids = $wpdb->get_col( $wpdb->prepare( "SELECT action_id FROM {$wpdb->actionscheduler_actions} WHERE claim_id = %d", $claim->get_id() ) );
+		$action_ids = $wpdb->get_col( $wpdb->prepare( "SELECT action_id FROM {$wpdb->actionscheduler_actions} WHERE claim_id = %d AND status = %s", $claim->get_id(), self::STATUS_PENDING ) );
 
 		$row_updates = 0;
 		if ( count( $action_ids ) > 0 ) {

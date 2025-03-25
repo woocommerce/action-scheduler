@@ -100,8 +100,8 @@ class ActionScheduler_StoreSchema extends ActionScheduler_Abstract_Schema {
 				        KEY args (args($max_index_length)),
 				        KEY group_id (group_id),
 				        KEY last_attempt_gmt (last_attempt_gmt),
-				        KEY `claim_id_status_priority_scheduled_date_gmt` (`claim_id`,`status`,`priority`,`scheduled_date_gmt`)
-				        KEY `status_last_attempt_gmt` (`status`,`last_attempt_gmt`)
+				        KEY `claim_id_status_priority_scheduled_date_gmt` (`claim_id`,`status`,`priority`,`scheduled_date_gmt`),
+				        KEY `status_last_attempt_gmt` (`status`,`last_attempt_gmt`),
 				        KEY `status_claim_id` (`status`,`claim_id`)
 				        ) $charset_collate";
 

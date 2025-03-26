@@ -931,7 +931,6 @@ AND `group_id` = %d
 		 * @var \wpdb $wpdb
 		 */
 		global $wpdb;
-
 		$now  = as_get_datetime_object();
 		$date = is_null( $before_date ) ? $now : clone $before_date;
 		// can't use $wpdb->update() because of the <= condition.
@@ -994,9 +993,9 @@ AND `group_id` = %d
 			$where  .= " AND group_id {$group_operator} ( $id_list )";
 		}
 
-		$use_priorities = true;
 		$total_rows_affected = 0;
-		if ( $use_priorities ) {
+		$claim_staking_method = defined('CLAIM_STAKING_METHOD') ? \CLAIM_STAKING_METHOD : '';
+		if ( $claim_staking_method == 'priority_list' ) {
 			$pending_priorities = $wpdb->get_col( $wpdb->prepare( "SELECT DISTINCT priority FROM {$wpdb->actionscheduler_actions} FORCE INDEX (claim_id_status_priority_scheduled_date_gmt) {$where} ORDER BY priority", $where_params ) );
 			if ( empty( $pending_priorities ) ) {
 				return 0;
@@ -1037,6 +1036,61 @@ AND `group_id` = %d
 				}
 
 			}
+		} elseif( $claim_staking_method == 'prequery') {
+			/**
+			 * Sets the order-by clause used in the action claim query.
+			 *
+			 * @param string $order_by_sql
+			 * @param string $claim_id Claim Id.
+			 * @param array $hooks Hooks to filter for.
+			 *
+			 * @since 3.8.3 Made $claim_id and $hooks available.
+			 *
+			 * @since 3.4.0
+			 */
+			$order    = apply_filters( 'action_scheduler_claim_actions_order_by', 'ORDER BY priority ASC, attempts ASC, scheduled_date_gmt ASC, action_id ASC', $claim_id, $hooks );
+
+			$action_ids = $wpdb->get_col(
+				$wpdb->prepare(
+					"SELECT action_id from {$wpdb->actionscheduler_actions} {$where} {$order} LIMIT %d",
+					[
+						...$where_params,
+						$limit
+					]
+				)
+			);
+
+			if ( empty( $action_ids ) ) {
+				return 0;
+			}
+
+
+			$placeholders = array_fill( 0, count( $action_ids ), '%d' );
+			$where        .= ' AND action_id IN (' . join( ', ', $placeholders ) . ')';
+			$where_params = array_merge( $where_params, array_values( $action_ids ) );
+
+			$sql = $wpdb->prepare(
+				"{$update} {$where} LIMIT %d",
+				[
+					...$update_params,
+					...$where_params,
+					$limit
+				]
+			); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQLPlaceholders
+
+			$total_rows_affected = $wpdb->query( $sql ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+			if ( false === $total_rows_affected ) {
+				$error = empty( $wpdb->last_error )
+					? _x( 'unknown', 'database error', 'action-scheduler' )
+					: $wpdb->last_error;
+				throw new \RuntimeException(
+					sprintf(
+					/* translators: %s database error. */
+						__( 'Unable to claim actions. Database error: %s.', 'action-scheduler' ),
+						$error
+					)
+				);
+			}
 		} else {
 			/**
 			 * Sets the order-by clause used in the action claim query.
@@ -1049,9 +1103,7 @@ AND `group_id` = %d
 			 *
 			 * @since 3.4.0
 			 */
-			//$order    = apply_filters( 'action_scheduler_claim_actions_order_by', 'ORDER BY priority ASC, attempts ASC, scheduled_date_gmt ASC, action_id ASC', $claim_id, $hooks );
-			// take out schedule_date and action_id to see if that improves it.  Next step is to potentially assign priority and not order by it or attempts.
-			$order = apply_filters( 'action_scheduler_claim_actions_order_by', 'ORDER BY priority ASC', $claim_id, $hooks );
+			$order    = apply_filters( 'action_scheduler_claim_actions_order_by', 'ORDER BY priority ASC, attempts ASC, scheduled_date_gmt ASC, action_id ASC', $claim_id, $hooks );
 
 			$sql = $wpdb->prepare(
 				"{$update} {$where} {$order} LIMIT %d",

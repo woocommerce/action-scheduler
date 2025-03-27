@@ -78,7 +78,7 @@ abstract class ActionScheduler_Abstract_QueueRunner extends ActionScheduler_Abst
 			},
 			E_USER_ERROR | E_RECOVERABLE_ERROR
 		);
-		add_action( 'shutdown', 'restore_error_handler', -10 );
+		add_action( 'shutdown', 'restore_error_handler', -10, 0 );
 
 		/*
 		 * The nested try/catch structure is required because we potentially need to convert thrown errors into

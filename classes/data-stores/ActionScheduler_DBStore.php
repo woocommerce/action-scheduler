@@ -932,15 +932,12 @@ AND `group_id` = %d
 		 */
 		global $wpdb;
 
+		// Start by building a SELECT query for which actions we want to claim.
+		$select = "SELECT action_id from {$wpdb->actionscheduler_actions}";
+		$select_params = [];
+
 		$now  = as_get_datetime_object();
 		$date = is_null( $before_date ) ? $now : clone $before_date;
-		// can't use $wpdb->update() because of the <= condition.
-		$update = "UPDATE {$wpdb->actionscheduler_actions} SET claim_id=%d, last_attempt_gmt=%s, last_attempt_local=%s";
-		$params = array(
-			$claim_id,
-			$now->format( 'Y-m-d H:i:s' ),
-			current_time( 'mysql' ),
-		);
 
 		// Set claim filters.
 		if ( ! empty( $hooks ) ) {
@@ -954,14 +951,14 @@ AND `group_id` = %d
 			$group = $this->get_claim_filter( 'group' );
 		}
 
-		$where    = 'WHERE claim_id = 0 AND scheduled_date_gmt <= %s AND status=%s';
-		$params[] = $date->format( 'Y-m-d H:i:s' );
-		$params[] = self::STATUS_PENDING;
+		$where           = 'WHERE claim_id = 0 AND scheduled_date_gmt <= %s AND status=%s';
+		$select_params[] = $date->format( 'Y-m-d H:i:s' );
+		$select_params[] = self::STATUS_PENDING;
 
 		if ( ! empty( $hooks ) ) {
-			$placeholders = array_fill( 0, count( $hooks ), '%s' );
-			$where       .= ' AND hook IN (' . join( ', ', $placeholders ) . ')';
-			$params       = array_merge( $params, array_values( $hooks ) );
+			$placeholders  = array_fill( 0, count( $hooks ), '%s' );
+			$where        .= ' AND hook IN (' . join( ', ', $placeholders ) . ')';
+			$select_params = array_merge( $select_params, array_values( $hooks ) );
 		}
 
 		$group_operator = 'IN';
@@ -1003,11 +1000,21 @@ AND `group_id` = %d
 		 * @param string $claim_id Claim Id.
 		 * @param array  $hooks Hooks to filter for.
 		 */
-		$order    = apply_filters( 'action_scheduler_claim_actions_order_by', 'ORDER BY priority ASC, attempts ASC, scheduled_date_gmt ASC, action_id ASC', $claim_id, $hooks );
-		$params[] = $limit;
+		$order           = apply_filters( 'action_scheduler_claim_actions_order_by', 'ORDER BY priority ASC, attempts ASC, scheduled_date_gmt ASC, action_id ASC', $claim_id, $hooks );
+		$select_params[] = $limit;
 
-		$sql           = $wpdb->prepare( "{$update} {$where} {$order} LIMIT %d", $params ); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQLPlaceholders
-		$rows_affected = $wpdb->query( $sql ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+		// Selecting the action_ids that we plan to claim, while skipping any locked rows to avoid deadlocking.
+		$select_sql = $wpdb->prepare( "{$select} {$where} {$order} LIMIT %d FOR UPDATE SKIP LOCKED", $select_params );
+
+		// Now place it into an UPDATE statement by joining the result sets, allowing for the SKIP LOCKED behavior to take effect.
+		$update_sql    = "UPDATE {$wpdb->actionscheduler_actions} t1 JOIN ( $select_sql ) t2 ON t1.action_id = t2.action_id SET claim_id=%d, last_attempt_gmt=%s, last_attempt_local=%s";
+		$update_params = array(
+			$claim_id,
+			$now->format( 'Y-m-d H:i:s' ),
+			current_time( 'mysql' ),
+		);
+
+		$rows_affected = $wpdb->query( $wpdb->prepare( $update_sql, $update_params ) );
 		if ( false === $rows_affected ) {
 			$error = empty( $wpdb->last_error )
 				? _x( 'unknown', 'database error', 'action-scheduler' )

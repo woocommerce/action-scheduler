@@ -88,7 +88,7 @@ jobs:
       - name: Init DB and WP
         run: |
           # Use mysql_native_password when using PHP < 7.4.
-          f [ "$(php -r 'echo version_compare(PHP_VERSION, \"7.4\", \"<\");')" -eq 1 ] && [ "${{ matrix.db }}" == "mysql:8.1" ]; then
+          if [ "$(php -r 'echo version_compare(PHP_VERSION, \"7.4\", \"<\");')" -eq 1 ] && [ "${{ matrix.db }}" == "mysql:8.1" ]; then
             mysql -uroot -proot -h127.0.0.1 -e "ALTER USER 'root'@'%' IDENTIFIED WITH mysql_native_password BY 'root'; FLUSH PRIVILEGES;"
           fi
           ./tests/bin/install.sh woo_test root root 127.0.0.1 ${{ matrix.wp }}

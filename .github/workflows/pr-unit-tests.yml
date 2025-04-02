@@ -3,7 +3,7 @@ on:
   pull_request
 jobs:
   test:
-    name: PHP ${{ matrix.php }} WP ${{ matrix.wp }} MU ${{ matrix.multisite }}
+    name: PHP ${{ matrix.php }} WP ${{ matrix.wp }} MU ${{ matrix.multisite }} DB ${{ matrix.db }}
     timeout-minutes: 15
     runs-on: ubuntu-latest
     strategy:

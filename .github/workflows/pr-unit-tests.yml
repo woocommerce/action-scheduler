@@ -89,7 +89,7 @@ jobs:
         run: |
           # Use mysql_native_password when using PHP < 7.4.
           if [ "$(php -r "echo version_compare( PHP_VERSION, '7.4', '<' );")" ]; then
-            mysql -uroot -proot -e "ALTER USER 'root'@'localhost' IDENTIFIED WITH mysql_native_password BY 'root'; FLUSH PRIVILEGES;"
+            mysql -uroot -proot -h127.0.0.1 -e "ALTER USER 'root'@'localhost' IDENTIFIED WITH mysql_native_password BY 'root'; FLUSH PRIVILEGES;"
           fi
           ./tests/bin/install.sh woo_test root root 127.0.0.1 ${{ matrix.wp }}
 

@@ -1004,8 +1004,7 @@ AND `group_id` = %d
 		 *
 		 * @since 3.4.0
 		 */
-		$order           = apply_filters( 'action_scheduler_claim_actions_order_by', 'ORDER BY priority ASC, attempts ASC, scheduled_date_gmt ASC, action_id ASC', $claim_id, $hooks );
-
+		$order       = apply_filters( 'action_scheduler_claim_actions_order_by', 'ORDER BY priority ASC, attempts ASC, scheduled_date_gmt ASC, action_id ASC', $claim_id, $hooks );
 		$skip_locked = $this->db_supports_skip_locked() ? ' SKIP LOCKED' : '';
 
 		// Selecting the action_ids that we plan to claim, while skipping any locked rows to avoid deadlocking.
@@ -1018,7 +1017,7 @@ AND `group_id` = %d
 			$now->format( 'Y-m-d H:i:s' ),
 			current_time( 'mysql' ),
 		);
-		$rows_affected =  $wpdb->query( $wpdb->prepare( $update_sql, $update_params ) );
+		$rows_affected = $wpdb->query( $wpdb->prepare( $update_sql, $update_params ) );
 		if ( false === $rows_affected ) {
 			$error = empty( $wpdb->last_error )
 				? _x( 'unknown', 'database error', 'action-scheduler' )
@@ -1066,7 +1065,7 @@ AND `group_id` = %d
 		 */
 		if ( $is_mariadb && version_compare( $db_version, '10.6.0', '>=' ) ) {
 			$is_supported = true;
-		} elseif ( version_compare( $db_version, '8.0.1', '>=' ) ) {
+		} elseif ( ! $is_mariadb && version_compare( $db_version, '8.0.1', '>=' ) ) {
 			/**
 			 * SKIP_LOCKED support was added to MySQL in 8.0.1
 			 */

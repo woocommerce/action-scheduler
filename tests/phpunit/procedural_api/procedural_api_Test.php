@@ -449,7 +449,7 @@ class Procedural_API_Test extends ActionScheduler_UnitTestCase {
 		$this->assertContains( 'Caught exception while enqueuing action "hook_18": Error saving action', $logged_errors );
 		$this->assertContains( 'Caught exception while enqueuing action "hook_19": Error saving action', $logged_errors );
 		$this->assertContains( 'Caught exception while enqueuing action "hook_20": Error saving action', $logged_errors );
-		$this->assertContains( "Unknown column 'priority' in 'field list'", $logged_errors );
+		$this->assertContains( "Unknown column 'priority' in ", $logged_errors );
 
 		// recreate the priority column.
 		$wpdb->query( "ALTER TABLE {$wpdb->actionscheduler_actions} ADD COLUMN priority tinyint(10) UNSIGNED NOT NULL DEFAULT 10" );

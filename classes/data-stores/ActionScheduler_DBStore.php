@@ -993,143 +993,87 @@ AND `group_id` = %d
 			$where  .= " AND group_id {$group_operator} ( $id_list )";
 		}
 
-		$total_rows_affected = 0;
-		$claim_staking_method = defined('CLAIM_STAKING_METHOD') ? \CLAIM_STAKING_METHOD : '';
-		if ( $claim_staking_method == 'priority_list' ) {
-			$pending_priorities = $wpdb->get_col( $wpdb->prepare( "SELECT DISTINCT priority FROM {$wpdb->actionscheduler_actions} FORCE INDEX (claim_id_status_priority_scheduled_date_gmt) {$where} ORDER BY priority", $where_params ) );
-			if ( empty( $pending_priorities ) ) {
-				return 0;
-			}
+		/**
+		 * Sets the order-by clause used in the action claim query.
+		 *
+		 * @param string $order_by_sql
+		 * @param string $claim_id Claim Id.
+		 * @param array $hooks Hooks to filter for.
+		 *
+		 * @since 3.8.3 Made $claim_id and $hooks available.
+		 *
+		 * @since 3.4.0
+		 */
+		$order           = apply_filters( 'action_scheduler_claim_actions_order_by', 'ORDER BY priority ASC, attempts ASC, scheduled_date_gmt ASC, action_id ASC', $claim_id, $hooks );
 
-			foreach ( $pending_priorities as $pending_priority ) {
-				$sql           = $wpdb->prepare( "{$update} {$where} AND priority = %d LIMIT %d",
-					[
-						...$update_params,
-						...$where_params,
-						$pending_priority,
-						$limit
-					]
-				); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQLPlaceholders
-				$rows_affected = $wpdb->query( $sql ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
-				if ( false === $rows_affected ) {
-					$error = sprintf(
-					/* translators: %s database error. */
-						__( 'Unable to claim actions. Database error: %s.', 'action-scheduler' ),
-						empty( $wpdb->last_error ) ? _x( 'unknown', 'database error', 'action-scheduler' ) : $wpdb->last_error
-					);
+		$skip_locked = $this->db_supports_skip_locked() ? ' SKIP LOCKED' : '';
 
-					if ( $total_rows_affected === 0 ) {
-						// Throw an exception if we weren't able to claim any actions at all to reflect previous behavior,
-						// otherwise, just trigger a WARNING so the claimed actions can still be processed.
-						throw new \RuntimeException(
-							$error
-						);
-					}
-					// Trigger an error notice and allow the claim to proceed.
-					wp_trigger_error( __METHOD__, $error );
-					break;
-				}
-				$limit               -= $rows_affected;
-				$total_rows_affected += $rows_affected;
-				if ( $limit < 1 ) {
-					break;
-				}
+		// Selecting the action_ids that we plan to claim, while skipping any locked rows to avoid deadlocking.
+		$select_sql = $wpdb->prepare( "SELECT action_id from {$wpdb->actionscheduler_actions} {$where} {$order} LIMIT %d FOR UPDATE{$skip_locked}", array_merge( $where_params, array( $limit ) ) );
 
-			}
-		} elseif( $claim_staking_method == 'prequery') {
-			/**
-			 * Sets the order-by clause used in the action claim query.
-			 *
-			 * @param string $order_by_sql
-			 * @param string $claim_id Claim Id.
-			 * @param array $hooks Hooks to filter for.
-			 *
-			 * @since 3.8.3 Made $claim_id and $hooks available.
-			 *
-			 * @since 3.4.0
-			 */
-			$order    = apply_filters( 'action_scheduler_claim_actions_order_by', 'ORDER BY priority ASC, attempts ASC, scheduled_date_gmt ASC, action_id ASC', $claim_id, $hooks );
-
-			$action_ids = $wpdb->get_col(
-				$wpdb->prepare(
-					"SELECT action_id from {$wpdb->actionscheduler_actions} {$where} {$order} LIMIT %d",
-					[
-						...$where_params,
-						$limit
-					]
+		// Now place it into an UPDATE statement by joining the result sets, allowing for the SKIP LOCKED behavior to take effect.
+		$update_sql    = "UPDATE {$wpdb->actionscheduler_actions} t1 JOIN ( $select_sql ) t2 ON t1.action_id = t2.action_id SET claim_id=%d, last_attempt_gmt=%s, last_attempt_local=%s";
+		$update_params = array(
+			$claim_id,
+			$now->format( 'Y-m-d H:i:s' ),
+			current_time( 'mysql' ),
+		);
+		$rows_affected =  $wpdb->query( $wpdb->prepare( $update_sql, $update_params ) );
+		if ( false === $rows_affected ) {
+			$error = empty( $wpdb->last_error )
+				? _x( 'unknown', 'database error', 'action-scheduler' )
+				: $wpdb->last_error;
+			throw new \RuntimeException(
+				sprintf(
+				/* translators: %s database error. */
+					__( 'Unable to claim actions. Database error: %s.', 'action-scheduler' ),
+					$error
 				)
 			);
-
-			if ( empty( $action_ids ) ) {
-				return 0;
-			}
-
-
-			$placeholders = array_fill( 0, count( $action_ids ), '%d' );
-			$where        .= ' AND action_id IN (' . join( ', ', $placeholders ) . ')';
-			$where_params = array_merge( $where_params, array_values( $action_ids ) );
-
-			$sql = $wpdb->prepare(
-				"{$update} {$where} LIMIT %d",
-				[
-					...$update_params,
-					...$where_params,
-					$limit
-				]
-			); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQLPlaceholders
-
-			$total_rows_affected = $wpdb->query( $sql ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
-			if ( false === $total_rows_affected ) {
-				$error = empty( $wpdb->last_error )
-					? _x( 'unknown', 'database error', 'action-scheduler' )
-					: $wpdb->last_error;
-				throw new \RuntimeException(
-					sprintf(
-					/* translators: %s database error. */
-						__( 'Unable to claim actions. Database error: %s.', 'action-scheduler' ),
-						$error
-					)
-				);
-			}
-		} else {
-			/**
-			 * Sets the order-by clause used in the action claim query.
-			 *
-			 * @param string $order_by_sql
-			 * @param string $claim_id Claim Id.
-			 * @param array $hooks Hooks to filter for.
-			 *
-			 * @since 3.8.3 Made $claim_id and $hooks available.
-			 *
-			 * @since 3.4.0
-			 */
-			$order    = apply_filters( 'action_scheduler_claim_actions_order_by', 'ORDER BY priority ASC, attempts ASC, scheduled_date_gmt ASC, action_id ASC', $claim_id, $hooks );
-
-			$sql = $wpdb->prepare(
-				"{$update} {$where} {$order} LIMIT %d",
-				[
-					...$update_params,
-					...$where_params,
-					$limit
-				]
-			); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQLPlaceholders
-
-			$total_rows_affected = $wpdb->query( $sql ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
-			if ( false === $total_rows_affected ) {
-				$error = empty( $wpdb->last_error )
-					? _x( 'unknown', 'database error', 'action-scheduler' )
-					: $wpdb->last_error;
-				throw new \RuntimeException(
-					sprintf(
-						/* translators: %s database error. */
-						__( 'Unable to claim actions. Database error: %s.', 'action-scheduler' ),
-						$error
-					)
-				);
-			}
 		}
 
-		return (int) $total_rows_affected;
+		return (int) $rows_affected;
+	}
+
+	/**
+	 * Determines whether the database supports using SKIP LOCKED.
+	 *
+	 * SKIP_LOCKED support was added to MariaDB in 10.6.0 and to MySQL in 8.0.1
+	 *
+	 * @return bool
+	 */
+	private function db_supports_skip_locked() {
+		global $wpdb;
+		$db_version     = $wpdb->db_version();
+		$db_server_info = $wpdb->db_server_info();
+		$is_mariadb     = ( false !== str_contains( $db_server_info, 'MariaDB' ) );
+
+		if ( $is_mariadb &&
+		     '5.5.5' === $db_version &&
+		     PHP_VERSION_ID < 80016 // PHP 8.0.15 or older.
+		) {
+			/*
+			 * Account for MariaDB version being prefixed with '5.5.5-' on older PHP versions.
+			 */
+			$db_server_info = preg_replace( '/^5\.5\.5-(.*)/', '$1', $db_server_info );
+			$db_version     = preg_replace( '/[^0-9.].*/', '', $db_server_info );
+		}
+
+		$is_supported = false;
+
+		/**
+		 * SKIP_LOCKED support was added to MariaDB in 10.6.0 and to MySQL in 8.0.1
+		 */
+		if ( $is_mariadb && version_compare( $db_version, '10.6.0', '>=' ) ) {
+			$is_supported = true;
+		} elseif ( version_compare( $db_version, '8.0.1', '>=' ) ) {
+			/**
+			 * SKIP_LOCKED support was added to MySQL in 8.0.1
+			 */
+			$is_supported = true;
+		}
+
+		return $is_supported;
 	}
 
 	/**

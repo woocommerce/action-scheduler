@@ -931,11 +931,6 @@ AND `group_id` = %d
 		 * @var \wpdb $wpdb
 		 */
 		global $wpdb;
-
-		// Start by building a SELECT query for which actions we want to claim.
-		$select = "SELECT action_id from {$wpdb->actionscheduler_actions}";
-		$select_params = [];
-
 		$now  = as_get_datetime_object();
 		$date = is_null( $before_date ) ? $now : clone $before_date;
 
@@ -951,14 +946,16 @@ AND `group_id` = %d
 			$group = $this->get_claim_filter( 'group' );
 		}
 
-		$where           = 'WHERE claim_id = 0 AND scheduled_date_gmt <= %s AND status=%s';
-		$select_params[] = $date->format( 'Y-m-d H:i:s' );
-		$select_params[] = self::STATUS_PENDING;
+		$where        = 'WHERE claim_id = 0 AND scheduled_date_gmt <= %s AND status=%s';
+		$where_params = array(
+			$date->format( 'Y-m-d H:i:s' ),
+			self::STATUS_PENDING,
+		);
 
 		if ( ! empty( $hooks ) ) {
-			$placeholders  = array_fill( 0, count( $hooks ), '%s' );
+			$placeholders = array_fill( 0, count( $hooks ), '%s' );
 			$where        .= ' AND hook IN (' . join( ', ', $placeholders ) . ')';
-			$select_params = array_merge( $select_params, array_values( $hooks ) );
+			$where_params = array_merge( $where_params, array_values( $hooks ) );
 		}
 
 		$group_operator = 'IN';
@@ -993,18 +990,18 @@ AND `group_id` = %d
 		/**
 		 * Sets the order-by clause used in the action claim query.
 		 *
-		 * @since 3.4.0
-		 * @since 3.8.3 Made $claim_id and $hooks available.
-		 *
 		 * @param string $order_by_sql
 		 * @param string $claim_id Claim Id.
-		 * @param array  $hooks Hooks to filter for.
+		 * @param array  $hooks    Hooks to filter for.
+		 *
+		 * @since 3.8.3 Made $claim_id and $hooks available.
+		 * @since 3.4.0
 		 */
-		$order           = apply_filters( 'action_scheduler_claim_actions_order_by', 'ORDER BY priority ASC, attempts ASC, scheduled_date_gmt ASC, action_id ASC', $claim_id, $hooks );
-		$select_params[] = $limit;
+		$order       = apply_filters( 'action_scheduler_claim_actions_order_by', 'ORDER BY priority ASC, attempts ASC, scheduled_date_gmt ASC, action_id ASC', $claim_id, $hooks );
+		$skip_locked = $this->db_supports_skip_locked() ? ' SKIP LOCKED' : '';
 
 		// Selecting the action_ids that we plan to claim, while skipping any locked rows to avoid deadlocking.
-		$select_sql = $wpdb->prepare( "{$select} {$where} {$order} LIMIT %d FOR UPDATE SKIP LOCKED", $select_params );
+		$select_sql = $wpdb->prepare( "SELECT action_id from {$wpdb->actionscheduler_actions} {$where} {$order} LIMIT %d FOR UPDATE{$skip_locked}", array_merge( $where_params, array( $limit ) ) );
 
 		// Now place it into an UPDATE statement by joining the result sets, allowing for the SKIP LOCKED behavior to take effect.
 		$update_sql    = "UPDATE {$wpdb->actionscheduler_actions} t1 JOIN ( $select_sql ) t2 ON t1.action_id = t2.action_id SET claim_id=%d, last_attempt_gmt=%s, last_attempt_local=%s";
@@ -1019,7 +1016,6 @@ AND `group_id` = %d
 			$error = empty( $wpdb->last_error )
 				? _x( 'unknown', 'database error', 'action-scheduler' )
 				: $wpdb->last_error;
-
 			throw new \RuntimeException(
 				sprintf(
 					/* translators: %s database error. */
@@ -1030,6 +1026,36 @@ AND `group_id` = %d
 		}
 
 		return (int) $rows_affected;
+	}
+
+	/**
+	 * Determines whether the database supports using SKIP LOCKED.
+	 *
+	 * SKIP_LOCKED support was added to MariaDB in 10.6.0 and to MySQL in 8.0.1
+	 *
+	 * @return bool
+	 */
+	private function db_supports_skip_locked() {
+		global $wpdb;
+		$db_version     = $wpdb->db_version();
+		$db_server_info = $wpdb->db_server_info();
+		$is_mariadb     = ( false !== str_contains( $db_server_info, 'MariaDB' ) );
+
+		if ( $is_mariadb &&
+		     '5.5.5' === $db_version &&
+		     PHP_VERSION_ID < 80016 // PHP 8.0.15 or older.
+		) {
+			/*
+			 * Account for MariaDB version being prefixed with '5.5.5-' on older PHP versions.
+			 */
+			$db_server_info = preg_replace( '/^5\.5\.5-(.*)/', '$1', $db_server_info );
+			$db_version     = preg_replace( '/[^0-9.].*/', '', $db_server_info );
+		}
+
+		$is_supported = ( $is_mariadb && version_compare( $db_version, '10.6.0', '>=' ) ) ||
+		                ( ! $is_mariadb && version_compare( $db_version, '8.0.1', '>=' ) );
+
+		return $is_supported;
 	}
 
 	/**

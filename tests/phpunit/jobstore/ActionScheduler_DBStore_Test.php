@@ -17,13 +17,13 @@ class ActionScheduler_DBStore_Test extends AbstractStoreTest {
 	 */
 	private $original_wpdb;
 
-	public function set_up() {
+	public function setUp() {
 		global $wpdb;
 
 		// Delete all actions before each test.
 		$wpdb->query( "DELETE FROM {$wpdb->actionscheduler_actions}" );
 
-		parent::set_up();
+		parent::setUp();
 	}
 
 	/**
@@ -31,12 +31,13 @@ class ActionScheduler_DBStore_Test extends AbstractStoreTest {
 	 *
 	 * @return void
 	 */
-	public function tear_down() {
+	public function tearDown() {
 		global $wpdb;
 		if ( null !== $this->original_wpdb ) {
 			$wpdb                = $this->original_wpdb;
 			$this->original_wpdb = null;
 		}
+		parent::tearDown();
 	}
 
 	/**

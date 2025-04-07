@@ -8,13 +8,35 @@ use Action_Scheduler\Tests\DataStores\AbstractStoreTest;
  */
 class ActionScheduler_DBStore_Test extends AbstractStoreTest {
 
-	public function setUp() {
+	/**
+	 * Saved instance of wpdb to restore in cases where we replace the global instance with a mock.
+	 *
+	 * @see $this->test_db_supports_skip_locked()
+	 *
+	 * @var \wpdb
+	 */
+	private $original_wpdb;
+
+	public function set_up() {
 		global $wpdb;
 
 		// Delete all actions before each test.
 		$wpdb->query( "DELETE FROM {$wpdb->actionscheduler_actions}" );
 
-		parent::setUp();
+		parent::set_up();
+	}
+
+	/**
+	 * Restore the original wpdb global instance for tests that have replaced it.
+	 *
+	 * @return void
+	 */
+	public function tear_down() {
+		global $wpdb;
+		if ( null !== $this->original_wpdb ) {
+			$wpdb                = $this->original_wpdb;
+			$this->original_wpdb = null;
+		}
 	}
 
 	/**
@@ -718,5 +740,67 @@ class ActionScheduler_DBStore_Test extends AbstractStoreTest {
 		add_action( 'parent', $parent_action );
 
 		$this->assertEquals( range( 1, 20 ), $actual_order, 'Once claimed, scheduled actions are executed in the expected order, including if "child actions" are scheduled from within another action.' );
+	}
+
+	/**
+	 * @param bool   $expected_result
+	 * @param string $db_server_info
+	 *
+	 * @return void
+	 *
+	 * @dataProvider db_supports_skip_locked_provider
+	 */
+	public function test_db_supports_skip_locked( bool $expected_result, string $db_server_info ) {
+		global $wpdb;
+
+		// Stash the original since we're overwriting it with a partial mock. Self::tear_down() will restore this.
+		$this->original_wpdb = $wpdb;
+
+		$wpdb = $this->getMockBuilder( get_class( $wpdb ) )
+		             ->onlyMethods( [ 'db_server_info' ] )
+		             ->getMock();
+		$wpdb->method( 'db_server_info' )->willReturn( $db_server_info );
+
+		$reflection = new \ReflectionClass( ActionScheduler_DBStore::class );
+		$method     = $reflection->getMethod( 'db_supports_skip_locked' );
+		$method->setAccessible( true );
+		$db_store = new ActionScheduler_DBStore();
+		$this->assertSame( $expected_result, $method->invoke( $db_store ) );
+	}
+
+	public static function db_supports_skip_locked_provider(): array {
+		// PHP <= 8.0.15 didn't strip the 5.5.5- prefix for MariaDB.
+		$maria_db_prefix = PHP_VERSION_ID < 80016 ? '5.5.5-' : '';
+
+		return array(
+			'MySQL 5.6.1 does not support skip locked'    => array(
+				false,
+				'5.6.1'
+			),
+			'MySQL 8.0.0 does not support skip locked'    => array(
+				false,
+				'8.0.0'
+			),
+			'MySQL 8.0.1 does support skip locked'        => array(
+				true,
+				'8.0.1'
+			),
+			'MySQL 8.4.4 does support skip locked'        => array(
+				true,
+				'8.4.4'
+			),
+			'MariaDB 10.5.0 does not support skip locked' => array(
+				false,
+				$maria_db_prefix . '10.5.0-MariaDB'
+			),
+			'MariaDB 10.6.0 does support skip locked'     => array(
+				true,
+				$maria_db_prefix . '10.6.0-MariaDB'
+			),
+			'MariaDB 11.5.0 does support skip locked'     => array(
+				true,
+				$maria_db_prefix . '11.5.0-MariaDB'
+			),
+		);
 	}
 }

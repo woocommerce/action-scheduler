@@ -20,7 +20,7 @@ class ActionScheduler_StoreSchema extends ActionScheduler_Abstract_Schema {
 	 *
 	 * @var int
 	 */
-	protected $schema_version = 7;
+	protected $schema_version = 8;
 
 	/**
 	 * Construct.

@@ -758,7 +758,9 @@ class ActionScheduler_DBStore_Test extends AbstractStoreTest {
 
 		$wpdb = $this->getMockBuilder( get_class( $wpdb ) )
 		             ->setMethods( [ 'db_server_info' ] )
+		             ->disableOriginalConstructor()
 		             ->getMock();
+
 		$wpdb->method( 'db_server_info' )->willReturn( $db_server_info );
 
 		$reflection = new \ReflectionClass( ActionScheduler_DBStore::class );

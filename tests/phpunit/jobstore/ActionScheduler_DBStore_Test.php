@@ -757,7 +757,7 @@ class ActionScheduler_DBStore_Test extends AbstractStoreTest {
 		$this->original_wpdb = $wpdb;
 
 		$wpdb = $this->getMockBuilder( get_class( $wpdb ) )
-		             ->onlyMethods( [ 'db_server_info' ] )
+		             ->setMethods( [ 'db_server_info' ] )
 		             ->getMock();
 		$wpdb->method( 'db_server_info' )->willReturn( $db_server_info );
 
@@ -768,6 +768,11 @@ class ActionScheduler_DBStore_Test extends AbstractStoreTest {
 		$this->assertSame( $expected_result, $method->invoke( $db_store ) );
 	}
 
+	/**
+	 * Data Provider for ::test_db_supports_skip_locked().
+	 *
+	 * @return array[]
+	 */
 	public static function db_supports_skip_locked_provider(): array {
 		// PHP <= 8.0.15 didn't strip the 5.5.5- prefix for MariaDB.
 		$maria_db_prefix = PHP_VERSION_ID < 80016 ? '5.5.5-' : '';

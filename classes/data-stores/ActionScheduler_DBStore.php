@@ -1039,7 +1039,7 @@ AND `group_id` = %d
 		global $wpdb;
 		$db_version     = $wpdb->db_version();
 		$db_server_info = $wpdb->db_server_info();
-		$is_mariadb     = ( false !== str_contains( $db_server_info, 'MariaDB' ) );
+		$is_mariadb     = ( false !== strpos( $db_server_info, 'MariaDB' ) );
 
 		if ( $is_mariadb &&
 		     '5.5.5' === $db_version &&

@@ -493,3 +493,16 @@ function as_get_datetime_object( $date_string = null, $timezone = 'UTC' ) {
 	}
 	return $date;
 }
+
+/**
+ * Check if a specific feature is supported by the current version of Action Scheduler.
+ *
+ * @param string $feature The feature to check support for.
+ *
+ * @return bool True if the feature is supported, false otherwise.
+ */
+function as_supports( string $feature ): bool {
+	$supported_features = array( 'schedule_recurring_actions_hook' );
+
+	return in_array( $feature, $supported_features, true );
+}

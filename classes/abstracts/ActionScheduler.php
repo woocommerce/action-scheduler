@@ -197,7 +197,7 @@ abstract class ActionScheduler {
 			add_action( 'init', array( $store, 'init' ), 1, 0 );
 			add_action( 'init', array( $logger, 'init' ), 1, 0 );
 			add_action( 'init', array( $runner, 'init' ), 1, 0 );
-			add_action( 'init', array( $recurring_action_scheduler, 'init' ) );
+			add_action( 'init', array( $recurring_action_scheduler, 'init' ), 1, 0 );
 
 			add_action(
 				'init',

@@ -86,8 +86,9 @@ function as_schedule_single_action( $timestamp, $hook, $args = array(), $group =
 	 * @param array    $args       Action arguments.
 	 * @param string   $group      Action group.
 	 * @param int      $priorities Action priority.
+	 * @param bool     $unique     Unique action.
 	 */
-	$pre = apply_filters( 'pre_as_schedule_single_action', null, $timestamp, $hook, $args, $group, $priority );
+	$pre = apply_filters( 'pre_as_schedule_single_action', null, $timestamp, $hook, $args, $group, $priority, $unique );
 	if ( null !== $pre ) {
 		return is_int( $pre ) ? $pre : 0;
 	}
@@ -159,8 +160,9 @@ function as_schedule_recurring_action( $timestamp, $interval_in_seconds, $hook, 
 	 * @param array    $args                Action arguments.
 	 * @param string   $group               Action group.
 	 * @param int      $priority            Action priority.
+	 * @param bool     $unique              Unique action.
 	 */
-	$pre = apply_filters( 'pre_as_schedule_recurring_action', null, $timestamp, $interval_in_seconds, $hook, $args, $group, $priority );
+	$pre = apply_filters( 'pre_as_schedule_recurring_action', null, $timestamp, $interval_in_seconds, $hook, $args, $group, $priority, $unique );
 	if ( null !== $pre ) {
 		return is_int( $pre ) ? $pre : 0;
 	}
@@ -225,8 +227,9 @@ function as_schedule_cron_action( $timestamp, $schedule, $hook, $args = array(),
 	 * @param array    $args       Action arguments.
 	 * @param string   $group      Action group.
 	 * @param int      $priority   Action priority.
+	 * @param bool     $unique     Unique action.
 	 */
-	$pre = apply_filters( 'pre_as_schedule_cron_action', null, $timestamp, $schedule, $hook, $args, $group, $priority );
+	$pre = apply_filters( 'pre_as_schedule_cron_action', null, $timestamp, $schedule, $hook, $args, $group, $priority, $unique );
 	if ( null !== $pre ) {
 		return is_int( $pre ) ? $pre : 0;
 	}

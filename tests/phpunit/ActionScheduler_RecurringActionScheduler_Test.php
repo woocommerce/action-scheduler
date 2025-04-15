@@ -7,7 +7,7 @@ class ActionScheduler_RecurringActionScheduler_Test extends ActionScheduler_Unit
 
 	public function tear_down() {
 		wp_cache_delete( 'as_is_recurring_scheduler_scheduled' );
-		as_unschedule_action( 'action_scheduler_schedule_recurring_actions' );
+		as_unschedule_action( 'action_scheduler_ensure_recurring_actions' );
 
 		parent::tear_down();
 	}
@@ -53,7 +53,7 @@ class ActionScheduler_RecurringActionScheduler_Test extends ActionScheduler_Unit
 	public function test_schedule_recurring_scheduler_hook_schedules_action() {
 		// Ensure no action is scheduled initially
 		$this->assertFalse(
-			as_has_scheduled_action( 'action_scheduler_schedule_recurring_actions' ),
+			as_has_scheduled_action( 'action_scheduler_ensure_recurring_actions' ),
 			'No recurring action should be scheduled initially.'
 		);
 
@@ -61,7 +61,7 @@ class ActionScheduler_RecurringActionScheduler_Test extends ActionScheduler_Unit
 		$scheduler->schedule_recurring_scheduler_hook();
 
 		$this->assertTrue(
-			as_has_scheduled_action( 'action_scheduler_schedule_recurring_actions' ),
+			as_has_scheduled_action( 'action_scheduler_ensure_recurring_actions' ),
 			'The recurring action should now be scheduled.'
 		);
 	}
@@ -72,7 +72,7 @@ class ActionScheduler_RecurringActionScheduler_Test extends ActionScheduler_Unit
 	public function test_schedule_recurring_scheduler_hook__respects_cache() {
 		// Ensure no action is scheduled initially
 		$this->assertFalse(
-			as_has_scheduled_action( 'action_scheduler_schedule_recurring_actions' ),
+			as_has_scheduled_action( 'action_scheduler_ensure_recurring_actions' ),
 			'No recurring action should be scheduled initially.'
 		);
 
@@ -85,7 +85,7 @@ class ActionScheduler_RecurringActionScheduler_Test extends ActionScheduler_Unit
 
 		// Assert that no new action was scheduled due to cache hit
 		$this->assertFalse(
-			as_has_scheduled_action( 'action_scheduler_schedule_recurring_actions' ),
+			as_has_scheduled_action( 'action_scheduler_ensure_recurring_actions' ),
 			'No new recurring action should be scheduled due to cache hit.'
 		);
 	}

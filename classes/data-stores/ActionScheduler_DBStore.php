@@ -1055,7 +1055,14 @@ AND `group_id` = %d
 		$is_supported = ( $is_mariadb && version_compare( $db_version, '10.6.0', '>=' ) ) ||
 		                ( ! $is_mariadb && version_compare( $db_version, '8.0.1', '>=' ) );
 
-		return $is_supported;
+		/**
+		 * Filter whether the database supports the SKIP LOCKED modifier for queries.
+		 *
+		 * @param bool $is_supported Whether SKIP LOCKED is supported.
+		 *
+		 * @since 3.9.3
+		 */
+		return apply_filters( 'action_scheduler_db_supports_skip_locked', $is_supported );
 	}
 
 	/**

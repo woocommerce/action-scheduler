@@ -86,15 +86,16 @@ abstract class ActionScheduler_Abstract_QueueRunner extends ActionScheduler_Abst
 		 */
 		try {
 			try {
-				$valid_action = false;
+				$valid_action = true;
+
 				do_action( 'action_scheduler_before_execute', $action_id, $context );
 
 				if ( ActionScheduler_Store::STATUS_PENDING !== $this->store->get_status( $action_id ) ) {
+					$valid_action = false;
 					do_action( 'action_scheduler_execution_ignored', $action_id, $context );
 					return;
 				}
 
-				$valid_action = true;
 				do_action( 'action_scheduler_begin_execute', $action_id, $context );
 
 				$action = $this->store->fetch_action( $action_id );

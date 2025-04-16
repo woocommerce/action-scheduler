@@ -30,6 +30,7 @@
 			<directory>./phpunit/versioning</directory>
 			<file>./phpunit/logging/ActionScheduler_wpCommentLogger_Test.php</file>
 			<file>./phpunit/jobstore/ActionScheduler_wpPostStore_Test.php</file>
+			<file>./phpunit/jobstore/ActionScheduler_RecurringActionScheduler_Test.php</file>
 		</testsuite>
 	</testsuites>
 	<groups>

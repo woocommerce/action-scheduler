@@ -459,6 +459,20 @@ class Procedural_API_Test extends ActionScheduler_UnitTestCase {
 	}
 
 	/**
+	 * Test that as_supports returns true for supported features.
+	 */
+	public function test_as_supports_for_supported_feature() {
+		$this->assertTrue( as_supports( 'ensure_recurring_actions_hook' ) );
+	}
+
+	/**
+	 * Test that as_supports returns false for unsupported features.
+	 */
+	public function test_as_supports_for_unsupported_feature() {
+		$this->assertFalse( as_supports( 'non_existent_feature' ) );
+	}
+
+	/**
 	 * Helper method to set actions scheduler store.
 	 *
 	 * @param ActionScheduler_Store $store Store instance to set.

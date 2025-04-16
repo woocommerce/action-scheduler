@@ -251,3 +251,38 @@ as_get_scheduled_actions( $args, $return_format );
 ### Return value
 
 `(array)` Array of action rows matching the criteria specified with `$args`.
+
+## Function Reference / `as_supports()`
+
+### Description
+
+Check if a specific feature is supported by the current version of Action Scheduler.
+
+*Available since 3.9.3.*
+
+### Usage
+
+```php
+as_supports( $feature );
+```
+
+### Parameters
+
+**$feature** (string) (required)  
+The feature to check support for.  
+Currently supported:
+- `'ensure_recurring_actions_hook'` — Indicates support for the `action_scheduler_ensure_recurring_actions` hook.
+
+### Return value
+
+`(boolean)`  
+True if the feature is supported, false otherwise.
+
+### Example
+
+```php
+if ( as_supports( 'ensure_recurring_actions_hook' ) ) {
+    // Safe to depend on the 'action_scheduler_ensure_recurring_actions' hook.
+    add_action( 'action_scheduler_ensure_recurring_actions', 'my_plugin_schedule_my_recurring_action' );
+}
+```

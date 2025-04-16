@@ -96,36 +96,93 @@ Action Scheduler will later initialize itself on `'init'` with priority `1`.  Ac
 
 When using Action Scheduler in themes, it's important to note that if Action Scheduler has been registered by a plugin, then the latest version registered by a plugin will be used, rather than the version included in the theme. This is because of the version dependency handling code using `'plugins_loaded'` since version 1.0.
 
-## Scheduling an Action
+## Scheduling Recurring Actions on Activation and Ensuring They Remain Scheduled
 
-To schedule an action, call the [API function](/api/) for the desired schedule type passing in the required parameters.
+When developing a plugin or extension that relies on recurring actions, it is essential to schedule those actions when the plugin is first activated or updated.
 
-The example code below shows everything needed to schedule a function to run at midnight, if it's not already scheduled:
+### Best Practice: Schedule on Activation
 
+Plugins should always schedule any important recurring actions during activation or upgrade routines. This ensures the action is registered as soon as the plugin is enabled.
+
+**Example: Scheduling on Activation**
 ```php
-require_once( plugin_dir_path( __FILE__ ) . '/libraries/action-scheduler/action-scheduler.php' );
-
 /**
- * Schedule an action with the hook 'eg_midnight_log' to run at midnight each day
- * so that our callback is run then.
+ * Schedule recurring action on plugin activation.
  */
-function eg_schedule_midnight_log() {
-	if ( false === as_has_scheduled_action( 'eg_midnight_log' ) ) {
-		as_schedule_recurring_action( strtotime( 'tomorrow' ), DAY_IN_SECONDS, 'eg_midnight_log', array(), '', true );
-	}
+function my_plugin_activate() {
+    if ( ! as_has_scheduled_action( 'my_plugin_recurring_action' ) ) {
+        as_schedule_recurring_action(
+            time(),
+            HOUR_IN_SECONDS,
+            'my_plugin_recurring_action'
+        );
+    }
 }
-add_action( 'init', 'eg_schedule_midnight_log' );
-
-/**
- * A callback to run when the 'eg_midnight_log' scheduled action is run.
- */
-function eg_log_action_data() {
-	error_log( 'It is just after midnight on ' . date( 'Y-m-d' ) );
-}
-add_action( 'eg_midnight_log', 'eg_log_action_data' );
+register_activation_hook( __FILE__, 'my_plugin_activate' );
 ```
 
-Note that the `as_has_scheduled_action()` function was added in 3.3.0: if you are using an earlier version, you should use `as_next_scheduled_action()` instead. For more details on all available API functions, and the data they accept, refer to the [API Reference](/api/).
+### Ensuring Recurring Actions Remain Scheduled
+
+After initial scheduling, there may be rare cases where a recurring action is lost (e.g., due to a database failure or repeated action failures). The `action_scheduler_ensure_recurring_actions` hook provides a reliable opportunity to check and reschedule the action if necessary. 
+
+**Example: Using the Ensure Hook**
+```php
+/**
+ * Ensure recurring action remains scheduled.
+ */
+add_action( 'action_scheduler_ensure_recurring_actions', function() {
+    if ( ! as_has_scheduled_action( 'my_plugin_recurring_action' ) ) {
+        as_schedule_recurring_action(
+            time(),
+            HOUR_IN_SECONDS,
+            'my_plugin_recurring_action'
+        );
+    }
+});
+```
+
+### Compatibility Notes:
+
+When using Action Scheduler, be aware of version-specific features and functions. If your plugin may run with older versions of Action Scheduler because it is relying on ActionScheduler to be included separately from your plugin where you cannot be sure of the version being loaded, use the following guidance to ensure compatibility.
+ 
+**New in 3.9.3: `action_scheduler_ensure_recurring_actions` Hook and `as_supports()`**
+* The `action_scheduler_ensure_recurring_actions` hook and the `as_supports()` API method were introduced in Action Scheduler 3.9.3.
+* To use this hook, first check that the current Action Scheduler version supports it.  
+
+**Example: Ensuring a Recurring Action Remains Scheduled in a Backward Compatible Way**
+```php
+/**
+ * Schedules the plugin's recurring action if it is not already scheduled.
+ */
+function my_plugin_schedule_my_recurring_action() {
+	if ( ! as_has_scheduled_action( 'my_plugin_recurring_action' ) ) {
+		as_schedule_recurring_action(
+			time(),
+			HOUR_IN_SECONDS,
+			'my_plugin_recurring_action'
+		);
+	}
+}
+
+/**
+ * Add the hooks needed for my_plugin_schedule_my_recurring_action() so it can make sure our hook stays scheduled.
+ */
+add_action( 'init', function () {
+	if ( function_exists( 'as_supports' ) && as_supports( 'ensure_recurring_actions_hook' ) ) {
+		// Preferred: runs periodically in the background.
+		add_action( 'action_scheduler_ensure_recurring_actions', 'my_plugin_schedule_my_recurring_action' );
+	} elseif ( is_admin() ) {
+		// Fallback: runs on every admin request.
+		my_plugin_schedule_my_recurring_action();
+	}
+} );
+```
+
+**Note on `as_has_scheduled_action()` (Added in 3.3.0)**
+*	The `as_has_scheduled_action()` function was introduced in Action Scheduler 3.3.0.
+*	If you need to support even older versions, check if the `as_has_scheduled_action` function exists and fallback to `as_next_scheduled_action()` instead.
+
+For more details on all available API functions, their parameters, and when they were added, refer to the [API Reference](https://actionscheduler.org/api/).
 
 ### Passing arguments
 

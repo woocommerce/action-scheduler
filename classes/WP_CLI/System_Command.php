@@ -262,7 +262,6 @@ class System_Command {
 		$order = 'oldest' === $date_type ? 'ASC' : 'DESC';
 
 		$args = array(
-			'claimed'  => false,
 			'status'   => $status,
 			'per_page' => 1,
 			'order'    => $order,

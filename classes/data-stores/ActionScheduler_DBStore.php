@@ -1029,7 +1029,7 @@ AND `group_id` = %d
 	}
 
 	/**
-	 * Determines whether the database supports using SKIP LOCKED.
+	 * Determines whether the database supports using SKIP LOCKED. This logic mimicks the $wpdb::has_cap() logic.
 	 *
 	 * SKIP_LOCKED support was added to MariaDB in 10.6.0 and to MySQL in 8.0.1
 	 *

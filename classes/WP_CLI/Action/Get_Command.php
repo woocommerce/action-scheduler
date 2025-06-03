@@ -24,7 +24,7 @@ class Get_Command extends \ActionScheduler_WPCLI_Command {
 		}
 
 		$only_logs   = ! empty( $this->assoc_args['field'] ) && 'log_entries' === $this->assoc_args['field'];
-		$only_logs   = $only_logs || ( ! empty( $this->assoc_args['fields'] && 'log_entries' === $this->assoc_args['fields'] ) );
+		$only_logs   = $only_logs || ( ! empty( $this->assoc_args['fields'] ) && 'log_entries' === $this->assoc_args['fields'] );
 		$log_entries = array();
 
 		foreach ( $logger->get_logs( $action_id ) as $log_entry ) {

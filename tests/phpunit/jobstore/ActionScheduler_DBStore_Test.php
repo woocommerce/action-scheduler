@@ -17,7 +17,7 @@ class ActionScheduler_DBStore_Test extends AbstractStoreTest {
 	 */
 	private $original_wpdb;
 
-	public function setUp() {
+	public function setUp(): void {
 		global $wpdb;
 
 		// Delete all actions before each test.
@@ -31,7 +31,7 @@ class ActionScheduler_DBStore_Test extends AbstractStoreTest {
 	 *
 	 * @return void
 	 */
-	public function tearDown() {
+	public function tearDown(): void {
 		global $wpdb;
 		if ( null !== $this->original_wpdb ) {
 			$wpdb                = $this->original_wpdb;

@@ -13,7 +13,7 @@ class as_get_scheduled_actions_Test extends ActionScheduler_UnitTestCase {
 	/** @var array<int, string> */
 	private $groups = array();
 
-	public function setUp() {
+	public function setUp(): void {
 		parent::setUp();
 
 		$store = ActionScheduler::store();

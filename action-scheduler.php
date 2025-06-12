@@ -9,7 +9,7 @@
  * License: GPLv3
  * Requires at least: 6.5
  * Tested up to: 6.7
- * Requires PHP: 7.1
+ * Requires PHP: 7.2
  *
  * Copyright 2019 Automattic, Inc.  (https://automattic.com/contact/)
  *

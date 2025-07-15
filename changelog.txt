@@ -1,5 +1,18 @@
 *** Changelog ***
 
+= 3.9.3 - 2025-07-15 =
+* Add hook 'action_scheduler_ensure_recurring_actions' specifically for scheduling recurring actions.
+* Assume an action is valid until proven otherwise.
+* Implement SKIP LOCKED during action claiming.
+* Import `get_flag_value()` from `WP_CLI\Utils` before using.
+* Make `$unique` available to all pre-creation/short-circuit hooks.
+* Make version/source information available via new class.
+* Only release claims on pending actions.
+* Tweak - WP 6.8 compatibility.
+* Update minimum supported php and phpunit versions.
+* Update readme.txt.
+* WP CLI get action command: correct parentheses/nesting of conditional checks.
+
 = 3.9.2 - 2025-02-03 =
 * Fixed fatal errors by moving version info methods to a new class and deprecating conflicting ones in ActionScheduler_Versions
 

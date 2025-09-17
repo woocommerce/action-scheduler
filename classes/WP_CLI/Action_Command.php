@@ -2,6 +2,8 @@
 
 namespace Action_Scheduler\WP_CLI;
 
+use WP_CLI;
+
 /**
  * Action command for Action Scheduler.
  */

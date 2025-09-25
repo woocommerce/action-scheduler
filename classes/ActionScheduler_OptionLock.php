@@ -43,7 +43,7 @@ class ActionScheduler_OptionLock extends ActionScheduler_Lock {
 			);
 		}
 
-		if ( $this->get_expiration_from( $existing_lock_value ) >= time() ) {
+		if ( $this->get_expiration_from( (string) $existing_lock_value ) >= time() ) {
 			return false;
 		}
 

@@ -47,7 +47,7 @@ class ActionScheduler_RecurringActionScheduler {
 					20
 				);
 			}
-			wp_cache_set( 'as_is_ensure_recurring_actions_scheduled', true, HOUR_IN_SECONDS );
+			wp_cache_set( 'as_is_ensure_recurring_actions_scheduled', true, 'ActionScheduler', HOUR_IN_SECONDS );
 		}
 	}
 

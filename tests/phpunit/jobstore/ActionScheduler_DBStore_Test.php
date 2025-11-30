@@ -887,26 +887,10 @@ class ActionScheduler_DBStore_Test extends AbstractStoreTest {
 	 * Test partial_args_matching 'json' mode works with short args (≤191 chars) stored in the args column.
 	 */
 	public function test_partial_args_matching_json_with_short_args() {
-		global $wpdb;
+		$this->skip_if_json_not_supported();
 
 		$store    = new ActionScheduler_DBStore();
 		$schedule = new ActionScheduler_SimpleSchedule( as_get_datetime_object( 'tomorrow' ) );
-
-		// Check if JSON is supported.
-		$db_server_info = is_callable( array( $wpdb, 'db_server_info' ) ) ? $wpdb->db_server_info() : $wpdb->db_version();
-		if ( false !== strpos( $db_server_info, 'MariaDB' ) ) {
-			$supports_json = version_compare(
-				PHP_VERSION_ID >= 80016 ? $wpdb->db_version() : preg_replace( '/[^0-9.].*/', '', str_replace( '5.5.5-', '', $db_server_info ) ),
-				'10.2',
-				'>='
-			);
-		} else {
-			$supports_json = version_compare( $wpdb->db_version(), '5.7', '>=' );
-		}
-
-		if ( ! $supports_json ) {
-			$this->markTestSkipped( 'JSON functions not supported by database' );
-		}
 
 		// Create action with short args that will be stored in args column.
 		$action    = new ActionScheduler_Action( 'test_hook_short_json', array( 'key1' => 'value1', 'key2' => 'findme' ), $schedule );
@@ -939,24 +923,10 @@ class ActionScheduler_DBStore_Test extends AbstractStoreTest {
 	public function test_partial_args_matching_json_with_extended_args() {
 		global $wpdb;
 
+		$this->skip_if_json_not_supported();
+
 		$store    = new ActionScheduler_DBStore();
 		$schedule = new ActionScheduler_SimpleSchedule( as_get_datetime_object( 'tomorrow' ) );
-
-		// Check if JSON is supported.
-		$db_server_info = is_callable( array( $wpdb, 'db_server_info' ) ) ? $wpdb->db_server_info() : $wpdb->db_version();
-		if ( false !== strpos( $db_server_info, 'MariaDB' ) ) {
-			$supports_json = version_compare(
-				PHP_VERSION_ID >= 80016 ? $wpdb->db_version() : preg_replace( '/[^0-9.].*/', '', str_replace( '5.5.5-', '', $db_server_info ) ),
-				'10.2',
-				'>='
-			);
-		} else {
-			$supports_json = version_compare( $wpdb->db_version(), '5.7', '>=' );
-		}
-
-		if ( ! $supports_json ) {
-			$this->markTestSkipped( 'JSON functions not supported by database' );
-		}
 
 		// Create action with long args that will be stored in extended_args column.
 		$long_value = str_repeat( 'a', 200 );
@@ -986,5 +956,29 @@ class ActionScheduler_DBStore_Test extends AbstractStoreTest {
 			)
 		);
 		$this->assertNotContains( $action_id, $not_found );
+	}
+
+	/**
+	 * Skip the test if JSON functions are not supported by the database.
+	 *
+	 * @return void
+	 */
+	private function skip_if_json_not_supported() {
+		global $wpdb;
+
+		$db_server_info = is_callable( array( $wpdb, 'db_server_info' ) ) ? $wpdb->db_server_info() : $wpdb->db_version();
+		if ( false !== strpos( $db_server_info, 'MariaDB' ) ) {
+			$supports_json = version_compare(
+				PHP_VERSION_ID >= 80016 ? $wpdb->db_version() : preg_replace( '/[^0-9.].*/', '', str_replace( '5.5.5-', '', $db_server_info ) ),
+				'10.2',
+				'>='
+			);
+		} else {
+			$supports_json = version_compare( $wpdb->db_version(), '5.7', '>=' );
+		}
+
+		if ( ! $supports_json ) {
+			$this->markTestSkipped( 'JSON functions not supported by database' );
+		}
 	}
 }

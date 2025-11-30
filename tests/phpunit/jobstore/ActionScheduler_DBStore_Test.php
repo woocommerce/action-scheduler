@@ -921,9 +921,9 @@ class ActionScheduler_DBStore_Test extends AbstractStoreTest {
 	 * Test partial_args_matching 'json' mode works with long args (>191 chars) stored in extended_args column.
 	 */
 	public function test_partial_args_matching_json_with_extended_args() {
-		global $wpdb;
-
 		$this->skip_if_json_not_supported();
+
+		global $wpdb;
 
 		$store    = new ActionScheduler_DBStore();
 		$schedule = new ActionScheduler_SimpleSchedule( as_get_datetime_object( 'tomorrow' ) );

@@ -510,15 +510,16 @@ AND `group_id` = %d
 								)
 							);
 						}
-						$sql         .= ' AND JSON_EXTRACT(a.args, %s)=' . $placeholder;
+						$sql         .= ' AND JSON_EXTRACT(COALESCE(a.extended_args, a.args), %s)=' . $placeholder;
 						$sql_params[] = '$.' . $key;
 						$sql_params[] = $value;
 					}
 					break;
 				case 'like':
 					foreach ( $query['args'] as $key => $value ) {
-						$sql         .= ' AND a.args LIKE %s';
+						$sql         .= ' AND ((a.extended_args IS NULL AND a.args LIKE %s) OR a.extended_args LIKE %s)';
 						$json_partial = $wpdb->esc_like( trim( wp_json_encode( array( $key => $value ) ), '{}' ) );
+						$sql_params[] = "%{$json_partial}%";
 						$sql_params[] = "%{$json_partial}%";
 					}
 					break;

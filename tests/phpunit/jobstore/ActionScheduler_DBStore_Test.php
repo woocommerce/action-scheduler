@@ -813,172 +813,75 @@ class ActionScheduler_DBStore_Test extends AbstractStoreTest {
 	}
 
 	/**
-	 * Test partial_args_matching 'like' mode works with short args (≤191 chars) stored in the args column.
-	 */
-	public function test_partial_args_matching_like_with_short_args() {
-		$store    = new ActionScheduler_DBStore();
-		$schedule = new ActionScheduler_SimpleSchedule( as_get_datetime_object( 'tomorrow' ) );
-
-		// Create action with short args that will be stored in args column.
-		$action    = new ActionScheduler_Action( 'test_hook_short', array( 'key1' => 'value1', 'key2' => 'findme' ), $schedule );
-		$action_id = $store->save_action( $action );
-
-		// Test 'like' mode finds the action.
-		$found = $store->query_actions(
-			array(
-				'hook'                  => 'test_hook_short',
-				'args'                  => array( 'key2' => 'findme' ),
-				'partial_args_matching' => 'like',
-			)
-		);
-		$this->assertContains( $action_id, $found );
-
-		// Test 'like' mode does not find non-existent value.
-		$not_found = $store->query_actions(
-			array(
-				'hook'                  => 'test_hook_short',
-				'args'                  => array( 'key2' => 'notfound' ),
-				'partial_args_matching' => 'like',
-			)
-		);
-		$this->assertNotContains( $action_id, $not_found );
-	}
-
-	/**
-	 * Test partial_args_matching 'like' mode works with long args (>191 chars) stored in extended_args column.
-	 */
-	public function test_partial_args_matching_like_with_extended_args() {
-		$store    = new ActionScheduler_DBStore();
-		$schedule = new ActionScheduler_SimpleSchedule( as_get_datetime_object( 'tomorrow' ) );
-
-		// Create action with long args that will be stored in extended_args column.
-		// The max_index_length is 191, so we need args > 191 chars when JSON encoded.
-		$long_value = str_repeat( 'a', 200 );
-		$action     = new ActionScheduler_Action( 'test_hook_long', array( 'key1' => $long_value, 'key2' => 'findme' ), $schedule );
-		$action_id  = $store->save_action( $action );
-
-		// Verify the args were stored in extended_args.
-		global $wpdb;
-		$row = $wpdb->get_row( $wpdb->prepare( "SELECT args, extended_args FROM {$wpdb->actionscheduler_actions} WHERE action_id = %d", $action_id ) );
-		$this->assertNotNull( $row->extended_args, 'Extended args should be set for long args' );
-
-		// Test 'like' mode finds the action.
-		$found = $store->query_actions(
-			array(
-				'hook'                  => 'test_hook_long',
-				'args'                  => array( 'key2' => 'findme' ),
-				'partial_args_matching' => 'like',
-			)
-		);
-		$this->assertContains( $action_id, $found );
-
-		// Test 'like' mode does not find non-existent value.
-		$not_found = $store->query_actions(
-			array(
-				'hook'                  => 'test_hook_long',
-				'args'                  => array( 'key2' => 'notfound' ),
-				'partial_args_matching' => 'like',
-			)
-		);
-		$this->assertNotContains( $action_id, $not_found );
-	}
-
-	/**
-	 * Test partial_args_matching 'json' mode works with short args (≤191 chars) stored in the args column.
-	 */
-	public function test_partial_args_matching_json_with_short_args() {
-		$this->skip_if_json_not_supported();
-
-		$store    = new ActionScheduler_DBStore();
-		$schedule = new ActionScheduler_SimpleSchedule( as_get_datetime_object( 'tomorrow' ) );
-
-		// Create action with short args that will be stored in args column.
-		$action    = new ActionScheduler_Action( 'test_hook_short_json', array( 'key1' => 'value1', 'key2' => 'findme' ), $schedule );
-		$action_id = $store->save_action( $action );
-
-		// Test 'json' mode finds the action.
-		$found = $store->query_actions(
-			array(
-				'hook'                  => 'test_hook_short_json',
-				'args'                  => array( 'key2' => 'findme' ),
-				'partial_args_matching' => 'json',
-			)
-		);
-		$this->assertContains( $action_id, $found );
-
-		// Test 'json' mode does not find non-existent value.
-		$not_found = $store->query_actions(
-			array(
-				'hook'                  => 'test_hook_short_json',
-				'args'                  => array( 'key2' => 'notfound' ),
-				'partial_args_matching' => 'json',
-			)
-		);
-		$this->assertNotContains( $action_id, $not_found );
-	}
-
-	/**
-	 * Test partial_args_matching 'json' mode works with long args (>191 chars) stored in extended_args column.
-	 */
-	public function test_partial_args_matching_json_with_extended_args() {
-		$this->skip_if_json_not_supported();
-
-		global $wpdb;
-
-		$store    = new ActionScheduler_DBStore();
-		$schedule = new ActionScheduler_SimpleSchedule( as_get_datetime_object( 'tomorrow' ) );
-
-		// Create action with long args that will be stored in extended_args column.
-		$long_value = str_repeat( 'a', 200 );
-		$action     = new ActionScheduler_Action( 'test_hook_long_json', array( 'key1' => $long_value, 'key2' => 'findme' ), $schedule );
-		$action_id  = $store->save_action( $action );
-
-		// Verify the args were stored in extended_args.
-		$row = $wpdb->get_row( $wpdb->prepare( "SELECT args, extended_args FROM {$wpdb->actionscheduler_actions} WHERE action_id = %d", $action_id ) );
-		$this->assertNotNull( $row->extended_args, 'Extended args should be set for long args' );
-
-		// Test 'json' mode finds the action.
-		$found = $store->query_actions(
-			array(
-				'hook'                  => 'test_hook_long_json',
-				'args'                  => array( 'key2' => 'findme' ),
-				'partial_args_matching' => 'json',
-			)
-		);
-		$this->assertContains( $action_id, $found );
-
-		// Test 'json' mode does not find non-existent value.
-		$not_found = $store->query_actions(
-			array(
-				'hook'                  => 'test_hook_long_json',
-				'args'                  => array( 'key2' => 'notfound' ),
-				'partial_args_matching' => 'json',
-			)
-		);
-		$this->assertNotContains( $action_id, $not_found );
-	}
-
-	/**
-	 * Skip the test if JSON functions are not supported by the database.
+	 * Test partial_args_matching with both 'like' and 'json' modes for short and extended args.
 	 *
-	 * @return void
+	 * @dataProvider partial_args_matching_provider
 	 */
-	private function skip_if_json_not_supported() {
+	public function test_partial_args_matching( $mode, $use_extended_args ) {
+		if ( 'json' === $mode ) {
+			try {
+				$store = new ActionScheduler_DBStore();
+				$store->query_actions(
+					array(
+						'hook'                  => 'nonexistent_hook',
+						'args'                  => array( 'test' => 'value' ),
+						'partial_args_matching' => 'json',
+					)
+				);
+			} catch ( \RuntimeException $e ) {
+				$this->markTestSkipped( 'JSON functions not supported by database' );
+			}
+		}
+
 		global $wpdb;
+		$store    = new ActionScheduler_DBStore();
+		$schedule = new ActionScheduler_SimpleSchedule( as_get_datetime_object( 'tomorrow' ) );
 
-		$db_server_info = is_callable( array( $wpdb, 'db_server_info' ) ) ? $wpdb->db_server_info() : $wpdb->db_version();
-		if ( false !== strpos( $db_server_info, 'MariaDB' ) ) {
-			$supports_json = version_compare(
-				PHP_VERSION_ID >= 80016 ? $wpdb->db_version() : preg_replace( '/[^0-9.].*/', '', str_replace( '5.5.5-', '', $db_server_info ) ),
-				'10.2',
-				'>='
-			);
+		if ( $use_extended_args ) {
+			$long_value = str_repeat( 'a', 200 );
+			$args       = array( 'key1' => $long_value, 'key2' => 'findme' );
 		} else {
-			$supports_json = version_compare( $wpdb->db_version(), '5.7', '>=' );
+			$args = array( 'key1' => 'value1', 'key2' => 'findme' );
 		}
 
-		if ( ! $supports_json ) {
-			$this->markTestSkipped( 'JSON functions not supported by database' );
+		$action    = new ActionScheduler_Action( "test_hook_{$mode}", $args, $schedule );
+		$action_id = $store->save_action( $action );
+
+		if ( $use_extended_args ) {
+			$row = $wpdb->get_row( $wpdb->prepare( "SELECT args, extended_args FROM {$wpdb->actionscheduler_actions} WHERE action_id = %d", $action_id ) );
+			$this->assertNotNull( $row->extended_args, 'Extended args should be set for long args' );
 		}
+
+		$found = $store->query_actions(
+			array(
+				'hook'                  => "test_hook_{$mode}",
+				'args'                  => array( 'key2' => 'findme' ),
+				'partial_args_matching' => $mode,
+			)
+		);
+		$this->assertContains( $action_id, $found );
+
+		$not_found = $store->query_actions(
+			array(
+				'hook'                  => "test_hook_{$mode}",
+				'args'                  => array( 'key2' => 'notfound' ),
+				'partial_args_matching' => $mode,
+			)
+		);
+		$this->assertNotContains( $action_id, $not_found );
+	}
+
+	/**
+	 * Data provider for partial_args_matching tests.
+	 *
+	 * @return array Test cases with mode and extended_args flag.
+	 */
+	public function partial_args_matching_provider() {
+		return array(
+			'like mode with short args'     => array( 'like', false ),
+			'like mode with extended args'  => array( 'like', true ),
+			'json mode with short args'     => array( 'json', false ),
+			'json mode with extended args'  => array( 'json', true ),
+		);
 	}
 }

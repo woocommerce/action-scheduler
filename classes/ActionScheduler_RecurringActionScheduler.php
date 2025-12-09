@@ -35,7 +35,7 @@ class ActionScheduler_RecurringActionScheduler {
 	 * @return void
 	 */
 	public function schedule_recurring_scheduler_hook(): void {
-		if ( false === wp_cache_get( 'as_is_ensure_recurring_actions_scheduled' ) ) {
+		if ( false === wp_cache_get( 'as_is_ensure_recurring_actions_scheduled', 'ActionScheduler' ) ) {
 			if ( ! as_has_scheduled_action( self::RUN_SCHEDULED_RECURRING_ACTIONS_HOOK ) ) {
 				as_schedule_recurring_action(
 					time(),

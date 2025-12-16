@@ -35,7 +35,7 @@ class ActionScheduler_RecurringActionScheduler {
 	 * @return void
 	 */
 	public function schedule_recurring_scheduler_hook(): void {
-		if ( false === wp_cache_get( 'as_is_ensure_recurring_actions_scheduled', 'ActionScheduler' ) ) {
+		if ( false === get_transient( 'as_is_ensure_recurring_actions_scheduled' ) ) {
 			if ( ! as_has_scheduled_action( self::RUN_SCHEDULED_RECURRING_ACTIONS_HOOK ) ) {
 				as_schedule_recurring_action(
 					time(),
@@ -47,7 +47,7 @@ class ActionScheduler_RecurringActionScheduler {
 					20
 				);
 			}
-			wp_cache_set( 'as_is_ensure_recurring_actions_scheduled', true, 'ActionScheduler', HOUR_IN_SECONDS );
+			set_transient( 'as_is_ensure_recurring_actions_scheduled', true, HOUR_IN_SECONDS );
 		}
 	}
 

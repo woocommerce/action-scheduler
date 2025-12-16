@@ -6,7 +6,7 @@
 class ActionScheduler_RecurringActionScheduler_Test extends ActionScheduler_UnitTestCase {
 
 	public function tear_down() {
-		wp_cache_delete( 'as_is_recurring_scheduler_scheduled' );
+		delete_transient( 'as_is_ensure_recurring_actions_scheduled' );
 		as_unschedule_action( 'action_scheduler_ensure_recurring_actions' );
 
 		parent::tear_down();
@@ -76,17 +76,17 @@ class ActionScheduler_RecurringActionScheduler_Test extends ActionScheduler_Unit
 			'No recurring action should be scheduled initially.'
 		);
 
-		// Simulate a cache hit
-		wp_cache_set( 'as_is_recurring_scheduler_scheduled', true, '', HOUR_IN_SECONDS );
+		// Simulate a transient hit
+		set_transient( 'as_is_ensure_recurring_actions_scheduled', true, HOUR_IN_SECONDS );
 
 		// Spy on as_schedule_recurring_action to verify it does NOT get called
 		$scheduler = new ActionScheduler_RecurringActionScheduler();
 		$scheduler->schedule_recurring_scheduler_hook();
 
-		// Assert that no new action was scheduled due to cache hit
+		// Assert that no new action was scheduled due to transient hit
 		$this->assertFalse(
 			as_has_scheduled_action( 'action_scheduler_ensure_recurring_actions' ),
-			'No new recurring action should be scheduled due to cache hit.'
+			'No new recurring action should be scheduled due to transient hit.'
 		);
 	}
 }

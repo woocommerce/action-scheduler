@@ -367,6 +367,22 @@ abstract class ActionScheduler {
 	}
 
 	/**
+	 * Serialize (PHP 7.4+).
+	 */
+	final public function __serialize() {
+		trigger_error( 'Singleton. No serialization allowed!', E_USER_ERROR ); // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_trigger_error
+	}
+
+	/**
+	 * Unserialize (PHP 7.4+).
+	 *
+	 * @param array $data Serialized data.
+	 */
+	final public function __unserialize( array $data ) {
+		trigger_error( 'Singleton. No serialization allowed!', E_USER_ERROR ); // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_trigger_error
+	}
+
+	/**
 	 * Wakeup.
 	 */
 	final public function __wakeup() {

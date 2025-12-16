@@ -68,6 +68,28 @@ abstract class ActionScheduler_Abstract_Schedule extends ActionScheduler_Schedul
 	}
 
 	/**
+	 * Serialize schedule data (PHP 7.4+).
+	 *
+	 * @return array
+	 */
+	public function __serialize() {
+		return array(
+			'scheduled_timestamp' => $this->scheduled_date->getTimestamp(),
+		);
+	}
+
+	/**
+	 * Unserialize schedule data (PHP 7.4+).
+	 *
+	 * @param array $data Serialized data.
+	 */
+	public function __unserialize( array $data ) {
+		$this->scheduled_timestamp = $data['scheduled_timestamp'];
+		$this->scheduled_date      = as_get_datetime_object( $this->scheduled_timestamp );
+		unset( $this->scheduled_timestamp );
+	}
+
+	/**
 	 * For PHP 5.2 compat, because DateTime objects can't be serialized
 	 *
 	 * @return array

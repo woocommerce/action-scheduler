@@ -44,6 +44,19 @@ class ActionScheduler_CanceledSchedule extends ActionScheduler_SimpleSchedule {
 	}
 
 	/**
+	 * Unserialize canceled schedule data (PHP 7.4+).
+	 *
+	 * @param array $data Serialized data.
+	 */
+	public function __unserialize( array $data ) {
+		// Handle backward compatibility with AS < 3.0.0.
+		if ( ! isset( $data['scheduled_timestamp'] ) && isset( $data['timestamp'] ) ) {
+			$data['scheduled_timestamp'] = $data['timestamp'];
+		}
+		parent::__unserialize( $data );
+	}
+
+	/**
 	 * Unserialize recurring schedules serialized/stored prior to AS 3.0.0
 	 *
 	 * Prior to Action Scheduler 3.0.0, schedules used different property names to refer

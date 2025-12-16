@@ -22,6 +22,24 @@ class ActionScheduler_NullSchedule extends ActionScheduler_SimpleSchedule {
 	}
 
 	/**
+	 * Serialize null schedule data (PHP 7.4+).
+	 *
+	 * @return array
+	 */
+	public function __serialize() {
+		return array();
+	}
+
+	/**
+	 * Unserialize null schedule data (PHP 7.4+).
+	 *
+	 * @param array $data Serialized data.
+	 */
+	public function __unserialize( array $data ) {
+		$this->scheduled_date = null;
+	}
+
+	/**
 	 * This schedule has no scheduled DateTime, so we need to override the parent __sleep().
 	 *
 	 * @return array

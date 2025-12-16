@@ -75,6 +75,38 @@ abstract class ActionScheduler_Abstract_RecurringSchedule extends ActionSchedule
 	}
 
 	/**
+	 * Serialize recurring schedule data (PHP 7.4+).
+	 *
+	 * @return array
+	 */
+	public function __serialize() {
+		$parent_data = parent::__serialize();
+		return array_merge(
+			$parent_data,
+			array(
+				'first_timestamp' => $this->first_date->getTimestamp(),
+				'recurrence'      => $this->recurrence,
+			)
+		);
+	}
+
+	/**
+	 * Unserialize recurring schedule data (PHP 7.4+).
+	 *
+	 * @param array $data Serialized data.
+	 */
+	public function __unserialize( array $data ) {
+		parent::__unserialize( $data );
+		$this->first_timestamp = $data['first_timestamp'];
+		$this->recurrence      = $data['recurrence'];
+		if ( $this->first_timestamp > 0 ) {
+			$this->first_date = as_get_datetime_object( $this->first_timestamp );
+		} else {
+			$this->first_date = $this->get_date();
+		}
+	}
+
+	/**
 	 * For PHP 5.2 compat, since DateTime objects can't be serialized
 	 *
 	 * @return array

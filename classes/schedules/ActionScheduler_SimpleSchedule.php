@@ -34,6 +34,35 @@ class ActionScheduler_SimpleSchedule extends ActionScheduler_Abstract_Schedule {
 	}
 
 	/**
+	 * Serialize simple schedule data (PHP 7.4+).
+	 *
+	 * @return array
+	 */
+	public function __serialize() {
+		$parent_data = parent::__serialize();
+		// For backward compatibility with AS < 3.0.0, include the 'timestamp' property.
+		return array_merge(
+			$parent_data,
+			array(
+				'timestamp' => $parent_data['scheduled_timestamp'],
+			)
+		);
+	}
+
+	/**
+	 * Unserialize simple schedule data (PHP 7.4+).
+	 *
+	 * @param array $data Serialized data.
+	 */
+	public function __unserialize( array $data ) {
+		// Handle backward compatibility with AS < 3.0.0.
+		if ( ! isset( $data['scheduled_timestamp'] ) && isset( $data['timestamp'] ) ) {
+			$data['scheduled_timestamp'] = $data['timestamp'];
+		}
+		parent::__unserialize( $data );
+	}
+
+	/**
 	 * Serialize schedule with data required prior to AS 3.0.0
 	 *
 	 * Prior to Action Scheduler 3.0.0, schedules used different property names to refer

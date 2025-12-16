@@ -42,6 +42,39 @@ class ActionScheduler_IntervalSchedule extends ActionScheduler_Abstract_Recurrin
 	}
 
 	/**
+	 * Serialize interval schedule data (PHP 7.4+).
+	 *
+	 * @return array
+	 */
+	public function __serialize() {
+		$parent_data = parent::__serialize();
+		// For backward compatibility with AS < 3.0.0, include old property names.
+		return array_merge(
+			$parent_data,
+			array(
+				'start_timestamp'     => $parent_data['scheduled_timestamp'],
+				'interval_in_seconds' => $parent_data['recurrence'],
+			)
+		);
+	}
+
+	/**
+	 * Unserialize interval schedule data (PHP 7.4+).
+	 *
+	 * @param array $data Serialized data.
+	 */
+	public function __unserialize( array $data ) {
+		// Handle backward compatibility with AS < 3.0.0.
+		if ( ! isset( $data['scheduled_timestamp'] ) && isset( $data['start_timestamp'] ) ) {
+			$data['scheduled_timestamp'] = $data['start_timestamp'];
+		}
+		if ( ! isset( $data['recurrence'] ) && isset( $data['interval_in_seconds'] ) ) {
+			$data['recurrence'] = $data['interval_in_seconds'];
+		}
+		parent::__unserialize( $data );
+	}
+
+	/**
 	 * Serialize interval schedules with data required prior to AS 3.0.0
 	 *
 	 * Prior to Action Scheduler 3.0.0, recurring schedules used different property names to

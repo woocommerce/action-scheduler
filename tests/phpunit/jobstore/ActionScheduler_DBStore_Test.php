@@ -811,4 +811,77 @@ class ActionScheduler_DBStore_Test extends AbstractStoreTest {
 			),
 		);
 	}
+
+	/**
+	 * Test partial_args_matching with both 'like' and 'json' modes for short and extended args.
+	 *
+	 * @dataProvider partial_args_matching_provider
+	 */
+	public function test_partial_args_matching( $mode, $use_extended_args ) {
+		if ( 'json' === $mode ) {
+			try {
+				$store = new ActionScheduler_DBStore();
+				$store->query_actions(
+					array(
+						'hook'                  => 'nonexistent_hook',
+						'args'                  => array( 'test' => 'value' ),
+						'partial_args_matching' => 'json',
+					)
+				);
+			} catch ( \RuntimeException $e ) {
+				$this->markTestSkipped( 'JSON functions not supported by database' );
+			}
+		}
+
+		global $wpdb;
+		$store    = new ActionScheduler_DBStore();
+		$schedule = new ActionScheduler_SimpleSchedule( as_get_datetime_object( 'tomorrow' ) );
+
+		if ( $use_extended_args ) {
+			$long_value = str_repeat( 'a', 200 );
+			$args       = array( 'key1' => $long_value, 'key2' => 'findme' );
+		} else {
+			$args = array( 'key1' => 'value1', 'key2' => 'findme' );
+		}
+
+		$action    = new ActionScheduler_Action( "test_hook_{$mode}", $args, $schedule );
+		$action_id = $store->save_action( $action );
+
+		if ( $use_extended_args ) {
+			$row = $wpdb->get_row( $wpdb->prepare( "SELECT args, extended_args FROM {$wpdb->actionscheduler_actions} WHERE action_id = %d", $action_id ) );
+			$this->assertNotNull( $row->extended_args, 'Extended args should be set for long args' );
+		}
+
+		$found = $store->query_actions(
+			array(
+				'hook'                  => "test_hook_{$mode}",
+				'args'                  => array( 'key2' => 'findme' ),
+				'partial_args_matching' => $mode,
+			)
+		);
+		$this->assertContains( $action_id, $found );
+
+		$not_found = $store->query_actions(
+			array(
+				'hook'                  => "test_hook_{$mode}",
+				'args'                  => array( 'key2' => 'notfound' ),
+				'partial_args_matching' => $mode,
+			)
+		);
+		$this->assertNotContains( $action_id, $not_found );
+	}
+
+	/**
+	 * Data provider for partial_args_matching tests.
+	 *
+	 * @return array Test cases with mode and extended_args flag.
+	 */
+	public function partial_args_matching_provider() {
+		return array(
+			'like mode with short args'     => array( 'like', false ),
+			'like mode with extended args'  => array( 'like', true ),
+			'json mode with short args'     => array( 'json', false ),
+			'json mode with extended args'  => array( 'json', true ),
+		);
+	}
 }

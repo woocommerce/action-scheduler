@@ -63,10 +63,40 @@ class ActionScheduler_DataController {
 	/**
 	 * Get a flag indicating whether the migration is complete.
 	 *
-	 * @return bool Whether the flag has been set marking the migration as complete
+	 * Checks the status flag first for performance. If not set, auto-detects
+	 * completion by checking if the old post-based store is empty.
+	 *
+	 * @return bool Whether the migration is complete
 	 */
 	public static function is_migration_complete() {
-		return get_option( self::STATUS_FLAG ) === self::STATUS_COMPLETE;
+		// Fast path: check the option first.
+		if ( get_option( self::STATUS_FLAG ) === self::STATUS_COMPLETE ) {
+			return true;
+		}
+
+		// Auto-detect: if no actions exist in the old post-based store, migration is complete.
+		if ( self::is_old_store_empty() ) {
+			self::mark_migration_complete();
+			return true;
+		}
+
+		return false;
+	}
+
+	/**
+	 * Check if the old post-based action store is empty.
+	 *
+	 * @return bool True if no scheduled-action posts exist.
+	 */
+	private static function is_old_store_empty() {
+		global $wpdb;
+
+		// Use a direct query for performance - avoid loading post objects.
+		$count = $wpdb->get_var(
+			"SELECT COUNT(*) FROM {$wpdb->posts} WHERE post_type = 'scheduled-action' LIMIT 1"
+		);
+
+		return 0 === (int) $count;
 	}
 
 	/**

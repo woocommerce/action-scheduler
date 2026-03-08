@@ -120,20 +120,27 @@ class ActionScheduler_DBLogger extends ActionScheduler_Logger {
 	 * @param int $action_id Action ID.
 	 */
 	public function clear_deleted_action_logs( $action_id ) {
+		$this->clear_deleted_action_logs_single_batch( $action_id, 1, 100 );
+	}
+
+	/**
+	 * Delete the action logs batch for an action.
+	 *
+	 * @param int  $action_id  Action id.
+	 * @param int  $batch      The batch index is used solely for troubleshooting. Reviewing action arguments provides a clear understanding of progressive deletion.
+	 * @param int  $batch_size Batch size.
+	 *
+	 * @return void
+	 */
+	public function clear_deleted_action_logs_single_batch( $action_id, $batch, $batch_size ) {
 		global $wpdb;
 
-		$batch_size = 100;
-		do {
-			$deleted_entries_count = (int) $wpdb->query(
-				$wpdb->prepare(
-					"DELETE FROM {$wpdb->actionscheduler_logs} WHERE action_id = %d LIMIT %d",
-					$action_id,
-					$batch_size
-				)
-			);
-			// Sleep 0.01 second (max) before the next batch deletion.
-			usleep( ( 10000 / $batch_size ) * $deleted_entries_count );
-		} while ( $deleted_entries_count === $batch_size );
+		$deleted  = (int) $wpdb->query( $wpdb->prepare( "DELETE FROM {$wpdb->actionscheduler_logs} WHERE action_id = %d LIMIT %d", $action_id, $batch_size ) );
+		$continue = $deleted === $batch_size;
+		if ( $continue ) {
+			// Schedule immediately, as this action will not be selected during the current run and will have lower than normal priority.
+			as_schedule_single_action( time(), 'action_scheduler_clear_deleted_action_logs_hook', array( $action_id, ++$batch, $batch_size ), '', false, 9 );
+		}
 	}
 
 	/**

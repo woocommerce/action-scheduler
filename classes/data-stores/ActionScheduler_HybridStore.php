@@ -400,9 +400,14 @@ class ActionScheduler_HybridStore extends Store {
 		}
 
 		foreach ( $stores as $store ) {
-			$action = $store->fetch_action( $action_id );
-			if ( ! is_a( $action, 'ActionScheduler_NullAction' ) ) {
-				return $store;
+			try {
+				// Probe by fetching the action status: if entry is corrupted, the object construction is not feasible.
+				if ( null !== $store->get_status( $action_id ) ) {
+					return $store;
+				}
+			} catch ( \InvalidArgumentException $e ) {
+				// Do nothing. In this context, not finding status for the given ID is not an error.
+				unset( $e ); // Make the code sniffer happy.
 			}
 		}
 		return null;

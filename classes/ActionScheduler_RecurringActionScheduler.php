@@ -37,8 +37,9 @@ class ActionScheduler_RecurringActionScheduler {
 	public function schedule_recurring_scheduler_hook(): void {
 		if ( false === get_transient( 'as_is_ensure_recurring_actions_scheduled' ) ) {
 			if ( ! as_has_scheduled_action( self::RUN_SCHEDULED_RECURRING_ACTIONS_HOOK ) ) {
+				$date = ActionScheduler_TimezoneHelper::set_local_timezone( new DateTime() )->modify( 'tomorrow 3am' );
 				as_schedule_recurring_action(
-					time(),
+					$date->getTimestamp(),
 					DAY_IN_SECONDS,
 					self::RUN_SCHEDULED_RECURRING_ACTIONS_HOOK,
 					[],

@@ -110,17 +110,30 @@ class ActionScheduler_DBLogger extends ActionScheduler_Logger {
 		parent::init();
 
 		add_action( 'action_scheduler_deleted_action', array( $this, 'clear_deleted_action_logs' ), 10, 1 );
+		add_action( 'action_scheduler_cancelled_corrupted_action', array( $this, 'clear_deleted_action_logs' ), 10, 1 );
 	}
 
 	/**
 	 * Delete the action logs for an action.
 	 *
+	 * @since 3.9.3 the logs will be deleted in batches of 100.
 	 * @param int $action_id Action ID.
 	 */
 	public function clear_deleted_action_logs( $action_id ) {
-		/** @var \wpdb $wpdb */ //phpcs:ignore Generic.Commenting.DocComment.MissingShort
 		global $wpdb;
-		$wpdb->delete( $wpdb->actionscheduler_logs, array( 'action_id' => $action_id ), array( '%d' ) );
+
+		$batch_size = 100;
+		do {
+			$deleted_entries_count = (int) $wpdb->query(
+				$wpdb->prepare(
+					"DELETE FROM {$wpdb->actionscheduler_logs} WHERE action_id = %d LIMIT %d",
+					$action_id,
+					$batch_size
+				)
+			);
+			// Sleep 0.01 second (max) before the next batch deletion.
+			usleep( ( 10000 / $batch_size ) * $deleted_entries_count );
+		} while ( $deleted_entries_count === $batch_size );
 	}
 
 	/**

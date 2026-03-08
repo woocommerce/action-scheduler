@@ -391,17 +391,22 @@ AND `group_id` = %d
 	 * @return ActionScheduler_Action|ActionScheduler_CanceledAction|ActionScheduler_FinishedAction
 	 */
 	protected function make_action_from_db_record( $data ) {
-
-		$hook     = $data->hook;
-		$args     = json_decode( $data->args, true );
-		$schedule = unserialize( $data->schedule ); // phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.serialize_unserialize
-
-		$this->validate_args( $args, $data->action_id );
-		$this->validate_schedule( $schedule, $data->action_id );
-
-		if ( empty( $schedule ) ) {
-			$schedule = new ActionScheduler_NullSchedule();
+		$args = json_decode( $data->args, true );
+		if ( ! is_array( $args ) && $data->status === self::STATUS_CANCELED ) {
+			// The handled corrupted action should appear in UI.
+			$args = array();
+		} else {
+			$this->validate_args( $args, $data->action_id );
 		}
+
+		$schedule = @unserialize( $data->schedule ); // phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.serialize_unserialize WordPress.PHP.NoSilencingOperator
+		if ( false === $schedule && $data->status === self::STATUS_CANCELED ) {
+			// The handled corrupted action should appear in UI.
+			$schedule = new ActionScheduler_NullSchedule();
+		} else {
+			$this->validate_schedule( $schedule, $data->action_id );
+		}
+
 		$group = $data->group ? $data->group : '';
 
 		return ActionScheduler::factory()->get_stored_action( $data->status, $data->hook, $args, $schedule, $group, $data->priority );

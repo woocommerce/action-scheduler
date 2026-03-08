@@ -1222,7 +1222,11 @@ AND `group_id` = %d
 
 		$updated = $wpdb->update(
 			$wpdb->actionscheduler_actions,
-			array( 'status' => self::STATUS_FAILED ),
+			array(
+				'status'             => self::STATUS_FAILED,
+				'last_attempt_gmt'   => current_time( 'mysql', true ),
+				'last_attempt_local' => current_time( 'mysql' ),
+			),
 			array( 'action_id' => $action_id ),
 			array( '%s' ),
 			array( '%d' )

@@ -170,4 +170,55 @@ class ActionScheduler_QueueCleaner_Test extends ActionScheduler_UnitTestCase {
 		$this->assertEquals( $created_actions[0], $failed[0] );
 		$this->assertCount( 1, $failed );
 	}
+
+	/**
+	 * Ensures deleting old actions in stock state handles failed actions as well.
+	 *
+	 * @return void
+	 */
+	public function test_delete_old_failed_actions_separately_by_default() {
+		$cleaner = $this->getMockBuilder( ActionScheduler_QueueCleaner::class )
+			->setConstructorArgs( array() )
+			->setMethodsExcept( array( 'delete_old_actions', 'get_batch_size' ) )
+			->getMock();
+		$cleaner->expects( $this->exactly( 2 ) )
+			->method( 'clean_actions' )
+			->withConsecutive(
+				array( array( ActionScheduler_Store::STATUS_FAILED ), $this->anything(), 20 ),
+				array( array( ActionScheduler_Store::STATUS_COMPLETE, ActionScheduler_Store::STATUS_CANCELED ), $this->anything(), 17 )
+			)
+			->willReturnOnConsecutiveCalls( array( '...', '...', '...', '...', '...', '...' ), array( '-' ) );
+
+		$deleted = $cleaner->delete_old_actions();
+
+		$this->assertSame( array( '...', '...', '...', '...', '...', '...', '-' ), $deleted );
+	}
+
+	/**
+	 * Ensures deleting old actions handles failed actions in backward compatible way when the failed status is
+	 * injected 'via action_scheduler_default_cleaner_statuses' and not processed separately compared to the stock state.
+	 *
+	 * @return void
+	 */
+	public function test_delete_old_failed_actions_with_other_statuses() {
+		$filter = function () {
+			return array( ActionScheduler_Store::STATUS_COMPLETE, ActionScheduler_Store::STATUS_FAILED );
+		};
+		add_filter( 'action_scheduler_default_cleaner_statuses', $filter );
+
+		$cleaner = $this->getMockBuilder( ActionScheduler_QueueCleaner::class )
+			->setConstructorArgs( array() )
+			->setMethodsExcept( array( 'delete_old_actions', 'get_batch_size' ) )
+			->getMock();
+		$cleaner->expects( $this->once() )
+			->method( 'clean_actions' )
+			->with( array( ActionScheduler_Store::STATUS_COMPLETE, ActionScheduler_Store::STATUS_FAILED ), $this->anything(), 20 )
+			->willReturn( array( '...', '...' ) );
+
+		$deleted = $cleaner->delete_old_actions();
+
+		$this->assertSame( array( '...', '...' ), $deleted );
+
+		remove_filter( 'action_scheduler_default_cleaner_statuses', $filter );
+	}
 }

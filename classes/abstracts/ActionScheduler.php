@@ -258,7 +258,7 @@ abstract class ActionScheduler {
 			if ( ActionScheduler_WPCommentCleaner::has_logs() ) {
 				ActionScheduler_WPCommentCleaner::init();
 			}
-			add_action( 'action_scheduler_clear_deleted_action_logs_hook', array( $logger, 'clear_deleted_action_logs_single_batch' ), 10, 3 );
+			add_action( 'action_scheduler_clear_deleted_action_logs_hook', array( $logger, 'clear_deleted_action_logs_single_batch' ), 10, 4 );
 		}
 
 		add_action( 'action_scheduler/migration_complete', 'ActionScheduler_WPCommentCleaner::maybe_schedule_cleanup' );

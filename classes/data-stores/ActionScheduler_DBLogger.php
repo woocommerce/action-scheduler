@@ -120,26 +120,31 @@ class ActionScheduler_DBLogger extends ActionScheduler_Logger {
 	 * @param int $action_id Action ID.
 	 */
 	public function clear_deleted_action_logs( $action_id ) {
-		$this->clear_deleted_action_logs_single_batch( $action_id, 1, 100 );
+		$this->clear_deleted_action_logs_single_batch( $action_id, -1, 1, 100 );
 	}
 
 	/**
 	 * Delete the action logs batch for an action.
 	 *
-	 * @param int  $action_id  Action id.
-	 * @param int  $batch      The batch index is used solely for troubleshooting. Reviewing action arguments provides a clear understanding of progressive deletion.
-	 * @param int  $batch_size Batch size.
+	 * @param int  $action_id      Action id.
+	 * @param int  $cutoff_log_id  Cutoff log ID. Retain logs generated after the cleanup begins. A value of -1 indicates the start of the cleanup.
+	 * @param int  $batch          The batch index is used solely for troubleshooting. Reviewing action arguments provides a clear understanding of progressive deletion.
+	 * @param int  $batch_size     Batch size.
 	 *
 	 * @return void
 	 */
-	public function clear_deleted_action_logs_single_batch( $action_id, $batch, $batch_size ) {
+	public function clear_deleted_action_logs_single_batch( $action_id, $cutoff_log_id, $batch, $batch_size ) {
 		global $wpdb;
 
-		$deleted  = (int) $wpdb->query( $wpdb->prepare( "DELETE FROM {$wpdb->actionscheduler_logs} WHERE action_id = %d LIMIT %d", $action_id, $batch_size ) );
+		if ( -1 === $cutoff_log_id ) {
+			$cutoff_log_id = 1 + (int) $wpdb->get_var( $wpdb->prepare( "SELECT MAX(log_id) FROM {$wpdb->actionscheduler_logs} WHERE action_id = %d", $action_id ) );
+		}
+
+		$deleted  = (int) $wpdb->query( $wpdb->prepare( "DELETE FROM {$wpdb->actionscheduler_logs} WHERE action_id = %d AND log_id < %d LIMIT %d", $action_id, $cutoff_log_id, $batch_size ) );
 		$continue = $deleted === $batch_size;
 		if ( $continue ) {
 			// Schedule immediately, as this action will not be selected during the current run and will have lower than normal priority.
-			as_schedule_single_action( time(), 'action_scheduler_clear_deleted_action_logs_hook', array( $action_id, ++$batch, $batch_size ), '', false, 9 );
+			as_schedule_single_action( time(), 'action_scheduler_clear_deleted_action_logs_hook', array( $action_id, $cutoff_log_id, ++$batch, $batch_size ), '', false, 9 );
 		}
 	}
 

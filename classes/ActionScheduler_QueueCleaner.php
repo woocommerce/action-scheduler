@@ -110,6 +110,9 @@ class ActionScheduler_QueueCleaner {
 			$deleted_failed_entries = $this->clean_actions( array( ActionScheduler_Store::STATUS_FAILED ), $cutoff_failed, $batch_size );
 			$count_statuses         = empty( $statuses_to_purge ) ? count( $this->default_statuses_to_purge ) : count( $statuses_to_purge );
 			$batch_size             = (int) ( ( ( $count_statuses * $batch_size ) - count( $deleted_failed_entries ) ) / $count_statuses );
+			if ( $batch_size <= 0 ) {
+				return $deleted_failed_entries;
+			}
 		}
 
 		$deleted_entries = $this->clean_actions( $statuses_to_purge, $cutoff_default, $batch_size );

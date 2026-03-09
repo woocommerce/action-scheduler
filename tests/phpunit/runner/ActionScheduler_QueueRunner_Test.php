@@ -335,6 +335,11 @@ class ActionScheduler_QueueRunner_Test extends ActionScheduler_UnitTestCase {
 		$this->assertCount( 1, $logs );
 		$this->assertStringContainsString( 'This action data appears to be corrupt.', $logs[0]->get_message() );
 
+		// Verify that a canceled corrupted action is visible in the user interface.
+		$action = $store->fetch_action( $action_id );
+		$this->assertInstanceOf( ActionScheduler_FinishedAction::class, $action );
+		$this->assertInstanceOf( ActionScheduler_NullSchedule::class, $action->get_schedule() );
+
 		$store->delete_action( $action_id );
 	}
 

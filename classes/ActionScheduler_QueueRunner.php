@@ -86,6 +86,15 @@ class ActionScheduler_QueueRunner extends ActionScheduler_Abstract_QueueRunner {
 
 		add_action( self::WP_CRON_HOOK, array( self::instance(), 'run' ) );
 		$this->hook_dispatch_async_request();
+
+		// Backward compatibility: depending on whether the action cleaner is standard or not, cleaning will be performed
+		// by an action (to increase overall throughput and run on a daily basis) or explicitly before processing actions.
+		if ( get_class( $this->cleaner ) === ActionScheduler_QueueCleaner::class ) {
+			// The cleaner was originally designed as a QueueRunner dependency, hence registering the hook here.
+			add_action( 'action_scheduler_run_actions_cleanup_hook', array( $this->cleaner, 'delete_old_actions' ) );
+			// TBD: register new recurring action (priority: 15, occurrence: 3am).
+			// add_action( 'action_scheduler_ensure_recurring_actions', /* (re)register action_scheduler_run_actions_cleanup_hook action */ );
+		}
 	}
 
 	/**
@@ -148,8 +157,20 @@ class ActionScheduler_QueueRunner extends ActionScheduler_Abstract_QueueRunner {
 	public function run( $context = 'WP Cron' ) {
 		ActionScheduler_Compatibility::raise_memory_limit();
 		ActionScheduler_Compatibility::raise_time_limit( $this->get_time_limit() );
+
 		do_action( 'action_scheduler_before_process_queue' );
-		$this->run_cleanup();
+
+		$cleanup_time_limit = 10 * $this->get_time_limit();
+		// Backward compatibility: depending on whether the action cleaner is standard or not, cleaning will be performed
+		// by an action (to increase overall throughput and run on a daily basis) or explicitly before processing actions.
+		if ( get_class( $this->cleaner ) !== ActionScheduler_QueueCleaner::class ) {
+			// Execute complete cleanup cycle, as in this logical branch deletion IS NOT executed via a separate action.
+			$this->cleaner->clean( $cleanup_time_limit );
+		} else {
+			// Execute partial cleanup cycle, as in this logical branch deletion IS executed via a separate action.
+			$this->cleaner->reset_timeouts( $cleanup_time_limit );
+			$this->cleaner->mark_failures( $cleanup_time_limit );
+		}
 
 		$this->processed_actions_count = 0;
 		if ( false === $this->has_maximum_concurrent_batches() ) {

@@ -60,7 +60,9 @@ class ActionScheduler_WPCLI_QueueRunner extends ActionScheduler_Abstract_QueueRu
 	 * @throws \WP_CLI\ExitException When there are too many concurrent batches.
 	 */
 	public function setup( $batch_size, $hooks = array(), $group = '', $force = false ) {
-		$this->run_cleanup();
+		$cleanup_time_limit = 10 * $this->get_time_limit();
+		$this->cleaner->clean( $cleanup_time_limit );
+
 		$this->add_hooks();
 
 		// Check to make sure there aren't too many concurrent processes running.

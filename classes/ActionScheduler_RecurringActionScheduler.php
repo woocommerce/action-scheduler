@@ -24,7 +24,7 @@ class ActionScheduler_RecurringActionScheduler {
 	 */
 	public function init(): void {
 		add_action( self::RUN_SCHEDULED_RECURRING_ACTIONS_HOOK, array( $this, 'run_recurring_scheduler_hook' ) );
-		if ( is_admin() && ( ! defined( 'DOING_AJAX' ) || ! DOING_AJAX ) ) {
+		if ( is_admin() && ! wp_doing_ajax() && ! wp_is_serving_rest_request() ) {
 			add_action( 'action_scheduler_init', array( $this, 'schedule_recurring_scheduler_hook' ) );
 		}
 	}

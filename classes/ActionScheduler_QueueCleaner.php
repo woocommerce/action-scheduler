@@ -39,8 +39,8 @@ class ActionScheduler_QueueCleaner {
 	 * @var string[]
 	 */
 	private $default_statuses_to_purge = array(
-		ActionScheduler_Store::STATUS_COMPLETE,
 		ActionScheduler_Store::STATUS_CANCELED,
+		ActionScheduler_Store::STATUS_COMPLETE,
 	);
 
 	/**
@@ -61,21 +61,27 @@ class ActionScheduler_QueueCleaner {
 	 */
 	public function register_cleaner_hooks() {
 		add_action( self::RUN_SCHEDULED_CLEANER_HOOK, array( $this, 'delete_old_actions' ) );
-		// TBD: refactor to reference a method instead.
-		add_action( 'action_scheduler_ensure_recurring_actions', function () {
-			if ( ! as_has_scheduled_action( self::RUN_SCHEDULED_CLEANER_HOOK ) ) {
-				$date = ActionScheduler_TimezoneHelper::set_local_timezone( new DateTime() )->modify( 'tomorrow 3am' );
-				as_schedule_recurring_action(
-					$date->getTimestamp(),
-					DAY_IN_SECONDS,
-					self::RUN_SCHEDULED_CLEANER_HOOK,
-					[],
-					'ActionScheduler',
-					true,
-					15
-				);
-			}
-		} );
+		add_action( 'action_scheduler_ensure_recurring_actions', array( $this, 'register_recurring_actions' ) );
+	}
+
+	/**
+	 * Register the recurring action deletion task.
+	 *
+	 * @return void
+	 */
+	public function register_recurring_actions() {
+		if ( ! as_has_scheduled_action( self::RUN_SCHEDULED_CLEANER_HOOK ) ) {
+			$date = ActionScheduler_TimezoneHelper::set_local_timezone( new DateTime() )->modify( 'tomorrow 3am' );
+			as_schedule_recurring_action(
+				$date->getTimestamp(),
+				DAY_IN_SECONDS,
+				self::RUN_SCHEDULED_CLEANER_HOOK,
+				[],
+				'ActionScheduler',
+				true,
+				15
+			);
+		}
 	}
 
 	/**
@@ -166,23 +172,27 @@ class ActionScheduler_QueueCleaner {
 		$lifespan          = time() - $cutoff->getTimestamp();
 		$statuses_to_purge = empty( $statuses_to_purge ) ? $this->default_statuses_to_purge : $statuses_to_purge;
 
-		$is_scheduled_cleanup = doing_action( self::RUN_SCHEDULED_CLEANER_HOOK );
-		$batch_size           = $is_scheduled_cleanup ? max( 100, $batch_size ) : $batch_size;
-		$can_be_continued     = false;
+		$is_scheduled_cleanup    = doing_action( self::RUN_SCHEDULED_CLEANER_HOOK );
+		$batch_size              = $is_scheduled_cleanup ? max( 50, $batch_size ) : $batch_size;
+		$unused_execution_budget = 0;
+		$can_be_continued        = false;
 
 		$deleted_actions      = array();
 		foreach ( $statuses_to_purge as $status ) {
-			$actions_to_delete = $this->store->query_actions(
+			$iteration_execution_budget = $batch_size + $unused_execution_budget;
+			$actions_to_delete          = $this->store->query_actions(
 				array(
 					'status'           => $status,
 					'modified'         => $cutoff,
 					'modified_compare' => '<=',
-					'per_page'         => $batch_size,
+					'per_page'         => $iteration_execution_budget,
 					'orderby'          => 'none',
 				)
 			);
-			$deleted_actions[] = $this->delete_actions( $actions_to_delete, $lifespan, $context );
-			$can_be_continued  = $can_be_continued || ( $batch_size > 0 && $batch_size === count( $actions_to_delete ) );
+			$deleted_actions[]          = $this->delete_actions( $actions_to_delete, $lifespan, $context );
+
+			$unused_execution_budget = $is_scheduled_cleanup ? ( $iteration_execution_budget - count( $actions_to_delete ) ) : 0;
+			$can_be_continued        = $can_be_continued || ( $batch_size > 0 && $iteration_execution_budget === count( $actions_to_delete ) );
 		}
 
 		if ( $is_scheduled_cleanup && $can_be_continued ) {

@@ -89,11 +89,9 @@ class ActionScheduler_QueueRunner extends ActionScheduler_Abstract_QueueRunner {
 
 		// Backward compatibility: depending on whether the action cleaner is standard or not, cleaning will be performed
 		// by an action (to increase overall throughput and run on a daily basis) or explicitly before processing actions.
+		// The cleaner was originally designed as a QueueRunner dependency, hence registering the hooks here.
 		if ( get_class( $this->cleaner ) === ActionScheduler_QueueCleaner::class ) {
-			// The cleaner was originally designed as a QueueRunner dependency, hence registering the hook here.
-			add_action( 'action_scheduler_run_actions_cleanup_hook', array( $this->cleaner, 'delete_old_actions' ) );
-			// TBD: register new recurring action (priority: 15, occurrence: 3am).
-			// add_action( 'action_scheduler_ensure_recurring_actions', /* (re)register action_scheduler_run_actions_cleanup_hook action */ );
+			$this->cleaner->register_cleaner_hooks();
 		}
 	}
 

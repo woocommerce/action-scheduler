@@ -4,6 +4,13 @@
  * Class ActionScheduler_QueueCleaner
  */
 class ActionScheduler_QueueCleaner {
+	/**
+	 * The cleaner action hook is scheduled to run daily to initiate cleanup. It also triggers a series of non-recurring
+	 * actions that continue the cleanup in batches until all deletion actions are completed.
+	 *
+	 * @var string
+	 */
+	private const RUN_SCHEDULED_CLEANER_HOOK = 'action_scheduler_run_actions_cleanup_hook';
 
 	/**
 	 * The batch size.
@@ -45,6 +52,30 @@ class ActionScheduler_QueueCleaner {
 	public function __construct( ?ActionScheduler_Store $store = null, $batch_size = 20 ) {
 		$this->store      = $store ? $store : ActionScheduler_Store::instance();
 		$this->batch_size = $batch_size;
+	}
+
+	/**
+	 * Registers action hooks to perform action deletions as a separate task.
+	 *
+	 * @return void
+	 */
+	public function register_cleaner_hooks() {
+		add_action( self::RUN_SCHEDULED_CLEANER_HOOK, array( $this, 'delete_old_actions' ) );
+		// TBD: refactor to reference a method instead.
+		add_action( 'action_scheduler_ensure_recurring_actions', function () {
+			if ( ! as_has_scheduled_action( self::RUN_SCHEDULED_CLEANER_HOOK ) ) {
+				$date = ActionScheduler_TimezoneHelper::set_local_timezone( new DateTime() )->modify( 'tomorrow 3am' );
+				as_schedule_recurring_action(
+					$date->getTimestamp(),
+					DAY_IN_SECONDS,
+					self::RUN_SCHEDULED_CLEANER_HOOK,
+					[],
+					'ActionScheduler',
+					true,
+					15
+				);
+			}
+		} );
 	}
 
 	/**
@@ -135,7 +166,7 @@ class ActionScheduler_QueueCleaner {
 		$lifespan          = time() - $cutoff->getTimestamp();
 		$statuses_to_purge = empty( $statuses_to_purge ) ? $this->default_statuses_to_purge : $statuses_to_purge;
 
-		$is_scheduled_cleanup = doing_action( 'action_scheduler_run_actions_cleanup_hook' );
+		$is_scheduled_cleanup = doing_action( self::RUN_SCHEDULED_CLEANER_HOOK );
 		$batch_size           = $is_scheduled_cleanup ? max( 100, $batch_size ) : $batch_size;
 		$can_be_continued     = false;
 
@@ -150,13 +181,13 @@ class ActionScheduler_QueueCleaner {
 					'orderby'          => 'none',
 				)
 			);
-			$deleted_actions[] = $this->delete_actions( $actions_to_delete, $is_scheduled_cleanup, $lifespan, $context );
+			$deleted_actions[] = $this->delete_actions( $actions_to_delete, $lifespan, $context );
 			$can_be_continued  = $can_be_continued || ( $batch_size > 0 && $batch_size === count( $actions_to_delete ) );
 		}
 
 		if ( $is_scheduled_cleanup && $can_be_continued ) {
 			// Schedule immediately, as this action will not be selected during the current run and will have the same priority as the action we are currently executing.
-			as_schedule_single_action( time(), 'action_scheduler_run_actions_cleanup_hook', [], 'ActionScheduler', false, 15 );
+			as_schedule_single_action( time(), self::RUN_SCHEDULED_CLEANER_HOOK, [], 'ActionScheduler', false, 15 );
 		}
 
 		return array_merge( array(), ...$deleted_actions );
@@ -165,14 +196,13 @@ class ActionScheduler_QueueCleaner {
 	/**
 	 * Delete actions.
 	 *
-	 * @param int[]  $actions_to_delete    List of action IDs to delete.
-	 * @param bool   $is_scheduled_cleanup Whether we are executing scheduled cleanup action or not.
-	 * @param int    $lifespan             Minimum scheduled age in seconds of the actions being deleted.
-	 * @param string $context              Context of the delete request.
+	 * @param int[]  $actions_to_delete List of action IDs to delete.
+	 * @param int    $lifespan          Minimum scheduled age in seconds of the actions being deleted.
+	 * @param string $context           Context of the delete request.
 	 *
 	 * @return int[] Deleted action IDs.
 	 */
-	private function delete_actions( array $actions_to_delete, $is_scheduled_cleanup, $lifespan, $context = 'old' ) {
+	private function delete_actions( array $actions_to_delete, $lifespan, $context = 'old' ) {
 		$deleted_actions = array();
 		foreach ( $actions_to_delete as $action_id ) {
 			try {

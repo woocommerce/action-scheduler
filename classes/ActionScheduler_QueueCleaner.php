@@ -136,6 +136,7 @@ class ActionScheduler_QueueCleaner {
 		$statuses_to_purge = empty( $statuses_to_purge ) ? $this->default_statuses_to_purge : $statuses_to_purge;
 
 		$is_scheduled_cleanup = doing_action( 'action_scheduler_run_actions_cleanup_hook' );
+		$batch_size           = $is_scheduled_cleanup ? max( 100, $batch_size ) : $batch_size;
 		$can_be_continued     = false;
 
 		$deleted_actions      = array();
@@ -177,12 +178,6 @@ class ActionScheduler_QueueCleaner {
 			try {
 				$this->store->delete_action( $action_id );
 				$deleted_actions[] = $action_id;
-
-				if ( $is_scheduled_cleanup ) {
-					// Pause for 1ms to prevent excessive action and log deletion queries from flooding the replication log in clustered environments.
-					// This adds approximately 50–75ms per cleanup action execution at default batch sizes, which is negligible relative to the execution time budget.
-					usleep( 1000 );
-				}
 			} catch ( Exception $e ) {
 				/**
 				 * Notify 3rd party code of exceptions when deleting a completed action older than the retention period

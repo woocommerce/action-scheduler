@@ -130,15 +130,15 @@ class ActionScheduler_QueueCleaner {
 	 * @return array Actions deleted.
 	 */
 	public function clean_actions( array $statuses_to_purge, DateTime $cutoff_date, $batch_size = null, $context = 'old' ) {
-		$batch_size = ! is_null( $batch_size ) ? $batch_size : $this->batch_size;
-		$cutoff     = ! is_null( $cutoff_date ) ? $cutoff_date : as_get_datetime_object( $this->month_in_seconds . ' seconds ago' );
-		$lifespan   = time() - $cutoff->getTimestamp();
+		$batch_size        = ! is_null( $batch_size ) ? $batch_size : $this->batch_size;
+		$cutoff            = ! is_null( $cutoff_date ) ? $cutoff_date : as_get_datetime_object( $this->month_in_seconds . ' seconds ago' );
+		$lifespan          = time() - $cutoff->getTimestamp();
+		$statuses_to_purge = empty( $statuses_to_purge ) ? $this->default_statuses_to_purge : $statuses_to_purge;
 
-		if ( empty( $statuses_to_purge ) ) {
-			$statuses_to_purge = $this->default_statuses_to_purge;
-		}
+		$is_scheduled_cleanup = doing_action( 'action_scheduler_run_actions_cleanup_hook' );
+		$can_be_continued     = false;
 
-		$deleted_actions = array();
+		$deleted_actions      = array();
 		foreach ( $statuses_to_purge as $status ) {
 			$actions_to_delete = $this->store->query_actions(
 				array(
@@ -149,7 +149,13 @@ class ActionScheduler_QueueCleaner {
 					'orderby'          => 'none',
 				)
 			);
-			$deleted_actions[] = $this->delete_actions( $actions_to_delete, $lifespan, $context );
+			$deleted_actions[] = $this->delete_actions( $actions_to_delete, $is_scheduled_cleanup, $lifespan, $context );
+			$can_be_continued  = $can_be_continued || ( $batch_size > 0 && $batch_size === count( $actions_to_delete ) );
+		}
+
+		if ( $is_scheduled_cleanup && $can_be_continued ) {
+			// Schedule immediately, as this action will not be selected during the current run and will have the same priority as the action we are currently executing.
+			as_schedule_single_action( time(), 'action_scheduler_run_actions_cleanup_hook', [], 'ActionScheduler', false, 15 );
 		}
 
 		return array_merge( array(), ...$deleted_actions );
@@ -158,25 +164,25 @@ class ActionScheduler_QueueCleaner {
 	/**
 	 * Delete actions.
 	 *
-	 * @param int[]  $actions_to_delete List of action IDs to delete.
-	 * @param int    $lifespan Minimum scheduled age in seconds of the actions being deleted.
-	 * @param string $context Context of the delete request.
-	 * @return array Deleted action IDs.
+	 * @param int[]  $actions_to_delete    List of action IDs to delete.
+	 * @param bool   $is_scheduled_cleanup Whether we are executing scheduled cleanup action or not.
+	 * @param int    $lifespan             Minimum scheduled age in seconds of the actions being deleted.
+	 * @param string $context              Context of the delete request.
+	 *
+	 * @return int[] Deleted action IDs.
 	 */
-	private function delete_actions( array $actions_to_delete, $lifespan = null, $context = 'old' ) {
+	private function delete_actions( array $actions_to_delete, $is_scheduled_cleanup, $lifespan, $context = 'old' ) {
 		$deleted_actions = array();
-
-		if ( is_null( $lifespan ) ) {
-			$lifespan = $this->month_in_seconds;
-		}
-
 		foreach ( $actions_to_delete as $action_id ) {
 			try {
 				$this->store->delete_action( $action_id );
 				$deleted_actions[] = $action_id;
-				// Pause for 1ms to prevent excessive action and log deletion queries from flooding the replication log in clustered environments.
-				// This adds approximately 50–75ms per queue run at default batch sizes, which is negligible relative to the execution time budget.
-				usleep( 1000 );
+
+				if ( $is_scheduled_cleanup ) {
+					// Pause for 1ms to prevent excessive action and log deletion queries from flooding the replication log in clustered environments.
+					// This adds approximately 50–75ms per cleanup action execution at default batch sizes, which is negligible relative to the execution time budget.
+					usleep( 1000 );
+				}
 			} catch ( Exception $e ) {
 				/**
 				 * Notify 3rd party code of exceptions when deleting a completed action older than the retention period

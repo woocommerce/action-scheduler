@@ -85,7 +85,7 @@ class ActionScheduler_QueueCleaner {
 	}
 
 	/**
-	 * Default queue cleaner process used by queue runner.
+	 * Handles action deletion for both the scheduled cleanup task and the inline cleanup cycle.
 	 *
 	 * @since 3.9.4 by default, failed actions are removed after three months.
 	 * @return array

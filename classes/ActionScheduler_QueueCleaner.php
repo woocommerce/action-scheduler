@@ -39,8 +39,8 @@ class ActionScheduler_QueueCleaner {
 	 * @var string[]
 	 */
 	private $default_statuses_to_purge = array(
-		ActionScheduler_Store::STATUS_CANCELED,
 		ActionScheduler_Store::STATUS_COMPLETE,
+		ActionScheduler_Store::STATUS_CANCELED,
 	);
 
 	/**
@@ -172,14 +172,36 @@ class ActionScheduler_QueueCleaner {
 		$lifespan          = time() - $cutoff->getTimestamp();
 		$statuses_to_purge = empty( $statuses_to_purge ) ? $this->default_statuses_to_purge : $statuses_to_purge;
 
-		$is_scheduled_cleanup    = doing_action( self::RUN_SCHEDULED_CLEANER_HOOK );
-		$batch_size              = $is_scheduled_cleanup ? max( 50, $batch_size ) : $batch_size;
-		$unused_execution_budget = 0;
-		$can_be_continued        = false;
+		$is_scheduled_cleanup       = doing_action( self::RUN_SCHEDULED_CLEANER_HOOK );
+		$iteration_batch_size       = $is_scheduled_cleanup ? max( 50, $batch_size ) : $batch_size;
+		$iteration_unused_budget    = 0;
+		$continue_scheduled_cleanup = false;
+		if ( $is_scheduled_cleanup ) {
+			// Sort the statuses to optimize execution budget usage based on the typical status distribution.
+			usort( $statuses_to_purge, function( $a, $b ) {
+				// Place the 'canceled' status first to help ensure that any unspent execution budget can be used for processing other statuses.
+				if ( $a === ActionScheduler_Store::STATUS_CANCELED ) {
+					return -1;
+				}
+				if ( $b === ActionScheduler_Store::STATUS_CANCELED ) {
+					return 1;
+				}
 
-		$deleted_actions      = array();
+				// Place the 'complete' status at the end to use any remaining execution budget for processing.
+				if ( $a === ActionScheduler_Store::STATUS_COMPLETE ) {
+					return 1;
+				}
+				if ( $b === ActionScheduler_Store::STATUS_COMPLETE ) {
+					return -1;
+				}
+
+				return 0;
+			} );
+		}
+
+		$deleted_actions = array();
 		foreach ( $statuses_to_purge as $status ) {
-			$iteration_execution_budget = $batch_size + $unused_execution_budget;
+			$iteration_execution_budget = $iteration_batch_size + $iteration_unused_budget;
 			$actions_to_delete          = $this->store->query_actions(
 				array(
 					'status'           => $status,
@@ -191,11 +213,11 @@ class ActionScheduler_QueueCleaner {
 			);
 			$deleted_actions[]          = $this->delete_actions( $actions_to_delete, $lifespan, $context );
 
-			$unused_execution_budget = $is_scheduled_cleanup ? ( $iteration_execution_budget - count( $actions_to_delete ) ) : 0;
-			$can_be_continued        = $can_be_continued || ( $batch_size > 0 && $iteration_execution_budget === count( $actions_to_delete ) );
+			$iteration_unused_budget    = $is_scheduled_cleanup ? ( $iteration_execution_budget - count( $actions_to_delete ) ) : 0;
+			$continue_scheduled_cleanup = $continue_scheduled_cleanup || ( $iteration_batch_size > 0 && $iteration_execution_budget === count( $actions_to_delete ) );
 		}
 
-		if ( $is_scheduled_cleanup && $can_be_continued ) {
+		if ( $is_scheduled_cleanup && $continue_scheduled_cleanup ) {
 			// Schedule immediately, as this action will not be selected during the current run and will have the same priority as the action we are currently executing.
 			as_schedule_single_action( time(), self::RUN_SCHEDULED_CLEANER_HOOK, [], 'ActionScheduler', false, 15 );
 		}

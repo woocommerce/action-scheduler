@@ -158,12 +158,15 @@ class ActionScheduler_QueueCleaner {
 	}
 
 	/**
-	 * Delete selected actions limited by status and date.
+	 * Delete selected actions based on status and date. The function's behavior depends on the context:
+	 * - For scheduled cleanup actions, the function operates within execution budget constraints optimized for high-traffic stores.
+	 * - Otherwise, it strictly follows the provided parameters without the scheduled cleanup optimizations.
 	 *
 	 * @param string[] $statuses_to_purge List of action statuses to purge. Defaults to canceled, complete.
-	 * @param DateTime $cutoff_date Date limit for selecting actions. Defaults to 31 days ago.
-	 * @param int|null $batch_size Maximum number of actions per status to delete. Defaults to 20.
-	 * @param string   $context Calling process context. Defaults to `old`.
+	 * @param DateTime $cutoff_date       Date limit for selecting actions. Defaults to 31 days ago.
+	 * @param int|null $batch_size        Maximum number of actions per status to delete. Defaults to 20.
+	 * @param string   $context           Calling process context. Defaults to `old`.
+	 *
 	 * @return array Actions deleted.
 	 */
 	public function clean_actions( array $statuses_to_purge, DateTime $cutoff_date, $batch_size = null, $context = 'old' ) {
@@ -172,6 +175,8 @@ class ActionScheduler_QueueCleaner {
 		$lifespan          = time() - $cutoff->getTimestamp();
 		$statuses_to_purge = empty( $statuses_to_purge ) ? $this->default_statuses_to_purge : $statuses_to_purge;
 
+		// When deletion is performed as a separate action, we can enforce a minimum batch size to achieve consistent deletion throughput.
+		// For inline cleanup during a queue run, the batch size should remain unchanged to avoid increasing the process footprint.
 		$is_scheduled_cleanup       = doing_action( self::RUN_SCHEDULED_CLEANER_HOOK );
 		$iteration_batch_size       = $is_scheduled_cleanup ? max( 50, $batch_size ) : $batch_size;
 		$iteration_unused_budget    = 0;

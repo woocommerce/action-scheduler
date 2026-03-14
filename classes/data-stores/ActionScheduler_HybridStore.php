@@ -405,9 +405,8 @@ class ActionScheduler_HybridStore extends Store {
 				if ( null !== $store->get_status( $action_id ) ) {
 					return $store;
 				}
-			} catch ( \InvalidArgumentException $e ) {
+			} catch ( \InvalidArgumentException $e ) { // phpcs:ignore Generic.CodeAnalysis.EmptyStatement.DetectedCatch
 				// Do nothing. In this context, not finding status for the given ID is not an error.
-				unset( $e ); // Make the code sniffer happy.
 			}
 		}
 		return null;

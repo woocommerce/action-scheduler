@@ -156,7 +156,7 @@ abstract class ActionScheduler_Abstract_QueueRunner extends ActionScheduler_Abst
 		$this->store->cancel_action( $action_id );
 
 		// Corrupted entries typically contain an excessive number of logs, which we intend to remove immediately.
-		do_action( 'action_scheduler_cancelled_corrupted_action', $action_id );
+		do_action( 'action_scheduler_canceled_corrupted_action', $action_id );
 
 		// Add a comment to clarify the missing logs and explain the reason for the cancellation.
 		ActionScheduler_Logger::instance()->log(

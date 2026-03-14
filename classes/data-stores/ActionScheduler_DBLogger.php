@@ -110,7 +110,7 @@ class ActionScheduler_DBLogger extends ActionScheduler_Logger {
 		parent::init();
 
 		add_action( 'action_scheduler_deleted_action', array( $this, 'clear_deleted_action_logs' ), 10, 1 );
-		add_action( 'action_scheduler_cancelled_corrupted_action', array( $this, 'clear_deleted_action_logs' ), 10, 1 );
+		add_action( 'action_scheduler_canceled_corrupted_action', array( $this, 'clear_deleted_action_logs' ), 10, 1 );
 		add_action( 'action_scheduler_clear_deleted_action_logs_hook', array( $this, 'clear_deleted_action_logs_single_batch' ), 10, 4 );
 	}
 

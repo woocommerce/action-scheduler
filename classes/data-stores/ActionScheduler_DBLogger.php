@@ -145,7 +145,7 @@ class ActionScheduler_DBLogger extends ActionScheduler_Logger {
 		$continue = $deleted === $batch_size;
 		if ( $continue ) {
 			// Schedule immediately, as this action will not be selected during the current run and will have lower than normal priority.
-			as_schedule_single_action( time(), 'action_scheduler_clear_deleted_action_logs_hook', array( $action_id, $cutoff_log_id, ++$batch, $batch_size ), '', false, 9 );
+			as_schedule_single_action( time(), 'action_scheduler_clear_deleted_action_logs_hook', array( $action_id, $cutoff_log_id, ++$batch, $batch_size ), '', false, 20 );
 		}
 	}
 

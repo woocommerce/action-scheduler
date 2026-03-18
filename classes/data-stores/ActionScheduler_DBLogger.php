@@ -121,7 +121,7 @@ class ActionScheduler_DBLogger extends ActionScheduler_Logger {
 	 * @param int $action_id Action ID.
 	 */
 	public function clear_deleted_action_logs( $action_id ) {
-		$this->clear_deleted_action_logs_single_batch( $action_id, -1, 1, 100 );
+		$this->clear_deleted_action_logs_single_batch( $action_id, -1, 1, 4000 );
 	}
 
 	/**

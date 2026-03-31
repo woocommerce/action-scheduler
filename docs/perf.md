@@ -140,8 +140,6 @@ add_filter( 'action_scheduler_retention_period_for_failed', function( $retention
 add_filter( 'action_scheduler_retention_period_for_failed', '__return_zero' );
 ```
 
-> Note: returning `0` from `action_scheduler_retention_period_by_default` or `action_scheduler_retention_period` does not preserve actions — on the next cleanup execution, all complete and canceled actions will be eligible for deletion.
-
 Prior to version 3.9.4, by default Action Scheduler does not automatically delete old failed actions. There are two optional methods of removing these actions:
 
 - Include the failed status in the list of statuses to purge:

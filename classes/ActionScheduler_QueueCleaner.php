@@ -107,7 +107,7 @@ class ActionScheduler_QueueCleaner {
 		$deleted_failed_entries = array();
 		// Backward compatibility note: if store already purging the failed statuses, don't change the behaviour.
 		if ( $lifespan_failed > 0 && ! in_array( ActionScheduler_Store::STATUS_FAILED, $statuses_to_purge, true ) ) {
-			// use a fixed default batch size to ensure that the cleanup of failed actions does not interfere with the regular cleanup.
+			// Use a fixed default batch size to ensure that the cleanup of failed actions does not interfere with the regular cleanup.
 			$deleted_failed_entries = $this->clean_actions( array( ActionScheduler_Store::STATUS_FAILED ), $cutoff_failed, 20 );
 		}
 

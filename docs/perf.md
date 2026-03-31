@@ -136,9 +136,11 @@ The retention period for failed actions can be customized:
 add_filter( 'action_scheduler_retention_period_for_failed', function( $retention_period ) {
     return 12 * MONTH_IN_SECONDS;
 } );
+// or if you prefer to retain failed actions indefinitely
+add_filter( 'action_scheduler_retention_period_for_failed', '__return_zero' );
 ```
 
-Prior to version 3.9.4, by default Action Scheduler does not automatically delete old failed actions. There are two optional methods of removing these actions:
+Prior to version 3.9.4, by default Action Scheduler did not automatically delete old failed actions. There are two optional methods of removing these actions:
 
 - Include the failed status in the list of statuses to purge:
 ```php

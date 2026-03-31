@@ -305,6 +305,45 @@ class ActionScheduler_QueueRunner_Test extends ActionScheduler_UnitTestCase {
 	}
 
 	/**
+	 * If a corrupted action entry is being processed, it'll be canceled and its logs truncated leaving only a single log
+	 * explaining the corrupted state. Cancelling should enable the recurring actions being re-created.
+	 *
+	 * @return void
+	 */
+	public function test_corrupted_actions_are_unscheduled() {
+		global $wpdb;
+
+		$store  = ActionScheduler_Store::instance();
+		$logger = ActionScheduler_Logger::instance();
+		$runner = ActionScheduler_Mocker::get_queue_runner( $store );
+
+		$action_id = as_schedule_recurring_action( time(), HOUR_IN_SECONDS, 'corrupted-action' );
+		$this->assertSame( ActionScheduler_Store::STATUS_PENDING, $store->get_status( $action_id ) );
+
+		// Mimic the corrupted state: truncate the schedule field to break unserialization and action object population.
+		$wpdb->query(
+			$wpdb->prepare(
+				"UPDATE {$wpdb->actionscheduler_actions} SET schedule = SUBSTRING(schedule, 1, 30) WHERE action_id = %d",
+				$action_id
+			)
+		);
+
+		$runner->process_action( $action_id );
+		$logs = $logger->get_logs( $action_id );
+
+		$this->assertSame( ActionScheduler_Store::STATUS_CANCELED, $store->get_status( $action_id ) );
+		$this->assertCount( 1, $logs );
+		$this->assertStringContainsString( 'This action data appears to be corrupt.', $logs[0]->get_message() );
+
+		// Verify that a canceled corrupted action is visible in the user interface.
+		$action = $store->fetch_action( $action_id );
+		$this->assertInstanceOf( ActionScheduler_FinishedAction::class, $action );
+		$this->assertInstanceOf( ActionScheduler_NullSchedule::class, $action->get_schedule() );
+
+		$store->delete_action( $action_id );
+	}
+
+	/**
 	 * If a recurring action continually fails, it will not be re-scheduled. However, a hook makes it possible to
 	 * exempt specific actions from this behavior (without impacting other unrelated recurring actions).
 	 *

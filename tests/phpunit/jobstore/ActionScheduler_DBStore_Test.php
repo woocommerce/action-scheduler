@@ -811,4 +811,118 @@ class ActionScheduler_DBStore_Test extends AbstractStoreTest {
 			),
 		);
 	}
+
+	/**
+	 * @testdox get_claim_count() returns 0 when no claims exist.
+	 */
+	public function test_get_claim_count_returns_zero_when_no_claims() {
+		$store = new ActionScheduler_DBStore();
+		$this->assertSame( 0, $store->get_claim_count() );
+	}
+
+	/**
+	 * @testdox get_claim_count() returns the correct count with pending claimed actions.
+	 */
+	public function test_get_claim_count_with_pending_actions() {
+		$store    = new ActionScheduler_DBStore();
+		$schedule = new ActionScheduler_SimpleSchedule( as_get_datetime_object( '-1 hour' ) );
+
+		for ( $i = 0; $i < 3; $i++ ) {
+			$store->save_action( new ActionScheduler_Action( ActionScheduler_Callbacks::HOOK_WITH_CALLBACK, array( $i ), $schedule ) );
+		}
+
+		$claim = $store->stake_claim();
+		$this->assertSame( 1, $store->get_claim_count() );
+		$store->release_claim( $claim );
+	}
+
+	/**
+	 * @testdox get_claim_count() returns the correct count with multiple claims.
+	 */
+	public function test_get_claim_count_with_multiple_claims() {
+		$store    = new ActionScheduler_DBStore();
+		$schedule = new ActionScheduler_SimpleSchedule( as_get_datetime_object( '-1 hour' ) );
+
+		for ( $i = 0; $i < 10; $i++ ) {
+			$store->save_action( new ActionScheduler_Action( ActionScheduler_Callbacks::HOOK_WITH_CALLBACK, array( $i ), $schedule ) );
+		}
+
+		$claim1 = $store->stake_claim( 3 );
+		$claim2 = $store->stake_claim( 3 );
+		$this->assertSame( 2, $store->get_claim_count() );
+
+		$store->release_claim( $claim1 );
+		$store->release_claim( $claim2 );
+	}
+
+	/**
+	 * @testdox get_claim_count() excludes released claims.
+	 */
+	public function test_get_claim_count_excludes_released_claims() {
+		$store    = new ActionScheduler_DBStore();
+		$schedule = new ActionScheduler_SimpleSchedule( as_get_datetime_object( '-1 hour' ) );
+
+		for ( $i = 0; $i < 3; $i++ ) {
+			$store->save_action( new ActionScheduler_Action( ActionScheduler_Callbacks::HOOK_WITH_CALLBACK, array( $i ), $schedule ) );
+		}
+
+		$claim = $store->stake_claim();
+		$this->assertSame( 1, $store->get_claim_count() );
+
+		$store->release_claim( $claim );
+		$this->assertSame( 0, $store->get_claim_count() );
+	}
+
+	/**
+	 * @testdox get_claim_count() excludes claims whose actions are all completed.
+	 */
+	public function test_get_claim_count_excludes_completed_actions() {
+		$store    = new ActionScheduler_DBStore();
+		$schedule = new ActionScheduler_SimpleSchedule( as_get_datetime_object( '-1 hour' ) );
+
+		for ( $i = 0; $i < 3; $i++ ) {
+			$store->save_action( new ActionScheduler_Action( ActionScheduler_Callbacks::HOOK_WITH_CALLBACK, array( $i ), $schedule ) );
+		}
+
+		$claim = $store->stake_claim();
+		$this->assertSame( 1, $store->get_claim_count() );
+
+		foreach ( $claim->get_actions() as $action_id ) {
+			$store->mark_complete( $action_id );
+		}
+		$this->assertSame( 0, $store->get_claim_count() );
+		$store->release_claim( $claim );
+	}
+
+	/**
+	 * @testdox get_claim_count() includes claims with in-progress actions.
+	 */
+	public function test_get_claim_count_includes_in_progress_actions() {
+		$store    = new ActionScheduler_DBStore();
+		$schedule = new ActionScheduler_SimpleSchedule( as_get_datetime_object( '-1 hour' ) );
+
+		for ( $i = 0; $i < 3; $i++ ) {
+			$store->save_action( new ActionScheduler_Action( ActionScheduler_Callbacks::HOOK_WITH_CALLBACK, array( $i ), $schedule ) );
+		}
+
+		$claim      = $store->stake_claim();
+		$action_ids = $claim->get_actions();
+
+		// Mark first action as in-progress, complete the rest.
+		$store->log_execution( $action_ids[0] );
+		for ( $i = 1; $i < count( $action_ids ); $i++ ) {
+			$store->mark_complete( $action_ids[ $i ] );
+		}
+
+		$this->assertSame( 1, $store->get_claim_count() );
+		$store->release_claim( $claim );
+	}
+
+	/**
+	 * @testdox get_claim_count() returns an integer.
+	 */
+	public function test_get_claim_count_returns_integer() {
+		$store = new ActionScheduler_DBStore();
+		$this->assertIsInt( $store->get_claim_count() );
+	}
 }

@@ -391,17 +391,22 @@ AND `group_id` = %d
 	 * @return ActionScheduler_Action|ActionScheduler_CanceledAction|ActionScheduler_FinishedAction
 	 */
 	protected function make_action_from_db_record( $data ) {
-
-		$hook     = $data->hook;
-		$args     = json_decode( $data->args, true );
-		$schedule = unserialize( $data->schedule ); // phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.serialize_unserialize
-
-		$this->validate_args( $args, $data->action_id );
-		$this->validate_schedule( $schedule, $data->action_id );
-
-		if ( empty( $schedule ) ) {
-			$schedule = new ActionScheduler_NullSchedule();
+		$args = json_decode( $data->args, true );
+		if ( ! is_array( $args ) && $data->status === self::STATUS_CANCELED ) {
+			// The handled corrupted action should appear in UI.
+			$args = array();
+		} else {
+			$this->validate_args( $args, $data->action_id );
 		}
+
+		$schedule = @unserialize( $data->schedule ); // phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.serialize_unserialize WordPress.PHP.NoSilencingOperator
+		if ( false === $schedule && $data->status === self::STATUS_CANCELED ) {
+			// The handled corrupted action should appear in UI.
+			$schedule = new ActionScheduler_NullSchedule();
+		} else {
+			$this->validate_schedule( $schedule, $data->action_id );
+		}
+
 		$group = $data->group ? $data->group : '';
 
 		return ActionScheduler::factory()->get_stored_action( $data->status, $data->hook, $args, $schedule, $group, $data->priority );
@@ -1073,7 +1078,16 @@ AND `group_id` = %d
 	public function get_claim_count() {
 		global $wpdb;
 
-		$sql = "SELECT COUNT(DISTINCT claim_id) FROM {$wpdb->actionscheduler_actions} WHERE claim_id != 0 AND status IN ( %s, %s)";
+		$sql = "
+			SELECT COUNT(*)
+			FROM {$wpdb->actionscheduler_claims} c
+			WHERE EXISTS (
+				SELECT 1
+				FROM {$wpdb->actionscheduler_actions} a
+				WHERE a.claim_id = c.claim_id
+				AND a.status IN ( %s, %s )
+			)
+		";
 		$sql = $wpdb->prepare( $sql, array( self::STATUS_PENDING, self::STATUS_RUNNING ) ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
 
 		return (int) $wpdb->get_var( $sql ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
@@ -1228,7 +1242,7 @@ AND `group_id` = %d
 				'last_attempt_local' => current_time( 'mysql' ),
 			),
 			array( 'action_id' => $action_id ),
-			array( '%s' ),
+			array( '%s', '%s', '%s' ),
 			array( '%d' )
 		);
 		if ( empty( $updated ) ) {
@@ -1296,7 +1310,7 @@ AND `group_id` = %d
 				'last_attempt_local' => current_time( 'mysql' ),
 			),
 			array( 'action_id' => $action_id ),
-			array( '%s' ),
+			array( '%s', '%s', '%s' ),
 			array( '%d' )
 		);
 		if ( empty( $updated ) ) {

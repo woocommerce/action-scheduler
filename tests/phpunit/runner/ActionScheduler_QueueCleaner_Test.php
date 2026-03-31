@@ -18,11 +18,13 @@ class ActionScheduler_QueueCleaner_Test extends ActionScheduler_UnitTestCase {
 		}
 
 		$runner->run();
+		sleep( 1 );
 
-		add_filter( 'action_scheduler_retention_period', '__return_zero' ); // delete any finished job.
+		$callback = static function () { return 1; };
+		add_filter( 'action_scheduler_retention_period', $callback ); // delete any finished job.
 		$cleaner = new ActionScheduler_QueueCleaner( $store );
 		$cleaned = $cleaner->delete_old_actions();
-		remove_filter( 'action_scheduler_retention_period', '__return_zero' );
+		remove_filter( 'action_scheduler_retention_period', $callback );
 
 		$this->assertIsArray( $cleaned, 'ActionScheduler_QueueCleaner::delete_old_actions() returns an array.' );
 		$this->assertCount( 5, $cleaned, 'ActionScheduler_QueueCleaner::delete_old_actions() deleted the expected number of actions.' );
@@ -34,13 +36,11 @@ class ActionScheduler_QueueCleaner_Test extends ActionScheduler_UnitTestCase {
 	}
 
 	public function test_invalid_retention_period_filter_hook() {
-		// Supplying a non-integer such as null would break under 3.5.4 and earlier.
+		// Non-integer inputs are managed through type casting and range checking.
 		add_filter( 'action_scheduler_retention_period', '__return_null' );
 		$cleaner = new ActionScheduler_QueueCleaner( ActionScheduler::store() );
-
-		$this->setExpectedIncorrectUsage( 'ActionScheduler_QueueCleaner::delete_old_actions' );
 		$result = $cleaner->delete_old_actions();
-		remove_filter( 'action_scheduler_retention_period', '__return_zero' );
+		remove_filter( 'action_scheduler_retention_period', '__return_null' );
 
 		$this->assertIsArray(
 			$result,
@@ -185,7 +185,7 @@ class ActionScheduler_QueueCleaner_Test extends ActionScheduler_UnitTestCase {
 			->method( 'clean_actions' )
 			->withConsecutive(
 				array( array( ActionScheduler_Store::STATUS_FAILED ), $this->anything(), 20 ),
-				array( array( ActionScheduler_Store::STATUS_COMPLETE, ActionScheduler_Store::STATUS_CANCELED ), $this->anything(), 17 )
+				array( array( ActionScheduler_Store::STATUS_COMPLETE, ActionScheduler_Store::STATUS_CANCELED ), $this->anything(), 20 )
 			)
 			->willReturnOnConsecutiveCalls( array( '...', '...', '...', '...', '...', '...' ), array( '-' ) );
 

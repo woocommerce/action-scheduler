@@ -50,6 +50,7 @@ class ActionScheduler_QueueCleaner {
 	/**
 	 * Default queue cleaner process used by queue runner.
 	 *
+	 * @since 3.9.4 by default, failed actions are removed after three months.
 	 * @return array
 	 */
 	public function delete_old_actions() {
@@ -60,8 +61,28 @@ class ActionScheduler_QueueCleaner {
 		 */
 		$lifespan = apply_filters( 'action_scheduler_retention_period', $this->month_in_seconds );
 
+		/**
+		 * Set the retention period, in seconds, for actions with a status returned by the action_scheduler_default_cleaner_statuses filter.
+		 *
+		 * @param int $retention_period Retention period in seconds.
+		 */
+		$lifespan_default = max( 0, (int) apply_filters( 'action_scheduler_retention_period_by_default', $lifespan ) );
+		$lifespan_default = $lifespan_default > 0 ? $lifespan_default : $this->month_in_seconds;
+
+		/**
+		 * Set the retention period in seconds for actions with a failed status. If the action_scheduler_default_cleaner_statuses filter includes
+		 * a failed status, this filter result will be ignored, and the retention period for failed actions will match that of other statuses.
+		 *
+		 * @param int $retention_period Retention period in seconds.
+		 */
+		$lifespan_failed = max( 0, (int) apply_filters( 'action_scheduler_retention_period_for_failed', 3 * $this->month_in_seconds ) );
+		// We considered 12-month, 3-month, and 1-month options for failed action retention and selected a 3-month period
+		// to align with the quarterly accounting cycle. Store owners may adjust the retention period to achieve PCI DSS
+		// compliance or to align with a different accounting cycle, as needed.
+
 		try {
-			$cutoff = as_get_datetime_object( $lifespan . ' seconds ago' );
+			$cutoff_failed  = as_get_datetime_object( $lifespan_failed . ' seconds ago' );
+			$cutoff_default = as_get_datetime_object( $lifespan_default . ' seconds ago' );
 		} catch ( Exception $e ) {
 			_doing_it_wrong(
 				__METHOD__,
@@ -83,7 +104,16 @@ class ActionScheduler_QueueCleaner {
 		 */
 		$statuses_to_purge = (array) apply_filters( 'action_scheduler_default_cleaner_statuses', $this->default_statuses_to_purge );
 
-		return $this->clean_actions( $statuses_to_purge, $cutoff, $this->get_batch_size() );
+		$deleted_failed_entries = array();
+		// Backward compatibility note: if store already purging the failed statuses, don't change the behaviour.
+		if ( $lifespan_failed > 0 && ! in_array( ActionScheduler_Store::STATUS_FAILED, $statuses_to_purge, true ) ) {
+			// We will use a hard-coded default batch size, as recommended in the code review.
+			$deleted_failed_entries = $this->clean_actions( array( ActionScheduler_Store::STATUS_FAILED ), $cutoff_failed, 20 );
+		}
+
+		$deleted_entries = $this->clean_actions( $statuses_to_purge, $cutoff_default, $this->get_batch_size() );
+
+		return array_merge( $deleted_failed_entries, $deleted_entries );
 	}
 
 	/**
@@ -105,7 +135,6 @@ class ActionScheduler_QueueCleaner {
 		}
 
 		$deleted_actions = array();
-
 		foreach ( $statuses_to_purge as $status ) {
 			$actions_to_delete = $this->store->query_actions(
 				array(
@@ -116,11 +145,10 @@ class ActionScheduler_QueueCleaner {
 					'orderby'          => 'none',
 				)
 			);
-
-			$deleted_actions = array_merge( $deleted_actions, $this->delete_actions( $actions_to_delete, $lifespan, $context ) );
+			$deleted_actions[] = $this->delete_actions( $actions_to_delete, $lifespan, $context );
 		}
 
-		return $deleted_actions;
+		return array_merge( array(), ...$deleted_actions );
 	}
 
 	/**

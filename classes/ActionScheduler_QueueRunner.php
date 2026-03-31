@@ -153,8 +153,10 @@ class ActionScheduler_QueueRunner extends ActionScheduler_Abstract_QueueRunner {
 
 		$this->processed_actions_count = 0;
 		if ( false === $this->has_maximum_concurrent_batches() ) {
+			$batch_size = apply_filters( 'action_scheduler_queue_runner_batch_size', 25 );
+			// Note: gc_collect_cycles() was considered here and in do_batch/clear_caches, but rejected:
+			// upside is speculative, GC sweep cost scales with object count and can cause pauses.
 			do {
-				$batch_size                     = apply_filters( 'action_scheduler_queue_runner_batch_size', 25 );
 				$processed_actions_in_batch     = $this->do_batch( $batch_size, $context );
 				$this->processed_actions_count += $processed_actions_in_batch;
 			} while ( $processed_actions_in_batch > 0 && ! $this->batch_limits_exceeded( $this->processed_actions_count ) ); // keep going until we run out of actions, time, or memory.
@@ -180,11 +182,13 @@ class ActionScheduler_QueueRunner extends ActionScheduler_Abstract_QueueRunner {
 		$this->monitor->attach( $claim );
 		$processed_actions = 0;
 
+		$claim_id = $claim->get_id();
 		foreach ( $claim->get_actions() as $action_id ) {
 			// bail if we lost the claim.
-			if ( ! in_array( $action_id, $this->store->find_actions_by_claim_id( $claim->get_id() ), true ) ) {
+			if ( $claim_id !== $this->store->get_claim_id( $action_id ) ) {
 				break;
 			}
+
 			$this->process_action( $action_id, $context );
 			$processed_actions++;
 

@@ -215,7 +215,7 @@ class ActionScheduler_QueueCleaner {
 			$deleted_actions[]          = $this->delete_actions( $actions_to_delete, $lifespan, $context );
 
 			$iteration_unused_budget    = $is_scheduled_cleanup ? ( $iteration_execution_budget - count( $actions_to_delete ) ) : 0;
-			$continue_scheduled_cleanup = $continue_scheduled_cleanup || $iteration_execution_budget === count( $actions_to_delete );
+			$continue_scheduled_cleanup = $continue_scheduled_cleanup || ( $iteration_execution_budget === count( $actions_to_delete ) );
 		}
 
 		if ( $is_scheduled_cleanup && $continue_scheduled_cleanup ) {

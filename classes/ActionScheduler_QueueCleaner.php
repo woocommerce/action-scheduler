@@ -219,8 +219,10 @@ class ActionScheduler_QueueCleaner {
 		}
 
 		if ( $is_scheduled_cleanup && $continue_scheduled_cleanup ) {
-			// Schedule immediately, as this action will not be selected during the current run and will have the same priority as the action we are currently executing.
-			as_schedule_single_action( time(), self::RUN_SCHEDULED_CLEANER_HOOK, [], 'ActionScheduler', true, 15 );
+			// Schedule this action immediately. It will not be selected during the current run and shares the same priority
+			// as the ongoing action. Since this is a unique action, if it is not completed in a single run, a sequence of
+			// follow-up actions will ensure cleanup is finished before business hours begin.
+			as_schedule_single_action( time(), self::RUN_SCHEDULED_CLEANER_HOOK, [], 'ActionScheduler', false, 15 );
 		}
 
 		return array_merge( array(), ...$deleted_actions );

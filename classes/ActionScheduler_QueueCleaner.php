@@ -57,6 +57,9 @@ class ActionScheduler_QueueCleaner {
 	/**
 	 * Registers action hooks to perform action deletions as a separate task.
 	 *
+	 * @since 3.9.4
+	 * @internal
+	 *
 	 * @return void
 	 */
 	public function register_cleaner_hooks() {
@@ -66,6 +69,9 @@ class ActionScheduler_QueueCleaner {
 
 	/**
 	 * Register the recurring action deletion task.
+	 *
+	 * @since 3.9.4
+	 * @internal
 	 *
 	 * @return void
 	 */
@@ -173,8 +179,9 @@ class ActionScheduler_QueueCleaner {
 
 		// When deletion is performed as a separate action, we can enforce a minimum batch size to achieve consistent deletion throughput.
 		// For inline cleanup during a queue run, the batch size should remain unchanged to avoid increasing the process footprint.
-		$is_scheduled_cleanup       = doing_action( self::RUN_SCHEDULED_CLEANER_HOOK );
-		$iteration_batch_size       = $is_scheduled_cleanup ? max( 50, $batch_size ) : $batch_size;
+		$is_scheduled_cleanup = doing_action( self::RUN_SCHEDULED_CLEANER_HOOK );
+		// 250 balances replication safety, backlog clearance speed, and claim slot duration on high-volume stores.
+		$iteration_batch_size       = $is_scheduled_cleanup ? max( 250, $batch_size ) : $batch_size;
 		$iteration_unused_budget    = 0;
 		$continue_scheduled_cleanup = false;
 		if ( $is_scheduled_cleanup ) {

@@ -76,7 +76,7 @@ class ActionScheduler_QueueCleaner {
 				$date->getTimestamp(),
 				DAY_IN_SECONDS,
 				self::RUN_SCHEDULED_CLEANER_HOOK,
-				[],
+				array(),
 				'ActionScheduler',
 				true,
 				20
@@ -179,25 +179,28 @@ class ActionScheduler_QueueCleaner {
 		$continue_scheduled_cleanup = false;
 		if ( $is_scheduled_cleanup ) {
 			// Sort the statuses to optimize execution budget usage based on the typical status distribution.
-			usort( $statuses_to_purge, function( $a, $b ) {
-				// Place the 'canceled' status first to help ensure that any unspent execution budget can be used for processing other statuses.
-				if ( $a === ActionScheduler_Store::STATUS_CANCELED ) {
-					return -1;
-				}
-				if ( $b === ActionScheduler_Store::STATUS_CANCELED ) {
-					return 1;
-				}
+			usort(
+				$statuses_to_purge,
+				static function( $a, $b ) {
+					// Place the 'canceled' status first to help ensure that any unspent execution budget can be used for processing other statuses.
+					if ( ActionScheduler_Store::STATUS_CANCELED === $a ) {
+						return -1;
+					}
+					if ( ActionScheduler_Store::STATUS_CANCELED === $b ) {
+						return 1;
+					}
 
-				// Place the 'complete' status at the end to use any remaining execution budget for processing.
-				if ( $a === ActionScheduler_Store::STATUS_COMPLETE ) {
-					return 1;
-				}
-				if ( $b === ActionScheduler_Store::STATUS_COMPLETE ) {
-					return -1;
-				}
+					// Place the 'complete' status at the end to use any remaining execution budget for processing.
+					if ( ActionScheduler_Store::STATUS_COMPLETE === $a ) {
+						return 1;
+					}
+					if ( ActionScheduler_Store::STATUS_COMPLETE === $b ) {
+						return -1;
+					}
 
-				return 0;
-			} );
+					return 0;
+				}
+			);
 		}
 
 		$deleted_actions = array();
@@ -215,14 +218,14 @@ class ActionScheduler_QueueCleaner {
 			$deleted_actions[]          = $this->delete_actions( $actions_to_delete, $lifespan, $context );
 
 			$iteration_unused_budget    = $is_scheduled_cleanup ? ( $iteration_execution_budget - count( $actions_to_delete ) ) : 0;
-			$continue_scheduled_cleanup = $continue_scheduled_cleanup || ( $iteration_execution_budget === count( $actions_to_delete ) );
+			$continue_scheduled_cleanup = $continue_scheduled_cleanup || ( count( $actions_to_delete ) === $iteration_execution_budget );
 		}
 
 		if ( $is_scheduled_cleanup && $continue_scheduled_cleanup ) {
 			// Schedule this action immediately. It will not be selected during the current run and shares the same priority
 			// as the ongoing action. Non-unique scheduling is intentional: if cleanup spans multiple iterations, each completed
 			// iteration schedules the next, forming a chain that runs until all deletions are finished.
-			as_schedule_single_action( time(), self::RUN_SCHEDULED_CLEANER_HOOK, [], 'ActionScheduler', false, 20 );
+			as_schedule_single_action( time(), self::RUN_SCHEDULED_CLEANER_HOOK, array(), 'ActionScheduler', false, 20 );
 		}
 
 		return array_merge( array(), ...$deleted_actions );

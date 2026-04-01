@@ -221,4 +221,55 @@ class ActionScheduler_QueueCleaner_Test extends ActionScheduler_UnitTestCase {
 
 		remove_filter( 'action_scheduler_default_cleaner_statuses', $filter );
 	}
+
+	/**
+	 * Verify whether the custom cleaners perform direct cleanup rather than task-based cleanup.
+	 */
+	public function test_custom_cleaner_performs_cleanup_in_queue_run_only() {
+		$cleaner = $this->getMockBuilder( ActionScheduler_QueueCleaner::class )->disableOriginalConstructor()->getMock();
+		$cleaner->expects( $this->never() )->method( 'register_cleaner_hooks' );
+		$cleaner->expects( $this->once() )->method( 'clean' );
+
+		$async_runner = $this->getMockBuilder( ActionScheduler_AsyncRequest_QueueRunner::class )->disableOriginalConstructor()->getMock();
+		$runner       = new ActionScheduler_QueueRunner( ActionScheduler::store(), null, $cleaner, $async_runner );
+
+		$runner->init();
+
+		// Verify whether the custom cleaners perform direct cleanup rather than task-based cleanup.
+		$this->assertFalse( has_action( 'action_scheduler_run_actions_cleanup_hook', array( $cleaner, 'delete_old_actions' ), 10 ) );
+		$this->assertFalse( has_action( 'action_scheduler_ensure_recurring_actions', array( $cleaner, 'register_recurring_actions' ), 10 ) );
+
+		$runner->run();
+	}
+
+	/**
+	 * Verify whether the default cleaner is limited to task-based cleanup.
+	 */
+	public function test_standard_cleaner_splits_cleanup_between_queue_and_action() {
+		$store = $this->getMockBuilder( ActionScheduler_Store::class )->disableOriginalConstructor()->getMock();
+		$store->expects( $this->exactly( 2 ) )
+			->method( 'query_actions' )
+			->with(
+				$this->callback(
+					static function( $query ) {
+						// These statuses are relevant for releasing stale claims during queue processing.
+						return ActionScheduler_Store::STATUS_PENDING === $query['status'] || ActionScheduler_Store::STATUS_RUNNING === $query['status'];
+					}
+				)
+			)
+			->willReturn( array() );
+		$store->expects( $this->once() )->method( 'stake_claim' )->willReturn( new ActionScheduler_ActionClaim( 1, array() ) );
+
+		$cleaner      = new ActionScheduler_QueueCleaner( $store );
+		$async_runner = $this->getMockBuilder( ActionScheduler_AsyncRequest_QueueRunner::class )->disableOriginalConstructor()->getMock();
+		$runner       = new ActionScheduler_QueueRunner( $store, null, $cleaner, $async_runner );
+
+		$runner->init();
+
+		// Verify whether the default cleaner is limited to task-based cleanup.
+		$this->assertTrue( has_action( 'action_scheduler_run_actions_cleanup_hook', array( $cleaner, 'delete_old_actions' ), 10 ) );
+		$this->assertTrue( has_action( 'action_scheduler_ensure_recurring_actions', array( $cleaner, 'register_recurring_actions' ), 10 ) );
+
+		$runner->run();
+	}
 }

@@ -266,7 +266,7 @@ class ActionScheduler_QueueCleaner_Test extends ActionScheduler_UnitTestCase {
 
 		$runner->init();
 
-		// Verify whether the default cleaner is limited to task-based cleanup.
+		// Verify whether the default cleaner perform task-based cleanup rather than direct cleanup.
 		$this->assertTrue( has_action( 'action_scheduler_run_actions_cleanup_hook', array( $cleaner, 'delete_old_actions' ), 10 ) );
 		$this->assertTrue( has_action( 'action_scheduler_ensure_recurring_actions', array( $cleaner, 'register_recurring_actions' ), 10 ) );
 

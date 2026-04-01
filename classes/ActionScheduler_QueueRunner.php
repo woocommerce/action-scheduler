@@ -87,9 +87,9 @@ class ActionScheduler_QueueRunner extends ActionScheduler_Abstract_QueueRunner {
 		add_action( self::WP_CRON_HOOK, array( self::instance(), 'run' ) );
 		$this->hook_dispatch_async_request();
 
-		// Backward compatibility: depending on whether the action cleaner is standard or not, cleaning will be performed
-		// by an action (to increase overall throughput and run on a daily basis) or explicitly before processing actions.
-		// The cleaner was originally designed as a QueueRunner dependency, hence registering the hooks here.
+		// Backward compatibility: If the action cleaner is standard, cleaning will be performed as an action to improve throughput
+		// and enable daily runs. If not, cleaning will occur explicitly before processing actions to ensure backward compatibility.
+		// The cleaner was initially designed as a QueueRunner dependency, which is why the hooks are registered here.
 		if ( get_class( $this->cleaner ) === ActionScheduler_QueueCleaner::class ) {
 			$this->cleaner->register_cleaner_hooks();
 		}
@@ -159,8 +159,8 @@ class ActionScheduler_QueueRunner extends ActionScheduler_Abstract_QueueRunner {
 		do_action( 'action_scheduler_before_process_queue' );
 
 		$cleanup_time_limit = 10 * $this->get_time_limit();
-		// Backward compatibility: depending on whether the action cleaner is standard or not, cleaning will be performed
-		// by an action (to increase overall throughput and run on a daily basis) or explicitly before processing actions.
+		// Backward compatibility: If the action cleaner is standard, cleaning will be performed as an action to improve throughput
+		// and enable daily runs. If not, cleaning will occur explicitly before processing actions to ensure backward compatibility.
 		if ( get_class( $this->cleaner ) !== ActionScheduler_QueueCleaner::class ) {
 			// Execute complete cleanup cycle, as in this logical branch deletion IS NOT executed via a separate action.
 			$this->cleaner->clean( $cleanup_time_limit );

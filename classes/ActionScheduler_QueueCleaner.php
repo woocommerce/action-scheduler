@@ -65,7 +65,7 @@ class ActionScheduler_QueueCleaner {
 	}
 
 	/**
-	 * Register the recurring action deletion task.
+	 * Register the recurring action deletion task. TODO: action_scheduler_ensure_recurring_actions vs admin context only
 	 *
 	 * @return void
 	 */
@@ -85,7 +85,7 @@ class ActionScheduler_QueueCleaner {
 	}
 
 	/**
-	 * Register the recurring action deletion task.
+	 * Performs action deletions by aggregating configurations and coordinating clean_actions as needed.
 	 *
 	 * @since 3.9.4 by default, failed actions are removed after three months.
 	 * @return array
@@ -220,7 +220,7 @@ class ActionScheduler_QueueCleaner {
 
 		if ( $is_scheduled_cleanup && $continue_scheduled_cleanup ) {
 			// Schedule immediately, as this action will not be selected during the current run and will have the same priority as the action we are currently executing.
-			as_schedule_single_action( time(), self::RUN_SCHEDULED_CLEANER_HOOK, [], 'ActionScheduler', false, 15 );
+			as_schedule_single_action( time(), self::RUN_SCHEDULED_CLEANER_HOOK, [], 'ActionScheduler', true, 15 );
 		}
 
 		return array_merge( array(), ...$deleted_actions );

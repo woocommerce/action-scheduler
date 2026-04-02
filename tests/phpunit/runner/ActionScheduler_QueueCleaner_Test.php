@@ -323,8 +323,7 @@ class ActionScheduler_QueueCleaner_Test extends ActionScheduler_UnitTestCase {
 		$cleaner = new ActionScheduler_QueueCleaner( $store );
 		$cleaner->clean_actions(
 			array( ActionScheduler_Store::STATUS_FAILED, ActionScheduler_Store::STATUS_COMPLETE, ActionScheduler_Store::STATUS_CANCELED ),
-			as_get_datetime_object( '0 seconds ago' ),
-			20
+			as_get_datetime_object( '0 seconds ago' )
 		);
 	}
 

@@ -202,12 +202,14 @@ SELECT action_id FROM $table_name
 WHERE status IN ( $pending_status_placeholders )
 AND hook = %s
 AND `group_id` = %d
+AND args = %s
 ",
 			array_merge(
 				$pending_statuses,
 				array(
 					$data['hook'],
 					$data['group_id'],
+					$data['args'],
 				)
 			)
 		);

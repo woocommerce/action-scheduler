@@ -80,6 +80,7 @@ class ActionScheduler_WPCLI_QueueRunner extends ActionScheduler_Abstract_QueueRu
 			$this->cleaner->reset_timeouts( $cleanup_time_limit );
 			$this->cleaner->mark_failures( $cleanup_time_limit );
 		}
+
 		$this->add_hooks();
 
 		// Check to make sure there aren't too many concurrent processes running.

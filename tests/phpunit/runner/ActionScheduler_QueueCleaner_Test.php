@@ -20,7 +20,9 @@ class ActionScheduler_QueueCleaner_Test extends ActionScheduler_UnitTestCase {
 		$runner->run();
 		sleep( 1 );
 
-		$callback = static function () { return 1; };
+		$callback = static function () {
+			return 1;
+		};
 		add_filter( 'action_scheduler_retention_period', $callback ); // delete any finished job.
 		$cleaner = new ActionScheduler_QueueCleaner( $store );
 		$cleaned = $cleaner->delete_old_actions();
@@ -39,7 +41,7 @@ class ActionScheduler_QueueCleaner_Test extends ActionScheduler_UnitTestCase {
 		// Non-integer inputs are managed through type casting and range checking.
 		add_filter( 'action_scheduler_retention_period', '__return_null' );
 		$cleaner = new ActionScheduler_QueueCleaner( ActionScheduler::store() );
-		$result = $cleaner->delete_old_actions();
+		$result  = $cleaner->delete_old_actions();
 		remove_filter( 'action_scheduler_retention_period', '__return_null' );
 
 		$this->assertIsArray(
@@ -271,5 +273,161 @@ class ActionScheduler_QueueCleaner_Test extends ActionScheduler_UnitTestCase {
 		$this->assertTrue( has_action( 'action_scheduler_ensure_recurring_actions', array( $cleaner, 'register_recurring_actions' ), 10 ) );
 
 		$runner->run();
+	}
+
+	/**
+	 * Verify that cleanup was executed during the queue run, confirming that throughput optimization was bypassed.
+	 */
+	public function test_clean_actions_behaviour_as_cleanup_in_queue_run() {
+		$store = $this->getMockBuilder( ActionScheduler_Store::class )->disableOriginalConstructor()->getMock();
+		$store->expects( $this->exactly( 3 ) )
+			->method( 'query_actions' )
+			->withConsecutive(
+				array(
+					$this->callback(
+						static function( $query ) {
+							return ActionScheduler_Store::STATUS_FAILED === $query['status'] && 20 === $query['per_page'];
+						}
+					),
+				),
+				array(
+					$this->callback(
+						static function( $query ) {
+							return ActionScheduler_Store::STATUS_COMPLETE === $query['status'] && 20 === $query['per_page'];
+						}
+					),
+				),
+				array(
+					$this->callback(
+						static function( $query ) {
+							return ActionScheduler_Store::STATUS_CANCELED === $query['status'] && 20 === $query['per_page'];
+						}
+					),
+				)
+			)
+			->willReturnOnConsecutiveCalls(
+				array( 1 ),
+				array( 2 ),
+				array( 3 )
+			);
+		$store->expects( $this->exactly( 3 ) )
+			->method( 'delete_action' )
+			->withConsecutive(
+				array( 1 ),
+				array( 2 ),
+				array( 3 )
+			);
+
+		// Verify that cleanup was executed during the queue run, confirming that throughput optimization was bypassed.
+		$cleaner = new ActionScheduler_QueueCleaner( $store );
+		$cleaner->clean_actions(
+			array( ActionScheduler_Store::STATUS_FAILED, ActionScheduler_Store::STATUS_COMPLETE, ActionScheduler_Store::STATUS_CANCELED ),
+			as_get_datetime_object( '0 seconds ago' ),
+			20
+		);
+	}
+
+	/**
+	 * Verify that cleanup was executed during the scheduled task, confirming that throughput optimization was applied.
+	 */
+	public function test_clean_actions_behaviour_as_scheduled_action_leverages_execution_budget() {
+		$store = $this->getMockBuilder( ActionScheduler_Store::class )->disableOriginalConstructor()->getMock();
+		$store->expects( $this->exactly( 3 ) )
+			->method( 'query_actions' )
+			->withConsecutive(
+				array(
+					$this->callback(
+						static function( $query ) {
+							return ActionScheduler_Store::STATUS_CANCELED === $query['status'] && 250 === $query['per_page'];
+						}
+					),
+				),
+				array(
+					$this->callback(
+						static function( $query ) {
+							return ActionScheduler_Store::STATUS_FAILED === $query['status'] && 499 === $query['per_page'];
+						}
+					),
+				),
+				array(
+					$this->callback(
+						static function( $query ) {
+							return ActionScheduler_Store::STATUS_COMPLETE === $query['status'] && 748 === $query['per_page'];
+						}
+					),
+				)
+			)
+			->willReturnOnConsecutiveCalls(
+				array( 1 ),
+				array( 2 ),
+				array( 3 )
+			);
+		$store->expects( $this->exactly( 3 ) )
+			->method( 'delete_action' )
+			->withConsecutive(
+				array( 1 ),
+				array( 2 ),
+				array( 3 )
+			);
+
+		$filter_statuses = function () {
+			return array( ActionScheduler_Store::STATUS_FAILED, ActionScheduler_Store::STATUS_COMPLETE, ActionScheduler_Store::STATUS_CANCELED );
+		};
+		add_filter( 'action_scheduler_default_cleaner_statuses', $filter_statuses );
+		$filter_as_schedule = function ( $pre_option, $timestamp, $hook, $args, $group, $priority, $unique ) use ( &$trail ) {
+			$trail += (int) ( 'action_scheduler_run_actions_cleanup_hook' === $hook );
+			return $pre_option;
+		};
+		add_filter( 'pre_as_schedule_single_action', $filter_as_schedule, 10, 7 );
+
+		// Verify that cleanup was executed during the scheduled task, confirming that throughput optimization was applied.
+		$cleaner = new ActionScheduler_QueueCleaner( $store );
+		$cleaner->register_cleaner_hooks();
+		do_action( 'action_scheduler_run_actions_cleanup_hook' );
+
+		$this->assertSame( 0, (int) $trail );
+
+		remove_filter( 'action_scheduler_default_cleaner_statuses', $filter_statuses );
+		remove_filter( 'pre_as_schedule_single_action', $filter_as_schedule );
+	}
+
+	/**
+	 * Verify that cleanup was executed during the scheduled task and that trailing action was properly scheduled.
+	 */
+	public function test_clean_actions_behaviour_as_scheduled_action_spawns_trailing_action() {
+		$store = $this->getMockBuilder( ActionScheduler_Store::class )->disableOriginalConstructor()->getMock();
+		$store->expects( $this->once() )
+			->method( 'query_actions' )
+			->with(
+				$this->callback(
+					static function( $query ) {
+						return ActionScheduler_Store::STATUS_FAILED === $query['status'] && 250 === $query['per_page'];
+					}
+				)
+			)
+			->willReturn( array_fill( 0, 250, 1 ) );
+		$store->expects( $this->exactly( 250 ) )
+			->method( 'delete_action' )
+			->with( 1 );
+
+		$filter_statuses = function () {
+			return array( ActionScheduler_Store::STATUS_FAILED );
+		};
+		add_filter( 'action_scheduler_default_cleaner_statuses', $filter_statuses );
+		$filter_as_schedule = function ( $pre_option, $timestamp, $hook, $args, $group, $priority, $unique ) use ( &$trail ) {
+			$trail += (int) ( 'action_scheduler_run_actions_cleanup_hook' === $hook );
+			return $pre_option;
+		};
+		add_filter( 'pre_as_schedule_single_action', $filter_as_schedule, 10, 7 );
+
+		// Verify that cleanup was executed during the scheduled task and that trailing action was properly scheduled.
+		$cleaner = new ActionScheduler_QueueCleaner( $store );
+		$cleaner->register_cleaner_hooks();
+		do_action( 'action_scheduler_run_actions_cleanup_hook' );
+
+		$this->assertSame( 1, (int) $trail );
+
+		remove_filter( 'action_scheduler_default_cleaner_statuses', $filter_statuses );
+		remove_filter( 'pre_as_schedule_single_action', $filter_as_schedule );
 	}
 }

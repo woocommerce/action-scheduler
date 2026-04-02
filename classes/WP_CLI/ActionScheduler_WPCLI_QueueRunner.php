@@ -10,7 +10,7 @@ use Action_Scheduler\WP_CLI\ProgressBar;
 class ActionScheduler_WPCLI_QueueRunner extends ActionScheduler_Abstract_QueueRunner {
 
 	/**
-	 * Whether the cleaner instance is non-default one.
+	 * Whether the cleaner instance is a non-default one.
 	 *
 	 * @var bool
 	 */

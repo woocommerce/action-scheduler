@@ -390,7 +390,7 @@ class ActionScheduler_QueueCleaner_Test extends ActionScheduler_UnitTestCase {
 
 		remove_filter( 'action_scheduler_default_cleaner_statuses', $filter_statuses );
 		remove_filter( 'pre_as_schedule_single_action', $filter_as_schedule );
-		remove_action( 'action_scheduler_run_actions_cleanup_hook',  array( $cleaner, 'delete_old_actions' ) );
+		remove_action( 'action_scheduler_run_actions_cleanup_hook', array( $cleaner, 'delete_old_actions' ) );
 	}
 
 	/**
@@ -432,6 +432,6 @@ class ActionScheduler_QueueCleaner_Test extends ActionScheduler_UnitTestCase {
 
 		remove_filter( 'action_scheduler_default_cleaner_statuses', $filter_statuses );
 		remove_filter( 'pre_as_schedule_single_action', $filter_as_schedule );
-		remove_action( 'action_scheduler_run_actions_cleanup_hook',  array( $cleaner, 'delete_old_actions' ) );
+		remove_action( 'action_scheduler_run_actions_cleanup_hook', array( $cleaner, 'delete_old_actions' ) );
 	}
 }

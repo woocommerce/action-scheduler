@@ -23,7 +23,7 @@ class ActionScheduler_QueueRunner extends ActionScheduler_Abstract_QueueRunner {
 	private static $runner = null;
 
 	/**
-	 * Whether the cleaner instance is non-default one.
+	 * Whether the cleaner instance is a non-default one.
 	 *
 	 * @var bool
 	 */

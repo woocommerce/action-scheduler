@@ -225,7 +225,7 @@ class ActionScheduler_QueueCleaner_Test extends ActionScheduler_UnitTestCase {
 	}
 
 	/**
-	 * Verify whether the custom cleaners perform direct cleanup rather than task-based cleanup.
+	 * Verify that custom cleaners perform direct cleanup rather than task-based cleanup.
 	 */
 	public function test_custom_cleaner_performs_cleanup_in_queue_run_only() {
 		$cleaner = $this->getMockBuilder( ActionScheduler_QueueCleaner::class )->disableOriginalConstructor()->getMock();
@@ -237,7 +237,7 @@ class ActionScheduler_QueueCleaner_Test extends ActionScheduler_UnitTestCase {
 
 		$runner->init();
 
-		// Verify whether the custom cleaners perform direct cleanup rather than task-based cleanup.
+		// Verify that custom cleaners perform direct cleanup rather than task-based cleanup.
 		$this->assertFalse( has_action( 'action_scheduler_run_actions_cleanup_hook', array( $cleaner, 'delete_old_actions' ), 10 ) );
 		$this->assertFalse( has_action( 'action_scheduler_ensure_recurring_actions', array( $cleaner, 'register_recurring_actions' ), 10 ) );
 
@@ -245,7 +245,7 @@ class ActionScheduler_QueueCleaner_Test extends ActionScheduler_UnitTestCase {
 	}
 
 	/**
-	 * Verify whether the default cleaner is limited to task-based cleanup.
+	 * Verify that the default cleaner is limited to task-based cleanup.
 	 */
 	public function test_standard_cleaner_splits_cleanup_between_queue_and_action() {
 		$store = $this->getMockBuilder( ActionScheduler_Store::class )->disableOriginalConstructor()->getMock();
@@ -268,15 +268,16 @@ class ActionScheduler_QueueCleaner_Test extends ActionScheduler_UnitTestCase {
 
 		$runner->init();
 
-		// Verify whether the default cleaner perform task-based cleanup rather than direct cleanup.
+		// Verify that the default cleaner performs task-based cleanup rather than direct cleanup.
 		$this->assertTrue( has_action( 'action_scheduler_run_actions_cleanup_hook', array( $cleaner, 'delete_old_actions' ), 10 ) );
 		$this->assertTrue( has_action( 'action_scheduler_ensure_recurring_actions', array( $cleaner, 'register_recurring_actions' ), 10 ) );
 
+		do_action( 'action_scheduler_ensure_recurring_actions' );
 		$runner->run();
 	}
 
 	/**
-	 * Verify that cleanup was executed during the queue run, confirming that throughput optimization was bypassed.
+	 * Verify that cleanup was executed as it does during the queue run, confirming that throughput optimization was bypassed.
 	 */
 	public function test_clean_actions_behaviour_as_cleanup_in_queue_run() {
 		$store = $this->getMockBuilder( ActionScheduler_Store::class )->disableOriginalConstructor()->getMock();
@@ -374,6 +375,7 @@ class ActionScheduler_QueueCleaner_Test extends ActionScheduler_UnitTestCase {
 			return array( ActionScheduler_Store::STATUS_FAILED, ActionScheduler_Store::STATUS_COMPLETE, ActionScheduler_Store::STATUS_CANCELED );
 		};
 		add_filter( 'action_scheduler_default_cleaner_statuses', $filter_statuses );
+		$trail              = 0;
 		$filter_as_schedule = function ( $pre_option, $timestamp, $hook, $args, $group, $priority, $unique ) use ( &$trail ) {
 			$trail += (int) ( 'action_scheduler_run_actions_cleanup_hook' === $hook );
 			return $pre_option;
@@ -414,6 +416,7 @@ class ActionScheduler_QueueCleaner_Test extends ActionScheduler_UnitTestCase {
 			return array( ActionScheduler_Store::STATUS_FAILED );
 		};
 		add_filter( 'action_scheduler_default_cleaner_statuses', $filter_statuses );
+		$trail              = 0;
 		$filter_as_schedule = function ( $pre_option, $timestamp, $hook, $args, $group, $priority, $unique ) use ( &$trail ) {
 			$trail += (int) ( 'action_scheduler_run_actions_cleanup_hook' === $hook );
 			return $pre_option;

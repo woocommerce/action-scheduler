@@ -319,7 +319,7 @@ class ActionScheduler_QueueCleaner_Test extends ActionScheduler_UnitTestCase {
 				array( 3 )
 			);
 
-		// Verify that cleanup was executed during the queue run, confirming that throughput optimization was bypassed.
+		// Verify that cleanup was executed as it does during the queue run, confirming that throughput optimization was bypassed.
 		$cleaner = new ActionScheduler_QueueCleaner( $store );
 		$cleaner->clean_actions(
 			array( ActionScheduler_Store::STATUS_FAILED, ActionScheduler_Store::STATUS_COMPLETE, ActionScheduler_Store::STATUS_CANCELED ),

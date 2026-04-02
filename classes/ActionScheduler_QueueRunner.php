@@ -23,6 +23,13 @@ class ActionScheduler_QueueRunner extends ActionScheduler_Abstract_QueueRunner {
 	private static $runner = null;
 
 	/**
+	 * Whether the cleaner instance is non-default one.
+	 *
+	 * @var bool
+	 */
+	private $is_custom_cleaner;
+
+	/**
 	 * Number of processed actions.
 	 *
 	 * @var int
@@ -59,7 +66,8 @@ class ActionScheduler_QueueRunner extends ActionScheduler_Abstract_QueueRunner {
 			$async_request = new ActionScheduler_AsyncRequest_QueueRunner( $this->store );
 		}
 
-		$this->async_request = $async_request;
+		$this->async_request     = $async_request;
+		$this->is_custom_cleaner = get_class( $this->cleaner ) !== ActionScheduler_QueueCleaner::class;
 	}
 
 	/**
@@ -90,7 +98,7 @@ class ActionScheduler_QueueRunner extends ActionScheduler_Abstract_QueueRunner {
 		// Backward compatibility: If the action cleaner is standard, cleaning will be performed as an action to improve throughput
 		// and enable daily runs. If not, cleaning will occur explicitly before processing actions to ensure backward compatibility.
 		// The cleaner was initially designed as a QueueRunner dependency, which is why the hooks are registered here.
-		if ( get_class( $this->cleaner ) === ActionScheduler_QueueCleaner::class ) {
+		if ( ! $this->is_custom_cleaner ) {
 			$this->cleaner->register_cleaner_hooks();
 		}
 	}
@@ -161,7 +169,7 @@ class ActionScheduler_QueueRunner extends ActionScheduler_Abstract_QueueRunner {
 		$cleanup_time_limit = 10 * $this->get_time_limit();
 		// Backward compatibility: If the action cleaner is standard, cleaning will be performed as an action to improve throughput
 		// and enable daily runs. If not, cleaning will occur explicitly before processing actions to ensure backward compatibility.
-		if ( get_class( $this->cleaner ) !== ActionScheduler_QueueCleaner::class ) {
+		if ( $this->is_custom_cleaner ) {
 			// Execute complete cleanup cycle, as in this logical branch deletion IS NOT executed via a separate action.
 			$this->cleaner->clean( $cleanup_time_limit );
 		} else {

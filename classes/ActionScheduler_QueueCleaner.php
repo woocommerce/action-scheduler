@@ -224,8 +224,9 @@ class ActionScheduler_QueueCleaner {
 			);
 			$deleted_actions[]          = $this->delete_actions( $actions_to_delete, $lifespan, $context );
 
-			$iteration_unused_budget    = $is_scheduled_cleanup ? ( $iteration_execution_budget - count( $actions_to_delete ) ) : 0;
-			$continue_scheduled_cleanup = $continue_scheduled_cleanup || ( count( $actions_to_delete ) === $iteration_execution_budget );
+			$fetched_actions_count      = count( $actions_to_delete );
+			$iteration_unused_budget    = $is_scheduled_cleanup ? ( $iteration_execution_budget - $fetched_actions_count ) : 0;
+			$continue_scheduled_cleanup = $continue_scheduled_cleanup || ( $fetched_actions_count === $iteration_execution_budget );
 		}
 
 		if ( $is_scheduled_cleanup && $continue_scheduled_cleanup ) {

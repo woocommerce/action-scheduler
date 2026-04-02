@@ -238,8 +238,8 @@ class ActionScheduler_QueueCleaner_Test extends ActionScheduler_UnitTestCase {
 		$runner->init();
 
 		// Verify that custom cleaners perform direct cleanup rather than task-based cleanup.
-		$this->assertFalse( has_action( 'action_scheduler_run_actions_cleanup_hook', array( $cleaner, 'delete_old_actions' ), 10 ) );
-		$this->assertFalse( has_action( 'action_scheduler_ensure_recurring_actions', array( $cleaner, 'register_recurring_actions' ), 10 ) );
+		$this->assertFalse( has_action( 'action_scheduler_run_actions_cleanup_hook', array( $cleaner, 'delete_old_actions' ) ) );
+		$this->assertFalse( has_action( 'action_scheduler_ensure_recurring_actions', array( $cleaner, 'register_recurring_actions' ) ) );
 
 		$runner->run();
 	}
@@ -269,8 +269,8 @@ class ActionScheduler_QueueCleaner_Test extends ActionScheduler_UnitTestCase {
 		$runner->init();
 
 		// Verify that the default cleaner performs task-based cleanup rather than direct cleanup.
-		$this->assertTrue( has_action( 'action_scheduler_run_actions_cleanup_hook', array( $cleaner, 'delete_old_actions' ), 10 ) );
-		$this->assertTrue( has_action( 'action_scheduler_ensure_recurring_actions', array( $cleaner, 'register_recurring_actions' ), 10 ) );
+		$this->assertNotFalse( has_action( 'action_scheduler_run_actions_cleanup_hook', array( $cleaner, 'delete_old_actions' ) ) );
+		$this->assertNotFalse( has_action( 'action_scheduler_ensure_recurring_actions', array( $cleaner, 'register_recurring_actions' ) ) );
 
 		do_action( 'action_scheduler_ensure_recurring_actions' );
 		$runner->run();

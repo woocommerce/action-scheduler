@@ -629,7 +629,8 @@ class ActionScheduler_DBStore_Test extends AbstractStoreTest {
 	}
 
 	/**
-	 * Test asserting that action when an action is created with empty args, it matches with actions created with args for uniqueness.
+	 * Test that a unique action with non-empty args does not block a unique action with empty args on the same hook/group,
+	 * since they have different args and are legitimately distinct actions.
 	 */
 	public function test_create_action_unique_with_empty_array() {
 		$time     = as_get_datetime_object();
@@ -644,14 +645,15 @@ class ActionScheduler_DBStore_Test extends AbstractStoreTest {
 		$this->assertTrue( is_a( $action_from_db, ActionScheduler_Action::class ) );
 
 		$action_with_empty_args = new ActionScheduler_Action( $hook, array(), $schedule );
-		$action_id_duplicate    = $store->save_unique_action( $action_with_empty_args );
-		$this->assertEquals( 0, $action_id_duplicate );
+		$action_id_empty_args   = $store->save_unique_action( $action_with_empty_args );
+		$this->assertNotEquals( 0, $action_id_empty_args );
 	}
 
 	/**
-	 * Uniqueness does not check for args, so actions with different args can't be scheduled when unique is true.
+	 * Test that unique actions with different args on the same hook/group are both schedulable.
+	 * Uniqueness checks hook + group + args, so different args should not block each other.
 	 */
-	public function test_create_action_unique_with_different_args_still_fail() {
+	public function test_create_action_unique_with_different_args() {
 		$time     = as_get_datetime_object();
 		$hook     = md5( wp_rand() );
 		$schedule = new ActionScheduler_SimpleSchedule( $time );
@@ -664,8 +666,8 @@ class ActionScheduler_DBStore_Test extends AbstractStoreTest {
 		$this->assertTrue( is_a( $action_from_db, ActionScheduler_Action::class ) );
 
 		$action_with_diff_args = new ActionScheduler_Action( $hook, array( 'foo' => 'bazz' ), $schedule );
-		$action_id_duplicate   = $store->save_unique_action( $action_with_diff_args );
-		$this->assertEquals( 0, $action_id_duplicate );
+		$action_id_diff_args   = $store->save_unique_action( $action_with_diff_args );
+		$this->assertNotEquals( 0, $action_id_diff_args );
 	}
 
 	/**

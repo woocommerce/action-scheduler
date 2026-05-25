@@ -34,7 +34,7 @@ class Action_Command extends \WP_CLI_Command {
 	 * @return void
 	 */
 	public function cancel( array $args, array $assoc_args ) {
-		require_once 'Action/Cancel_Command.php';
+		require_once __DIR__ . 'Action/Cancel_Command.php';
 		$command = new Action\Cancel_Command( $args, $assoc_args );
 		$command->execute();
 	}

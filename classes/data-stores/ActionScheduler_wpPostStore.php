@@ -953,9 +953,12 @@ class ActionScheduler_wpPostStore extends ActionScheduler_Store {
 	/**
 	 * Log Execution.
 	 *
-	 * @throws Exception If the action status cannot be updated to self::STATUS_RUNNING ('in-progress').
+	 * @throws Exception If a database error occurs while updating the action status.
 	 *
 	 * @param string $action_id Action ID.
+	 *
+	 * @return bool True if the action status was updated to in-progress, false if it was no longer pending
+	 *              (e.g. already claimed by a concurrent worker).
 	 */
 	public function log_execution( $action_id ) {
 		/**
@@ -966,18 +969,19 @@ class ActionScheduler_wpPostStore extends ActionScheduler_Store {
 		global $wpdb;
 
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
-		$status_updated = $wpdb->query(
+		$rows_affected = $wpdb->query(
 			$wpdb->prepare(
-				"UPDATE {$wpdb->posts} SET menu_order = menu_order+1, post_status=%s, post_modified_gmt = %s, post_modified = %s WHERE ID = %d AND post_type = %s",
+				"UPDATE {$wpdb->posts} SET menu_order = menu_order+1, post_status=%s, post_modified_gmt = %s, post_modified = %s WHERE ID = %d AND post_type = %s AND post_status = %s",
 				self::STATUS_RUNNING,
 				current_time( 'mysql', true ),
 				current_time( 'mysql' ),
 				$action_id,
-				self::POST_TYPE
+				self::POST_TYPE,
+				self::STATUS_PENDING
 			)
 		);
 
-		if ( ! $status_updated ) {
+		if ( false === $rows_affected ) {
 			throw new Exception(
 				sprintf(
 					/* translators: 1: action ID. 2: status slug. */
@@ -987,6 +991,8 @@ class ActionScheduler_wpPostStore extends ActionScheduler_Store {
 				)
 			);
 		}
+
+		return (bool) $rows_affected;
 	}
 
 	/**

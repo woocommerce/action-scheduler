@@ -342,12 +342,16 @@ class ActionScheduler_HybridStore extends Store {
 	 * Log the execution of an existing action whether migrated or not.
 	 *
 	 * @param int $action_id Action ID.
+	 *
+	 * @return bool True if the action status was updated to in-progress, false if it was no longer pending
+	 *              (e.g. already claimed by a concurrent worker).
 	 */
 	public function log_execution( $action_id ) {
 		$store = $this->get_store_from_action_id( $action_id );
 		if ( $store ) {
-			$store->log_execution( $action_id );
+			return $store->log_execution( $action_id );
 		}
+		return false;
 	}
 
 	/**

@@ -104,7 +104,12 @@ abstract class ActionScheduler_Abstract_QueueRunner extends ActionScheduler_Abst
 					return;
 				}
 
-				$this->store->log_execution( $action_id );
+				if ( false === $this->store->log_execution( $action_id ) ) {
+					// Another concurrent worker already started this action.
+					$valid_action = false;
+					do_action( 'action_scheduler_execution_ignored', $action_id, $context );
+					return;
+				}
 				$action->execute();
 
 				do_action( 'action_scheduler_after_execute', $action_id, $action, $context );

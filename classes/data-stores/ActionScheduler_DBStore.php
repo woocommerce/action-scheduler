@@ -1256,11 +1256,12 @@ AND args = %s
 	/**
 	 * Add execution message to action log.
 	 *
-	 * @throws Exception If the action status cannot be updated to self::STATUS_RUNNING ('in-progress').
+	 * @throws Exception If a database error occurs while updating the action status.
 	 *
 	 * @param int $action_id Action ID.
 	 *
-	 * @return void
+	 * @return bool True if the action status was updated to in-progress, false if it was no longer pending
+	 *              (e.g. already claimed by a concurrent worker).
 	 */
 	public function log_execution( $action_id ) {
 		/**
@@ -1270,13 +1271,13 @@ AND args = %s
 		 */
 		global $wpdb;
 
-		$sql = "UPDATE {$wpdb->actionscheduler_actions} SET attempts = attempts+1, status=%s, last_attempt_gmt = %s, last_attempt_local = %s WHERE action_id = %d";
-		$sql = $wpdb->prepare( $sql, self::STATUS_RUNNING, current_time( 'mysql', true ), current_time( 'mysql' ), $action_id ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
+		$sql = "UPDATE {$wpdb->actionscheduler_actions} SET attempts = attempts+1, status=%s, last_attempt_gmt = %s, last_attempt_local = %s WHERE action_id = %d AND status = %s";
+		$sql = $wpdb->prepare( $sql, self::STATUS_RUNNING, current_time( 'mysql', true ), current_time( 'mysql' ), $action_id, self::STATUS_PENDING ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
 
 		// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
-		$status_updated = $wpdb->query( $sql );
+		$rows_affected = $wpdb->query( $sql );
 
-		if ( ! $status_updated ) {
+		if ( false === $rows_affected ) {
 			throw new Exception(
 				sprintf(
 					/* translators: 1: action ID. 2: status slug. */
@@ -1286,6 +1287,8 @@ AND args = %s
 				)
 			);
 		}
+
+		return (bool) $rows_affected;
 	}
 
 	/**

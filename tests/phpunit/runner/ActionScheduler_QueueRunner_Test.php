@@ -116,6 +116,55 @@ class ActionScheduler_QueueRunner_Test extends ActionScheduler_UnitTestCase {
 		$this->assertEquals( array( $actions[0], $actions[2] ), $completed, 'Only two of the three actions were completed (one was skipped, because it was processed by a concurrent request).' );
 	}
 
+	/**
+	 * A concurrent worker can claim an action in the window between the status check at the top of
+	 * process_action() and the log_execution() call. The log_execution() guard (AND status = pending)
+	 * ensures that when this happens the action is skipped rather than executed twice.
+	 *
+	 * @return void
+	 */
+	public function test_run_skips_action_claimed_mid_execution_by_concurrent_worker() {
+		$store     = ActionScheduler::store();
+		$hook      = uniqid();
+		$callback  = function () {};
+		$actions   = array();
+		$completed = array();
+		$schedule  = new ActionScheduler_SimpleSchedule( as_get_datetime_object( '1 day ago' ) );
+
+		for ( $i = 0; $i < 3; $i++ ) {
+			$actions[] = $store->save_action( new ActionScheduler_Action( $hook, array( $hook ), $schedule ) );
+		}
+
+		/**
+		 * Simulate a concurrent worker claiming the target action mid-flight: the saboteur fires on
+		 * action_scheduler_begin_execute (i.e. AFTER the pending status check passes, BEFORE
+		 * log_execution() is called) and calls log_execution() for the same action, just as a
+		 * concurrent web-server worker would.
+		 */
+		$saboteur = function ( $action_id ) use ( $store, $actions ) {
+			if ( $action_id === $actions[1] ) {
+				$store->log_execution( $action_id );
+			}
+		};
+
+		$spy = function ( $action_id ) use ( &$completed ) {
+			$completed[] = $action_id;
+		};
+
+		add_action( 'action_scheduler_begin_execute', $saboteur );
+		add_action( 'action_scheduler_completed_action', $spy );
+		add_action( $hook, $callback );
+
+		$actions_attempted = ActionScheduler_Mocker::get_queue_runner( $store )->run();
+
+		remove_action( 'action_scheduler_begin_execute', $saboteur );
+		remove_action( 'action_scheduler_completed_action', $spy );
+		remove_action( $hook, $callback );
+
+		$this->assertEquals( 3, $actions_attempted, 'The queue runner attempted to process all 3 actions.' );
+		$this->assertEquals( array( $actions[0], $actions[2] ), $completed, 'Only two of the three actions were completed (one was skipped, because a concurrent worker claimed it first).' );
+	}
+
 	public function test_completed_action_status() {
 		$store     = ActionScheduler::store();
 		$runner    = ActionScheduler_Mocker::get_queue_runner( $store );

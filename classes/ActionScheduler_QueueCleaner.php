@@ -85,7 +85,7 @@ class ActionScheduler_QueueCleaner {
 				array(),
 				'ActionScheduler',
 				true,
-				20
+				0
 			);
 		}
 	}
@@ -233,7 +233,7 @@ class ActionScheduler_QueueCleaner {
 			// Schedule this action immediately. It will not be selected during the current run and shares the same priority
 			// as the ongoing action. Non-unique scheduling is intentional: if cleanup spans multiple iterations, each completed
 			// iteration schedules the next, forming a chain that runs until all deletions are finished.
-			as_schedule_single_action( time(), self::RUN_SCHEDULED_CLEANER_HOOK, array(), 'ActionScheduler', false, 20 );
+			as_schedule_single_action( time(), self::RUN_SCHEDULED_CLEANER_HOOK, array(), 'ActionScheduler', false, 0 );
 		}
 
 		return array_merge( array(), ...$deleted_actions );

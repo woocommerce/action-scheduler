@@ -238,12 +238,32 @@ class ActionScheduler_QueueCleaner {
 			$continue_scheduled_cleanup = $continue_scheduled_cleanup || ( $iteration_execution_budget === $fetched_actions_count );
 		}
 
-		if ( $is_scheduled_cleanup && $continue_scheduled_cleanup ) {
-			// Use a separate hook with unique=true so at most one follow-up cleanup is ever pending.
-			as_schedule_single_action( time(), self::CONTINUE_SCHEDULED_CLEANER_HOOK, array(), 'ActionScheduler', true, 0 );
+		// When called from the scheduled cleanup hook, unique=true prevents duplicates at the SQL level. When called
+		// from a continuation, that same flag would match the running entry, so check for a pending continuation first.
+		$called_from_run = doing_action( self::RUN_SCHEDULED_CLEANER_HOOK );
+		if ( $is_scheduled_cleanup && $continue_scheduled_cleanup && ( $called_from_run || ! $this->has_pending_continuation() ) ) {
+			as_schedule_single_action( time(), self::CONTINUE_SCHEDULED_CLEANER_HOOK, array(), 'ActionScheduler', $called_from_run, 0 );
 		}
 
 		return array_merge( array(), ...$deleted_actions );
+	}
+
+	/**
+	 * Whether a continuation of the cleanup is already queued.
+	 *
+	 * @return bool
+	 */
+	private function has_pending_continuation() {
+		$pending = as_get_scheduled_actions(
+			array(
+				'hook'     => self::CONTINUE_SCHEDULED_CLEANER_HOOK,
+				'status'   => ActionScheduler_Store::STATUS_PENDING,
+				'per_page' => 1,
+			),
+			'ids'
+		);
+
+		return ! empty( $pending );
 	}
 
 	/**

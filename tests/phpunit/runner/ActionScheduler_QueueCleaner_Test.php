@@ -394,7 +394,7 @@ class ActionScheduler_QueueCleaner_Test extends ActionScheduler_UnitTestCase {
 	}
 
 	/**
-	 * Verify that cleanup was executed during the scheduled task and that trailing action was properly scheduled.
+	 * Verify the follow-up cleanup is scheduled on the continuation hook with unique=true.
 	 */
 	public function test_clean_actions_behaviour_as_scheduled_action_spawns_trailing_action() {
 		$store = $this->getMockBuilder( ActionScheduler_Store::class )->disableOriginalConstructor()->getMock();
@@ -416,22 +416,27 @@ class ActionScheduler_QueueCleaner_Test extends ActionScheduler_UnitTestCase {
 			return array( ActionScheduler_Store::STATUS_FAILED );
 		};
 		add_filter( 'action_scheduler_default_cleaner_statuses', $filter_statuses );
-		$trail              = 0;
-		$filter_as_schedule = function ( $pre_option, $timestamp, $hook, $args, $group, $priority, $unique ) use ( &$trail ) {
-			$trail += (int) ( 'action_scheduler_run_actions_cleanup_hook' === $hook );
+		$continuation_scheduled  = 0;
+		$continuation_was_unique = false;
+		$filter_as_schedule      = function ( $pre_option, $timestamp, $hook, $args, $group, $priority, $unique ) use ( &$continuation_scheduled, &$continuation_was_unique ) {
+			if ( 'action_scheduler_continue_actions_cleanup_hook' === $hook ) {
+				$continuation_scheduled++;
+				$continuation_was_unique = (bool) $unique;
+			}
 			return $pre_option;
 		};
 		add_filter( 'pre_as_schedule_single_action', $filter_as_schedule, 10, 7 );
 
-		// Verify that cleanup was executed during the scheduled task and that trailing action was properly scheduled.
 		$cleaner = new ActionScheduler_QueueCleaner( $store );
 		$cleaner->register_cleaner_hooks();
 		do_action( 'action_scheduler_run_actions_cleanup_hook' );
 
-		$this->assertSame( 1, (int) $trail );
+		$this->assertSame( 1, $continuation_scheduled );
+		$this->assertTrue( $continuation_was_unique );
 
 		remove_filter( 'action_scheduler_default_cleaner_statuses', $filter_statuses );
 		remove_filter( 'pre_as_schedule_single_action', $filter_as_schedule );
 		remove_action( 'action_scheduler_run_actions_cleanup_hook', array( $cleaner, 'delete_old_actions' ) );
+		remove_action( 'action_scheduler_continue_actions_cleanup_hook', array( $cleaner, 'delete_old_actions' ) );
 	}
 }

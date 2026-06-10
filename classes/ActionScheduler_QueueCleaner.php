@@ -5,12 +5,18 @@
  */
 class ActionScheduler_QueueCleaner {
 	/**
-	 * The cleaner action hook is scheduled to run daily to initiate cleanup. It also triggers a series of non-recurring
-	 * actions that continue the cleanup in batches until all deletion actions are completed.
+	 * The cleaner action hook is scheduled to run daily to initiate cleanup.
 	 *
 	 * @var string
 	 */
 	private const RUN_SCHEDULED_CLEANER_HOOK = 'action_scheduler_run_actions_cleanup_hook';
+
+	/**
+	 * Hook used to keep deleting old actions in batches; unique=true ensures only one is pending at a time.
+	 *
+	 * @var string
+	 */
+	private const CONTINUE_SCHEDULED_CLEANER_HOOK = 'action_scheduler_continue_actions_cleanup_hook';
 
 	/**
 	 * The batch size.
@@ -64,6 +70,7 @@ class ActionScheduler_QueueCleaner {
 	 */
 	public function register_cleaner_hooks() {
 		add_action( self::RUN_SCHEDULED_CLEANER_HOOK, array( $this, 'delete_old_actions' ) );
+		add_action( self::CONTINUE_SCHEDULED_CLEANER_HOOK, array( $this, 'delete_old_actions' ) );
 		add_action( 'action_scheduler_ensure_recurring_actions', array( $this, 'register_recurring_actions' ) );
 	}
 
@@ -179,7 +186,8 @@ class ActionScheduler_QueueCleaner {
 
 		// When deletion is performed as a separate action, we can enforce a minimum batch size to achieve consistent deletion throughput.
 		// For inline cleanup during a queue run, the batch size should remain unchanged to avoid increasing the process footprint.
-		$is_scheduled_cleanup = doing_action( self::RUN_SCHEDULED_CLEANER_HOOK );
+		$is_scheduled_cleanup = doing_action( self::RUN_SCHEDULED_CLEANER_HOOK )
+			|| doing_action( self::CONTINUE_SCHEDULED_CLEANER_HOOK );
 		// 250 balances replication safety, backlog clearance speed, and claim slot duration on high-volume stores.
 		$iteration_batch_size       = $is_scheduled_cleanup ? max( 250, $batch_size ) : $batch_size;
 		$iteration_unused_budget    = 0;
@@ -230,10 +238,8 @@ class ActionScheduler_QueueCleaner {
 		}
 
 		if ( $is_scheduled_cleanup && $continue_scheduled_cleanup ) {
-			// Schedule this action immediately. It will not be selected during the current run and shares the same priority
-			// as the ongoing action. Non-unique scheduling is intentional: if cleanup spans multiple iterations, each completed
-			// iteration schedules the next, forming a chain that runs until all deletions are finished.
-			as_schedule_single_action( time(), self::RUN_SCHEDULED_CLEANER_HOOK, array(), 'ActionScheduler', false, 0 );
+			// Use a separate hook with unique=true so at most one follow-up cleanup is ever pending.
+			as_schedule_single_action( time(), self::CONTINUE_SCHEDULED_CLEANER_HOOK, array(), 'ActionScheduler', true, 0 );
 		}
 
 		return array_merge( array(), ...$deleted_actions );

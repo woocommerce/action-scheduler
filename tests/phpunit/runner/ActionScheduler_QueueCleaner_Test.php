@@ -394,9 +394,7 @@ class ActionScheduler_QueueCleaner_Test extends ActionScheduler_UnitTestCase {
 	}
 
 	/**
-	 * Verify that cleanup was executed during the scheduled task and that the trailing continuation was
-	 * scheduled under the dedicated continuation hook with unique=true (the property that caps
-	 * in-flight continuations at one).
+	 * Verify the trailing continuation is scheduled via the dedicated continuation hook with unique=true.
 	 */
 	public function test_clean_actions_behaviour_as_scheduled_action_spawns_trailing_action() {
 		$store = $this->getMockBuilder( ActionScheduler_Store::class )->disableOriginalConstructor()->getMock();
@@ -429,8 +427,6 @@ class ActionScheduler_QueueCleaner_Test extends ActionScheduler_UnitTestCase {
 		};
 		add_filter( 'pre_as_schedule_single_action', $filter_as_schedule, 10, 7 );
 
-		// Verify that cleanup was executed during the scheduled task and that exactly one trailing
-		// continuation was scheduled, routed through the dedicated continuation hook with unique=true.
 		$cleaner = new ActionScheduler_QueueCleaner( $store );
 		$cleaner->register_cleaner_hooks();
 		do_action( 'action_scheduler_run_actions_cleanup_hook' );

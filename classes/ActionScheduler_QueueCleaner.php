@@ -12,7 +12,7 @@ class ActionScheduler_QueueCleaner {
 	private const RUN_SCHEDULED_CLEANER_HOOK = 'action_scheduler_run_actions_cleanup_hook';
 
 	/**
-	 * The continuation hook keeps draining the backlog in batches; unique=true caps in-flight continuations at one.
+	 * Hook used to keep deleting old actions in batches; unique=true ensures only one is pending at a time.
 	 *
 	 * @var string
 	 */
@@ -238,7 +238,7 @@ class ActionScheduler_QueueCleaner {
 		}
 
 		if ( $is_scheduled_cleanup && $continue_scheduled_cleanup ) {
-			// Route through a dedicated hook with unique=true so the store-level dedup caps in-flight continuations at one.
+			// Use a separate hook with unique=true so at most one follow-up cleanup is ever pending.
 			as_schedule_single_action( time(), self::CONTINUE_SCHEDULED_CLEANER_HOOK, array(), 'ActionScheduler', true, 0 );
 		}
 

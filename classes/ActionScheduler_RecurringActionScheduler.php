@@ -24,6 +24,8 @@ class ActionScheduler_RecurringActionScheduler {
 	 */
 	public function init(): void {
 		add_action( self::RUN_SCHEDULED_RECURRING_ACTIONS_HOOK, array( $this, 'run_recurring_scheduler_hook' ) );
+		// Also run the check during queue processing, so installs without admin traffic still schedule the recurring action.
+		add_action( 'action_scheduler_before_process_queue', array( $this, 'schedule_recurring_scheduler_hook' ) );
 		if ( is_admin() && ! wp_doing_ajax() && ! wp_is_serving_rest_request() ) {
 			add_action( 'action_scheduler_init', array( $this, 'schedule_recurring_scheduler_hook' ) );
 		}

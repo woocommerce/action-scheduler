@@ -18,15 +18,11 @@ class ActionScheduler_QueueCleaner_Test extends ActionScheduler_UnitTestCase {
 		}
 
 		$runner->run();
-		sleep( 1 );
 
-		$callback = static function () {
-			return 1;
-		};
-		add_filter( 'action_scheduler_retention_period', $callback ); // delete any finished job.
+		add_filter( 'action_scheduler_retention_period', '__return_zero' ); // delete any finished job.
 		$cleaner = new ActionScheduler_QueueCleaner( $store );
 		$cleaned = $cleaner->delete_old_actions();
-		remove_filter( 'action_scheduler_retention_period', $callback );
+		remove_filter( 'action_scheduler_retention_period', '__return_zero' );
 
 		$this->assertIsArray( $cleaned, 'ActionScheduler_QueueCleaner::delete_old_actions() returns an array.' );
 		$this->assertCount( 5, $cleaned, 'ActionScheduler_QueueCleaner::delete_old_actions() deleted the expected number of actions.' );

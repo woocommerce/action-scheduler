@@ -113,11 +113,12 @@ class ActionScheduler_QueueCleaner {
 
 		/**
 		 * Set the retention period, in seconds, for actions with a status returned by the action_scheduler_default_cleaner_statuses filter.
+		 * Zero means purge immediately. Negative or non-numeric values default to one month.
 		 *
 		 * @param int $retention_period Retention period in seconds.
 		 */
-		$lifespan_default = max( 0, (int) apply_filters( 'action_scheduler_retention_period_by_default', $lifespan ) );
-		$lifespan_default = $lifespan_default > 0 ? $lifespan_default : $this->month_in_seconds;
+		$lifespan_default = apply_filters( 'action_scheduler_retention_period_by_default', $lifespan );
+		$lifespan_default = ( is_numeric( $lifespan_default ) && $lifespan_default >= 0 ) ? (int) $lifespan_default : $this->month_in_seconds;
 
 		/**
 		 * Set the retention period in seconds for actions with a failed status. If the action_scheduler_default_cleaner_statuses filter includes

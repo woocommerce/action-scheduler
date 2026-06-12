@@ -12,7 +12,7 @@ class ActionScheduler_QueueCleaner {
 	private const RUN_SCHEDULED_CLEANER_HOOK = 'action_scheduler_run_actions_cleanup_hook';
 
 	/**
-	 * Hook used to keep deleting old actions in batches; unique=true ensures only one is pending at a time.
+	 * Hook used to keep deleting old actions in batches, with at most one continuation pending at a time.
 	 *
 	 * @var string
 	 */

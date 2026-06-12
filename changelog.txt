@@ -2,7 +2,7 @@
 
 = 3.9.4 =
 * Breaking change: Failed actions are now automatically purged after three months by default. Use the `action_scheduler_retention_period_for_failed` filter to adjust or pass `__return_zero` to disable. (#1310)
-* Breaking change: Action cleanup is now a separate daily scheduled task running at 3 am site time instead of inline on every queue run. Custom `ActionScheduler_QueueCleaner` subclasses and custom queue runner classes preserve the previous inline behavior. (#1312)
+* Performance: Action cleanup now runs as a dedicated daily task at 3 am site time with higher throughput, keeping tables lean without competing with normal queue processing. Custom cleaner subclasses preserve existing behavior. (#1312)
 * Performance: Actions with corrupted data are automatically cancelled on detection and their excess logs cleaned up in batches, preventing queue stalls and log table bloat. (#1309)
 
 = 3.9.3 - 2025-07-15 =

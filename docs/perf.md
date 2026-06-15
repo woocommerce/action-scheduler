@@ -129,7 +129,7 @@ add_action( 'wp_ajax_nopriv_eg_create_additional_runners', 'eg_create_additional
 
 ## Cleaning Failed Actions
 
-As of version 3.9.4, Action Scheduler retains failed actions for three months by default. If 'failed' is included in the purge statuses, the original behavior remains.
+As of version 4.0.0, Action Scheduler retains failed actions for three months by default. If 'failed' is included in the purge statuses, the original behavior remains.
 The retention period for failed actions can be customized:
 
 ```php
@@ -140,7 +140,7 @@ add_filter( 'action_scheduler_retention_period_for_failed', function( $retention
 add_filter( 'action_scheduler_retention_period_for_failed', '__return_zero' );
 ```
 
-Prior to version 3.9.4, by default Action Scheduler did not automatically delete old failed actions. There are two optional methods of removing these actions:
+Prior to version 4.0.0, by default Action Scheduler did not automatically delete old failed actions. There are two optional methods of removing these actions:
 
 - Include the failed status in the list of statuses to purge:
 ```php

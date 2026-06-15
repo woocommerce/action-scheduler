@@ -63,7 +63,7 @@ class ActionScheduler_QueueCleaner {
 	/**
 	 * Registers action hooks to perform action deletions as a separate task.
 	 *
-	 * @since 3.9.4
+	 * @since 4.0.0
 	 * @internal
 	 *
 	 * @return void
@@ -77,7 +77,7 @@ class ActionScheduler_QueueCleaner {
 	/**
 	 * Register the recurring action deletion task.
 	 *
-	 * @since 3.9.4
+	 * @since 4.0.0
 	 * @internal
 	 *
 	 * @return void
@@ -100,7 +100,7 @@ class ActionScheduler_QueueCleaner {
 	/**
 	 * Performs action deletions by aggregating configurations and coordinating clean_actions as needed.
 	 *
-	 * @since 3.9.4 by default, failed actions are removed after three months.
+	 * @since 4.0.0 by default, failed actions are removed after three months.
 	 * @return array
 	 */
 	public function delete_old_actions() {

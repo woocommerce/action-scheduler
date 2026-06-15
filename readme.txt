@@ -47,7 +47,7 @@ Collaboration is cool. We'd love to work with you to improve Action Scheduler. [
 
 == Changelog ==
 
-= 4.0.0 - 2026-06-15 =
+= 4.0.0 - 2026-06-16 =
 * Breaking change: action args are taken into account when scheduling unique actions.
 * Breaking change: failed actions are now automatically purged after 3 months by default.
 * Performance - Actions with corrupted data are automatically cancelled on detection and their excess logs cleaned up in batches, preventing queue stalls and log table bloat.

@@ -119,7 +119,8 @@ jobs:
         run: |
           set -euo pipefail
           bullets=$(cat "${RUNNER_TEMP}/changelog-entries.txt")
-          # Real date: the action flow requires a valid date (woorelease won't fill a placeholder).
+          # We own the changelog: woorelease runs with --generate_changelog and won't touch it,
+          # so stamp the final date here.
           entry=$(printf '= %s - %s =\n%s' "${VERSION}" "$(date -u +%F)" "$bullets")
           hdr=$(grep -n '^== Changelog ==' readme.txt | head -1 | cut -d: -f1)
           {
@@ -150,7 +151,7 @@ jobs:
           phar="../woo-product-deploy/woorelease.phar"
           url="https://github.com/${{ github.repository }}/tree/trunk"
           php "$phar" vb:replace "$url" --folder="$PWD" --product_version="${VERSION}"
-          php "$phar" vb:change  "$url" --folder="$PWD" --product_version="${VERSION}"
+          php "$phar" vb:change  "$url" --folder="$PWD" --product_version="${VERSION}" --generate_changelog
           echo "=== Changes that would be made (changelog + version bump) ==="
           git --no-pager diff
 
@@ -187,9 +188,11 @@ jobs:
           # --release) commits and pushes them to the prep branch:
           #   vb:replace -> WRCS/loader version tokens (no commit; folded into the next commit)
           #   vb:change  -> plugin header version, stable tag, package.json
+          # --generate_changelog tells vb:change to leave the changelog alone (we manage it in readme.txt);
+          # without it woorelease expects a placeholder-date entry to stamp and errors out.
           url="https://github.com/${repo}/tree/${prep}"
           php "$phar" vb:replace "$url" --folder="$PWD" --product_version="${VERSION}"
-          php "$phar" vb:change  "$url" --folder="$PWD" --product_version="${VERSION}" --release
+          php "$phar" vb:change  "$url" --folder="$PWD" --product_version="${VERSION}" --release --generate_changelog
 
           # Open the prep PR into the release branch, with a checklist of things to verify.
           body=$(cat <<EOF

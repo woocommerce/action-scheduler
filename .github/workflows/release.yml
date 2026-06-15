@@ -277,27 +277,23 @@ jobs:
           wporg_username: ${{ secrets.WPORG_SVN_USERNAME }}
           wporg_password: ${{ secrets.WPORG_SVN_PASSWORD }}
 
-      # TEMPORARY WORKAROUND — remove once woocommerce/woo-product-deploy simulates via wporg:release.
-      # The action's simulate mode runs woorelease's full `release` orchestrator, whose vb:change step
-      # fails (error #39) on our changelog.txt: we keep the changelog in readme.txt and only sync it
-      # into changelog.txt after deploy, so vb:change finds no placeholder entry to date-stamp. The
-      # real deploy is unaffected (it runs wporg:release directly), so we dry-run just that here:
-      # wporg:release without --release builds the package and stages it to SVN but never commits, so
-      # it needs no WordPress.org credentials.
-      - name: Set up PHP (dry-run deploy)
+      # TEMPORARY: the action's simulate runs woorelease's full `release` orchestrator, which errors
+      # (#39) on our changelog.txt (synced only after deploy). The real deploy uses wporg:release
+      # directly, so we dry-run just that. Remove once woo-product-deploy simulates the same way.
+      - name: "Dry-run deploy: set up PHP"
         if: ${{ inputs.simulate }}
         uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240 # v2
         with:
           php-version: '8.4'
           extensions: posix, curl, mbstring, xml, zip, phar, openssl
 
-      - name: Set up Node (dry-run deploy)
+      - name: "Dry-run deploy: set up Node"
         if: ${{ inputs.simulate }}
         uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version: '20'
 
-      - name: Check out the plugin (dry-run deploy)
+      - name: "Dry-run deploy: check out the plugin"
         if: ${{ inputs.simulate }}
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
@@ -305,7 +301,7 @@ jobs:
           token: ${{ github.token }}
           path: plugin
 
-      - name: Set up woorelease (dry-run deploy)
+      - name: "Dry-run deploy: set up woorelease"
         if: ${{ inputs.simulate }}
         working-directory: .github/actions/woo-product-deploy
         run: |
@@ -313,7 +309,7 @@ jobs:
           GITHUB_ACTION_PATH="$PWD" DEPLOY_PAT="${{ github.token }}" \
             bash .github/workflows/bin/setup-woorelease.sh
 
-      - name: Dry-run WordPress.org deploy (build + stage, no commit)
+      - name: "Dry-run deploy: WordPress.org (build + stage, no commit)"
         if: ${{ inputs.simulate }}
         working-directory: plugin
         run: |

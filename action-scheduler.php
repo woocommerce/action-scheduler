@@ -7,11 +7,11 @@
  * Author URI: https://automattic.com/
  * Version: 4.0.0
  * License: GPLv3
- * Requires at least: 6.5
- * Tested up to: 6.8
+ * Requires at least: 6.8
+ * Tested up to: 7.0
  * Requires PHP: 7.2
  *
- * Copyright 2019 Automattic, Inc.  (https://automattic.com/contact/)
+ * Copyright 2026 Automattic, Inc.  (https://automattic.com/contact/)
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by

@@ -318,6 +318,46 @@ jobs:
           url="https://github.com/${{ github.repository }}/tree/release/${{ inputs.version }}"
           php "$phar" wporg:release "$url" --folder="$PWD" --product_version="${{ inputs.version }}"
 
+      - name: "Dry-run deploy: inspect built package"
+        if: ${{ inputs.simulate }}
+        working-directory: plugin
+        run: |
+          set -eu
+          zip="action-scheduler.zip"
+          [ -f "$zip" ] || { echo "::error::Build did not produce $zip."; exit 1; }
+
+          main=$(unzip -Z1 "$zip" | grep -m1 -E '(^|/)action-scheduler\.php$')
+          readme=$(unzip -Z1 "$zip" | grep -m1 -E '(^|/)readme\.txt$')
+          ver=$(unzip -p "$zip" "$main"   | grep -m1 -E '^[[:space:]]*\* Version:' | sed 's/^[[:space:]]*\* //')
+          tag=$(unzip -p "$zip" "$readme" | grep -m1 -E '^Stable tag:')
+          size=$(du -h "$zip" | cut -f1)
+          files=$(unzip -Z1 "$zip" | wc -l | tr -d ' ')
+
+          echo "Built $zip ($size, $files files) — $ver / $tag"
+          if [ "$(echo "$ver" | grep -oE '[0-9]+\.[0-9]+\.[0-9]+')" != "${{ inputs.version }}" ]; then
+            echo "::warning::Packaged version does not match requested ${{ inputs.version }}."
+          fi
+
+          {
+            echo "### Dry-run package — ${{ inputs.version }}"
+            echo "- \`$zip\` ($size, $files files)"
+            echo "- Packaged: \`$ver\` · \`$tag\`"
+            echo "<details><summary>Contents</summary>"
+            echo
+            echo '```'
+            unzip -l "$zip"
+            echo '```'
+            echo "</details>"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: "Dry-run deploy: upload package"
+        if: ${{ inputs.simulate }}
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: action-scheduler-${{ inputs.version }}-dryrun
+          path: plugin/action-scheduler.zip
+          if-no-files-found: error
+
       # Copy the new readme.txt changelog entry into changelog.txt on the release branch (so the
       # list is only edited once, in readme.txt), and bring it to trunk via the merge-back PR.
       - name: Checkout release branch

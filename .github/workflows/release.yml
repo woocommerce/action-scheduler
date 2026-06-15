@@ -108,7 +108,10 @@ jobs:
             }
             if (titles.length === 0) titles = ['Maintenance release.'];
 
-            const bullets = titles.map(t => `* ${t}`).join('\n');
+            const bullets = titles
+              .map(t => t.trim())
+              .map(t => `* ${t.endsWith('.') ? t : `${t}.`}`)
+              .join('\n');
             fs.writeFileSync(`${process.env.RUNNER_TEMP}/changelog-entries.txt`, bullets + '\n');
             core.info(`Changelog entries:\n${bullets}`);
 
@@ -205,8 +208,10 @@ jobs:
           - [ ] \`Tested up to\` updated to the current WordPress version
           EOF
           )
-          gh pr create --repo "$repo" --base "$release" --head "$prep" \
-            --title "Release prep: ${VERSION}" --body "$body"
+          pr_url=$(gh pr create --repo "$repo" --base "$release" --head "$prep" \
+            --title "Release prep: ${VERSION}" --body "$body")
+          echo "Opened release prep PR: ${pr_url}"
+          echo "**Release prep PR for ${VERSION}:** ${pr_url}" >> "$GITHUB_STEP_SUMMARY"
 
   release:
     if: ${{ inputs.step == 'release' }}

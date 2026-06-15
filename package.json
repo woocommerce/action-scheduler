@@ -15,6 +15,9 @@
     "check-textdomain": "grunt checktextdomain",
     "phpcs": "grunt phpcs"
   },
+  "config": {
+    "wp_org_slug": "action-scheduler"
+  },
   "woorelease": {
     "wp_org_slug": "action-scheduler"
   },

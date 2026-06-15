@@ -1,0 +1,327 @@
+name: Release Action Scheduler
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version (x.y.z)'
+        required: true
+        type: string
+      step:
+        description: 'Which step to run'
+        required: true
+        type: choice
+        default: release prep
+        options:
+          - release prep
+          - release
+      simulate:
+        description: 'Dry run'
+        required: false
+        default: true
+        type: boolean
+
+jobs:
+  prep:
+    if: ${{ inputs.step == 'release prep' }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+      VERSION: ${{ inputs.version }}
+    steps:
+      - name: Validate version
+        run: |
+          if [[ ! "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "::error::Version must be x.y.z (got '$VERSION')."
+            exit 1
+          fi
+
+      # woorelease (bundled in the action) does the version bump. The org action only runs the
+      # deploy sub-commands, so we run the bump here. The changelog is generated from PR titles
+      # into readme.txt, and synced into changelog.txt during the release step.
+      # If the action ever exposes a prep step, this job can be dropped.
+      - name: Set up PHP
+        uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240 # v2
+        with:
+          php-version: '8.4'
+          extensions: posix, curl, mbstring, xml, zip, phar, openssl
+
+      - name: Check out woo-product-deploy (woorelease.phar + setup script only)
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          repository: woocommerce/woo-product-deploy
+          ref: 8b790ecbac9e38798c44c31a5ae9747345efbfff # trunk @ 2026-06-15
+          path: woo-product-deploy
+          token: ${{ secrets.ORG_DEPLOY_SECRET }}
+          sparse-checkout: .github/workflows/bin
+
+      - name: Check out the plugin
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          ref: trunk
+          token: ${{ github.token }}
+          path: plugin
+
+      # Collect the titles of the PRs merged since the last release, one "* <title>" per line, and
+      # write them to a file for the bash step below to fold into readme.txt.
+      - name: Generate changelog entries
+        uses: actions/github-script@f28e40c7f34bde8b3046d885e986cb6290c5673b # v7
+        with:
+          github-token: ${{ github.token }}
+          script: |
+            const fs = require('fs');
+            const { owner, repo } = context.repo;
+
+            // Last released version = the Stable tag recorded in trunk's readme.txt.
+            const readme = fs.readFileSync('plugin/readme.txt', 'utf8');
+            const last = (readme.match(/^Stable tag:\s*(\d+\.\d+\.\d+)\s*$/m) || [])[1];
+            core.info(`Last release (readme Stable tag): ${last ?? '<none>'}`);
+
+            // Make sure the tag exists before diffing against it.
+            let haveTag = false;
+            if (last) {
+              try {
+                await github.rest.git.getRef({ owner, repo, ref: `tags/${last}` });
+                haveTag = true;
+              } catch (e) {
+                if (e.status !== 404) throw e;
+                core.warning(`No git tag ${last} found; treating as no prior release.`);
+              }
+            }
+
+            // Titles of the PRs merged since the last release (the commits in last...trunk).
+            let titles = [];
+            if (haveTag) {
+              const commits = await github.paginate(github.rest.repos.compareCommitsWithBasehead, {
+                owner, repo, basehead: `${last}...trunk`,
+              }, res => res.data.commits);
+              const seen = new Set();
+              for (const c of commits) {
+                const prs = await github.rest.repos.listPullRequestsAssociatedWithCommit({ owner, repo, commit_sha: c.sha });
+                for (const pr of prs.data) {
+                  if (pr.merged_at && !seen.has(pr.number)) { seen.add(pr.number); titles.push(pr.title); }
+                }
+              }
+            }
+            if (titles.length === 0) titles = ['Maintenance release.'];
+
+            const bullets = titles.map(t => `* ${t}`).join('\n');
+            fs.writeFileSync(`${process.env.RUNNER_TEMP}/changelog-entries.txt`, bullets + '\n');
+            core.info(`Changelog entries:\n${bullets}`);
+
+      # Prepend the generated entries (with a "= <version> - <date> =" header) under the
+      # "== Changelog ==" header in readme.txt.
+      - name: Write changelog to readme.txt
+        working-directory: plugin
+        run: |
+          set -euo pipefail
+          bullets=$(cat "${RUNNER_TEMP}/changelog-entries.txt")
+          # Real date: the action flow requires a valid date (woorelease won't fill a placeholder).
+          entry=$(printf '= %s - %s =\n%s' "${VERSION}" "$(date -u +%F)" "$bullets")
+          hdr=$(grep -n '^== Changelog ==' readme.txt | head -1 | cut -d: -f1)
+          {
+            head -n "$hdr" readme.txt
+            echo
+            printf '%s\n\n' "$entry"
+            tail -n +"$((hdr + 1))" readme.txt | sed '1{/^$/d;}'
+          } > readme.txt.new
+          mv readme.txt.new readme.txt
+
+      # Configure git + token for woorelease using the action's own script (run from the action
+      # checkout so its phar copy and config stay there, not in the plugin).
+      - name: Set up woorelease
+        working-directory: woo-product-deploy
+        run: |
+          set -euo pipefail
+          GITHUB_ACTION_PATH="$PWD" \
+          DEPLOY_PAT="${{ github.token }}" \
+            bash .github/workflows/bin/setup-woorelease.sh
+
+      # Dry run: simulate the version bump (the changelog is already in readme.txt) and print the
+      # combined diff. Creates no branches, commits, pushes, or PR.
+      - name: Preview (dry run)
+        if: ${{ inputs.simulate }}
+        working-directory: plugin
+        run: |
+          set -euo pipefail
+          phar="../woo-product-deploy/woorelease.phar"
+          url="https://github.com/${{ github.repository }}/tree/trunk"
+          php "$phar" vb:replace "$url" --folder="$PWD" --product_version="${VERSION}"
+          php "$phar" vb:change  "$url" --folder="$PWD" --product_version="${VERSION}"
+          echo "=== Changes that would be made (changelog + version bump) ==="
+          git --no-pager diff
+
+      - name: Bump version and open PR
+        if: ${{ !inputs.simulate }}
+        working-directory: plugin
+        run: |
+          set -euo pipefail
+          release="release/${VERSION}"
+          prep="release-prep/${VERSION}"
+          repo="${{ github.repository }}"
+          phar="../woo-product-deploy/woorelease.phar"
+
+          git config user.name "botwoo"
+          git config user.email "botwoo@users.noreply.github.com"
+
+          # Create the release branch (the PR target) from trunk if it doesn't exist yet.
+          if ! git ls-remote --exit-code --heads origin "$release" >/dev/null 2>&1; then
+            git push origin "HEAD:refs/heads/${release}"
+          fi
+
+          # If the prep branch already exists, the changelog has been generated — nothing to do.
+          if git ls-remote --exit-code --heads origin "$prep" >/dev/null 2>&1; then
+            echo "Branch $prep already exists; skipping."
+            exit 0
+          fi
+
+          # Prep branch off the current commit (= release), keeping the generated changelog.
+          git checkout -b "$prep"
+          git commit -qam "Add ${VERSION} changelog"
+          git push -u origin "$prep"
+
+          # Version bump (woorelease) — rewrites the version strings in this checkout and (with
+          # --release) commits and pushes them to the prep branch:
+          #   vb:replace -> WRCS/loader version tokens (no commit; folded into the next commit)
+          #   vb:change  -> plugin header version, stable tag, package.json
+          url="https://github.com/${repo}/tree/${prep}"
+          php "$phar" vb:replace "$url" --folder="$PWD" --product_version="${VERSION}"
+          php "$phar" vb:change  "$url" --folder="$PWD" --product_version="${VERSION}" --release
+
+          # Open the prep PR into the release branch, with a checklist of things to verify.
+          body=$(cat <<EOF
+          Version bump (woorelease) and changelog (from PR titles) for ${VERSION}. Review and adjust the changelog, then merge this PR into \`${release}\` before running the "release" step.
+
+          ### Pre-release checklist
+          - [ ] Changelog entries reviewed and curated
+          - [ ] \`Requires at least\` (WordPress) complies with the L-2 policy (latest WordPress minus two)
+          - [ ] \`Requires PHP\` matches the minimum required by that WordPress version
+          - [ ] \`Tested up to\` updated to the current WordPress version
+          EOF
+          )
+          gh pr create --repo "$repo" --base "$release" --head "$prep" \
+            --title "Release prep: ${VERSION}" --body "$body"
+
+  release:
+    if: ${{ inputs.step == 'release' }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - name: Validate version
+        env:
+          VERSION: ${{ inputs.version }}
+        run: |
+          if [[ ! "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "::error::Version must be x.y.z (got '$VERSION')."
+            exit 1
+          fi
+
+      # The action deploys from release/<version>, so it must exist (needed even for a dry run).
+      - name: Ensure release branch exists
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if ! gh api "repos/${{ github.repository }}/git/ref/heads/release/${{ inputs.version }}" >/dev/null 2>&1; then
+            echo "::error::Branch release/${{ inputs.version }} does not exist — run the 'release prep' step first."
+            exit 1
+          fi
+
+      # Don't re-release a version already published to WordPress.org (its SVN tag exists).
+      - name: Ensure version not already on WordPress.org
+        if: ${{ !inputs.simulate }}
+        run: |
+          if curl -fs -o /dev/null "https://plugins.svn.wordpress.org/action-scheduler/tags/${{ inputs.version }}/"; then
+            echo "::error::Version ${{ inputs.version }} already exists on WordPress.org — aborting."
+            exit 1
+          fi
+          echo "WordPress.org tag ${{ inputs.version }} not found — OK to proceed."
+
+      # The action is in a private repo, so it must be checked out before use.
+      - name: Checkout woo-product-deploy action
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          repository: woocommerce/woo-product-deploy
+          ref: 8b790ecbac9e38798c44c31a5ae9747345efbfff # trunk @ 2026-06-15
+          path: ./.github/actions/woo-product-deploy
+          token: ${{ secrets.ORG_DEPLOY_SECRET }}
+
+      - name: Deploy
+        uses: ./.github/actions/woo-product-deploy
+        with:
+          repo_url: ${{ github.server_url }}/${{ github.repository }}
+          branch: release/${{ inputs.version }}
+          version: ${{ inputs.version }}
+          node_version: '20'
+          npm_version: '10'
+          simulate: ${{ inputs.simulate }}
+          # Action Scheduler always releases to both targets, so these aren't exposed as toggles.
+          wporg_release: true
+          github_release: true
+          # Action Scheduler is not a WooCommerce.com marketplace product.
+          wccom_release: false
+          deploy_pat: ${{ secrets.ORG_DEPLOY_SECRET }}
+          wporg_username: ${{ secrets.WPORG_SVN_USERNAME }}
+          wporg_password: ${{ secrets.WPORG_SVN_PASSWORD }}
+
+      # Copy the new readme.txt changelog entry into changelog.txt on the release branch (so the
+      # list is only edited once, in readme.txt), and bring it to trunk via the merge-back PR.
+      - name: Checkout release branch
+        if: ${{ !inputs.simulate && success() }}
+        continue-on-error: true
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          ref: release/${{ inputs.version }}
+          token: ${{ github.token }}
+          path: release-checkout
+
+      - name: Sync changelog.txt on the release branch
+        if: ${{ !inputs.simulate && success() }}
+        continue-on-error: true
+        working-directory: release-checkout
+        run: |
+          set -euo pipefail
+          version="${{ inputs.version }}"
+
+          # The ${version} changelog entry from readme.txt (the "= ${version} - ... =" section).
+          entry=$(awk -v v="= ${version} " '
+            index($0, v) == 1 { f=1 }
+            f && /^= / && index($0, v) != 1 { exit }
+            f { print }
+          ' readme.txt)
+          [ -n "$entry" ] || { echo "::error::No ${version} changelog entry found in readme.txt."; exit 1; }
+
+          # Prepend it to changelog.txt (the all-time history).
+          { head -n 1 changelog.txt; echo; printf '%s\n\n' "$entry"; tail -n +2 changelog.txt | sed '1{/^$/d;}'; } > changelog.txt.new
+          mv changelog.txt.new changelog.txt
+
+          git config user.name "botwoo"
+          git config user.email "botwoo@users.noreply.github.com"
+          git add changelog.txt
+          git commit -m "Update changelog.txt for ${version}"
+          git push origin "HEAD:release/${version}"
+
+      # After a successful real release, open a PR to bring the release branch (version bump,
+      # changelog) back into trunk.
+      - name: Open merge-back PR into trunk
+        if: ${{ !inputs.simulate && success() }}
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          head="release/${{ inputs.version }}"
+          existing=$(gh pr list --repo "${{ github.repository }}" --head "$head" --base trunk --state open --json number --jq 'length')
+          if [ "$existing" -gt 0 ]; then
+            echo "Merge-back PR for $head already exists; skipping."
+            exit 0
+          fi
+          gh pr create \
+            --repo "${{ github.repository }}" \
+            --base trunk \
+            --head "$head" \
+            --title "Merge $head into trunk" \
+            --body "Brings the ${{ inputs.version }} release changes (version bump, changelog) from \`$head\` into trunk."

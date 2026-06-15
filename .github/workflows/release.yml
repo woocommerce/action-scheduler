@@ -259,6 +259,7 @@ jobs:
           token: ${{ secrets.ORG_DEPLOY_SECRET }}
 
       - name: Deploy
+        if: ${{ !inputs.simulate }}
         uses: ./.github/actions/woo-product-deploy
         with:
           repo_url: ${{ github.server_url }}/${{ github.repository }}
@@ -266,7 +267,7 @@ jobs:
           version: ${{ inputs.version }}
           node_version: '20'
           npm_version: '10'
-          simulate: ${{ inputs.simulate }}
+          simulate: false
           # Action Scheduler always releases to both targets, so these aren't exposed as toggles.
           wporg_release: true
           github_release: true
@@ -275,6 +276,51 @@ jobs:
           deploy_pat: ${{ secrets.ORG_DEPLOY_SECRET }}
           wporg_username: ${{ secrets.WPORG_SVN_USERNAME }}
           wporg_password: ${{ secrets.WPORG_SVN_PASSWORD }}
+
+      # TEMPORARY WORKAROUND — remove once woocommerce/woo-product-deploy simulates via wporg:release.
+      # The action's simulate mode runs woorelease's full `release` orchestrator, whose vb:change step
+      # fails (error #39) on our changelog.txt: we keep the changelog in readme.txt and only sync it
+      # into changelog.txt after deploy, so vb:change finds no placeholder entry to date-stamp. The
+      # real deploy is unaffected (it runs wporg:release directly), so we dry-run just that here:
+      # wporg:release without --release builds the package and stages it to SVN but never commits, so
+      # it needs no WordPress.org credentials.
+      - name: Set up PHP (dry-run deploy)
+        if: ${{ inputs.simulate }}
+        uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240 # v2
+        with:
+          php-version: '8.4'
+          extensions: posix, curl, mbstring, xml, zip, phar, openssl
+
+      - name: Set up Node (dry-run deploy)
+        if: ${{ inputs.simulate }}
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: '20'
+
+      - name: Check out the plugin (dry-run deploy)
+        if: ${{ inputs.simulate }}
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          ref: release/${{ inputs.version }}
+          token: ${{ github.token }}
+          path: plugin
+
+      - name: Set up woorelease (dry-run deploy)
+        if: ${{ inputs.simulate }}
+        working-directory: .github/actions/woo-product-deploy
+        run: |
+          set -euo pipefail
+          GITHUB_ACTION_PATH="$PWD" DEPLOY_PAT="${{ github.token }}" \
+            bash .github/workflows/bin/setup-woorelease.sh
+
+      - name: Dry-run WordPress.org deploy (build + stage, no commit)
+        if: ${{ inputs.simulate }}
+        working-directory: plugin
+        run: |
+          set -euo pipefail
+          phar="../.github/actions/woo-product-deploy/woorelease.phar"
+          url="https://github.com/${{ github.repository }}/tree/release/${{ inputs.version }}"
+          php "$phar" wporg:release "$url" --folder="$PWD" --product_version="${{ inputs.version }}"
 
       # Copy the new readme.txt changelog entry into changelog.txt on the release branch (so the
       # list is only edited once, in readme.txt), and bring it to trunk via the merge-back PR.

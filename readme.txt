@@ -48,26 +48,22 @@ Collaboration is cool. We'd love to work with you to improve Action Scheduler. [
 == Changelog ==
 
 = 4.0.0 - 2026-06-15 =
-* Release/3.9.3
-* Update favicon images
-* Fix number formating for action numbers in list view
-* Import missing WP_CLI class to prevent fatal error
-* Fix possible undefined variable in `action cancel --all` CLI command
-* Move recurring A-S cache key to transient
-* Optimize get_claim_count() query for large stores
-* Performance: cap failed actions retention period to three months by default
-* Performance: address side-effects of processing corrupted entries (logs table bloat, hard-working queue processing)
-* Fix: include args in unique action WHERE clause to prevent cross-args blocking
-* Update require_once path for Cancel_CommandFix absolute import
-* Bump picomatch from 2.3.1 to 2.3.2
-* Bump phpunit/phpunit from 8.5.42 to 8.5.52
-* fix: esc_html() hook name in admin notice markup
-* Performance: extract action deletions into a separate task
-* Ensure cleanup action is enqueued via queue runner
-* Follow-up to #1309: tolerate corrupted action status when locating its store
-* Update 3.9.4 version references to 4.0.0 before release
-* Bump lodash, grunt-legacy-log and grunt-legacy-util
-* Add manual release workflow (prep + release) using woo-product-deploy
+* Breaking change: action args are taken into account when scheduling unique actions.
+* Breaking change: failed actions are now automatically purged after 3 months by default.
+* Performance - Actions with corrupted data are automatically cancelled on detection and their excess logs cleaned up in batches, preventing queue stalls and log table bloat.
+* Performance - Action cleanup now runs as a dedicated daily task at 3 am site time with higher throughput.
+* Update favicon images.
+* Fix number formating for action numbers in list view.
+* Import missing `WP_CLI` class to prevent fatal error.
+* Fix possible undefined variable in `action cancel --all` CLI command.
+* Move recurring A-S cache key to transient.
+* Optimize `get_claim_count()` query for large stores.
+* Update `require_once` path for Cancel_CommandFix absolute import.
+* Fix `esc_html()` hook name in admin notice markup.
+* Ensure cleanup action is enqueued via queue runner.
+* Dev - Bump picomatch from 2.3.1 to 2.3.2.
+* Dev - Bump phpunit/phpunit from 8.5.42 to 8.5.52.
+* Dev - Bump lodash, grunt-legacy-log and grunt-legacy-util.
 
 = 3.9.3 - 2025-07-15 =
 * Add hook 'action_scheduler_ensure_recurring_actions' specifically for scheduling recurring actions.

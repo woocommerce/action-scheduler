@@ -1,5 +1,5 @@
 === Action Scheduler ===
-Contributors: Automattic, wpmuguru, claudiosanches, peterfabian1000, vedjain, jamosova, obliviousharmony, konamiman, sadowski, royho, barryhughes-1, crstauf, jorgeatorres, coreymckrill
+Contributors: Automattic, wpmuguru, vedjain, konamiman, barryhughes-1, crstauf, jorgeatorres, coreymckrill, prettyboymp, ovidiul
 Tags: scheduler, cron
 Stable tag: 4.0.0
 License: GPLv3

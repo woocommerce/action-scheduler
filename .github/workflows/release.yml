@@ -347,6 +347,12 @@ jobs:
           GITHUB_ACTION_PATH="$PWD" DEPLOY_PAT="${{ secrets.ORG_DEPLOY_SECRET }}" \
             bash .github/workflows/bin/setup-woorelease.sh
 
+      # woorelease checks out the .org SVN repo while staging, so svn must be installed (the real
+      # deploy gets it from the action's setup-svn.sh; ubuntu runners no longer ship it).
+      - name: "Dry-run deploy: set up Subversion"
+        if: ${{ inputs.simulate }}
+        run: bash .github/actions/woo-product-deploy/.github/workflows/bin/setup-svn.sh
+
       - name: "Dry-run deploy: WordPress.org (build + stage, no commit)"
         if: ${{ inputs.simulate }}
         working-directory: plugin

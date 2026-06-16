@@ -49,7 +49,8 @@ Collaboration is cool. We'd love to work with you to improve Action Scheduler. [
 
 = 4.0.0 - 2026-06-16 =
 * Breaking change: action args are taken into account when scheduling unique actions.
-* Breaking change: failed actions are now automatically purged after 3 months by default.
+* Breaking change: failed actions are now automatically purged after 3 months by default, controlled by the `action_scheduler_retention_period_for_failed` filter.
+* Add `action_scheduler_enable_failed_action_cleanup` filter to disable automatic cleanup of failed actions.
 * Performance - Actions with corrupted data are automatically cancelled on detection and their excess logs cleaned up in batches, preventing queue stalls and log table bloat.
 * Performance - Action cleanup now runs as a dedicated daily task at 3 am site time with higher throughput.
 * Update favicon images.

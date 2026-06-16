@@ -146,7 +146,11 @@ class ActionScheduler_QueueCleaner {
 		 *
 		 * @param string[] $default_statuses_to_purge Action statuses to clean.
 		 */
-		$statuses_to_purge = (array) apply_filters( 'action_scheduler_default_cleaner_statuses', $this->default_statuses_to_purge );
+		$statuses_to_purge = apply_filters( 'action_scheduler_default_cleaner_statuses', $this->default_statuses_to_purge );
+		// Only an explicit empty array disables the purge; a non-array (e.g. a filter that forgot to return) falls back to the defaults.
+		if ( ! is_array( $statuses_to_purge ) ) {
+			$statuses_to_purge = $this->default_statuses_to_purge;
+		}
 
 		/**
 		 * Filter whether failed actions are purged. Return false to disable failed action cleanup.

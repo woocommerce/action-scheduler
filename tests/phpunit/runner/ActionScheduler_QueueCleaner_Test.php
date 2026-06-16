@@ -272,6 +272,37 @@ class ActionScheduler_QueueCleaner_Test extends ActionScheduler_UnitTestCase {
 	}
 
 	/**
+	 * Ensures a non-array return (e.g. a filter that forgot to return) falls back to the default statuses
+	 * rather than disabling the purge the way an explicit empty array does.
+	 *
+	 * @return void
+	 */
+	public function test_null_cleaner_statuses_falls_back_to_defaults() {
+		$filter = function () {
+			return null;
+		};
+		add_filter( 'action_scheduler_default_cleaner_statuses', $filter );
+
+		$cleaner = $this->getMockBuilder( ActionScheduler_QueueCleaner::class )
+			->setConstructorArgs( array() )
+			->setMethodsExcept( array( 'delete_old_actions', 'get_batch_size' ) )
+			->getMock();
+		$cleaner->expects( $this->exactly( 2 ) )
+			->method( 'clean_actions' )
+			->withConsecutive(
+				array( array( ActionScheduler_Store::STATUS_FAILED ), $this->anything(), 20 ),
+				array( array( ActionScheduler_Store::STATUS_COMPLETE, ActionScheduler_Store::STATUS_CANCELED ), $this->anything(), 20 )
+			)
+			->willReturnOnConsecutiveCalls( array( 'f' ), array( 'd' ) );
+
+		$deleted = $cleaner->delete_old_actions();
+
+		remove_filter( 'action_scheduler_default_cleaner_statuses', $filter );
+
+		$this->assertSame( array( 'f', 'd' ), $deleted );
+	}
+
+	/**
 	 * Ensures a zero failed retention period purges immediately rather than disabling the cleanup.
 	 *
 	 * @return void

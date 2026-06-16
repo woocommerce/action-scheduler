@@ -362,6 +362,20 @@ jobs:
           url="https://github.com/${{ github.repository }}/tree/release/${{ inputs.version }}"
           php "$phar" wporg:release "$url" --folder="$PWD" --product_version="${{ inputs.version }}"
 
+      # Show the final staged changes (the files a real deploy would commit to .org). woorelease
+      # leaves its SVN working copy in a /tmp/*_svn_wc dir.
+      - name: "Dry-run deploy: show staged SVN changes"
+        if: ${{ inputs.simulate }}
+        run: |
+          set -euo pipefail
+          wc_dir=$(find /tmp -maxdepth 1 -type d -name '*_svn_wc' 2>/dev/null | head -1)
+          if [ -z "$wc_dir" ]; then
+            echo "No SVN working copy found; nothing to show."
+            exit 0
+          fi
+          echo "Staged changes the real deploy would commit (svn status):"
+          svn status "$wc_dir"
+
       - name: "Dry-run deploy: upload package"
         if: ${{ inputs.simulate }}
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2

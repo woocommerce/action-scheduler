@@ -337,12 +337,14 @@ jobs:
         with:
           node-version: '20'
 
+      # woorelease's wporg:release checks GitHub push permission upfront, which github.token (the
+      # github-actions bot) fails, so use the botwoo PAT here as the real deploy does.
       - name: "Dry-run deploy: set up woorelease"
         if: ${{ inputs.simulate }}
         working-directory: .github/actions/woo-product-deploy
         run: |
           set -euo pipefail
-          GITHUB_ACTION_PATH="$PWD" DEPLOY_PAT="${{ github.token }}" \
+          GITHUB_ACTION_PATH="$PWD" DEPLOY_PAT="${{ secrets.ORG_DEPLOY_SECRET }}" \
             bash .github/workflows/bin/setup-woorelease.sh
 
       - name: "Dry-run deploy: WordPress.org (build + stage, no commit)"

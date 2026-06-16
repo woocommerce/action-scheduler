@@ -352,7 +352,9 @@ jobs:
           set -euo pipefail
           phar="../.github/actions/woo-product-deploy/woorelease.phar"
           url="https://github.com/${{ github.repository }}/tree/release/${{ inputs.version }}"
-          php "$phar" wporg:release "$url" --folder="$PWD" --product_version="${{ inputs.version }}"
+          # woorelease prompts if the build adds/removes shipped files vs the .org trunk; feed "y" to
+          # stage them non-interactively. Safe without --release: it never commits or asks for SVN creds.
+          php "$phar" wporg:release "$url" --folder="$PWD" --product_version="${{ inputs.version }}" < <(yes)
 
       - name: "Dry-run deploy: upload package"
         if: ${{ inputs.simulate }}

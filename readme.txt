@@ -62,6 +62,7 @@ Collaboration is cool. We'd love to work with you to improve Action Scheduler. [
 * Update `require_once` path for Cancel_CommandFix absolute import.
 * Fix `esc_html()` hook name in admin notice markup.
 * Ensure cleanup action is enqueued via queue runner.
+* Bump WordPress compatibility to version 7.0 and require at least 6.8.
 * Dev - Bump picomatch from 2.3.1 to 2.3.2.
 * Dev - Bump phpunit/phpunit from 8.5.42 to 8.5.52.
 * Dev - Bump lodash, grunt-legacy-log and grunt-legacy-util.

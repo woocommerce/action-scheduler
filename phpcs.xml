@@ -2,21 +2,28 @@
 <ruleset name="WordPress Coding Standards">
 	<description>WooCommerce dev PHP_CodeSniffer ruleset.</description>
 
+	<!-- Scan the whole project by default when no path is passed. -->
+	<file>.</file>
+
 	<!-- Exclude paths -->
 	<exclude-pattern>docs/</exclude-pattern>
+	<exclude-pattern>lib/</exclude-pattern>
+	<exclude-pattern>deprecated/</exclude-pattern>
 	<exclude-pattern>*/node_modules/*</exclude-pattern>
 	<exclude-pattern>*/vendor/*</exclude-pattern>
 
 	<!-- Configs -->
 	<config name="minimum_supported_wp_version" value="4.7" />
-	<config name="testVersion" value="7.0-" />
+	<config name="testVersion" value="7.2-" />
 
 	<!-- Rules -->
 	<rule ref="WooCommerce-Core" />
 
 	<rule ref="WordPress.WP.I18n">
 		<properties>
-			<property name="text_domain" type="array" value="action-scheduler" />
+			<property name="text_domain" type="array">
+				<element value="action-scheduler" />
+			</property>
 		</properties>
 	</rule>
 

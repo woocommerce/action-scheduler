@@ -65,6 +65,16 @@ jobs:
           token: ${{ github.token }}
           path: plugin
 
+      - name: Ensure version is not older than trunk
+        working-directory: plugin
+        run: |
+          set -euo pipefail
+          trunk_version=$(grep -m1 -oP 'Version:\s*\K[\d.]+' action-scheduler.php)
+          if ! php -r 'exit(version_compare($argv[1], $argv[2], ">=") ? 0 : 1);' "$VERSION" "$trunk_version"; then
+            echo "::error::${VERSION} is older than trunk (${trunk_version})."
+            exit 1
+          fi
+
       # Collect the titles of the PRs merged since the last release, one "* <title>" per line, and
       # write them to a file for the bash step below to fold into readme.txt.
       - name: Generate changelog entries

@@ -416,7 +416,7 @@ class ActionScheduler_ListTable extends ActionScheduler_Abstract_ListTable {
 			$action_hook_html = '<strong><code>' . $action->get_hook() . '</code></strong>';
 
 			if ( 1 === (int) $notification['success'] ) {
-				$type = 'updated';
+				$type = 'success';
 				switch ( $notification['row_action_type'] ) {
 					case 'run':
 						/* translators: %s: action HTML */
@@ -434,7 +434,7 @@ class ActionScheduler_ListTable extends ActionScheduler_Abstract_ListTable {
 			} else {
 				$type = 'error';
 				/* translators: 1: action HTML 2: action ID 3: error message */
-				$action_message_html = sprintf( __( 'Could not process change for action: "%1$s" (ID: %2$d). Error: %3$s', 'action-scheduler' ), $action_hook_html, esc_html( $notification['action_id'] ), esc_html( $notification['error_message'] ) );
+				$action_message_html = sprintf( __( 'Could not process change for action: %1$s (ID: %2$d). Error: %3$s', 'action-scheduler' ), $action_hook_html, esc_html( $notification['action_id'] ), esc_html( $notification['error_message'] ) );
 			}
 
 			$action_message_html = apply_filters( 'action_scheduler_admin_notice_html', $action_message_html, $action, $notification );

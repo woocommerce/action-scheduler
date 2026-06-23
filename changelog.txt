@@ -1,5 +1,8 @@
 *** Changelog ***
 
+= 4.1.0 - xxxx-xx-xx =
+* Use `wp_admin_notice()` to render admin notices, instead of custom HTML.
+
 = 4.0.0 - 2026-06-16 =
 * Breaking change: action args are taken into account when scheduling unique actions.
 * Breaking change: failed actions are now automatically purged after 3 months by default, controlled by the `action_scheduler_retention_period_for_failed` filter.

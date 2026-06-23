@@ -375,7 +375,7 @@ class ActionScheduler_ListTable extends ActionScheduler_Abstract_ListTable {
 		if ( $this->runner->has_maximum_concurrent_batches() ) {
 			$claim_count           = $this->store->get_claim_count();
 			$this->admin_notices[] = array(
-				'type'    => 'updated',
+				'type'    => 'info',
 				'message' => sprintf(
 					/* translators: %s: amount of claims */
 					_n(

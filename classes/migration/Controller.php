@@ -181,10 +181,10 @@ class Controller {
 	 */
 	public function display_migration_notice() {
 		wp_admin_notice(
-			__('Action Scheduler migration in progress. The list of scheduled actions may be incomplete.', 'action-scheduler' ),
+			__( 'Action Scheduler migration in progress. The list of scheduled actions may be incomplete.', 'action-scheduler' ),
 			array(
-				'type' => 'warning',
-				'paragraph_wrap' => true
+				'type'           => 'warning',
+				'paragraph_wrap' => true,
 			)
 		);
 	}

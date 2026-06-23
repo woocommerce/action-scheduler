@@ -232,7 +232,7 @@ class ActionScheduler_AdminView extends ActionScheduler_AdminView_Deprecated {
 		wp_admin_notice(
 			$message,
 			array(
-				'type' => 'warning',
+				'type'           => 'warning',
 				'paragraph_wrap' => true,
 			)
 		);

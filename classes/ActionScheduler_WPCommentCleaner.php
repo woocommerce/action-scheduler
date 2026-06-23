@@ -131,7 +131,7 @@ class ActionScheduler_WPCommentCleaner {
 		wp_admin_notice(
 			$notice,
 			array(
-				'type' => 'warning',
+				'type'           => 'warning',
 				'paragraph_wrap' => true,
 			)
 		);

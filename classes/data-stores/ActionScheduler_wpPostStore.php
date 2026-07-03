@@ -696,7 +696,7 @@ class ActionScheduler_wpPostStore extends ActionScheduler_Store {
 			$error = empty( $wpdb->last_error )
 				? _x( 'unknown', 'database error', 'action-scheduler' )
 				: $wpdb->last_error;
-			throw new \RuntimeException(
+			throw new RuntimeException(
 				sprintf(
 					/* translators: %s database error. */
 					__( 'Unable to claim actions. Database error: %s.', 'action-scheduler' ),

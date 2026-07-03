@@ -693,7 +693,18 @@ class ActionScheduler_wpPostStore extends ActionScheduler_Store {
 		$rows_affected = $wpdb->query( $wpdb->prepare( "{$update} {$where} {$order}", $params ) ); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare
 
 		if ( false === $rows_affected ) {
-			throw new RuntimeException( __( 'Unable to claim actions. Database error.', 'action-scheduler' ) );
+			$error = empty( $wpdb->last_error )
+				? _x( 'unknown', 'database error', 'action-scheduler' )
+				: $wpdb->last_error;
+			throw new RuntimeException(
+				esc_html(
+					sprintf(
+						/* translators: %s database error. */
+						__( 'Unable to claim actions. Database error: %s.', 'action-scheduler' ),
+						$error
+					)
+				)
+			);
 		}
 
 		return (int) $rows_affected;

@@ -699,7 +699,7 @@ class ActionScheduler_wpPostStore extends ActionScheduler_Store {
 			throw new RuntimeException(
 				sprintf(
 					/* translators: %s database error. */
-					__( 'Unable to claim actions. Database error: %s.', 'action-scheduler' ),
+					esc_html__( 'Unable to claim actions. Database error: %s.', 'action-scheduler' ),
 					$error
 				)
 			);

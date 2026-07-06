@@ -927,4 +927,29 @@ class ActionScheduler_DBStore_Test extends AbstractStoreTest {
 		$store = new ActionScheduler_DBStore();
 		$this->assertIsInt( $store->get_claim_count() );
 	}
+
+	/**
+	 * @testdox get_group_ids() resolves a pre-cached slug, a cold slug, and an empty slug; populates the object cache for all three groups.
+	 */
+	public function test_get_group_ids_resolves_mixed_cached_and_uncached_slugs() {
+		$store    = new class() extends ActionScheduler_DBStore {
+			// phpcs:ignore Generic.CodeAnalysis.UselessOverridingMethod.Found
+			public function get_group_ids( $slugs, $create_if_not_exists = true ) {
+				return parent::get_group_ids( $slugs, $create_if_not_exists );
+			}
+		};
+		$schedule = new ActionScheduler_SimpleSchedule( as_get_datetime_object() );
+
+		// Saving an action warms the object cache for 'cached_group'.
+		$store->save_action( new ActionScheduler_Action( ActionScheduler_Callbacks::HOOK_WITH_CALLBACK, array(), $schedule, 'cached_group' ) );
+		$ids = $store->get_group_ids( array( 'cached_group', 'uncached_group', '' ) );
+
+		$this->assertCount( 3, $ids );
+		$this->assertGreaterThan( 0, $ids[0] );
+		$this->assertGreaterThan( 0, $ids[1] );
+		$this->assertGreaterThan( 0, $ids[2] );
+		$this->assertSame( (int) wp_cache_get( 'cached_group', ActionScheduler_DBStore::GROUP_IDS_CACHE_GROUP ), $ids[0] );
+		$this->assertSame( (int) wp_cache_get( 'uncached_group', ActionScheduler_DBStore::GROUP_IDS_CACHE_GROUP ), $ids[1] );
+		$this->assertSame( (int) wp_cache_get( ActionScheduler_DBStore::GROUP_IDS_DEFAULT_CACHE_KEY, ActionScheduler_DBStore::GROUP_IDS_CACHE_GROUP ), $ids[2] );
+	}
 }

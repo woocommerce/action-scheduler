@@ -74,4 +74,42 @@ class ActionScheduler_OptionLock_Test extends ActionScheduler_UnitTestCase {
 		$wpdb->suppress_errors( false );
 		remove_filter( 'query', $simulate_concurrent_claim );
 	}
+
+	/**
+	 * If the lock option already exists but holds an empty string, `set()` should still be able to
+	 * obtain the lock.
+	 *
+	 * This corrupted state (an existing row with an empty `option_value`) can be left behind by older
+	 * versions of Action Scheduler. It must be recovered by updating the existing row, rather than by
+	 * attempting to insert a duplicate row (which would fail, leaving the lock permanently stuck).
+	 *
+	 * @return void
+	 */
+	public function test_set_recovers_from_empty_lock_value() {
+		global $wpdb;
+
+		$lock     = ActionScheduler::lock();
+		$type     = md5( wp_rand() );
+		$lock_key = 'action_scheduler_lock_' . $type;
+
+		// Simulate the corrupted state: an existing lock option whose value is an empty string.
+		$wpdb->insert(
+			$wpdb->options,
+			array(
+				'option_name'  => $lock_key,
+				'option_value' => '',
+				'autoload'     => 'no',
+			)
+		);
+
+		// An empty lock value does not represent a held lock.
+		$this->assertFalse( $lock->is_locked( $type ), 'An empty lock value is not treated as a held lock.' );
+
+		// Setting the lock should succeed by updating (healing) the empty row, not by inserting a duplicate.
+		$this->assertTrue( $lock->set( $type ), 'The lock is obtained despite a pre-existing empty lock value.' );
+		$this->assertTrue( $lock->is_locked( $type ), 'The lock is held after recovering from the empty value.' );
+
+		// The stored value should now be a valid lock value with a future expiration timestamp.
+		$this->assertGreaterThan( time(), $lock->get_expiration( $type ), 'The recovered lock has a future expiration.' );
+	}
 }

@@ -120,7 +120,7 @@ class ActionScheduler_OptionLock extends ActionScheduler_Lock {
 			)
 		);
 
-		if ($row) {
+		if ( $row ) {
 			return $row->option_value;
 		}
 		return null;

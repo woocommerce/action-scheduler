@@ -102,7 +102,7 @@ class ActionScheduler_OptionLock extends ActionScheduler_Lock {
 	}
 
 	/**
-	 * Supplies the existing lock value, or an empty string if not set.
+	 * Supplies the existing lock value, or null if not set.
 	 *
 	 * @param string $lock_type A string to identify different lock types.
 	 *
@@ -113,7 +113,7 @@ class ActionScheduler_OptionLock extends ActionScheduler_Lock {
 
 		// Now grab the existing lock value, if there is one.
 		// get_var() returns null for the empty string ('') so we must use get_row().
-		$row = $wpdb->get_row( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+		$row = $wpdb->get_row(
 			$wpdb->prepare(
 				"SELECT option_value FROM $wpdb->options WHERE option_name = %s",
 				$this->get_key( $lock_type )

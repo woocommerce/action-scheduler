@@ -32,7 +32,7 @@ class ActionScheduler_OptionLock extends ActionScheduler_Lock {
 		$new_lock_value      = $this->new_lock_value( $lock_type );
 
 		// The lock may not exist yet, or may have been deleted.
-		if ( empty( $existing_lock_value ) ) {
+		if ( null === $existing_lock_value ) {
 			return (bool) $wpdb->insert(
 				$wpdb->options,
 				array(
@@ -65,7 +65,7 @@ class ActionScheduler_OptionLock extends ActionScheduler_Lock {
 	 * @return bool|int False if no lock is set, otherwise the timestamp for when the lock is set to expire.
 	 */
 	public function get_expiration( $lock_type ) {
-		return $this->get_expiration_from( $this->get_existing_lock( $lock_type ) );
+		return $this->get_expiration_from( (string) $this->get_existing_lock( $lock_type ) );
 	}
 
 	/**
@@ -102,22 +102,28 @@ class ActionScheduler_OptionLock extends ActionScheduler_Lock {
 	}
 
 	/**
-	 * Supplies the existing lock value, or an empty string if not set.
+	 * Supplies the existing lock value, or null if not set.
 	 *
 	 * @param string $lock_type A string to identify different lock types.
 	 *
-	 * @return string
+	 * @return string|null
 	 */
 	private function get_existing_lock( $lock_type ) {
 		global $wpdb;
 
 		// Now grab the existing lock value, if there is one.
-		return (string) $wpdb->get_var(
+		// get_var() returns null for the empty string ('') so we must use get_row().
+		$row = $wpdb->get_row(
 			$wpdb->prepare(
 				"SELECT option_value FROM $wpdb->options WHERE option_name = %s",
 				$this->get_key( $lock_type )
 			)
 		);
+
+		if ( $row ) {
+			return $row->option_value;
+		}
+		return null;
 	}
 
 	/**

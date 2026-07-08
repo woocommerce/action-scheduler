@@ -119,6 +119,33 @@ class ActionScheduler_ScheduleUnserialize_Test extends ActionScheduler_UnitTestC
 	}
 
 	/**
+	 * A self-referential blob must not send the class-name walk into infinite recursion.
+	 *
+	 * PHP's `r:` references let a tampered blob decode into a cyclic object graph. Before the cycle
+	 * guard, walking it recursed until the stack overflowed (a DoS). The store must instead return.
+	 */
+	public function test_self_referential_blob_is_handled_without_infinite_recursion() {
+		$nul       = chr( 0 );
+		$prop_rec  = $nul . '*' . $nul . 'recurrence'; // Protected property marker.
+		$container = 'ActionScheduler_IntervalSchedule';
+		// The single property `recurrence` references value #1 — the object itself — forming a cycle.
+		$blob      = 'O:' . strlen( $container ) . ':"' . $container . '":1:{'
+			. 's:' . strlen( $prop_rec ) . ':"' . $prop_rec . '";r:1;}';
+		$action_id = $this->store_action_with_raw_schedule( $blob );
+
+		$store   = new ActionScheduler_DBStore();
+		$fetched = null;
+		try {
+			$fetched = $store->fetch_action( $action_id );
+		} catch ( Exception $e ) {
+			unset( $e ); // Acceptable; the point is that we return rather than exhaust the stack.
+		}
+
+		// Reaching this line at all proves the walk terminated. fetch_action always yields an object.
+		$this->assertNotNull( $fetched, 'A self-referential schedule blob did not resolve to an action.' );
+	}
+
+	/**
 	 * The happy path must keep working: a simple schedule round-trips through the store unchanged.
 	 */
 	public function test_simple_schedule_round_trips() {

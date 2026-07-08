@@ -28,6 +28,16 @@
 class ActionScheduler_ScheduleDeserializer {
 
 	/**
+	 * Maximum object-graph depth we will walk while vetting a blob.
+	 *
+	 * Real schedules nest only a handful of levels deep (a cron schedule's CronExpression graph is
+	 * the deepest at ~6). Anything beyond this bound is treated as untrustworthy rather than walked.
+	 *
+	 * @var int
+	 */
+	const MAX_GRAPH_DEPTH = 100;
+
+	/**
 	 * Deserialize a stored schedule blob without instantiating unexpected classes.
 	 *
 	 * @param string $data The raw serialized schedule blob as stored in the database.
@@ -51,7 +61,13 @@ class ActionScheduler_ScheduleDeserializer {
 
 		$top_class      = self::class_name_of( $inert );
 		$nested_classes = array();
-		self::collect_class_names( $inert, $nested_classes, true );
+		$seen           = array();
+
+		// A tampered blob can encode a self-referential or pathologically deep object graph. If we
+		// cannot fully walk it within a sane bound, we refuse to vouch for it and reject.
+		if ( ! self::collect_class_names( $inert, $nested_classes, true, $seen, 0 ) ) {
+			return self::handle_rejection( $data, $top_class, $top_class, $nested_classes );
+		}
 
 		// Phase 2a: the outermost object must be a real, loaded schedule class. This is the same
 		// contract ActionScheduler_Store::validate_schedule() already enforces, only applied before
@@ -70,7 +86,9 @@ class ActionScheduler_ScheduleDeserializer {
 		// All classes vetted: re-hydrate for real, restricting instantiation to exactly that set.
 		$allowed = array_values( array_unique( array_merge( array( $top_class ), $nested_classes ) ) );
 
-		return unserialize( $data, array( 'allowed_classes' => $allowed ) ); // phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.serialize_unserialize
+		// Silenced to match the stores' historical @unserialize() behaviour: a blob that parsed inert
+		// in phase 1 will parse here too, but we keep the same log-quiet contract regardless.
+		return @unserialize( $data, array( 'allowed_classes' => $allowed ) ); // phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.serialize_unserialize, WordPress.PHP.NoSilencedErrors.Discouraged
 	}
 
 	/**
@@ -239,33 +257,53 @@ class ActionScheduler_ScheduleDeserializer {
 	/**
 	 * Recursively collect the class names of every object nested inside a value.
 	 *
-	 * @param mixed    $value  The value to walk (object, array, or scalar).
-	 * @param string[] $found  Accumulator of discovered nested class names (by reference).
+	 * A tampered blob can decode (via `r:`/`R:` references) into a self-referential or extremely deep
+	 * object graph. Walking that naively would recurse until the stack overflows, so we track objects
+	 * already visited (to short-circuit cycles and shared references) and cap the recursion depth.
+	 *
+	 * @param mixed    $value   The value to walk (object, array, or scalar).
+	 * @param string[] $found   Accumulator of discovered nested class names (by reference).
 	 * @param bool     $is_root Whether $value is the outermost object (excluded from $found).
-	 * @return void
+	 * @param array    $seen    Object ids already visited, keyed by spl_object_id (by reference).
+	 * @param int      $depth   Current recursion depth.
+	 * @return bool True if the value was fully walked; false if it was too deep to vet safely.
 	 */
-	protected static function collect_class_names( $value, array &$found, $is_root = false ) {
+	protected static function collect_class_names( $value, array &$found, $is_root, array &$seen, $depth ) {
+		if ( $depth > self::MAX_GRAPH_DEPTH ) {
+			return false;
+		}
+
 		if ( is_object( $value ) ) {
-			$vars = (array) $value;
+			$object_id = spl_object_id( $value );
+			if ( isset( $seen[ $object_id ] ) ) {
+				return true; // Already walked (cycle or shared reference); nothing new to collect.
+			}
+			$seen[ $object_id ] = true;
 
 			if ( ! $is_root ) {
 				$found[] = self::class_name_of( $value );
 			}
 
-			foreach ( $vars as $key => $child ) {
+			foreach ( (array) $value as $key => $child ) {
 				if ( '__PHP_Incomplete_Class_Name' === $key ) {
 					continue;
 				}
-				self::collect_class_names( $child, $found, false );
+				if ( ! self::collect_class_names( $child, $found, false, $seen, $depth + 1 ) ) {
+					return false;
+				}
 			}
 
-			return;
+			return true;
 		}
 
 		if ( is_array( $value ) ) {
 			foreach ( $value as $child ) {
-				self::collect_class_names( $child, $found, false );
+				if ( ! self::collect_class_names( $child, $found, false, $seen, $depth + 1 ) ) {
+					return false;
+				}
 			}
 		}
+
+		return true;
 	}
 }

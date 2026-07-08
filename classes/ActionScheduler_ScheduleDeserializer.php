@@ -76,9 +76,11 @@ class ActionScheduler_ScheduleDeserializer {
 			return self::handle_rejection( $data, $top_class, $top_class, $nested_classes );
 		}
 
-		// Phase 2b: every nested object must be on the vetted allow-list.
+		// Phase 2b: every nested object must be on the vetted allow-list. Resolve the list (and run its
+		// filter) once here rather than per nested class, since it does not vary across the loop.
+		$allowed_nested = self::get_allowed_nested_classes();
 		foreach ( $nested_classes as $nested_class ) {
-			if ( ! self::is_allowed_nested_class( $nested_class ) ) {
+			if ( ! self::is_allowed_nested_class( $nested_class, $allowed_nested ) ) {
 				return self::handle_rejection( $data, $nested_class, $top_class, $nested_classes );
 			}
 		}
@@ -118,15 +120,21 @@ class ActionScheduler_ScheduleDeserializer {
 	 * CronExpression family. Composite schedules that nest another schedule are also fine. The
 	 * default list is filterable so extenders can vet their own supporting classes.
 	 *
-	 * @param string $class_name Class name discovered nested in the blob.
+	 * @param string        $class_name     Class name discovered nested in the blob.
+	 * @param string[]|null $allowed_nested Pre-resolved allow-list to reuse across a batch. When null,
+	 *                                      it is resolved (and its filter run) on this call.
 	 * @return bool
 	 */
-	protected static function is_allowed_nested_class( $class_name ) {
+	protected static function is_allowed_nested_class( $class_name, ?array $allowed_nested = null ) {
 		if ( ! is_string( $class_name ) || '' === $class_name ) {
 			return false;
 		}
 
-		if ( in_array( $class_name, self::get_allowed_nested_classes(), true ) ) {
+		if ( null === $allowed_nested ) {
+			$allowed_nested = self::get_allowed_nested_classes();
+		}
+
+		if ( in_array( $class_name, $allowed_nested, true ) ) {
 			return true;
 		}
 

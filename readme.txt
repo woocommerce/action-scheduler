@@ -1,10 +1,10 @@
 === Action Scheduler ===
-Contributors: Automattic, wpmuguru, claudiosanches, peterfabian1000, vedjain, jamosova, obliviousharmony, konamiman, sadowski, royho, barryhughes-1
+Contributors: Automattic, wpmuguru, vedjain, konamiman, barryhughes-1, crstauf, jorgeatorres, coreymckrill, prettyboymp, ovidiul
 Tags: scheduler, cron
-Stable tag: 3.9.3
+Stable tag: 4.0.0
 License: GPLv3
-Requires at least: 6.5
-Tested up to: 6.8
+Requires at least: 6.8
+Tested up to: 7.0
 Requires PHP: 7.2
 
 Action Scheduler - Job Queue for WordPress
@@ -46,6 +46,26 @@ Action Scheduler is developed and maintained by [Automattic](http://automattic.c
 Collaboration is cool. We'd love to work with you to improve Action Scheduler. [Pull Requests](https://github.com/woocommerce/action-scheduler/pulls) welcome.
 
 == Changelog ==
+
+= 4.0.0 - 2026-06-16 =
+* Breaking change: action args are taken into account when scheduling unique actions.
+* Breaking change: failed actions are now automatically purged after 3 months by default, controlled by the `action_scheduler_retention_period_for_failed` filter.
+* Add `action_scheduler_enable_failed_action_cleanup` filter to disable automatic cleanup of failed actions.
+* Performance - Actions with corrupted data are automatically cancelled on detection and their excess logs cleaned up in batches, preventing queue stalls and log table bloat.
+* Performance - Action cleanup now runs as a dedicated daily task at 3 am site time with higher throughput.
+* Update favicon images.
+* Fix number formating for action numbers in list view.
+* Import missing `WP_CLI` class to prevent fatal error.
+* Fix possible undefined variable in `action cancel --all` CLI command.
+* Move recurring A-S cache key to transient.
+* Optimize `get_claim_count()` query for large stores.
+* Update `require_once` path for Cancel_CommandFix absolute import.
+* Fix `esc_html()` hook name in admin notice markup.
+* Ensure cleanup action is enqueued via queue runner.
+* Bump WordPress compatibility to version 7.0 and require at least 6.8.
+* Dev - Bump picomatch from 2.3.1 to 2.3.2.
+* Dev - Bump phpunit/phpunit from 8.5.42 to 8.5.52.
+* Dev - Bump lodash, grunt-legacy-log and grunt-legacy-util.
 
 = 3.9.3 - 2025-07-15 =
 * Add hook 'action_scheduler_ensure_recurring_actions' specifically for scheduling recurring actions.

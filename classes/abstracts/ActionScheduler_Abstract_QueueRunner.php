@@ -283,7 +283,7 @@ abstract class ActionScheduler_Abstract_QueueRunner extends ActionScheduler_Abst
 	/**
 	 * Run the queue cleaner.
 	 *
-	 * @deprecated since 3.9.4, action deletion is now handled automatically via a dedicated scheduled task.
+	 * @deprecated since 4.0.0, action deletion is now handled automatically via a dedicated scheduled task.
 	 */
 	protected function run_cleanup() {
 		$this->cleaner->clean( 10 * $this->get_time_limit() );

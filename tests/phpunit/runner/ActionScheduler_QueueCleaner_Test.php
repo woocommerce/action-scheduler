@@ -221,6 +221,157 @@ class ActionScheduler_QueueCleaner_Test extends ActionScheduler_UnitTestCase {
 	}
 
 	/**
+	 * Ensures failed action cleanup can be turned off entirely via the dedicated filter.
+	 *
+	 * @return void
+	 */
+	public function test_failed_cleanup_can_be_disabled() {
+		add_filter( 'action_scheduler_enable_failed_action_cleanup', '__return_false' );
+
+		$cleaner = $this->getMockBuilder( ActionScheduler_QueueCleaner::class )
+			->setConstructorArgs( array() )
+			->setMethodsExcept( array( 'delete_old_actions', 'get_batch_size' ) )
+			->getMock();
+		$cleaner->expects( $this->once() )
+			->method( 'clean_actions' )
+			->with( array( ActionScheduler_Store::STATUS_COMPLETE, ActionScheduler_Store::STATUS_CANCELED ), $this->anything(), 20 )
+			->willReturn( array( 'x' ) );
+
+		$deleted = $cleaner->delete_old_actions();
+
+		remove_filter( 'action_scheduler_enable_failed_action_cleanup', '__return_false' );
+
+		$this->assertSame( array( 'x' ), $deleted );
+	}
+
+	/**
+	 * Ensures an empty default cleaner status list stops completed/canceled actions from being purged.
+	 *
+	 * @return void
+	 */
+	public function test_empty_cleaner_statuses_skips_default_purge() {
+		$filter = function () {
+			return array();
+		};
+		add_filter( 'action_scheduler_default_cleaner_statuses', $filter );
+
+		$cleaner = $this->getMockBuilder( ActionScheduler_QueueCleaner::class )
+			->setConstructorArgs( array() )
+			->setMethodsExcept( array( 'delete_old_actions', 'get_batch_size' ) )
+			->getMock();
+		$cleaner->expects( $this->once() )
+			->method( 'clean_actions' )
+			->with( array( ActionScheduler_Store::STATUS_FAILED ), $this->anything(), 20 )
+			->willReturn( array( 'f' ) );
+
+		$deleted = $cleaner->delete_old_actions();
+
+		remove_filter( 'action_scheduler_default_cleaner_statuses', $filter );
+
+		$this->assertSame( array( 'f' ), $deleted );
+	}
+
+	/**
+	 * Ensures a non-array return (e.g. a filter that forgot to return) falls back to the default statuses
+	 * rather than disabling the purge the way an explicit empty array does.
+	 *
+	 * @return void
+	 */
+	public function test_null_cleaner_statuses_falls_back_to_defaults() {
+		$filter = function () {
+			return null;
+		};
+		add_filter( 'action_scheduler_default_cleaner_statuses', $filter );
+
+		$cleaner = $this->getMockBuilder( ActionScheduler_QueueCleaner::class )
+			->setConstructorArgs( array() )
+			->setMethodsExcept( array( 'delete_old_actions', 'get_batch_size' ) )
+			->getMock();
+		$cleaner->expects( $this->exactly( 2 ) )
+			->method( 'clean_actions' )
+			->withConsecutive(
+				array( array( ActionScheduler_Store::STATUS_FAILED ), $this->anything(), 20 ),
+				array( array( ActionScheduler_Store::STATUS_COMPLETE, ActionScheduler_Store::STATUS_CANCELED ), $this->anything(), 20 )
+			)
+			->willReturnOnConsecutiveCalls( array( 'f' ), array( 'd' ) );
+
+		$deleted = $cleaner->delete_old_actions();
+
+		remove_filter( 'action_scheduler_default_cleaner_statuses', $filter );
+
+		$this->assertSame( array( 'f', 'd' ), $deleted );
+	}
+
+	/**
+	 * Ensures a zero failed retention period purges immediately rather than disabling the cleanup.
+	 *
+	 * @return void
+	 */
+	public function test_failed_retention_zero_purges_immediately() {
+		add_filter( 'action_scheduler_retention_period_for_failed', '__return_zero' );
+
+		$cutoff  = $this->capture_failed_cutoff();
+		$cleaner = $cutoff['cleaner'];
+		$cleaner->delete_old_actions();
+
+		remove_filter( 'action_scheduler_retention_period_for_failed', '__return_zero' );
+
+		$this->assertInstanceOf( DateTime::class, $cutoff['captured'](), 'Failed actions are still purged when the retention period is zero.' );
+		$this->assertLessThanOrEqual( 5, abs( time() - $cutoff['captured']()->getTimestamp() ), 'A zero retention period purges failed actions as of now.' );
+	}
+
+	/**
+	 * Ensures a negative failed retention period is clamped to zero (immediate) rather than a future cutoff.
+	 *
+	 * @return void
+	 */
+	public function test_negative_failed_retention_clamps_to_immediate() {
+		$negative = function () {
+			return -DAY_IN_SECONDS;
+		};
+		add_filter( 'action_scheduler_retention_period_for_failed', $negative );
+
+		$cutoff  = $this->capture_failed_cutoff();
+		$cleaner = $cutoff['cleaner'];
+		$cleaner->delete_old_actions();
+
+		remove_filter( 'action_scheduler_retention_period_for_failed', $negative );
+
+		$this->assertInstanceOf( DateTime::class, $cutoff['captured'](), 'A negative retention period still purges failed actions.' );
+		$this->assertLessThanOrEqual( 5, abs( time() - $cutoff['captured']()->getTimestamp() ), 'A negative retention period is clamped to now, not a future cutoff.' );
+	}
+
+	/**
+	 * Build a cleaner whose clean_actions() records the cutoff used for the failed status.
+	 *
+	 * @return array{cleaner: ActionScheduler_QueueCleaner, captured: callable}
+	 */
+	private function capture_failed_cutoff() {
+		$captured = null;
+
+		$cleaner = $this->getMockBuilder( ActionScheduler_QueueCleaner::class )
+			->setConstructorArgs( array() )
+			->setMethodsExcept( array( 'delete_old_actions', 'get_batch_size' ) )
+			->getMock();
+		$cleaner->method( 'clean_actions' )
+			->willReturnCallback(
+				function ( $statuses, $cutoff ) use ( &$captured ) {
+					if ( array( ActionScheduler_Store::STATUS_FAILED ) === $statuses ) {
+						$captured = $cutoff;
+					}
+					return array();
+				}
+			);
+
+		return array(
+			'cleaner'  => $cleaner,
+			'captured' => function () use ( &$captured ) {
+				return $captured;
+			},
+		);
+	}
+
+	/**
 	 * Verify that custom cleaners perform direct cleanup rather than task-based cleanup.
 	 */
 	public function test_custom_cleaner_performs_cleanup_in_queue_run_only() {

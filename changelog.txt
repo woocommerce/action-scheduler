@@ -5,6 +5,7 @@
 * Fix an oversight in the lock implementation (used to rate-limit async request runners) that could result in a database error in unusual cases.
 * Dev - Updates the `wpPostStore` to capture any database errors that might occur while claiming actions.
 * Performance - Reduce the number of SQL queries on Action Scheduler admin page.
+* Performance - Cache resolved group IDs to reduce the number of SQL queries.
 
 = 4.0.0 - 2026-06-16 =
 * Breaking change: action args are taken into account when scheduling unique actions.

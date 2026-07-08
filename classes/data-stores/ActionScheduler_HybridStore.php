@@ -79,6 +79,14 @@ class ActionScheduler_HybridStore extends Store {
 	}
 
 	/**
+	 * Flush all store caches.
+	 */
+	public function flush_caches() {
+		$this->primary_store->flush_caches();
+		$this->secondary_store->flush_caches();
+	}
+
+	/**
 	 * When the actions table is created, set its autoincrement
 	 * value to be one higher than the posts table to ensure that
 	 * there are no ID collisions.

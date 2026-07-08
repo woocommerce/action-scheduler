@@ -26,6 +26,7 @@ class ActionScheduler_UnitTestCase extends WP_UnitTestCase {
 	 */
 	public function tear_down() {
 		ActionScheduler_Callbacks::remove_callbacks();
+		ActionScheduler::store()->flush_caches();
 		parent::tear_down();
 	}
 

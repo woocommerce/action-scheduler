@@ -17,6 +17,7 @@
 		<testsuite name="Tables">
 			<file phpVersion="5.6">./phpunit/jobstore/ActionScheduler_DBStoreMigrator_Test.php</file>
 			<file phpVersion="5.6">./phpunit/jobstore/ActionScheduler_DBStore_Test.php</file>
+			<file phpVersion="5.6">./phpunit/jobstore/ActionScheduler_ScheduleUnserialize_Test.php</file>
 			<file phpVersion="5.6">./phpunit/jobstore/ActionScheduler_HybridStore_Test.php</file>
 			<file phpVersion="5.6">./phpunit/logging/ActionScheduler_DBLogger_Test.php</file>
 		</testsuite>

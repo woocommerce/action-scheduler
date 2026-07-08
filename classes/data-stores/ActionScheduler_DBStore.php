@@ -401,7 +401,7 @@ AND args = %s
 			$this->validate_args( $args, $data->action_id );
 		}
 
-		$schedule = @unserialize( $data->schedule ); // phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.serialize_unserialize WordPress.PHP.NoSilencingOperator
+		$schedule = ActionScheduler_ScheduleDeserializer::unserialize( $data->schedule );
 		if ( false === $schedule && $data->status === self::STATUS_CANCELED ) {
 			// The handled corrupted action should appear in UI.
 			$schedule = new ActionScheduler_NullSchedule();

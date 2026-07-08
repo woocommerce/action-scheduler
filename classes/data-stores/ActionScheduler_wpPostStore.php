@@ -256,11 +256,15 @@ class ActionScheduler_wpPostStore extends ActionScheduler_Store {
 	 * vetted supporting classes). @see https://github.com/woocommerce/action-scheduler/issues/1318
 	 *
 	 * @param int $post_id Post ID of the scheduled action.
-	 * @return ActionScheduler_Schedule|object|false The schedule, or false if unusable.
+	 * @return mixed The schedule object, false if unusable, or the raw meta value when it is not a
+	 *               serialized object (left for validate_schedule() to reject, as before).
 	 */
 	protected function get_schedule_from_post_meta( $post_id ) {
 		global $wpdb;
 
+		// Direct, uncached query is intentional: we need the raw serialized value before the meta API
+		// runs it through maybe_unserialize(), so we bypass get_post_meta() and its cache here.
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 		$raw = $wpdb->get_var(
 			$wpdb->prepare(
 				"SELECT meta_value FROM {$wpdb->postmeta} WHERE post_id = %d AND meta_key = %s ORDER BY meta_id ASC LIMIT 1",

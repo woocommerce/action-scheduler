@@ -214,6 +214,10 @@ class ActionScheduler_ScheduleDeserializer {
 	 * @return object|false
 	 */
 	protected static function handle_rejection( $data, $offending_class, $top_class, array $nested_classes ) {
+		// Resolve enforcement once so the reported value and the branch taken cannot disagree, and the
+		// action_scheduler_enforce_schedule_allowed_classes filter runs a single time.
+		$enforced = self::is_enforced();
+
 		/**
 		 * Fires when a stored schedule blob references a class Action Scheduler did not expect.
 		 *
@@ -225,9 +229,9 @@ class ActionScheduler_ScheduleDeserializer {
 		 * @param bool     $enforced        Whether the blob was rejected (true) or allowed through
 		 *                                  in shadow mode (false).
 		 */
-		do_action( 'action_scheduler_unexpected_schedule_class', $offending_class, $top_class, $nested_classes, self::is_enforced() );
+		do_action( 'action_scheduler_unexpected_schedule_class', $offending_class, $top_class, $nested_classes, $enforced );
 
-		if ( self::is_enforced() ) {
+		if ( $enforced ) {
 			return false;
 		}
 

@@ -112,4 +112,66 @@ class ActionScheduler_OptionLock_Test extends ActionScheduler_UnitTestCase {
 		// The stored value should now be a valid lock value with a future expiration timestamp.
 		$this->assertGreaterThan( time(), $lock->get_expiration( $type ), 'The recovered lock has a future expiration.' );
 	}
+
+	/**
+	 * A lock can be acquired when none is held.
+	 *
+	 * Covers: set() INSERT branch → success → cache populated; is_locked() false → true transition.
+	 */
+	public function test_lock_can_be_acquired() {
+		$lock      = ActionScheduler::lock();
+		$lock_type = uniqid( 'lock_test_', true );
+
+		$this->assertFalse( $lock->is_locked( $lock_type ), 'Lock should not be held before acquisition.' );
+
+		$acquired = $lock->set( $lock_type );
+
+		$this->assertTrue( $acquired, 'set() should return true when no lock is held.' );
+		$this->assertTrue( $lock->is_locked( $lock_type ), 'Lock should be held immediately after acquisition.' );
+		$this->assertGreaterThan( time(), $lock->get_expiration( $lock_type ), 'Lock expiration should be in the future.' );
+	}
+
+	/**
+	 * A lock cannot be re-acquired while the existing one is still active.
+	 *
+	 * Covers: set() branch where expiration > $now → returns false without touching DB; get_existing_lock() cache hit branch.
+	 */
+	public function test_lock_cannot_be_acquired_while_active() {
+		$lock      = ActionScheduler::lock();
+		$lock_type = uniqid( 'lock_test_', true );
+		$lock_key  = 'action_scheduler_lock_' . $lock_type;
+
+		$first_acquisition = $lock->set( $lock_type );
+		$this->assertTrue( $first_acquisition, 'First set() should succeed when no lock is held.' );
+		$cached_after_first = wp_cache_get( $lock_key, 'action_scheduler_locks' );
+		$this->assertNotFalse( $cached_after_first, 'Lock value should be present in object cache after acquisition.' );
+
+		$second_acquisition = $lock->set( $lock_type );
+		$this->assertFalse( $second_acquisition, 'Second set() should fail while the lock is still active.' );
+		$cached_after_second = wp_cache_get( $lock_key, 'action_scheduler_locks' );
+		$this->assertSame( $cached_after_first, $cached_after_second, 'Cache entry should be unchanged after a failed re-acquisition attempt.' );
+
+		$this->assertTrue( $lock->is_locked( $lock_type ), 'Lock should remain held after a failed re-acquisition attempt.' );
+	}
+
+	/**
+	 * When the cache is evicted for a live lock, get_existing_lock() reads from DB and re-populates the cache.
+	 *
+	 * Covers: get_existing_lock() cache miss → DB hit → TTL > 0 → wp_cache_set branch.
+	 */
+	public function test_cache_miss_repopulates_cache_for_an_active_lock() {
+		$lock      = ActionScheduler::lock();
+		$lock_type = uniqid( 'lock_test_', true );
+		$lock_key  = 'action_scheduler_lock_' . $lock_type;
+
+		$lock->set( $lock_type );
+
+		// Evict the cache entry to force a DB read on the next call.
+		wp_cache_delete( $lock_key, 'action_scheduler_locks' );
+		$this->assertFalse( wp_cache_get( $lock_key, 'action_scheduler_locks' ), 'Cache should be empty after explicit eviction.' );
+
+		// is_locked() must hit the DB, confirm the lock is live, and re-populate the cache.
+		$this->assertTrue( $lock->is_locked( $lock_type ), 'Lock should still be held after cache eviction.' );
+		$this->assertNotFalse( wp_cache_get( $lock_key, 'action_scheduler_locks' ), 'Cache should be re-populated after reading a live lock from the DB.' );
+	}
 }

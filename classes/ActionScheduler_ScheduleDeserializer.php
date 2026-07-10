@@ -105,24 +105,29 @@ class ActionScheduler_ScheduleDeserializer {
 		$seen           = array();
 
 		// A tampered blob can encode a self-referential or pathologically deep object graph. If we
-		// cannot fully walk it within a sane bound, we refuse to vouch for it and reject.
+		// cannot fully walk it within a sane bound, we refuse to vouch for it and reject. This is a
+		// structural failure, never eligible for shadow-mode passthrough: re-parsing an unwalkable
+		// graph unrestricted would revive the very DoS/injection risk we are guarding against.
 		if ( ! self::collect_class_names( $inert, $nested_classes, true, $seen, 0 ) ) {
-			return self::handle_rejection( $data, $top_class, $top_class, $nested_classes );
+			return self::handle_rejection( $data, $top_class, $top_class, $nested_classes, false );
 		}
 
 		// Phase 2a: the outermost object must be a real, loaded schedule class. This is the same
 		// contract ActionScheduler_Store::validate_schedule() already enforces, only applied before
-		// instantiation instead of after.
+		// instantiation instead of after. A top-level non-schedule (the issue #1318 PoC — a bare
+		// gadget) has no legitimate form, so it is blocked even in shadow mode: not shadow-eligible.
 		if ( ! self::is_allowed_top_level_class( $top_class ) ) {
-			return self::handle_rejection( $data, $top_class, $top_class, $nested_classes );
+			return self::handle_rejection( $data, $top_class, $top_class, $nested_classes, false );
 		}
 
 		// Phase 2b: every nested object must be on the vetted allow-list. Resolve the list (and run its
 		// filter) once here rather than per nested class, since it does not vary across the loop.
+		// Reaching here means the top-level object is a valid schedule; only an unexpected *nested*
+		// support class can fail now, which is the one case shadow mode may let through (eligible).
 		$allowed_nested = self::get_allowed_nested_classes();
 		foreach ( $nested_classes as $nested_class ) {
 			if ( ! self::is_allowed_nested_class( $nested_class, $allowed_nested ) ) {
-				return self::handle_rejection( $data, $nested_class, $top_class, $nested_classes );
+				return self::handle_rejection( $data, $nested_class, $top_class, $nested_classes, true );
 			}
 		}
 
@@ -328,19 +333,28 @@ class ActionScheduler_ScheduleDeserializer {
 	 * Handle a blob that references a class outside the vetted set.
 	 *
 	 * Always surfaces the event for observability. Under enforcement (the default) the blob is
-	 * rejected by returning false, which callers already handle like a corrupt schedule. In shadow
-	 * mode the pre-hardening behaviour is preserved so a mis-tuned allow-list cannot disrupt a site.
+	 * rejected by returning false, which callers already handle like a corrupt schedule.
+	 *
+	 * Shadow mode ("report only") relaxes this, but only for a $shadow_eligible rejection — one where
+	 * the outermost object is a valid schedule and merely a *nested* support class was unexpected.
+	 * That is the sole case where a mis-tuned allow-list could disrupt an otherwise-legitimate action,
+	 * so it is the only case shadow mode lets through. Structural rejections ($shadow_eligible false) —
+	 * a top-level non-schedule (the issue #1318 PoC) or an unwalkable object graph — have no legitimate
+	 * form and are always rejected, even in shadow mode, so report-only can never be downgraded into
+	 * reviving the vulnerability.
 	 *
 	 * @param string   $data            The raw serialized blob.
 	 * @param string   $offending_class The first class that failed validation.
 	 * @param string   $top_class       The outermost class in the blob.
 	 * @param string[] $nested_classes  All nested class names discovered in the blob.
+	 * @param bool     $shadow_eligible Whether shadow mode may let this particular rejection through.
 	 * @return object|false
 	 */
-	protected static function handle_rejection( $data, $offending_class, $top_class, array $nested_classes ) {
-		// Resolve enforcement once so the reported value and the branch taken cannot disagree, and the
-		// action_scheduler_enforce_schedule_allowed_classes filter runs a single time.
-		$enforced = self::is_enforced();
+	protected static function handle_rejection( $data, $offending_class, $top_class, array $nested_classes, $shadow_eligible ) {
+		// A rejection stands unless we are in shadow mode AND this rejection is eligible for report-only
+		// passthrough. Resolve it once so the reported outcome and the branch taken cannot disagree, and
+		// the action_scheduler_enforce_schedule_allowed_classes filter runs a single time.
+		$rejected = self::is_enforced() || ! $shadow_eligible;
 
 		/**
 		 * Fires when a stored schedule blob references a class Action Scheduler did not expect.
@@ -350,16 +364,20 @@ class ActionScheduler_ScheduleDeserializer {
 		 * @param string   $offending_class The first disallowed class encountered.
 		 * @param string   $top_class       The outermost class in the blob.
 		 * @param string[] $nested_classes  All nested class names discovered in the blob.
-		 * @param bool     $enforced        Whether the blob was rejected (true) or allowed through
-		 *                                  in shadow mode (false).
+		 * @param bool     $rejected        Whether the blob was rejected (true) or allowed through in
+		 *                                  shadow mode (false). Always true for a structural rejection
+		 *                                  (top-level non-schedule or unwalkable graph), which shadow
+		 *                                  mode cannot relax.
 		 */
-		do_action( 'action_scheduler_unexpected_schedule_class', $offending_class, $top_class, $nested_classes, $enforced );
+		do_action( 'action_scheduler_unexpected_schedule_class', $offending_class, $top_class, $nested_classes, $rejected );
 
-		if ( $enforced ) {
+		if ( $rejected ) {
 			return false;
 		}
 
-		// Shadow mode: behave exactly as Action Scheduler did before this change.
+		// Shadow mode, nested-only rejection: behave as Action Scheduler did before this change. This
+		// is reached only when the top-level object is a valid schedule, so the unrestricted parse can
+		// no longer instantiate a bare top-level gadget.
 		return @unserialize( $data ); // phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.serialize_unserialize, WordPress.PHP.NoSilencedErrors.Discouraged
 	}
 

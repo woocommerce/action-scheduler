@@ -54,7 +54,7 @@ class ActionScheduler_OptionLock extends ActionScheduler_Lock {
 			return $inserted;
 		}
 
-		if ( $this->get_expiration_from( $existing_lock_value ) > $now ) {
+		if ( $this->get_expiration_from( $existing_lock_value ) >= $now ) {
 			return false;
 		}
 

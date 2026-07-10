@@ -51,9 +51,7 @@ class ActionScheduler_ScheduleDeserializer {
 		CronExpression_DayOfWeekField::class,
 		CronExpression_YearField::class,
 
-		// Additional trusted classes, likely to be used in schedule representations. ActionScheduler_DateTime
-		// is included because as_get_datetime_object() returns one, so a third-party schedule that stores
-		// the result of that helper as a property nests it rather than a plain DateTime.
+		// Additional trusted classes, likely to be used in schedule representations.
 		ActionScheduler_DateTime::class,
 		DateTime::class,
 		DateTimeImmutable::class,

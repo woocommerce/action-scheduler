@@ -267,4 +267,246 @@ class ActionScheduler_ScheduleUnserialize_Test extends ActionScheduler_UnitTestC
 		$this->assertInstanceOf( 'ActionScheduler_SimpleSchedule', $schedule );
 		$this->assertEquals( $time->getTimestamp(), $schedule->get_date()->getTimestamp() );
 	}
+
+	public function tearDown(): void {
+		// These tests register filters/actions on the deserializer's hooks; clear them so nothing leaks
+		// into later tests running in the same process.
+		remove_all_filters( 'action_scheduler_allowed_nested_schedule_classes' );
+		remove_all_filters( 'action_scheduler_enforce_schedule_allowed_classes' );
+		remove_all_actions( 'action_scheduler_unexpected_schedule_class' );
+		remove_all_actions( 'action_scheduler_failed_fetch_action' );
+		parent::tearDown();
+	}
+
+	/**
+	 * A serialized blob for a valid schedule (ActionScheduler_IntervalSchedule) that smuggles a gadget
+	 * in as its (protected) recurrence property. Hand-crafted because __sleep() would otherwise drop a
+	 * non-whitelisted property.
+	 *
+	 * @return string
+	 */
+	private function nested_gadget_blob() {
+		$nul       = chr( 0 );
+		$prop_ts   = $nul . '*' . $nul . 'scheduled_timestamp'; // Protected property marker.
+		$prop_rec  = $nul . '*' . $nul . 'recurrence';          // Protected property marker.
+		$gadget    = 'ActionScheduler_Test_Evil_Gadget';
+		$container = 'ActionScheduler_IntervalSchedule';
+
+		return 'O:' . strlen( $container ) . ':"' . $container . '":2:{'
+			. 's:' . strlen( $prop_ts ) . ':"' . $prop_ts . '";i:' . ( time() + HOUR_IN_SECONDS ) . ';'
+			. 's:' . strlen( $prop_rec ) . ':"' . $prop_rec . '";'
+			. 'O:' . strlen( $gadget ) . ':"' . $gadget . '":0:{}'
+			. '}';
+	}
+
+	/**
+	 * Shadow mode ("report only") must NEVER let a bare top-level gadget be instantiated. Only an
+	 * unexpected *nested* class inside an otherwise-valid schedule may pass through in shadow mode.
+	 */
+	public function test_shadow_mode_still_blocks_top_level_gadget() {
+		add_filter( 'action_scheduler_enforce_schedule_allowed_classes', '__return_false' );
+
+		$blob   = serialize( new ActionScheduler_Test_Evil_Gadget() ); // phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.serialize_serialize
+		$result = ActionScheduler_ScheduleDeserializer::unserialize( $blob );
+
+		$this->assertFalse( $result, 'A top-level gadget was not rejected in shadow mode.' );
+		$this->assertFalse(
+			ActionScheduler_Test_Evil_Gadget::$fired,
+			'A top-level gadget was instantiated in shadow mode.'
+		);
+	}
+
+	/**
+	 * Shadow mode DOES let an unexpected nested class through: this is its documented purpose (keep an
+	 * otherwise-legitimate action working while an allow-list is being tuned). The tradeoff — and the
+	 * reason enforcement is the default — is that the nested class is instantiated.
+	 */
+	public function test_shadow_mode_allows_unexpected_nested_class_through() {
+		add_filter( 'action_scheduler_enforce_schedule_allowed_classes', '__return_false' );
+
+		$result = ActionScheduler_ScheduleDeserializer::unserialize( $this->nested_gadget_blob() );
+
+		$this->assertInstanceOf(
+			'ActionScheduler_IntervalSchedule',
+			$result,
+			'Shadow mode did not pass a valid schedule with an unexpected nested class through.'
+		);
+		$this->assertTrue(
+			ActionScheduler_Test_Evil_Gadget::$fired,
+			'Shadow mode is report-only for nested classes, so the nested class is expected to run.'
+		);
+	}
+
+	/**
+	 * A rejection must surface the action_scheduler_unexpected_schedule_class action for observability,
+	 * reporting the offending class, the outer class, and that the blob was rejected.
+	 */
+	public function test_unexpected_class_action_fires_on_rejection() {
+		$captured = array();
+		add_action(
+			'action_scheduler_unexpected_schedule_class',
+			function ( $offending, $outer, $unexpected, $rejected ) use ( &$captured ) {
+				$captured = compact( 'offending', 'outer', 'unexpected', 'rejected' );
+			},
+			10,
+			4
+		);
+
+		$blob   = serialize( new ActionScheduler_Test_Evil_Gadget() ); // phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.serialize_serialize
+		$result = ActionScheduler_ScheduleDeserializer::unserialize( $blob );
+
+		$this->assertFalse( $result );
+		$this->assertSame( 'ActionScheduler_Test_Evil_Gadget', $captured['offending'] );
+		$this->assertSame( 'ActionScheduler_Test_Evil_Gadget', $captured['outer'] );
+		$this->assertTrue( $captured['rejected'] );
+	}
+
+	/**
+	 * The action_scheduler_allowed_nested_schedule_classes filter must be honored, and — because it is
+	 * resolved per call rather than cached for the process — a class allow-listed only for the second
+	 * call is rejected on the first and accepted on the second.
+	 */
+	public function test_nested_allow_list_filter_is_honored_per_call() {
+		$blob = serialize( new ActionScheduler_Test_Custom_Schedule_With_Property( time() + DAY_IN_SECONDS, new ActionScheduler_Test_Schedule_Helper( 42 ) ) ); // phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.serialize_serialize
+
+		// First call, no filter: the helper class is unexpected, so the blob is rejected.
+		$this->assertFalse(
+			ActionScheduler_ScheduleDeserializer::unserialize( $blob ),
+			'An un-allow-listed nested support class should be rejected by default.'
+		);
+
+		// Second call, with the helper allow-listed via the filter: the blob is accepted. This also
+		// proves the first, filter-less call did not cache a stale allow-list for the process.
+		add_filter(
+			'action_scheduler_allowed_nested_schedule_classes',
+			function ( $classes ) {
+				$classes[] = 'ActionScheduler_Test_Schedule_Helper';
+				return $classes;
+			}
+		);
+
+		$this->assertInstanceOf(
+			'ActionScheduler_Test_Custom_Schedule_With_Property',
+			ActionScheduler_ScheduleDeserializer::unserialize( $blob ),
+			'A nested class allow-listed via the filter should be accepted.'
+		);
+	}
+
+	/**
+	 * A third party schedule that keeps built-in date/time value objects (DateTime, DateTimeImmutable,
+	 * DateTimeZone, DateInterval) as properties must round-trip with no configuration — those classes
+	 * are on the default nested allow-list.
+	 */
+	public function test_third_party_schedule_nesting_datetime_objects_round_trips() {
+		$timestamp = time() + DAY_IN_SECONDS;
+		$blob      = serialize( new ActionScheduler_Test_Custom_Schedule_With_Property( $timestamp ) ); // phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.serialize_serialize
+
+		$result = ActionScheduler_ScheduleDeserializer::unserialize( $blob );
+
+		$this->assertInstanceOf( 'ActionScheduler_Test_Custom_Schedule_With_Property', $result );
+		$this->assertEquals( $timestamp, $result->next()->getTimestamp() );
+	}
+
+	/**
+	 * A pathologically deep object graph must be rejected rather than walked into a stack overflow.
+	 * (Cyclic graphs are covered separately; this covers sheer depth beyond MAX_GRAPH_DEPTH.)
+	 */
+	public function test_excessively_deep_graph_is_rejected() {
+		// A valid (third party) schedule class as the outer object so the top-level gate passes, wrapping
+		// a scalar buried in ~150 nested arrays — well beyond the depth we are willing to vet.
+		$class = 'ActionScheduler_Test_Custom_Schedule_With_Property';
+		$deep  = 'i:1;';
+		for ( $i = 0; $i < 150; $i++ ) {
+			$deep = 'a:1:{i:0;' . $deep . '}';
+		}
+		$blob = 'O:' . strlen( $class ) . ':"' . $class . '":1:{s:4:"deep";' . $deep . '}';
+
+		$this->assertFalse(
+			ActionScheduler_ScheduleDeserializer::unserialize( $blob ),
+			'A graph deeper than the vetting bound should be rejected.'
+		);
+	}
+
+	/**
+	 * The deserializer instance is reusable: invoking it for one blob must not leak walk state into the
+	 * next. A rejected blob followed by a clean one must not taint the clean result.
+	 */
+	public function test_deserializer_instance_is_reusable() {
+		$deserializer = new ActionScheduler_ScheduleDeserializer(
+			array( 'ActionScheduler_Test_Custom_Schedule' ),
+			array()
+		);
+
+		// First: a blob nesting a gadget (rejected, populating internal offender/seen state).
+		$this->assertFalse( $deserializer( $this->nested_gadget_blob() ) );
+
+		// Then: a clean third party schedule must still deserialize correctly.
+		$clean = serialize( new ActionScheduler_Test_Custom_Schedule( time() + HOUR_IN_SECONDS ) ); // phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.serialize_serialize
+		$this->assertInstanceOf(
+			'ActionScheduler_Test_Custom_Schedule',
+			$deserializer( $clean ),
+			'Reusing a deserializer instance leaked state from a prior blob.'
+		);
+	}
+
+	/**
+	 * The constructor's nested allow-list is authoritative: a class it lists is accepted when nested,
+	 * and the same blob is rejected when it is not listed.
+	 */
+	public function test_constructor_nested_allow_list_is_used() {
+		$blob = serialize( new ActionScheduler_Test_Custom_Schedule_With_Property( time() + DAY_IN_SECONDS, new ActionScheduler_Test_Schedule_Helper( 7 ) ) ); // phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.serialize_serialize
+
+		$without = new ActionScheduler_ScheduleDeserializer( array(), array() );
+		$this->assertFalse( $without( $blob ), 'Nested support classes absent from the allow-list must be rejected.' );
+
+		$with = new ActionScheduler_ScheduleDeserializer(
+			array(),
+			array( 'DateTime', 'DateTimeImmutable', 'DateTimeZone', 'DateInterval', 'ActionScheduler_Test_Schedule_Helper' )
+		);
+		$this->assertInstanceOf(
+			'ActionScheduler_Test_Custom_Schedule_With_Property',
+			$with( $blob ),
+			'A nested class present in the injected allow-list must be accepted.'
+		);
+	}
+
+	/**
+	 * The post-based store reads the raw schedule meta. A non-serialized meta value cannot be a schedule
+	 * object, so it is left for validate_schedule() to reject rather than being deserialized — which
+	 * fetch_action() surfaces as a failed fetch and a null action, not a usable schedule.
+	 */
+	public function test_wp_post_store_rejects_non_serialized_schedule_meta() {
+		$store     = new ActionScheduler_wpPostStore();
+		$action    = new ActionScheduler_Action( ActionScheduler_Callbacks::HOOK_WITH_CALLBACK, array(), new ActionScheduler_SimpleSchedule( as_get_datetime_object() ) );
+		$action_id = $store->save_action( $action );
+
+		global $wpdb;
+		// phpcs:disable WordPress.DB.SlowDBQuery.slow_db_query_meta_value, WordPress.DB.SlowDBQuery.slow_db_query_meta_key
+		$wpdb->update(
+			$wpdb->postmeta,
+			array( 'meta_value' => 'this-is-not-serialized' ),
+			array(
+				'post_id'  => $action_id,
+				'meta_key' => ActionScheduler_wpPostStore::SCHEDULE_META_KEY,
+			),
+			array( '%s' ),
+			array( '%d', '%s' )
+		);
+		// phpcs:enable WordPress.DB.SlowDBQuery.slow_db_query_meta_value, WordPress.DB.SlowDBQuery.slow_db_query_meta_key
+		clean_post_cache( $action_id );
+		wp_cache_delete( $action_id, 'post_meta' );
+
+		$failed = false;
+		add_action(
+			'action_scheduler_failed_fetch_action',
+			function () use ( &$failed ) {
+				$failed = true;
+			}
+		);
+
+		$fetched = $store->fetch_action( $action_id );
+
+		$this->assertTrue( $failed, 'A non-serialized schedule meta value was not treated as an invalid action.' );
+		$this->assertInstanceOf( 'ActionScheduler_NullAction', $fetched );
+	}
 }

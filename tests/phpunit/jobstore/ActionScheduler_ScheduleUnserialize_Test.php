@@ -532,4 +532,25 @@ class ActionScheduler_ScheduleUnserialize_Test extends ActionScheduler_UnitTestC
 		$property->setAccessible( true );
 		$this->assertInstanceOf( 'ActionScheduler_DateTime', $property->getValue( $result ) );
 	}
+
+	/**
+	 * A gadget buried inside a valid third party schedule wrapper must be rejected without ever being
+	 * instantiated. Unlike the core-schedule wrapper case, the outer object is itself a placeholder in
+	 * the safe parse, so this exercises the walk recursing into a placeholder to find a nested one.
+	 */
+	public function test_gadget_nested_in_third_party_schedule_is_rejected_without_instantiation() {
+		$nul    = chr( 0 );
+		$prop   = $nul . '*' . $nul . 'timestamp';
+		$class  = 'ActionScheduler_Test_Custom_Schedule'; // Valid third party schedule → placeholder in the safe parse.
+		$gadget = serialize( new ActionScheduler_Test_Evil_Gadget() ); // phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.serialize_serialize
+		$blob   = 'O:' . strlen( $class ) . ':"' . $class . '":1:{s:' . strlen( $prop ) . ':"' . $prop . '";' . $gadget . '}';
+
+		$result = ActionScheduler_ScheduleDeserializer::unserialize( $blob );
+
+		$this->assertFalse( $result );
+		$this->assertFalse(
+			ActionScheduler_Test_Evil_Gadget::$fired,
+			'A gadget nested in a third party schedule was instantiated.'
+		);
+	}
 }

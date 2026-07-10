@@ -1,41 +1,15 @@
 <?php
-
 /**
- * Safely turns a stored, serialized schedule blob back into a schedule object.
+ * Used to safely deserialize schedule information when retrieving a stored scheduled action.
  *
- * Scheduled actions persist their schedule as a native PHP-serialized blob. Reading that blob
- * back with a bare unserialize() lets an attacker who can influence the stored bytes have PHP
- * instantiate arbitrary classes, running their __wakeup()/__destruct() magic methods (PHP object
- * injection). @see https://github.com/woocommerce/action-scheduler/issues/1318
+ * This helps to guard against deserialization attacks, while maintaining backwards compatibility
+ * with older versions of Action Scheduler.
  *
- * This class moves Action Scheduler's existing "is this really an ActionScheduler_Schedule?" check
- * to *before* any class is instantiated, using a two-phase deserialization:
- *
- *   1. Parse the blob with `allowed_classes => false`, which instantiates nothing — every object
- *      in the payload becomes a harmless __PHP_Incomplete_Class placeholder. No constructor,
- *      __wakeup(), __destruct() or autoloading runs.
- *   2. Inspect the class names actually present. Only if the outermost class implements
- *      ActionScheduler_Schedule, and every nested class is on a small vetted allow-list, do we
- *      re-run unserialize() a second time restricted to exactly that verified set of classes.
- *
- * The allow-list is derived, not hard-coded: any loaded schedule class (including third-party
- * ones) is trusted automatically because it implements ActionScheduler_Schedule, so extenders need
- * to do nothing. A blob referencing anything else is rejected the same way a corrupt blob already
- * is today, or — in shadow mode — allowed through untouched while a warning is surfaced.
- *
- * As an optimization, deserialization first attempts a single restricted parse against the
- * statically-known-safe set (Action Scheduler's own schedule classes plus the vetted support
- * classes). When a blob references only those — the overwhelmingly common case — it is fully and
- * safely hydrated in one pass and the two-phase walk above is skipped. Restricting instantiation to
- * that set means nothing outside it can run, so if the result is a schedule with no placeholder left
- * behind, every class named in the blob was already trusted. The inert two-phase path is used only
- * for blobs that reference something outside the fast set: a third-party schedule class, a filtered
- * support class, or a tampered/gadget blob.
- *
- * @since 3.10.0
+ * @internal This implementation is subject to change without notice or back-compat measures.
+ * @see      https://github.com/woocommerce/action-scheduler/issues/1318
+ * @since    4.1.0
  */
 class ActionScheduler_ScheduleDeserializer {
-
 	/**
 	 * Maximum object-graph depth we will walk while vetting a blob.
 	 *
@@ -44,18 +18,15 @@ class ActionScheduler_ScheduleDeserializer {
 	 *
 	 * @var int
 	 */
-	const MAX_GRAPH_DEPTH = 100;
+	private const MAX_GRAPH_DEPTH = 100;
 
 	/**
-	 * Action Scheduler's own concrete schedule classes.
-	 *
-	 * Used to build the fast-path allow-list. This is a fixed, audited set of first-party classes; it
-	 * is deliberately not filterable. Third-party schedule classes are handled by the two-phase path,
-	 * which trusts any class implementing ActionScheduler_Schedule without needing to be listed here.
+	 * Action Scheduler's own concrete schedule classes. Along with any class that implements
+	 * ActionScheduler_Schedule, these are always trusted.
 	 *
 	 * @var string[]
 	 */
-	const KNOWN_SCHEDULE_CLASSES = array(
+	private const KNOWN_SCHEDULE_CLASSES = array(
 		ActionScheduler_SimpleSchedule::class,
 		ActionScheduler_IntervalSchedule::class,
 		ActionScheduler_CronSchedule::class,
@@ -64,98 +35,287 @@ class ActionScheduler_ScheduleDeserializer {
 	);
 
 	/**
-	 * Deserialize a stored schedule blob without instantiating unexpected classes.
+	 * The default supporting classes Action Scheduler is willing to instantiate when nested in a schedule.
 	 *
-	 * @param string $data The raw serialized schedule blob as stored in the database.
-	 * @return ActionScheduler_Schedule|object|false The schedule object, or false if the blob is
-	 *                                                unusable (corrupt, or rejected while enforcing).
-	 *                                                Callers already treat false like a corrupt blob.
+	 * @var string[]
 	 */
-	public static function unserialize( $data ) {
-		if ( ! is_string( $data ) || '' === $data ) {
+	private const DEFAULT_NESTED_CLASSES = array(
+		// The bundled CronExpression family, which ActionScheduler_CronSchedule nests.
+		CronExpression::class,
+		CronExpression_FieldFactory::class,
+		CronExpression_AbstractField::class,
+		CronExpression_MinutesField::class,
+		CronExpression_HoursField::class,
+		CronExpression_DayOfMonthField::class,
+		CronExpression_MonthField::class,
+		CronExpression_DayOfWeekField::class,
+		CronExpression_YearField::class,
+
+		// Additional trusted classes, likely to be used in schedule representations.
+		DateTime::class,
+		DateTimeImmutable::class,
+		DateTimeZone::class,
+		DateInterval::class,
+	);
+
+	/**
+	 * The raw serialized schedule blob being deserialized.
+	 *
+	 * @var string
+	 */
+	protected $source_data;
+
+	/**
+	 * The class name of the outermost object in the blob.
+	 *
+	 * @var string
+	 */
+	protected $outer_class;
+
+	/**
+	 * List of classes that are known to be acceptable outer classes.
+	 *
+	 * @var string[]
+	 */
+	private $allowed_scheduler_classes;
+
+	/**
+	 * Any nested objects must be instances of one of these classes.
+	 *
+	 * @var string[]
+	 */
+	private $allowed_nested_classes;
+
+	/**
+	 * Object IDs already visited during the walk, keyed by spl_object_id, to short-circuit cycles
+	 * and shared references.
+	 *
+	 * @var array<int,bool>
+	 */
+	private $seen = array();
+
+	/**
+	 * Unexpected/disallowed class names discovered nested in the blob.
+	 *
+	 * @var string[]
+	 */
+	private $potential_offenders;
+
+	/**
+	 * Safely deserialize a stored schedule blob without instantiating unexpected classes.
+	 *
+	 * @param mixed $blob The raw serialized schedule blob as stored in the database.
+	 *
+	 * @return ActionScheduler_Schedule|false
+	 */
+	public static function unserialize( $blob ) {
+		/**
+		 * Filters the list of classes that are permitted as nested properties of a schedule object.
+		 *
+		 * The result of this filter is not memoized: this is deliberate, so that it can be changed
+		 * if the context (including the current blog, in a multisite network) alters during the
+		 * same request.
+		 *
+		 * @since 4.1.0
+		 *
+		 * @param string[] $default List of allowed nested class names.
+		 */
+		$allowed_nested = (array) apply_filters( 'action_scheduler_allowed_nested_schedule_classes', self::DEFAULT_NESTED_CLASSES );
+		$deserializer   = new self( self::KNOWN_SCHEDULE_CLASSES, $allowed_nested );
+		return $deserializer( $blob );
+	}
+
+	/**
+	 * Build our ActionScheduler_ScheduleDeserializer instance.
+	 *
+	 * @param array $allowed_scheduler_classes
+	 * @param array $allowed_nested_classes
+	 */
+	public function __construct( array $allowed_scheduler_classes, array $allowed_nested_classes ) {
+		$this->allowed_scheduler_classes = $allowed_scheduler_classes;
+		$this->allowed_nested_classes    = $allowed_nested_classes;
+	}
+
+	/**
+	 * Deserialize a blob of serialized data.
+	 *
+	 * @param mixed $serialized_blob Data to unserialize. Expected to be a string.
+	 *
+	 * @return ActionScheduler_Schedule|false
+	 */
+	public function __invoke( $serialized_blob ) {
+		if ( ! is_string( $serialized_blob ) || '' === $serialized_blob ) {
 			return false;
 		}
 
-		// Fast path: a single restricted parse against the statically-known-safe set. Instantiation is
-		// limited to Action Scheduler's own schedule classes plus the vetted support classes, so
-		// nothing outside that set can run — anything else becomes an inert __PHP_Incomplete_Class
-		// placeholder. If the result is a real schedule with no placeholder left anywhere in its graph,
-		// every class the blob named was already trusted, and this fully-hydrated object is exactly what
-		// the two-phase path below would have produced. This covers the overwhelmingly common case (a
-		// core schedule, no third-party classes) in one unserialize() instead of two.
-		$candidate = @unserialize( $data, array( 'allowed_classes' => self::get_fast_path_allowed_classes() ) ); // phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.serialize_unserialize, WordPress.PHP.NoSilencedErrors.Discouraged
-		if ( is_object( $candidate ) && self::is_allowed_top_level_class( get_class( $candidate ) ) ) {
-			$seen = array();
-			if ( self::is_fully_hydrated( $candidate, $seen, 0 ) ) {
-				return $candidate;
-			}
-		}
+		$this->seen                = array();
+		$this->potential_offenders = array();
+		$this->source_data         = $serialized_blob;
 
-		// Phase 1: parse the blob without instantiating any class from it. This is inert: objects
-		// become __PHP_Incomplete_Class placeholders, so no __wakeup()/__destruct()/autoload runs.
-		$inert = @unserialize( $data, array( 'allowed_classes' => false ) ); // phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.serialize_unserialize, WordPress.PHP.NoSilencedErrors.Discouraged
+		// Initial attempt to unserialize, specifying all trusted classes: for default actions using
+		// supplied schedule classes, this should succeed without any problems. Otherwise, the result
+		// may contain one or more __PHP_Incomplete_Class references that we will need to examine.
+		$all_trusted_classes = array_merge( $this->allowed_scheduler_classes, $this->allowed_nested_classes );
+		$candidate           = @unserialize( $this->source_data, array( 'allowed_classes' => $all_trusted_classes ) ); // phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.serialize_unserialize, WordPress.PHP.NoSilencedErrors.Discouraged
 
-		// A schedule is always an object graph. Anything else is corrupt/unexpected data.
-		if ( ! is_object( $inert ) ) {
+		// A schedule is always an object graph.
+		if ( ! is_object( $candidate ) ) {
 			return false;
 		}
 
-		$top_class      = self::class_name_of( $inert );
-		$nested_classes = array();
-		$seen           = array();
+		$this->outer_class = $this->class_name_of( $candidate );
 
-		// A tampered blob can encode a self-referential or pathologically deep object graph. If we
-		// cannot fully walk it within a sane bound, we refuse to vouch for it and reject. This is a
-		// structural failure, never eligible for shadow-mode passthrough: re-parsing an unwalkable
-		// graph unrestricted would revive the very DoS/injection risk we are guarding against.
-		if ( ! self::collect_class_names( $inert, $nested_classes, true, $seen, 0 ) ) {
-			return self::handle_rejection( $data, $top_class, $top_class, $nested_classes, false );
+		// Verify that we have a valid schedule representation, scanning for disallowed nested classes.
+		if ( ! $this->is_schedule_implementation( $this->outer_class ) || ! $this->scan_object_graph( $candidate, true, 0 ) ) {
+			return $this->reject( $this->outer_class, false );
 		}
 
-		// Phase 2a: the outermost object must be a real, loaded schedule class. This is the same
-		// contract ActionScheduler_Store::validate_schedule() already enforces, only applied before
-		// instantiation instead of after. A top-level non-schedule (the issue #1318 PoC — a bare
-		// gadget) has no legitimate form, so it is blocked even in shadow mode: not shadow-eligible.
-		if ( ! self::is_allowed_top_level_class( $top_class ) ) {
-			return self::handle_rejection( $data, $top_class, $top_class, $nested_classes, false );
+		// If the candidate is an acceptable schedule class, and doesn't contain any potential offenders, it is safe.
+		if ( ! $candidate instanceof __PHP_Incomplete_Class && empty( $this->potential_offenders ) ) {
+			return $candidate;
 		}
 
-		// Phase 2b: every nested object must be on the vetted allow-list. Resolve the list (and run its
-		// filter) once here rather than per nested class, since it does not vary across the loop.
-		// Reaching here means the top-level object is a valid schedule; only an unexpected *nested*
-		// support class can fail now, which is the one case shadow mode may let through (eligible).
-		$allowed_nested = self::get_allowed_nested_classes();
-		foreach ( $nested_classes as $nested_class ) {
-			if ( ! self::is_allowed_nested_class( $nested_class, $allowed_nested ) ) {
-				return self::handle_rejection( $data, $nested_class, $top_class, $nested_classes, true );
+		// Otherwise the top-level object is itself a valid schedule, but references one or more disallowed classes.
+		foreach ($this->potential_offenders as $offender ) {
+			if ( ! $this->is_allowed_nested_class( $offender, $this->allowed_nested_classes ) ) {
+				return $this->reject( $offender, true );
 			}
 		}
 
-		// All classes vetted: re-hydrate for real, restricting instantiation to exactly that set.
-		$allowed = array_values( array_unique( array_merge( array( $top_class ), $nested_classes ) ) );
+		// If we reach this point, any potential offenders must in fact be safe.
+		$allowed = array_values(
+			array_unique(
+				array_merge( $all_trusted_classes, array( $this->outer_class ), $this->potential_offenders )
+			)
+		);
 
-		// Silenced to match the stores' historical @unserialize() behaviour: a blob that parsed inert
-		// in phase 1 will parse here too, but we keep the same log-quiet contract regardless.
-		return @unserialize( $data, array( 'allowed_classes' => $allowed ) ); // phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.serialize_unserialize, WordPress.PHP.NoSilencedErrors.Discouraged
+		// Re-run unserialize.
+		return @unserialize( $this->source_data, array( 'allowed_classes' => $allowed ) ); // phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.serialize_unserialize, WordPress.PHP.NoSilencedErrors.Discouraged
+	}
+
+	/**
+	 * Walk the parsed graph once, recording unexpected (placeholder) classes and guarding traversal.
+	 *
+	 * Objects whose class was outside the safe set are __PHP_Incomplete_Class placeholders; their
+	 * original names are collected into $this->potential_offenders (the root is excluded — it is tracked
+	 * separately as $this->outer_class). Real objects are trusted and only recursed into so a placeholder
+	 * nested inside one is still found. A tampered blob can decode (via `r:`/`R:` references) into a
+	 * self-referential or extremely deep graph, so visited objects are tracked to short-circuit cycles
+	 * and shared references, and recursion depth is capped.
+	 *
+	 * @param mixed $value   The value to walk (object, array, or scalar).
+	 * @param bool  $is_root Whether $value is the outermost object (excluded from $this->potential_offenders).
+	 * @param int   $depth   Current recursion depth.
+	 *
+	 * @return bool True if the value was fully walked; false if it was too deep to vet safely.
+	 */
+	private function scan_object_graph( $value, bool $is_root, int $depth ): bool {
+		if ( $depth > self::MAX_GRAPH_DEPTH ) {
+			return false;
+		}
+
+		if ( is_object( $value ) ) {
+			$object_id = spl_object_id( $value );
+			if ( isset( $this->seen[ $object_id ] ) ) {
+				return true; // Already walked (cycle or shared reference); nothing new to collect.
+			}
+			$this->seen[ $object_id ] = true;
+
+			$is_placeholder = $value instanceof __PHP_Incomplete_Class;
+			if ( $is_placeholder && ! $is_root ) {
+				$this->potential_offenders[] = $this->class_name_of( $value );
+			}
+
+			foreach ( (array) $value as $key => $child ) {
+				if ( $is_placeholder && '__PHP_Incomplete_Class_Name' === $key ) {
+					continue;
+				}
+				if ( ! $this->scan_object_graph( $child, false, $depth + 1 ) ) {
+					return false;
+				}
+			}
+
+			return true;
+		}
+
+		if ( is_array( $value ) ) {
+			foreach ( $value as $child ) {
+				if ( ! $this->scan_object_graph( $child, false, $depth + 1 ) ) {
+					return false;
+				}
+			}
+		}
+
+		return true;
+	}
+
+	/**
+	 * Handle a blob that references a class outside the vetted set.
+	 *
+	 * Always surfaces the event for observability. Under enforcement (the default) the blob is
+	 * rejected by returning false, which callers already handle like a corrupt schedule.
+	 *
+	 * Shadow mode ("report only") relaxes this, but only for a $shadow_eligible rejection — one where
+	 * the outermost object is a valid schedule and merely a *nested* class was unexpected. That is the
+	 * sole case where a mis-tuned allow-list could disrupt an otherwise-legitimate action, so it is the
+	 * only case shadow mode lets through. Structural rejections ($shadow_eligible false) — a top-level
+	 * non-schedule (the issue #1318 PoC) or an unwalkable object graph — have no legitimate form and are
+	 * always rejected, even in shadow mode, so report-only can never be downgraded into reviving the
+	 * vulnerability.
+	 *
+	 * @param string $offending_class The class that triggered the rejection.
+	 * @param bool   $shadow_eligible Whether shadow mode may let this particular rejection through.
+	 * @return ActionScheduler_Schedule|false False when rejected. A shadow-mode passthrough is only
+	 *                                        reached for a nested rejection, i.e. after the top-level
+	 *                                        schedule gate passed, so any object returned is a schedule.
+	 */
+	protected function reject( $offending_class, $shadow_eligible ) {
+		// A rejection stands unless we are in shadow mode AND this rejection is eligible for report-only
+		// passthrough. Resolve it once so the reported outcome and the branch taken cannot disagree, and
+		// the action_scheduler_enforce_schedule_allowed_classes filter runs a single time.
+		$rejected = self::is_enforced() || ! $shadow_eligible;
+
+		/**
+		 * Fires when a stored schedule blob references a class Action Scheduler did not expect.
+		 *
+		 * @since 4.1.0
+		 *
+		 * @param string   $offending_class    The class that triggered the rejection.
+		 * @param string   $outer_class        The outermost class in the blob.
+		 * @param string[] $unexpected_classes Every class the blob names that is outside the safe set.
+		 * @param bool     $rejected           Whether the blob was rejected (true) or allowed through in
+		 *                                     shadow mode (false). Always true for a structural rejection
+		 *                                     (top-level non-schedule or unwalkable graph), which shadow
+		 *                                     mode cannot relax.
+		 */
+		do_action( 'action_scheduler_unexpected_schedule_class', $offending_class, $this->outer_class, $this->potential_offenders, $rejected );
+
+		if ( $rejected ) {
+			return false;
+		}
+
+		// Shadow mode, nested-only rejection: behave as Action Scheduler did before this change. This is
+		// reached only when the top-level object is a valid schedule, so the unrestricted parse can no
+		// longer instantiate a bare top-level gadget.
+		return @unserialize( $this->source_data ); // phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.serialize_unserialize, WordPress.PHP.NoSilencedErrors.Discouraged
 	}
 
 	/**
 	 * Decide whether the outermost class in a schedule blob may be instantiated.
 	 *
-	 * Allowed iff the class is loaded and implements ActionScheduler_Schedule. A class that is not
+	 * Allowed if the class is loaded and implements ActionScheduler_Schedule. A class that is not
 	 * loaded cannot be validated (and, prior to this change, already produced a broken action), so
 	 * rejecting it here does not regress any case that previously worked.
 	 *
 	 * @param string $class_name Class name discovered in the blob.
 	 * @return bool
 	 */
-	protected static function is_allowed_top_level_class( $class_name ) {
-		if ( ! is_string( $class_name ) || '' === $class_name || ! class_exists( $class_name ) ) {
+	private function is_schedule_implementation( string $class_name ): bool {
+		if ( '' === $class_name || ! class_exists( $class_name ) ) {
 			return false;
 		}
 
 		$implements = class_implements( $class_name );
-
 		return is_array( $implements ) && isset( $implements['ActionScheduler_Schedule'] );
 	}
 
@@ -166,18 +326,14 @@ class ActionScheduler_ScheduleDeserializer {
 	 * CronExpression family. Composite schedules that nest another schedule are also fine. The
 	 * default list is filterable so extenders can vet their own supporting classes.
 	 *
-	 * @param string        $class_name     Class name discovered nested in the blob.
-	 * @param string[]|null $allowed_nested Pre-resolved allow-list to reuse across a batch. When null,
-	 *                                      it is resolved (and its filter run) on this call.
+	 * @param string   $class_name     Class name discovered nested in the blob.
+	 * @param string[] $allowed_nested The resolved nested allow-list to check against.
+	 *
 	 * @return bool
 	 */
-	protected static function is_allowed_nested_class( $class_name, ?array $allowed_nested = null ) {
-		if ( ! is_string( $class_name ) || '' === $class_name ) {
+	private function is_allowed_nested_class( string $class_name, array $allowed_nested ): bool {
+		if ( '' === $class_name ) {
 			return false;
-		}
-
-		if ( null === $allowed_nested ) {
-			$allowed_nested = self::get_allowed_nested_classes();
 		}
 
 		if ( in_array( $class_name, $allowed_nested, true ) ) {
@@ -197,111 +353,22 @@ class ActionScheduler_ScheduleDeserializer {
 	}
 
 	/**
-	 * The supporting classes Action Scheduler is willing to instantiate when nested in a schedule.
+	 * Get the class name of an object parsed with a restricted allowed_classes set.
 	 *
-	 * @return string[]
+	 * Objects whose class was disallowed become __PHP_Incomplete_Class, which hides the original
+	 * name behind get_class(); it lives in the __PHP_Incomplete_Class_Name pseudo-property instead.
+	 * stdClass is never converted by PHP, so its real name is returned directly.
+	 *
+	 * @param object $maybe_incomplete Object parsed with a restricted allowed_classes set.
+	 * @return string The original class name, or '' if it cannot be determined.
 	 */
-	public static function get_allowed_nested_classes() {
-		$default = array(
-			// The bundled CronExpression family, which ActionScheduler_CronSchedule nests.
-			CronExpression::class,
-			CronExpression_FieldFactory::class,
-			CronExpression_AbstractField::class,
-			CronExpression_MinutesField::class,
-			CronExpression_HoursField::class,
-			CronExpression_DayOfMonthField::class,
-			CronExpression_MonthField::class,
-			CronExpression_DayOfWeekField::class,
-			CronExpression_YearField::class,
-
-			// Built-in date/time value objects. Action Scheduler's own schedules store dates as an
-			// int timestamp (see the schedules' __sleep()), so these are here for third-party schedule
-			// classes that keep a date/duration object as a property. They are safe to instantiate:
-			// none define a __destruct(), and their __wakeup() only restores internal state from
-			// scalars — there is no attacker-reachable side-effect sink to exploit.
-			DateTime::class,
-			DateTimeImmutable::class,
-			DateTimeZone::class,
-			DateInterval::class,
-		);
-
-		/**
-		 * Filters the list of non-schedule classes that may be instantiated when nested inside a
-		 * stored schedule blob during deserialization.
-		 *
-		 * Add the fully-qualified names of any supporting classes your custom schedule stores as
-		 * properties. Schedule classes themselves (implementing ActionScheduler_Schedule) are
-		 * always allowed and do not need to be listed here.
-		 *
-		 * @since 3.10.0
-		 *
-		 * @param string[] $default List of allowed nested class names.
-		 */
-		return (array) apply_filters( 'action_scheduler_allowed_nested_schedule_classes', $default );
-	}
-
-	/**
-	 * The set of classes the fast path is willing to instantiate in its single restricted parse.
-	 *
-	 * Action Scheduler's own schedule classes plus the vetted nested support classes (the
-	 * CronExpression family and any added via the action_scheduler_allowed_nested_schedule_classes
-	 * filter). A blob referencing only these can be hydrated safely in one pass; anything else falls
-	 * through to the two-phase path.
-	 *
-	 * @return string[]
-	 */
-	protected static function get_fast_path_allowed_classes() {
-		return array_merge( self::KNOWN_SCHEDULE_CLASSES, self::get_allowed_nested_classes() );
-	}
-
-	/**
-	 * Whether a graph parsed by the fast path was hydrated entirely from trusted classes.
-	 *
-	 * True only if the value contains no __PHP_Incomplete_Class placeholder anywhere — the marker the
-	 * fast path's restricted unserialize() leaves behind for a class outside its allow-list — and the
-	 * whole graph could be walked within MAX_GRAPH_DEPTH. A placeholder means the blob named an
-	 * untrusted class; an over-deep (or, guarded here, cyclic) graph means we cannot vouch for it. In
-	 * either case we return false so the caller falls back to the two-phase vetting path.
-	 *
-	 * @param mixed $value The value to walk (object, array, or scalar).
-	 * @param array $seen  Object ids already visited, keyed by spl_object_id (by reference).
-	 * @param int   $depth Current recursion depth.
-	 * @return bool
-	 */
-	protected static function is_fully_hydrated( $value, array &$seen, $depth ) {
-		if ( $depth > self::MAX_GRAPH_DEPTH ) {
-			return false;
+	private function class_name_of( object $maybe_incomplete ): string {
+		if ( $maybe_incomplete instanceof __PHP_Incomplete_Class ) {
+			$vars = (array) $maybe_incomplete;
+			return isset( $vars['__PHP_Incomplete_Class_Name'] ) ? (string) $vars['__PHP_Incomplete_Class_Name'] : '';
 		}
 
-		if ( is_object( $value ) ) {
-			if ( $value instanceof __PHP_Incomplete_Class ) {
-				return false; // A class the blob named was outside the fast-path set.
-			}
-
-			$object_id = spl_object_id( $value );
-			if ( isset( $seen[ $object_id ] ) ) {
-				return true; // Already walked (cycle or shared reference); nothing new to check.
-			}
-			$seen[ $object_id ] = true;
-
-			foreach ( (array) $value as $child ) {
-				if ( ! self::is_fully_hydrated( $child, $seen, $depth + 1 ) ) {
-					return false;
-				}
-			}
-
-			return true;
-		}
-
-		if ( is_array( $value ) ) {
-			foreach ( $value as $child ) {
-				if ( ! self::is_fully_hydrated( $child, $seen, $depth + 1 ) ) {
-					return false;
-				}
-			}
-		}
-
-		return true;
+		return get_class( $maybe_incomplete );
 	}
 
 	/**
@@ -313,7 +380,7 @@ class ActionScheduler_ScheduleDeserializer {
 	 *
 	 * @return bool
 	 */
-	public static function is_enforced() {
+	public static function is_enforced(): bool {
 		/**
 		 * Filters whether Action Scheduler rejects schedule blobs referencing unexpected classes.
 		 *
@@ -322,134 +389,10 @@ class ActionScheduler_ScheduleDeserializer {
 		 * exactly as it was before this hardening. Useful to confirm the allow-list is complete for
 		 * your site before switching enforcement on.
 		 *
-		 * @since 3.10.0
+		 * @since 4.1.0
 		 *
 		 * @param bool $enforced Whether to reject blobs with unexpected classes. Default true.
 		 */
 		return (bool) apply_filters( 'action_scheduler_enforce_schedule_allowed_classes', true );
-	}
-
-	/**
-	 * Handle a blob that references a class outside the vetted set.
-	 *
-	 * Always surfaces the event for observability. Under enforcement (the default) the blob is
-	 * rejected by returning false, which callers already handle like a corrupt schedule.
-	 *
-	 * Shadow mode ("report only") relaxes this, but only for a $shadow_eligible rejection — one where
-	 * the outermost object is a valid schedule and merely a *nested* support class was unexpected.
-	 * That is the sole case where a mis-tuned allow-list could disrupt an otherwise-legitimate action,
-	 * so it is the only case shadow mode lets through. Structural rejections ($shadow_eligible false) —
-	 * a top-level non-schedule (the issue #1318 PoC) or an unwalkable object graph — have no legitimate
-	 * form and are always rejected, even in shadow mode, so report-only can never be downgraded into
-	 * reviving the vulnerability.
-	 *
-	 * @param string   $data            The raw serialized blob.
-	 * @param string   $offending_class The first class that failed validation.
-	 * @param string   $top_class       The outermost class in the blob.
-	 * @param string[] $nested_classes  All nested class names discovered in the blob.
-	 * @param bool     $shadow_eligible Whether shadow mode may let this particular rejection through.
-	 * @return object|false
-	 */
-	protected static function handle_rejection( $data, $offending_class, $top_class, array $nested_classes, $shadow_eligible ) {
-		// A rejection stands unless we are in shadow mode AND this rejection is eligible for report-only
-		// passthrough. Resolve it once so the reported outcome and the branch taken cannot disagree, and
-		// the action_scheduler_enforce_schedule_allowed_classes filter runs a single time.
-		$rejected = self::is_enforced() || ! $shadow_eligible;
-
-		/**
-		 * Fires when a stored schedule blob references a class Action Scheduler did not expect.
-		 *
-		 * @since 3.10.0
-		 *
-		 * @param string   $offending_class The first disallowed class encountered.
-		 * @param string   $top_class       The outermost class in the blob.
-		 * @param string[] $nested_classes  All nested class names discovered in the blob.
-		 * @param bool     $rejected        Whether the blob was rejected (true) or allowed through in
-		 *                                  shadow mode (false). Always true for a structural rejection
-		 *                                  (top-level non-schedule or unwalkable graph), which shadow
-		 *                                  mode cannot relax.
-		 */
-		do_action( 'action_scheduler_unexpected_schedule_class', $offending_class, $top_class, $nested_classes, $rejected );
-
-		if ( $rejected ) {
-			return false;
-		}
-
-		// Shadow mode, nested-only rejection: behave as Action Scheduler did before this change. This
-		// is reached only when the top-level object is a valid schedule, so the unrestricted parse can
-		// no longer instantiate a bare top-level gadget.
-		return @unserialize( $data ); // phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.serialize_unserialize, WordPress.PHP.NoSilencedErrors.Discouraged
-	}
-
-	/**
-	 * Get the class name of an object parsed in "inert" mode.
-	 *
-	 * Objects whose class was disallowed become __PHP_Incomplete_Class, which hides the original
-	 * name behind get_class(); it lives in the __PHP_Incomplete_Class_Name pseudo-property instead.
-	 * stdClass is never converted by PHP, so its real name is returned directly.
-	 *
-	 * @param object $maybe_incomplete Object parsed with allowed_classes => false.
-	 * @return string The original class name, or '' if it cannot be determined.
-	 */
-	protected static function class_name_of( $maybe_incomplete ) {
-		if ( $maybe_incomplete instanceof __PHP_Incomplete_Class ) {
-			$vars = (array) $maybe_incomplete;
-			return isset( $vars['__PHP_Incomplete_Class_Name'] ) ? (string) $vars['__PHP_Incomplete_Class_Name'] : '';
-		}
-
-		return get_class( $maybe_incomplete );
-	}
-
-	/**
-	 * Recursively collect the class names of every object nested inside a value.
-	 *
-	 * A tampered blob can decode (via `r:`/`R:` references) into a self-referential or extremely deep
-	 * object graph. Walking that naively would recurse until the stack overflows, so we track objects
-	 * already visited (to short-circuit cycles and shared references) and cap the recursion depth.
-	 *
-	 * @param mixed    $value   The value to walk (object, array, or scalar).
-	 * @param string[] $found   Accumulator of discovered nested class names (by reference).
-	 * @param bool     $is_root Whether $value is the outermost object (excluded from $found).
-	 * @param array    $seen    Object ids already visited, keyed by spl_object_id (by reference).
-	 * @param int      $depth   Current recursion depth.
-	 * @return bool True if the value was fully walked; false if it was too deep to vet safely.
-	 */
-	protected static function collect_class_names( $value, array &$found, $is_root, array &$seen, $depth ) {
-		if ( $depth > self::MAX_GRAPH_DEPTH ) {
-			return false;
-		}
-
-		if ( is_object( $value ) ) {
-			$object_id = spl_object_id( $value );
-			if ( isset( $seen[ $object_id ] ) ) {
-				return true; // Already walked (cycle or shared reference); nothing new to collect.
-			}
-			$seen[ $object_id ] = true;
-
-			if ( ! $is_root ) {
-				$found[] = self::class_name_of( $value );
-			}
-
-			foreach ( (array) $value as $key => $child ) {
-				if ( '__PHP_Incomplete_Class_Name' === $key ) {
-					continue;
-				}
-				if ( ! self::collect_class_names( $child, $found, false, $seen, $depth + 1 ) ) {
-					return false;
-				}
-			}
-
-			return true;
-		}
-
-		if ( is_array( $value ) ) {
-			foreach ( $value as $child ) {
-				if ( ! self::collect_class_names( $child, $found, false, $seen, $depth + 1 ) ) {
-					return false;
-				}
-			}
-		}
-
-		return true;
 	}
 }

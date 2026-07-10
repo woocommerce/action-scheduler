@@ -198,15 +198,26 @@ class ActionScheduler_ScheduleDeserializer {
 	 */
 	public static function get_allowed_nested_classes() {
 		$default = array(
-			'CronExpression',
-			'CronExpression_FieldFactory',
-			'CronExpression_AbstractField',
-			'CronExpression_MinutesField',
-			'CronExpression_HoursField',
-			'CronExpression_DayOfMonthField',
-			'CronExpression_MonthField',
-			'CronExpression_DayOfWeekField',
-			'CronExpression_YearField',
+			// The bundled CronExpression family, which ActionScheduler_CronSchedule nests.
+			CronExpression::class,
+			CronExpression_FieldFactory::class,
+			CronExpression_AbstractField::class,
+			CronExpression_MinutesField::class,
+			CronExpression_HoursField::class,
+			CronExpression_DayOfMonthField::class,
+			CronExpression_MonthField::class,
+			CronExpression_DayOfWeekField::class,
+			CronExpression_YearField::class,
+
+			// Built-in date/time value objects. Action Scheduler's own schedules store dates as an
+			// int timestamp (see the schedules' __sleep()), so these are here for third-party schedule
+			// classes that keep a date/duration object as a property. They are safe to instantiate:
+			// none define a __destruct(), and their __wakeup() only restores internal state from
+			// scalars — there is no attacker-reachable side-effect sink to exploit.
+			DateTime::class,
+			DateTimeImmutable::class,
+			DateTimeZone::class,
+			DateInterval::class,
 		);
 
 		/**

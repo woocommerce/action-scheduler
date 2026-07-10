@@ -509,4 +509,27 @@ class ActionScheduler_ScheduleUnserialize_Test extends ActionScheduler_UnitTestC
 		$this->assertTrue( $failed, 'A non-serialized schedule meta value was not treated as an invalid action.' );
 		$this->assertInstanceOf( 'ActionScheduler_NullAction', $fetched );
 	}
+
+	/**
+	 * as_get_datetime_object() returns an ActionScheduler_DateTime (a DateTime subclass), so a third
+	 * party schedule that stores the result of that idiomatic helper as a property nests one rather than
+	 * a plain DateTime. It must be on the default nested allow-list, or such a schedule would be rejected.
+	 */
+	public function test_third_party_schedule_nesting_action_scheduler_datetime_round_trips() {
+		// A third party schedule (protected $timestamp) holding an ActionScheduler_DateTime instead of an
+		// int. Hand-crafted so the nested object is genuinely an ActionScheduler_DateTime.
+		$nul   = chr( 0 );
+		$prop  = $nul . '*' . $nul . 'timestamp';
+		$class = 'ActionScheduler_Test_Custom_Schedule';
+		$date  = serialize( as_get_datetime_object( '2026-01-02 03:04:05' ) ); // phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.serialize_serialize
+		$blob  = 'O:' . strlen( $class ) . ':"' . $class . '":1:{s:' . strlen( $prop ) . ':"' . $prop . '";' . $date . '}';
+
+		$result = ActionScheduler_ScheduleDeserializer::unserialize( $blob );
+
+		$this->assertInstanceOf( 'ActionScheduler_Test_Custom_Schedule', $result );
+
+		$property = new ReflectionProperty( 'ActionScheduler_Test_Custom_Schedule', 'timestamp' );
+		$property->setAccessible( true );
+		$this->assertInstanceOf( 'ActionScheduler_DateTime', $property->getValue( $result ) );
+	}
 }

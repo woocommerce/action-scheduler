@@ -23,6 +23,15 @@
  * to do nothing. A blob referencing anything else is rejected the same way a corrupt blob already
  * is today, or — in shadow mode — allowed through untouched while a warning is surfaced.
  *
+ * As an optimization, deserialization first attempts a single restricted parse against the
+ * statically-known-safe set (Action Scheduler's own schedule classes plus the vetted support
+ * classes). When a blob references only those — the overwhelmingly common case — it is fully and
+ * safely hydrated in one pass and the two-phase walk above is skipped. Restricting instantiation to
+ * that set means nothing outside it can run, so if the result is a schedule with no placeholder left
+ * behind, every class named in the blob was already trusted. The inert two-phase path is used only
+ * for blobs that reference something outside the fast set: a third-party schedule class, a filtered
+ * support class, or a tampered/gadget blob.
+ *
  * @since 3.10.0
  */
 class ActionScheduler_ScheduleDeserializer {
@@ -38,6 +47,23 @@ class ActionScheduler_ScheduleDeserializer {
 	const MAX_GRAPH_DEPTH = 100;
 
 	/**
+	 * Action Scheduler's own concrete schedule classes.
+	 *
+	 * Used to build the fast-path allow-list. This is a fixed, audited set of first-party classes; it
+	 * is deliberately not filterable. Third-party schedule classes are handled by the two-phase path,
+	 * which trusts any class implementing ActionScheduler_Schedule without needing to be listed here.
+	 *
+	 * @var string[]
+	 */
+	const KNOWN_SCHEDULE_CLASSES = array(
+		ActionScheduler_SimpleSchedule::class,
+		ActionScheduler_IntervalSchedule::class,
+		ActionScheduler_CronSchedule::class,
+		ActionScheduler_CanceledSchedule::class,
+		ActionScheduler_NullSchedule::class,
+	);
+
+	/**
 	 * Deserialize a stored schedule blob without instantiating unexpected classes.
 	 *
 	 * @param string $data The raw serialized schedule blob as stored in the database.
@@ -48,6 +74,21 @@ class ActionScheduler_ScheduleDeserializer {
 	public static function unserialize( $data ) {
 		if ( ! is_string( $data ) || '' === $data ) {
 			return false;
+		}
+
+		// Fast path: a single restricted parse against the statically-known-safe set. Instantiation is
+		// limited to Action Scheduler's own schedule classes plus the vetted support classes, so
+		// nothing outside that set can run — anything else becomes an inert __PHP_Incomplete_Class
+		// placeholder. If the result is a real schedule with no placeholder left anywhere in its graph,
+		// every class the blob named was already trusted, and this fully-hydrated object is exactly what
+		// the two-phase path below would have produced. This covers the overwhelmingly common case (a
+		// core schedule, no third-party classes) in one unserialize() instead of two.
+		$candidate = @unserialize( $data, array( 'allowed_classes' => self::get_fast_path_allowed_classes() ) ); // phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.serialize_unserialize, WordPress.PHP.NoSilencedErrors.Discouraged
+		if ( is_object( $candidate ) && self::is_allowed_top_level_class( get_class( $candidate ) ) ) {
+			$seen = array();
+			if ( self::is_fully_hydrated( $candidate, $seen, 0 ) ) {
+				return $candidate;
+			}
 		}
 
 		// Phase 1: parse the blob without instantiating any class from it. This is inert: objects
@@ -181,6 +222,70 @@ class ActionScheduler_ScheduleDeserializer {
 		 * @param string[] $default List of allowed nested class names.
 		 */
 		return (array) apply_filters( 'action_scheduler_allowed_nested_schedule_classes', $default );
+	}
+
+	/**
+	 * The set of classes the fast path is willing to instantiate in its single restricted parse.
+	 *
+	 * Action Scheduler's own schedule classes plus the vetted nested support classes (the
+	 * CronExpression family and any added via the action_scheduler_allowed_nested_schedule_classes
+	 * filter). A blob referencing only these can be hydrated safely in one pass; anything else falls
+	 * through to the two-phase path.
+	 *
+	 * @return string[]
+	 */
+	protected static function get_fast_path_allowed_classes() {
+		return array_merge( self::KNOWN_SCHEDULE_CLASSES, self::get_allowed_nested_classes() );
+	}
+
+	/**
+	 * Whether a graph parsed by the fast path was hydrated entirely from trusted classes.
+	 *
+	 * True only if the value contains no __PHP_Incomplete_Class placeholder anywhere — the marker the
+	 * fast path's restricted unserialize() leaves behind for a class outside its allow-list — and the
+	 * whole graph could be walked within MAX_GRAPH_DEPTH. A placeholder means the blob named an
+	 * untrusted class; an over-deep (or, guarded here, cyclic) graph means we cannot vouch for it. In
+	 * either case we return false so the caller falls back to the two-phase vetting path.
+	 *
+	 * @param mixed $value The value to walk (object, array, or scalar).
+	 * @param array $seen  Object ids already visited, keyed by spl_object_id (by reference).
+	 * @param int   $depth Current recursion depth.
+	 * @return bool
+	 */
+	protected static function is_fully_hydrated( $value, array &$seen, $depth ) {
+		if ( $depth > self::MAX_GRAPH_DEPTH ) {
+			return false;
+		}
+
+		if ( is_object( $value ) ) {
+			if ( $value instanceof __PHP_Incomplete_Class ) {
+				return false; // A class the blob named was outside the fast-path set.
+			}
+
+			$object_id = spl_object_id( $value );
+			if ( isset( $seen[ $object_id ] ) ) {
+				return true; // Already walked (cycle or shared reference); nothing new to check.
+			}
+			$seen[ $object_id ] = true;
+
+			foreach ( (array) $value as $child ) {
+				if ( ! self::is_fully_hydrated( $child, $seen, $depth + 1 ) ) {
+					return false;
+				}
+			}
+
+			return true;
+		}
+
+		if ( is_array( $value ) ) {
+			foreach ( $value as $child ) {
+				if ( ! self::is_fully_hydrated( $child, $seen, $depth + 1 ) ) {
+					return false;
+				}
+			}
+		}
+
+		return true;
 	}
 
 	/**

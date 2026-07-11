@@ -72,10 +72,20 @@ class ActionScheduler_UnrecognizedSchedule_Test extends ActionScheduler_UnitTest
 	public function test_unrecognized_schedule_action_is_failed_not_run_or_cancelled() {
 		$hook = 'as_test_unrecognized_auto';
 		$ran  = 0;
-		add_action( $hook, function () use ( &$ran ) { ++$ran; } );
+		add_action(
+			$hook,
+			function () use ( &$ran ) {
+				++$ran;
+			}
+		);
 
 		$notified = false;
-		add_action( 'action_scheduler_unrecognized_schedule_action', function () use ( &$notified ) { $notified = true; } );
+		add_action(
+			'action_scheduler_unrecognized_schedule_action',
+			function () use ( &$notified ) {
+				$notified = true;
+			}
+		);
 
 		$store     = new ActionScheduler_DBStore();
 		$runner    = ActionScheduler_Mocker::get_queue_runner( $store );
@@ -98,7 +108,12 @@ class ActionScheduler_UnrecognizedSchedule_Test extends ActionScheduler_UnitTest
 	public function test_forced_run_executes_unrecognized_schedule_action() {
 		$hook = 'as_test_unrecognized_forced';
 		$ran  = 0;
-		add_action( $hook, function () use ( &$ran ) { ++$ran; } );
+		add_action(
+			$hook,
+			function () use ( &$ran ) {
+				++$ran;
+			}
+		);
 
 		$store     = new ActionScheduler_DBStore();
 		$runner    = ActionScheduler_Mocker::get_queue_runner( $store );
@@ -136,7 +151,12 @@ class ActionScheduler_UnrecognizedSchedule_Test extends ActionScheduler_UnitTest
 	public function test_list_table_run_force_runs_a_failed_action() {
 		$hook = 'as_test_unrecognized_listtable';
 		$ran  = 0;
-		add_action( $hook, function () use ( &$ran ) { ++$ran; } );
+		add_action(
+			$hook,
+			function () use ( &$ran ) {
+				++$ran;
+			}
+		);
 
 		$store     = new ActionScheduler_DBStore();
 		$runner    = ActionScheduler_Mocker::get_queue_runner( $store );
@@ -178,7 +198,7 @@ class ActionScheduler_UnrecognizedSchedule_Test extends ActionScheduler_UnitTest
 
 		$this->assertFalse( (bool) get_option( $option ), 'A valid dismissal should clear the notice flag.' );
 
-		unset( $_GET['as_dismiss_unrecognized_schedule'], $_GET['_asnonce'] );
+		unset( $_GET['as_dismiss_unrecognized_schedule'], $_GET['_asnonce'] ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- test cleanup of simulated request state.
 	}
 
 	/**
@@ -215,7 +235,10 @@ class ActionScheduler_UnrecognizedSchedule_Test extends ActionScheduler_UnitTest
 		$action_id = $store->save_action( $action );
 		$store->mark_failure( $action_id );
 
-		$pending_query = array( 'hook' => $hook, 'status' => ActionScheduler_Store::STATUS_PENDING );
+		$pending_query = array(
+			'hook'   => $hook,
+			'status' => ActionScheduler_Store::STATUS_PENDING,
+		);
 		$this->assertSame( 0, (int) $store->query_actions( $pending_query, 'count' ) );
 
 		$runner->force_run_action( $action_id, 'Test' );

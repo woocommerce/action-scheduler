@@ -58,6 +58,8 @@ abstract class ActionScheduler_Abstract_QueueRunner extends ActionScheduler_Abst
 	 * @param int    $action_id The action ID to process.
 	 * @param string $context Optional identifier for the context in which this action is being processed, e.g. 'WP CLI' or 'WP Cron'
 	 *                        Generally, this should be capitalised and not localised as it's a proper noun.
+	 * @param bool   $force   Run the action even if it is not pending, and skip the unrecognized-schedule
+	 *                        guard. Used by force_run_action() so an operator can flush stuck work.
 	 * @throws \Exception When error running action.
 	 */
 	public function process_action( $action_id, $context = '', $force = false ) {

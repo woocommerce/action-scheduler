@@ -26,6 +26,8 @@ class ActionScheduler_UnrecognizedSchedule extends ActionScheduler_NullSchedule 
 	protected $unrecognized_classes = array();
 
 	/**
+	 * Construct.
+	 *
 	 * @param string[] $unrecognized_classes Class names from the blob that could not be vetted.
 	 */
 	public function __construct( array $unrecognized_classes = array() ) {

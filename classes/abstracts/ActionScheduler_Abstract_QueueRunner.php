@@ -133,7 +133,10 @@ abstract class ActionScheduler_Abstract_QueueRunner extends ActionScheduler_Abst
 			restore_error_handler();
 		}
 
-		if ( isset( $action ) && is_a( $action, 'ActionScheduler_Action' ) && $action->get_schedule()->is_recurring() ) {
+		// A forced run flushes a single occurrence on an operator's request; it must not advance a
+		// recurring series. The next instance was already scheduled when the action first ran, so
+		// rescheduling here would create a duplicate.
+		if ( ! $force && isset( $action ) && is_a( $action, 'ActionScheduler_Action' ) && $action->get_schedule()->is_recurring() ) {
 			$this->schedule_next_instance( $action, $action_id );
 		}
 	}
@@ -147,6 +150,9 @@ abstract class ActionScheduler_Abstract_QueueRunner extends ActionScheduler_Abst
 	 * ActionScheduler_FinishedAction, so for the duration of this run we map it back to an executable
 	 * action class. The action's callback runs; its (unreadable or valid) schedule is not consulted, so
 	 * no next instance of a recurring series is scheduled.
+	 *
+	 * This executes an action regardless of status, so callers are responsible for authorizing the
+	 * request (the admin list table gates it behind a per-row nonce and the manage_options capability).
 	 *
 	 * @param int    $action_id Action ID.
 	 * @param string $context   Context in which the action is being run.

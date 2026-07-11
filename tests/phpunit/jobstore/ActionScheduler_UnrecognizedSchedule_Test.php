@@ -200,6 +200,36 @@ class ActionScheduler_UnrecognizedSchedule_Test extends ActionScheduler_UnitTest
 	}
 
 	/**
+	 * Force-running a failed recurring action (with a still-valid schedule) must not schedule a
+	 * duplicate next instance — the series already advanced when the action first ran.
+	 */
+	public function test_forced_run_of_recurring_failed_action_does_not_reschedule() {
+		$hook = 'as_test_force_recurring';
+		add_action( $hook, '__return_true' );
+
+		$store  = new ActionScheduler_DBStore();
+		$runner = ActionScheduler_Mocker::get_queue_runner( $store );
+
+		$schedule  = new ActionScheduler_IntervalSchedule( as_get_datetime_object( '1 hour ago' ), HOUR_IN_SECONDS );
+		$action    = new ActionScheduler_Action( $hook, array(), $schedule );
+		$action_id = $store->save_action( $action );
+		$store->mark_failure( $action_id );
+
+		$pending_query = array( 'hook' => $hook, 'status' => ActionScheduler_Store::STATUS_PENDING );
+		$this->assertSame( 0, (int) $store->query_actions( $pending_query, 'count' ) );
+
+		$runner->force_run_action( $action_id, 'Test' );
+
+		$this->assertSame(
+			0,
+			(int) $store->query_actions( $pending_query, 'count' ),
+			'A forced run of a failed recurring action must not schedule a duplicate next instance.'
+		);
+
+		remove_all_actions( $hook );
+	}
+
+	/**
 	 * Build a list table instance for tests, loading the WP_List_Table base if the admin context that
 	 * normally provides it has not been loaded.
 	 *

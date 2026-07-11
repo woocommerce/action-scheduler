@@ -156,12 +156,6 @@ class ActionScheduler_ScheduleDeserializer {
 		try {
 			return $this->deserialize();
 		} catch ( Throwable $e ) {
-			// Even with instantiation restricted to trusted classes, a tampered blob can still make one
-			// of them throw during unserialize(): e.g. a valid schedule whose scheduled_timestamp has
-			// been replaced with an object, which its __wakeup() then feeds to a DateTime constructor.
-			// That surfaces as an Error (which @ does not suppress and a `catch ( Exception )` does not
-			// catch). Treat any such failure as corrupt data and return false, which callers already
-			// handle gracefully, rather than letting it escape and fatal the read.
 			return false;
 		}
 	}

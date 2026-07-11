@@ -74,6 +74,9 @@ class ActionScheduler_UnrecognizedSchedule_Test extends ActionScheduler_UnitTest
 		$ran  = 0;
 		add_action( $hook, function () use ( &$ran ) { ++$ran; } );
 
+		$notified = false;
+		add_action( 'action_scheduler_unrecognized_schedule_action', function () use ( &$notified ) { $notified = true; } );
+
 		$store     = new ActionScheduler_DBStore();
 		$runner    = ActionScheduler_Mocker::get_queue_runner( $store );
 		$action_id = $this->store_due_action_with_unrecognized_schedule( $hook );
@@ -82,8 +85,10 @@ class ActionScheduler_UnrecognizedSchedule_Test extends ActionScheduler_UnitTest
 
 		$this->assertSame( ActionScheduler_Store::STATUS_FAILED, $store->get_status( $action_id ), 'The action should be failed, not cancelled or run.' );
 		$this->assertSame( 0, $ran, 'An unrecognized-schedule action must not run automatically.' );
+		$this->assertTrue( $notified, 'The action_scheduler_unrecognized_schedule_action hook should fire.' );
 
 		remove_all_actions( $hook );
+		remove_all_actions( 'action_scheduler_unrecognized_schedule_action' );
 	}
 
 	/**
@@ -149,6 +154,49 @@ class ActionScheduler_UnrecognizedSchedule_Test extends ActionScheduler_UnitTest
 		$this->assertSame( ActionScheduler_Store::STATUS_COMPLETE, $store->get_status( $action_id ) );
 
 		remove_all_actions( $hook );
+	}
+
+	/**
+	 * The notice flag is set when an unrecognized-schedule failure is noted, and cleared by a valid
+	 * dismissal request.
+	 */
+	public function test_notice_flag_is_set_and_dismissed() {
+		$admin  = ActionScheduler_AdminView::instance();
+		$option = ActionScheduler_AdminView::UNRECOGNIZED_SCHEDULE_NOTICE_OPTION;
+		delete_option( $option );
+
+		$admin->note_unrecognized_schedule_failure();
+		$this->assertNotEmpty( get_option( $option ), 'Noting a failure should set the notice flag.' );
+
+		wp_set_current_user( self::factory()->user->create( array( 'role' => 'administrator' ) ) );
+		$_GET['as_dismiss_unrecognized_schedule'] = '1';
+		$_GET['_asnonce']                         = wp_create_nonce( 'as_dismiss_unrecognized_schedule' );
+
+		ob_start();
+		$admin->maybe_show_unrecognized_schedule_notice();
+		ob_end_clean();
+
+		$this->assertFalse( (bool) get_option( $option ), 'A valid dismissal should clear the notice flag.' );
+
+		unset( $_GET['as_dismiss_unrecognized_schedule'], $_GET['_asnonce'] );
+	}
+
+	/**
+	 * The notice renders for an administrator while the flag is set, and links to the failed actions
+	 * screen.
+	 */
+	public function test_notice_renders_for_admin_and_links_to_failed_actions() {
+		wp_set_current_user( self::factory()->user->create( array( 'role' => 'administrator' ) ) );
+		update_option( ActionScheduler_AdminView::UNRECOGNIZED_SCHEDULE_NOTICE_OPTION, 1, false );
+
+		ob_start();
+		ActionScheduler_AdminView::instance()->maybe_show_unrecognized_schedule_notice();
+		$html = ob_get_clean();
+
+		$this->assertStringContainsString( 'unrecognized class', $html );
+		$this->assertStringContainsString( 'status=failed', $html );
+
+		delete_option( ActionScheduler_AdminView::UNRECOGNIZED_SCHEDULE_NOTICE_OPTION );
 	}
 
 	/**

@@ -50,6 +50,10 @@ class ActionScheduler_AdminView extends ActionScheduler_AdminView_Deprecated {
 	 * @codeCoverageIgnore
 	 */
 	public function init() {
+		// Registered unconditionally: the failure is recorded from the queue runner, which usually
+		// runs outside the admin (cron/async), so the recorder must not sit behind the is_admin() guard.
+		add_action( 'action_scheduler_unrecognized_schedule_action', array( $this, 'note_unrecognized_schedule_failure' ) );
+
 		if ( is_admin() && ( ! defined( 'DOING_AJAX' ) || ! DOING_AJAX ) ) {
 
 			if ( class_exists( 'WooCommerce' ) ) {
@@ -60,6 +64,7 @@ class ActionScheduler_AdminView extends ActionScheduler_AdminView_Deprecated {
 
 			add_action( 'admin_menu', array( $this, 'register_menu' ) );
 			add_action( 'admin_notices', array( $this, 'maybe_check_pastdue_actions' ) );
+			add_action( 'admin_notices', array( $this, 'maybe_show_unrecognized_schedule_notice' ) );
 			add_action( 'current_screen', array( $this, 'add_help_tabs' ) );
 		}
 	}
@@ -239,6 +244,89 @@ class ActionScheduler_AdminView extends ActionScheduler_AdminView_Deprecated {
 
 		// Facilitate third-parties to evaluate and print notices.
 		do_action( 'action_scheduler_pastdue_actions_extra_notices', $query_args );
+	}
+
+	/**
+	 * Option flag set when one or more actions have been failed because their schedule referenced an
+	 * unrecognized class. Drives the review notice below.
+	 *
+	 * @var string
+	 */
+	const UNRECOGNIZED_SCHEDULE_NOTICE_OPTION = 'action_scheduler_unrecognized_schedule_failures';
+
+	/**
+	 * Record that an action was failed because its schedule referenced an unrecognized class, so an
+	 * admin notice can prompt an operator to review it.
+	 *
+	 * Fired from the queue runner, which usually runs outside the admin (cron/async), so this makes no
+	 * assumptions about admin context. The flag is not autoloaded.
+	 */
+	public function note_unrecognized_schedule_failure() {
+		if ( ! get_option( self::UNRECOGNIZED_SCHEDULE_NOTICE_OPTION ) ) {
+			update_option( self::UNRECOGNIZED_SCHEDULE_NOTICE_OPTION, 1, false );
+		}
+	}
+
+	/**
+	 * Action: admin_notices
+	 *
+	 * Prompt operators to review actions failed because their schedule could not be recognized, and
+	 * render until the operator dismisses the notice.
+	 */
+	public function maybe_show_unrecognized_schedule_notice() {
+		if ( ! current_user_can( 'manage_options' ) ) {
+			return;
+		}
+
+		// Process an explicit dismissal.
+		if (
+			isset( $_GET['as_dismiss_unrecognized_schedule'], $_GET['_asnonce'] )
+			&& wp_verify_nonce( sanitize_key( wp_unslash( $_GET['_asnonce'] ) ), 'as_dismiss_unrecognized_schedule' )
+		) {
+			delete_option( self::UNRECOGNIZED_SCHEDULE_NOTICE_OPTION );
+			return;
+		}
+
+		if ( ! get_option( self::UNRECOGNIZED_SCHEDULE_NOTICE_OPTION ) ) {
+			return;
+		}
+
+		$failed_url = add_query_arg(
+			array(
+				'page'   => 'action-scheduler',
+				'status' => ActionScheduler_Store::STATUS_FAILED,
+				'order'  => 'asc',
+			),
+			admin_url( 'tools.php' )
+		);
+
+		$dismiss_url = wp_nonce_url(
+			add_query_arg( 'as_dismiss_unrecognized_schedule', '1' ),
+			'as_dismiss_unrecognized_schedule',
+			'_asnonce'
+		);
+
+		$message = wp_kses(
+			sprintf(
+				// translators: 1) link to the failed actions screen, 2) dismiss link.
+				__( '<strong>Action Scheduler:</strong> one or more scheduled actions could not be run because their schedule references an unrecognized class, and have been marked <a href="%1$s">failed</a> for your review. If an action is safe to run, use its <em>Run</em> link to force it. <a href="%2$s">Dismiss</a>', 'action-scheduler' ),
+				esc_url( $failed_url ),
+				esc_url( $dismiss_url )
+			),
+			array(
+				'strong' => array(),
+				'em'     => array(),
+				'a'      => array( 'href' => true ),
+			)
+		);
+
+		wp_admin_notice(
+			$message,
+			array(
+				'type'           => 'warning',
+				'paragraph_wrap' => true,
+			)
+		);
 	}
 
 	/**

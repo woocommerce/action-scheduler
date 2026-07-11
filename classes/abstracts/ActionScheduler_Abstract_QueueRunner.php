@@ -60,7 +60,7 @@ abstract class ActionScheduler_Abstract_QueueRunner extends ActionScheduler_Abst
 	 *                        Generally, this should be capitalised and not localised as it's a proper noun.
 	 * @throws \Exception When error running action.
 	 */
-	public function process_action( $action_id, $context = '' ) {
+	public function process_action( $action_id, $context = '', $force = false ) {
 		// Temporarily override the error handler while we process the current action.
 		// phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_set_error_handler
 		set_error_handler(
@@ -89,7 +89,9 @@ abstract class ActionScheduler_Abstract_QueueRunner extends ActionScheduler_Abst
 			try {
 				do_action( 'action_scheduler_before_execute', $action_id, $context );
 
-				if ( ActionScheduler_Store::STATUS_PENDING !== $this->store->get_status( $action_id ) ) {
+				// A forced run (e.g. a site operator using the admin "Run" link) executes the action even
+				// if it is not pending, so it can flush work that is otherwise stuck.
+				if ( ! $force && ActionScheduler_Store::STATUS_PENDING !== $this->store->get_status( $action_id ) ) {
 					$valid_action = false;
 					do_action( 'action_scheduler_execution_ignored', $action_id, $context );
 					return;
@@ -101,6 +103,15 @@ abstract class ActionScheduler_Abstract_QueueRunner extends ActionScheduler_Abst
 				if ( null === $action ) {
 					$valid_action = false;
 					$this->cancel_corrupted_action( $action_id );
+					return;
+				}
+
+				// An action whose schedule could not be recognized is not run automatically: we cannot
+				// know when it was meant to run, so we mark it failed for operator review rather than
+				// cancelling it. A forced run overrides this and executes the action's callback anyway.
+				if ( ! $force && $action->get_schedule() instanceof ActionScheduler_UnrecognizedSchedule ) {
+					$valid_action = false;
+					$this->fail_unrecognized_action( $action_id );
 					return;
 				}
 
@@ -124,6 +135,34 @@ abstract class ActionScheduler_Abstract_QueueRunner extends ActionScheduler_Abst
 
 		if ( isset( $action ) && is_a( $action, 'ActionScheduler_Action' ) && $action->get_schedule()->is_recurring() ) {
 			$this->schedule_next_instance( $action, $action_id );
+		}
+	}
+
+	/**
+	 * Force an action to run now, regardless of its current status.
+	 *
+	 * Intended for a site operator flushing stuck work from the admin list table — most usefully an
+	 * action that was failed because its schedule references an unrecognized class, which cannot be run
+	 * on the normal (automatic) path. A failed action would otherwise be fetched as a non-executable
+	 * ActionScheduler_FinishedAction, so for the duration of this run we map it back to an executable
+	 * action class. The action's callback runs; its (unreadable or valid) schedule is not consulted, so
+	 * no next instance of a recurring series is scheduled.
+	 *
+	 * @param int    $action_id Action ID.
+	 * @param string $context   Context in which the action is being run.
+	 * @return void
+	 */
+	public function force_run_action( $action_id, $context = '' ) {
+		$as_executable = static function ( $action_class, $status ) {
+			return ActionScheduler_Store::STATUS_FAILED === $status ? 'ActionScheduler_Action' : $action_class;
+		};
+
+		add_filter( 'action_scheduler_stored_action_class', $as_executable, 10, 2 );
+
+		try {
+			$this->process_action( $action_id, $context, true );
+		} finally {
+			remove_filter( 'action_scheduler_stored_action_class', $as_executable, 10 );
 		}
 	}
 
@@ -162,6 +201,34 @@ abstract class ActionScheduler_Abstract_QueueRunner extends ActionScheduler_Abst
 		ActionScheduler_Logger::instance()->log(
 			$action_id,
 			__( 'This action data appears to be corrupt. We are cancelling it to allow recurring actions to be re-created by extensions.', 'action-scheduler' )
+		);
+	}
+
+	/**
+	 * Marks an action failed because its schedule references a class Action Scheduler does not
+	 * recognize. Unlike a corrupt action, this is recoverable: an operator can review it and force it
+	 * to run, or make the referenced class available (via the
+	 * action_scheduler_allowed_nested_schedule_classes filter) and re-run it normally.
+	 *
+	 * @param int $action_id Action ID.
+	 * @return void
+	 */
+	private function fail_unrecognized_action( int $action_id ) {
+		$this->store->mark_failure( $action_id );
+
+		/**
+		 * Fires when an action is marked failed because its stored schedule references an unrecognized
+		 * class, rather than being run or cancelled.
+		 *
+		 * @since 4.1.0
+		 *
+		 * @param int $action_id Action ID.
+		 */
+		do_action( 'action_scheduler_unrecognized_schedule_action', $action_id );
+
+		ActionScheduler_Logger::instance()->log(
+			$action_id,
+			__( 'This action references a schedule that could not be recognized, so it has been marked as failed rather than run. Review it and, if it is safe, force it to run.', 'action-scheduler' )
 		);
 	}
 

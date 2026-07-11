@@ -111,4 +111,62 @@ class ActionScheduler_UnrecognizedSchedule_Test extends ActionScheduler_UnitTest
 
 		remove_all_actions( $hook );
 	}
+
+	/**
+	 * The admin list table renders an unrecognized schedule with a clear label rather than falling
+	 * through to the NullSchedule "async" display.
+	 */
+	public function test_list_table_displays_unrecognized_schedule() {
+		$list_table = $this->make_list_table();
+		$method     = new ReflectionMethod( $list_table, 'get_schedule_display_string' );
+		$method->setAccessible( true );
+
+		$this->assertSame( 'Unrecognized schedule', $method->invoke( $list_table, new ActionScheduler_UnrecognizedSchedule() ) );
+	}
+
+	/**
+	 * The list table "Run" row action force-runs a failed action (previously impossible), so an
+	 * operator can flush stuck work.
+	 */
+	public function test_list_table_run_force_runs_a_failed_action() {
+		$hook = 'as_test_unrecognized_listtable';
+		$ran  = 0;
+		add_action( $hook, function () use ( &$ran ) { ++$ran; } );
+
+		$store     = new ActionScheduler_DBStore();
+		$runner    = ActionScheduler_Mocker::get_queue_runner( $store );
+		$action_id = $this->store_due_action_with_unrecognized_schedule( $hook );
+
+		$runner->process_action( $action_id ); // Automatic pass marks it failed.
+		$this->assertSame( ActionScheduler_Store::STATUS_FAILED, $store->get_status( $action_id ) );
+
+		$list_table = $this->make_list_table( $store, $runner );
+		$method     = new ReflectionMethod( $list_table, 'process_row_action' );
+		$method->setAccessible( true );
+		$method->invoke( $list_table, $action_id, 'run' );
+
+		$this->assertSame( 1, $ran, 'The list table Run action should force-run a failed action.' );
+		$this->assertSame( ActionScheduler_Store::STATUS_COMPLETE, $store->get_status( $action_id ) );
+
+		remove_all_actions( $hook );
+	}
+
+	/**
+	 * Build a list table instance for tests, loading the WP_List_Table base if the admin context that
+	 * normally provides it has not been loaded.
+	 *
+	 * @param ActionScheduler_Store|null       $store  Store to use.
+	 * @param ActionScheduler_QueueRunner|null $runner Runner to use.
+	 * @return ActionScheduler_ListTable
+	 */
+	private function make_list_table( $store = null, $runner = null ) {
+		if ( ! class_exists( 'WP_List_Table' ) ) {
+			require_once ABSPATH . 'wp-admin/includes/class-wp-list-table.php';
+		}
+
+		$store  = $store ? $store : new ActionScheduler_DBStore();
+		$runner = $runner ? $runner : ActionScheduler_Mocker::get_queue_runner( $store );
+
+		return new ActionScheduler_ListTable( $store, ActionScheduler_Logger::instance(), $runner );
+	}
 }

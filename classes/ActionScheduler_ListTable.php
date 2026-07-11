@@ -469,6 +469,10 @@ class ActionScheduler_ListTable extends ActionScheduler_Abstract_ListTable {
 
 		$schedule_display_string = '';
 
+		if ( is_a( $schedule, 'ActionScheduler_UnrecognizedSchedule' ) ) {
+			return __( 'Unrecognized schedule', 'action-scheduler' );
+		}
+
 		if ( is_a( $schedule, 'ActionScheduler_NullSchedule' ) ) {
 			return __( 'async', 'action-scheduler' );
 		}
@@ -570,7 +574,13 @@ class ActionScheduler_ListTable extends ActionScheduler_Abstract_ListTable {
 		try {
 			switch ( $row_action_type ) {
 				case 'run':
-					$this->runner->process_action( $action_id, 'Admin List Table' );
+					// A failed action is not pending, so it cannot be run on the normal path. Force it, so
+					// an operator can retry a failed action or flush one whose schedule was unrecognized.
+					if ( ActionScheduler_Store::STATUS_FAILED === $this->store->get_status( $action_id ) ) {
+						$this->runner->force_run_action( $action_id, 'Admin List Table' );
+					} else {
+						$this->runner->process_action( $action_id, 'Admin List Table' );
+					}
 					break;
 				case 'cancel':
 					$this->store->cancel_action( $action_id );

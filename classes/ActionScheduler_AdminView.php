@@ -306,18 +306,19 @@ class ActionScheduler_AdminView extends ActionScheduler_AdminView_Deprecated {
 			'_asnonce'
 		);
 
-		$message = wp_kses(
-			sprintf(
-				// translators: 1) link to the failed actions screen, 2) dismiss link.
-				__( '<strong>Action Scheduler:</strong> one or more scheduled actions could not be run because their schedule references an unrecognized class, and have been marked <a href="%1$s">failed</a> for your review. If an action is safe to run, use its <em>Run</em> link to force it. <a href="%2$s">Dismiss</a>', 'action-scheduler' ),
-				esc_url( $failed_url ),
-				esc_url( $dismiss_url )
-			),
-			array(
-				'strong' => array(),
-				'em'     => array(),
-				'a'      => array( 'href' => true ),
-			)
+		// Markup is kept out of the translatable strings: each translatable piece is plain text, escaped
+		// here, then interpolated into developer-controlled HTML. esc_html__() on the sentence also means
+		// a rogue translation cannot inject markup, so wp_kses() is unnecessary.
+		$as_label     = '<strong>' . esc_html__( 'Action Scheduler:', 'action-scheduler' ) . '</strong>';
+		$failed_link  = sprintf( '<a href="%s">%s</a>', esc_url( $failed_url ), esc_html__( 'failed', 'action-scheduler' ) );
+		$dismiss_link = sprintf( '<a href="%s">%s</a>', esc_url( $dismiss_url ), esc_html__( 'Dismiss', 'action-scheduler' ) );
+
+		$message = sprintf(
+			/* translators: 1: a bold "Action Scheduler:" label, 2: a link reading "failed", 3: a link reading "Dismiss". */
+			esc_html__( '%1$s one or more scheduled actions could not be run because their schedule references an unrecognized class, and have been marked %2$s for your review. If an action is safe to run, use its Run link to force it. %3$s', 'action-scheduler' ),
+			$as_label,
+			$failed_link,
+			$dismiss_link
 		);
 
 		wp_admin_notice(

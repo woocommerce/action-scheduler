@@ -129,8 +129,8 @@ class ActionScheduler_ScheduleDeserializer {
 	/**
 	 * Build our ActionScheduler_ScheduleDeserializer instance.
 	 *
-	 * @param array $allowed_scheduler_classes
-	 * @param array $allowed_nested_classes
+	 * @param array $allowed_scheduler_classes Scheduler classes we accept.
+	 * @param array $allowed_nested_classes    Nested classes we accept.
 	 */
 	public function __construct( array $allowed_scheduler_classes, array $allowed_nested_classes ) {
 		$this->allowed_scheduler_classes = $allowed_scheduler_classes;
@@ -177,7 +177,7 @@ class ActionScheduler_ScheduleDeserializer {
 		}
 
 		// Otherwise the top-level object is itself a valid schedule, but references one or more disallowed classes.
-		foreach ($this->potential_offenders as $offender ) {
+		foreach ( $this->potential_offenders as $offender ) {
 			if ( ! $this->is_allowed_nested_class( $offender, $this->allowed_nested_classes ) ) {
 				return $this->reject( $offender, true );
 			}

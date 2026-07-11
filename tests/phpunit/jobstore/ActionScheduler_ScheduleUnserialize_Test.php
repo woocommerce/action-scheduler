@@ -345,6 +345,7 @@ class ActionScheduler_ScheduleUnserialize_Test extends ActionScheduler_UnitTestC
 		$captured = array();
 		add_action(
 			'action_scheduler_unexpected_schedule_class',
+			// phpcs:ignore Generic.CodeAnalysis.UnusedFunctionParameter.FoundAfterLastUsed
 			function ( $offending, $outer, $unexpected, $rejected ) use ( &$captured ) {
 				$captured = compact( 'offending', 'outer', 'unexpected', 'rejected' );
 			},

@@ -554,4 +554,36 @@ class ActionScheduler_ScheduleUnserialize_Test extends ActionScheduler_UnitTestC
 			'A gadget nested in a third party schedule was instantiated.'
 		);
 	}
+
+	/**
+	 * A tampered blob can make an otherwise-trusted schedule class throw during deserialization — for
+	 * example, a valid schedule whose `scheduled_timestamp` scalar has been replaced with an object,
+	 * which the schedule's `__wakeup()` then feeds to a `DateTime` constructor. That surfaces as a
+	 * `TypeError` (an `Error`, which `@` does not suppress and a `catch ( Exception )` does not catch).
+	 * The deserializer must absorb it and report corrupt data, not let it escape and fatal the read.
+	 */
+	public function test_tampered_blob_that_makes_a_trusted_class_throw_is_reported_as_corrupt() {
+		$nul   = chr( 0 );
+		$prop  = $nul . '*' . $nul . 'scheduled_timestamp'; // Protected property marker.
+		$class = 'ActionScheduler_IntervalSchedule';        // Trusted → instantiated (and woken) in the safe parse.
+		$evil  = 'O:12:"Totally_Fake":0:{}';                // An object where a timestamp is expected.
+		$blob  = 'O:' . strlen( $class ) . ':"' . $class . '":1:{s:' . strlen( $prop ) . ':"' . $prop . '";' . $evil . '}';
+
+		// Without the guard this call throws an uncaught TypeError and this test errors instead of passing.
+		$this->assertFalse(
+			ActionScheduler_ScheduleDeserializer::unserialize( $blob ),
+			'A tampered blob that makes a trusted class throw should be reported as corrupt (false).'
+		);
+
+		// And the store must surface it as a handled (null) action rather than fataling the read.
+		$action_id = $this->store_action_with_raw_schedule( $blob );
+		$store     = new ActionScheduler_DBStore();
+		$fetched   = null;
+		try {
+			$fetched = $store->fetch_action( $action_id );
+		} catch ( Exception $e ) {
+			unset( $e ); // A handled InvalidActionException is acceptable; an Error would have fataled above.
+		}
+		$this->assertNotNull( $fetched, 'Fetching a tampered action fataled instead of being handled.' );
+	}
 }

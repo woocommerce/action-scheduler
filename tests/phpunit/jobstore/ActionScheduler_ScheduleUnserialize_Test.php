@@ -370,10 +370,12 @@ class ActionScheduler_ScheduleUnserialize_Test extends ActionScheduler_UnitTestC
 	public function test_nested_allow_list_filter_is_honored_per_call() {
 		$blob = serialize( new ActionScheduler_Test_Custom_Schedule_With_Property( time() + DAY_IN_SECONDS, new ActionScheduler_Test_Schedule_Helper( 42 ) ) ); // phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.serialize_serialize
 
-		// First call, no filter: the helper class is unexpected, so the blob is rejected.
-		$this->assertFalse(
+		// First call, no filter: the helper class is unexpected, so the blob yields the unrecognized
+		// placeholder (a valid schedule referencing an unknown class is recoverable, not corrupt).
+		$this->assertInstanceOf(
+			'ActionScheduler_UnrecognizedSchedule',
 			ActionScheduler_ScheduleDeserializer::unserialize( $blob ),
-			'An un-allow-listed nested support class should be rejected by default.'
+			'An un-allow-listed nested support class should yield an unrecognized-schedule placeholder.'
 		);
 
 		// Second call, with the helper allow-listed via the filter: the blob is accepted. This also
@@ -438,8 +440,9 @@ class ActionScheduler_ScheduleUnserialize_Test extends ActionScheduler_UnitTestC
 			array()
 		);
 
-		// First: a blob nesting a gadget (rejected, populating internal offender/seen state).
-		$this->assertFalse( $deserializer( $this->nested_gadget_blob() ) );
+		// First: a blob nesting a gadget (rejected to the unrecognized placeholder, populating internal
+		// offender/seen state).
+		$this->assertInstanceOf( 'ActionScheduler_UnrecognizedSchedule', $deserializer( $this->nested_gadget_blob() ) );
 
 		// Then: a clean third party schedule must still deserialize correctly.
 		$clean = serialize( new ActionScheduler_Test_Custom_Schedule( time() + HOUR_IN_SECONDS ) ); // phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.serialize_serialize
@@ -458,7 +461,7 @@ class ActionScheduler_ScheduleUnserialize_Test extends ActionScheduler_UnitTestC
 		$blob = serialize( new ActionScheduler_Test_Custom_Schedule_With_Property( time() + DAY_IN_SECONDS, new ActionScheduler_Test_Schedule_Helper( 7 ) ) ); // phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.serialize_serialize
 
 		$without = new ActionScheduler_ScheduleDeserializer( array(), array() );
-		$this->assertFalse( $without( $blob ), 'Nested support classes absent from the allow-list must be rejected.' );
+		$this->assertInstanceOf( 'ActionScheduler_UnrecognizedSchedule', $without( $blob ), 'Nested support classes absent from the allow-list yield an unrecognized-schedule placeholder.' );
 
 		$with = new ActionScheduler_ScheduleDeserializer(
 			array(),
@@ -548,7 +551,7 @@ class ActionScheduler_ScheduleUnserialize_Test extends ActionScheduler_UnitTestC
 
 		$result = ActionScheduler_ScheduleDeserializer::unserialize( $blob );
 
-		$this->assertFalse( $result );
+		$this->assertInstanceOf( 'ActionScheduler_UnrecognizedSchedule', $result );
 		$this->assertFalse(
 			ActionScheduler_Test_Evil_Gadget::$fired,
 			'A gadget nested in a third party schedule was instantiated.'
@@ -585,5 +588,28 @@ class ActionScheduler_ScheduleUnserialize_Test extends ActionScheduler_UnitTestC
 			unset( $e ); // A handled InvalidActionException is acceptable; an Error would have fataled above.
 		}
 		$this->assertNotNull( $fetched, 'Fetching a tampered action fataled instead of being handled.' );
+	}
+
+	/**
+	 * A structurally-valid schedule that merely nests an unrecognized class is recoverable: it yields an
+	 * ActionScheduler_UnrecognizedSchedule placeholder (carrying the offending class names) rather than
+	 * being treated as irretrievably corrupt. A structural rejection (top-level non-schedule) stays
+	 * corrupt (false).
+	 */
+	public function test_recoverable_schedule_yields_unrecognized_placeholder_but_structural_stays_corrupt() {
+		// Valid third party schedule nesting an unknown helper class -> recoverable.
+		$recoverable = serialize( new ActionScheduler_Test_Custom_Schedule_With_Property( time() + DAY_IN_SECONDS, new ActionScheduler_Test_Schedule_Helper( 1 ) ) ); // phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.serialize_serialize
+		$schedule    = ActionScheduler_ScheduleDeserializer::unserialize( $recoverable );
+
+		$this->assertInstanceOf( 'ActionScheduler_UnrecognizedSchedule', $schedule );
+		$this->assertContains(
+			'ActionScheduler_Test_Schedule_Helper',
+			$schedule->get_unrecognized_classes(),
+			'The placeholder should record the unrecognized class name for operator review.'
+		);
+
+		// A bare top-level non-schedule is a structural rejection, not recoverable -> stays corrupt.
+		$structural = serialize( new ActionScheduler_Test_Evil_Gadget() ); // phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.serialize_serialize
+		$this->assertFalse( ActionScheduler_ScheduleDeserializer::unserialize( $structural ) );
 	}
 }

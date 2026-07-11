@@ -305,6 +305,16 @@ class ActionScheduler_ScheduleDeserializer {
 		do_action( 'action_scheduler_unexpected_schedule_class', $offending_class, $this->outer_class, $this->potential_offenders, $rejected );
 
 		if ( $rejected ) {
+			// A recoverable ($shadow_eligible) rejection is a structurally-valid schedule that merely
+			// references an unrecognized class — not evidently dangerous, just unknown. Return it as an
+			// ActionScheduler_UnrecognizedSchedule placeholder so the action stays visible and can be
+			// routed to a failed state for operator review / forced re-run, rather than being treated as
+			// irretrievably corrupt (false) and silently cancelled. Structural rejections (a top-level
+			// non-schedule or an unwalkable graph) have no legitimate form and remain corrupt.
+			if ( $shadow_eligible ) {
+				return new ActionScheduler_UnrecognizedSchedule( $this->potential_offenders );
+			}
+
 			return false;
 		}
 

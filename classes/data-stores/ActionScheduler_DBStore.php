@@ -872,12 +872,21 @@ AND args = %s
 		 */
 		global $wpdb;
 
+		$claim_id = (int) $wpdb->get_var( $wpdb->prepare( "SELECT claim_id FROM {$wpdb->actionscheduler_actions} WHERE action_id = %d", $action_id ) );
+
 		$deleted = $wpdb->delete( $wpdb->actionscheduler_actions, array( 'action_id' => $action_id ), array( '%d' ) );
 		if ( empty( $deleted ) ) {
 			/* translators: %s is the action ID */
 			throw new \InvalidArgumentException( sprintf( __( 'Unidentified action %s: we were unable to delete this action. It may may have been deleted by another process.', 'action-scheduler' ), $action_id ) );
 		}
 		do_action( 'action_scheduler_deleted_action', $action_id );
+
+		if ( $claim_id > 0 ) {
+			$referenced = (int) $wpdb->get_var( $wpdb->prepare( "SELECT COUNT(*) FROM {$wpdb->actionscheduler_actions} WHERE claim_id = %d", $claim_id ) );
+			if ( 0 === $referenced ) {
+				$wpdb->delete( $wpdb->actionscheduler_claims, array( 'claim_id' => $claim_id ), array( '%d' ) );
+			}
+		}
 	}
 
 	/**

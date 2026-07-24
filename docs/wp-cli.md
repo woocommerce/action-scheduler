@@ -41,6 +41,31 @@ These are the commands available to use with Action Scheduler:
     * `--group` - Process only actions in a specific group, like `'woocommerce-memberships'`. By default, actions in any group (or no group) will be processed.
     * `--exclude-groups` - Ignore actions from the specified group or groups (to specify multiple groups, supply a comma-separated list of slugs). This option is ignored if `--group` is also specified.
     * `--force` - By default, Action Scheduler limits the number of concurrent batches that can be run at once to ensure the server does not get overwhelmed. Using the `--force` flag overrides this behavior to force the WP CLI queue to run.
+
+* `action-scheduler work`
+
+    Continuously processes due actions and waits for new actions when the queue is empty. This command is intended to run under a process monitor such as systemd or Supervisor. It handles `SIGINT` and `SIGTERM` gracefully when the PHP PCNTL extension is available.
+
+    WordPress is bootstrapped once when the worker starts. Restart long-running workers after deploying code or configuration changes. The `--max-actions`, `--max-runtime`, and `--memory-limit` options can be used to recycle workers automatically when a process monitor is configured to restart them.
+
+    Options:
+    * `--batch-size` - The maximum number of actions to claim in one batch. Default `100`.
+    * `--hooks` - Only process actions with the specified comma-separated hooks.
+    * `--group` - Only process actions in a specific group.
+    * `--exclude-groups` - Ignore actions from the specified comma-separated groups. Ignored when `--group` is used.
+    * `--sleep` - Seconds to wait when no due actions are available. Fractions are accepted. Default `3`.
+    * `--max-actions` - Stop after processing this many actions. Default `0` means unlimited.
+    * `--max-runtime` - Stop after this many seconds. Default `0` means unlimited.
+    * `--memory-limit` - Stop when memory usage reaches this value in megabytes. Default `0` means unlimited.
+    * `--free-memory-on` - Clear WordPress runtime caches after this many actions. Default `50`; `0` disables it.
+    * `--stop-when-empty` - Stop instead of waiting when no due actions are available.
+    * `--force` - Run despite Action Scheduler's concurrent batch limit.
+
+    Example:
+
+    ```sh
+    wp action-scheduler work --group=emails --sleep=1 --max-runtime=3600 --memory-limit=256
+    ```
     
 * `action-scheduler action cancel`
 * `action-scheduler action create`

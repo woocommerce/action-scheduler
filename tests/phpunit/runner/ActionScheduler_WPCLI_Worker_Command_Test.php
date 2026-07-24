@@ -1,5 +1,6 @@
 <?php
 
+require_once dirname( __DIR__, 3 ) . '/vendor/wp-cli/wp-cli/php/utils.php';
 require_once __DIR__ . '/ActionScheduler_WPCLI_Worker_Command_Test_Runner.php';
 require_once __DIR__ . '/ActionScheduler_WPCLI_Worker_Command_Testable.php';
 

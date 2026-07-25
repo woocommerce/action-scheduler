@@ -25,7 +25,7 @@ These are the commands available to use with Action Scheduler:
   * `--batch-size` - This is the number of actions per status to clean in a single batch. Default is `20`.
   * `--batches` - This is the number of batches to process. Default 0 means that batches will continue to process until there are no more actions to delete.
   * `--status` - Process only actions with specific status or statuses. Default is `canceled` and `complete`. Define multiple statuses as a comma separated string (without spaces), e.g. `--status=complete,failed,canceled`
-  * `--before` - Process only actions with scheduled date older than this. Defaults to 31 days. e.g `--before='7 days ago'`, `--before='02-Feb-2020 20:20:20'`
+  * `--before` - Process only actions with a last modification date (attempt date) older than this. Defaults to 31 days. e.g `--before='7 days ago'`, `--before='02-Feb-2020 20:20:20'`
   * `--pause` - The number of seconds to pause between batches. Default no pause.
 
 * `action-scheduler migrate`

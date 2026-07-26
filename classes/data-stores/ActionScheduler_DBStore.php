@@ -1179,6 +1179,7 @@ AND args = %s
 		global $wpdb;
 
 		$sql = "DELETE c FROM {$wpdb->actionscheduler_claims} c LEFT JOIN {$wpdb->actionscheduler_actions} a ON a.claim_id = c.claim_id WHERE a.action_id IS NULL";
+		// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- No user input, no placeholders needed.
 		$deleted = $wpdb->query( $sql );
 
 		return false === $deleted ? false : (int) $deleted;

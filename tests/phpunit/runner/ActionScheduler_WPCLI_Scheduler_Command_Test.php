@@ -9,22 +9,22 @@ require_once __DIR__ . '/ActionScheduler_WPCLI_Scheduler_Command_Testable.php';
 class ActionScheduler_WPCLI_Scheduler_Command_Test extends PHPUnit\Framework\TestCase {
 
 	/**
-	 * The primary continuous flag enables continuous mode.
+	 * A polling interval enables polling mode.
 	 */
-	public function test_continuous_flag() {
+	public function test_poll_every_ms_enables_polling() {
 		$command = new ActionScheduler_WPCLI_Scheduler_Command_Testable();
-		$options = $command->parse_run_options_for_test( array( 'continuous' => true ) );
+		$options = $command->parse_run_options_for_test( array( 'poll-every-ms' => '1500' ) );
 
-		$this->assertTrue( $options['continuous'] );
+		$this->assertSame( 1500, $options['poll_every_ms'] );
 	}
 
 	/**
-	 * The keep-alive alias enables the same mode.
+	 * Polling is disabled when no interval is supplied.
 	 */
-	public function test_keep_alive_alias() {
+	public function test_polling_is_disabled_when_option_is_omitted() {
 		$command = new ActionScheduler_WPCLI_Scheduler_Command_Testable();
-		$options = $command->parse_run_options_for_test( array( 'keep-alive' => true ) );
+		$options = $command->parse_run_options_for_test( array() );
 
-		$this->assertTrue( $options['continuous'] );
+		$this->assertNull( $options['poll_every_ms'] );
 	}
 }

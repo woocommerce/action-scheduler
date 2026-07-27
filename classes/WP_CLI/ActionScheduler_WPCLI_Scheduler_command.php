@@ -81,23 +81,17 @@ class ActionScheduler_WPCLI_Scheduler_command extends WP_CLI_Command {
 	 * [--force]
 	 * : Whether to force execution despite the maximum number of concurrent processes being exceeded.
 	 *
-	 * [--continuous]
-	 * : Keep polling for new actions and recycle the worker in a fresh process when a limit is reached.
-	 *
-	 * [--keep-alive]
-	 * : Alias for --continuous.
-	 *
-	 * [--sleep=<seconds>]
-	 * : Seconds to wait when no actions are due or before recycling a continuous worker. Fractions are accepted. Default 3.
+	 * [--poll-every-ms=<milliseconds>]
+	 * : Keep polling for new actions at this interval and recycle the worker in a fresh process when a limit is reached.
 	 *
 	 * [--max-actions=<count>]
-	 * : Stop after processing this many actions. In continuous mode, recycle the worker. Default 0 means unlimited.
+	 * : Stop after processing this many actions. When polling, recycle the worker. Default 0 means unlimited.
 	 *
 	 * [--max-runtime=<seconds>]
-	 * : Stop after this many seconds. In continuous mode, recycle the worker. Default 0 means unlimited.
+	 * : Stop after this many seconds. When polling, recycle the worker. Default 0 means unlimited.
 	 *
 	 * [--memory-limit=<megabytes>]
-	 * : Stop at this memory usage. In continuous mode, recycle the worker. Default 0 means unlimited.
+	 * : Stop at this memory usage. When polling, recycle the worker. Default 0 means unlimited.
 	 *
 	 * @param array $args Positional arguments.
 	 * @param array $assoc_args Keyed arguments.
@@ -108,11 +102,11 @@ class ActionScheduler_WPCLI_Scheduler_command extends WP_CLI_Command {
 	public function run( $args, $assoc_args ) {
 		unset( $args );
 
-		$options             = $this->parse_run_options( $assoc_args );
-		$is_continuous_child = '1' === getenv( \Action_Scheduler\WP_CLI\Process_Supervisor::CHILD_ENVIRONMENT_VARIABLE );
+		$options          = $this->parse_run_options( $assoc_args );
+		$is_polling_child = '1' === getenv( \Action_Scheduler\WP_CLI\Process_Supervisor::CHILD_ENVIRONMENT_VARIABLE );
 
-		if ( $options['continuous'] && ! $is_continuous_child ) {
-			$supervisor = $this->create_process_supervisor( $assoc_args, $options['sleep'] );
+		if ( null !== $options['poll_every_ms'] && ! $is_polling_child ) {
+			$supervisor = $this->create_process_supervisor( $assoc_args, $options['poll_every_ms'] );
 			$this->register_signal_handlers( array( $supervisor, 'request_stop' ) );
 			$exit_code = $supervisor->run();
 
@@ -127,8 +121,7 @@ class ActionScheduler_WPCLI_Scheduler_command extends WP_CLI_Command {
 			return;
 		}
 
-		if ( $is_continuous_child ) {
-			$options['continuous'] = true;
+		if ( $is_polling_child ) {
 			$this->register_signal_handlers();
 		}
 
@@ -146,15 +139,20 @@ class ActionScheduler_WPCLI_Scheduler_command extends WP_CLI_Command {
 	 * @return array
 	 */
 	protected function parse_run_options( $assoc_args ) {
-		$batch = absint( \WP_CLI\Utils\get_flag_value( $assoc_args, 'batch-size', 100 ) );
-		$sleep = (float) \WP_CLI\Utils\get_flag_value( $assoc_args, 'sleep', 3 );
+		$batch               = absint( \WP_CLI\Utils\get_flag_value( $assoc_args, 'batch-size', 100 ) );
+		$poll_every_ms_value = \WP_CLI\Utils\get_flag_value( $assoc_args, 'poll-every-ms', null );
+		$poll_every_ms       = null;
 
 		if ( $batch < 1 ) {
 			WP_CLI::error( __( '--batch-size must be at least 1.', 'action-scheduler' ) );
 		}
 
-		if ( $sleep < 0 ) {
-			WP_CLI::error( __( '--sleep cannot be negative.', 'action-scheduler' ) );
+		if ( null !== $poll_every_ms_value ) {
+			$poll_every_ms = filter_var( $poll_every_ms_value, FILTER_VALIDATE_INT );
+
+			if ( false === $poll_every_ms || $poll_every_ms < 1 ) {
+				WP_CLI::error( __( '--poll-every-ms must be a positive integer.', 'action-scheduler' ) );
+			}
 		}
 
 		return array(
@@ -167,11 +165,7 @@ class ActionScheduler_WPCLI_Scheduler_command extends WP_CLI_Command {
 			'free_memory_on'     => absint( \WP_CLI\Utils\get_flag_value( $assoc_args, 'free-memory-on', 50 ) ),
 			'pause'              => (float) \WP_CLI\Utils\get_flag_value( $assoc_args, 'pause', 0 ),
 			'force'              => (bool) \WP_CLI\Utils\get_flag_value( $assoc_args, 'force', false ),
-			'continuous'         => (bool) (
-				\WP_CLI\Utils\get_flag_value( $assoc_args, 'continuous', false )
-				|| \WP_CLI\Utils\get_flag_value( $assoc_args, 'keep-alive', false )
-			),
-			'sleep'              => $sleep,
+			'poll_every_ms'      => $poll_every_ms,
 			'max_actions'        => absint( \WP_CLI\Utils\get_flag_value( $assoc_args, 'max-actions', 0 ) ),
 			'max_runtime'        => absint( \WP_CLI\Utils\get_flag_value( $assoc_args, 'max-runtime', 0 ) ),
 			'memory_limit'       => absint( \WP_CLI\Utils\get_flag_value( $assoc_args, 'memory-limit', 0 ) ),
@@ -209,11 +203,11 @@ class ActionScheduler_WPCLI_Scheduler_command extends WP_CLI_Command {
 				&& ( 0 === $options['batches'] || $batches_completed < $options['batches'] )
 			) {
 				if (
-					$options['continuous']
+					null !== $options['poll_every_ms']
 					&& ! $options['force']
 					&& $runner->has_maximum_concurrent_batches()
 				) {
-					$this->interruptible_sleep( $options['sleep'], $options['max_runtime'], $started_at );
+					$this->interruptible_sleep( $options['poll_every_ms'] / 1000, $options['max_runtime'], $started_at );
 					continue;
 				}
 
@@ -224,11 +218,11 @@ class ActionScheduler_WPCLI_Scheduler_command extends WP_CLI_Command {
 
 				$total = $runner->setup( $batch_size, $options['hooks'], $options['group'], $options['force'] );
 				if ( 0 === $total ) {
-					if ( ! $options['continuous'] ) {
+					if ( null === $options['poll_every_ms'] ) {
 						break;
 					}
 
-					$this->interruptible_sleep( $options['sleep'], $options['max_runtime'], $started_at );
+					$this->interruptible_sleep( $options['poll_every_ms'] / 1000, $options['max_runtime'], $started_at );
 					continue;
 				}
 
@@ -265,15 +259,13 @@ class ActionScheduler_WPCLI_Scheduler_command extends WP_CLI_Command {
 	}
 
 	/**
-	 * Create a supervisor for continuous execution.
+	 * Create a supervisor for polling execution.
 	 *
-	 * @param array $assoc_args Original command arguments.
-	 * @param float $sleep      Restart delay.
+	 * @param array $assoc_args    Original command arguments.
+	 * @param int   $poll_every_ms Polling and restart interval in milliseconds.
 	 * @return \Action_Scheduler\WP_CLI\Process_Supervisor
 	 */
-	protected function create_process_supervisor( $assoc_args, $sleep ) {
-		unset( $assoc_args['continuous'], $assoc_args['keep-alive'] );
-
+	protected function create_process_supervisor( $assoc_args, $poll_every_ms ) {
 		$command = 'action-scheduler run';
 		if ( ! empty( $assoc_args ) ) {
 			$command .= \WP_CLI\Utils\assoc_args_to_str( $assoc_args );
@@ -281,7 +273,7 @@ class ActionScheduler_WPCLI_Scheduler_command extends WP_CLI_Command {
 
 		return new \Action_Scheduler\WP_CLI\Process_Supervisor(
 			$command,
-			$sleep,
+			$poll_every_ms / 1000,
 			function () {
 				return $this->stop_requested;
 			}
@@ -314,7 +306,7 @@ class ActionScheduler_WPCLI_Scheduler_command extends WP_CLI_Command {
 	}
 
 	/**
-	 * Register graceful stop handlers for continuous mode.
+	 * Register graceful stop handlers for polling mode.
 	 *
 	 * @param callable|null $on_stop Optional callback invoked when a signal arrives.
 	 */
@@ -325,7 +317,7 @@ class ActionScheduler_WPCLI_Scheduler_command extends WP_CLI_Command {
 			|| ! defined( 'SIGINT' )
 			|| ! defined( 'SIGTERM' )
 		) {
-			WP_CLI::error( __( 'Continuous mode requires the PHP PCNTL extension.', 'action-scheduler' ) );
+			WP_CLI::error( __( 'Polling mode requires the PHP PCNTL extension.', 'action-scheduler' ) );
 		}
 
 		pcntl_async_signals( true );

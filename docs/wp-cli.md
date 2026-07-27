@@ -45,15 +45,13 @@ These are the commands available to use with Action Scheduler:
     * `--max-actions` - Stop after processing this many actions. Default `0` means unlimited.
     * `--max-runtime` - Stop after this many seconds. Default `0` means unlimited.
     * `--memory-limit` - Stop when memory usage reaches this value in megabytes. Default `0` means unlimited.
-    * `--continuous` - Keep polling for new actions. Workers are launched in fresh processes and recycled when a configured limit is reached.
-    * `--keep-alive` - Alias for `--continuous`.
-    * `--sleep` - In continuous mode, seconds to wait when no actions are due or before recycling a worker. Fractions are accepted. Default `3`.
+    * `--poll-every-ms=<milliseconds>` - Keep polling for new actions at this positive-integer interval. Workers are launched in fresh processes and recycled when a configured limit is reached.
     * `--force` - By default, Action Scheduler limits the number of concurrent batches that can be run at once to ensure the server does not get overwhelmed. Using the `--force` flag overrides this behavior to force the WP CLI queue to run.
 
-    Continuous mode is intended to run under a process monitor such as systemd or Supervisor and requires PHP's PCNTL extension. The current action is allowed to finish when the process receives `SIGINT` or `SIGTERM`; the worker exits before starting another action. Each worker is a subprocess with a fresh WordPress bootstrap. Use the action, runtime, or memory limit to recycle it periodically:
+    Polling mode is enabled by specifying `--poll-every-ms` and is intended to run under a process monitor such as systemd or Supervisor. It requires PHP's PCNTL extension. The current action is allowed to finish when the process receives `SIGINT` or `SIGTERM`; the worker exits before starting another action. Each worker is a subprocess with a fresh WordPress bootstrap. Use the action, runtime, or memory limit to recycle it periodically:
 
     ```sh
-    wp action-scheduler run --continuous --group=emails --sleep=1 --max-runtime=3600 --memory-limit=256
+    wp action-scheduler run --poll-every-ms=1000 --group=emails --max-runtime=3600 --memory-limit=256
     ```
     
 * `action-scheduler action cancel`

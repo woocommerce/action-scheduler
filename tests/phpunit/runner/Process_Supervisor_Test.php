@@ -3,7 +3,7 @@
 require_once __DIR__ . '/Process_Supervisor_Testable.php';
 
 /**
- * Tests for the continuous process supervisor.
+ * Tests for the polling process supervisor.
  */
 class Process_Supervisor_Test extends PHPUnit\Framework\TestCase {
 

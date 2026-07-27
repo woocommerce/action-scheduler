@@ -12,12 +12,12 @@ class Process_Supervisor {
 	/**
 	 * Marks the launched process as the worker rather than the supervisor.
 	 */
-	const CHILD_ENVIRONMENT_VARIABLE = 'ACTION_SCHEDULER_CONTINUOUS_CHILD';
+	const CHILD_ENVIRONMENT_VARIABLE = 'ACTION_SCHEDULER_POLLING_CHILD';
 
 	/**
 	 * Passes the supervisor stop file to the worker.
 	 */
-	const STOP_FILE_ENVIRONMENT_VARIABLE = 'ACTION_SCHEDULER_CONTINUOUS_STOP_FILE';
+	const STOP_FILE_ENVIRONMENT_VARIABLE = 'ACTION_SCHEDULER_POLLING_STOP_FILE';
 
 	/**
 	 * Command to launch.

@@ -1,6 +1,7 @@
 *** Changelog ***
 
 = 4.1.0 - xxxx-xx-xx =
+* Dev - Update CI test matrix: replace EOL database images (mysql:5.6, mariadb:10.4) with maintained versions (mysql:8.0, mariadb:10.11), and add Docker Hub credentials to service containers to prevent rate-limiting failures.
 * Use `wp_admin_notice()` to render admin notices, instead of custom HTML.
 * Fix an oversight in the lock implementation (used to rate-limit async request runners) that could result in a database error in unusual cases.
 * Fix the behavior of the `wp action-schedule clean` command so that the `--before` option correctly defaults to 31 days ago.

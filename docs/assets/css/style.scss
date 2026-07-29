@@ -55,3 +55,60 @@ footer {
 		animation:octocat-wave 560ms ease-in-out
 	}
 }
+
+// Light colour scheme for visitors whose OS/browser prefers a light theme.
+// See https://github.com/woocommerce/action-scheduler/issues/1321.
+@media (prefers-color-scheme: light) {
+	body {
+		background: #ebf4fa;
+		color: #021b34;
+
+		h1, h2, h3, h4, h5 {
+			color: #036085;
+			text-shadow: none;
+		}
+
+		header h1 a {
+			color: #036085;
+			text-decoration: none;
+		}
+
+		header p:first-child a {
+			text-decoration: none;
+		}
+
+		header p:first-child a:hover {
+			text-decoration: underline;
+		}
+
+		header h2 {
+			color: #021b34;
+		}
+
+		a {
+			color: #036085;
+			text-decoration: underline;
+		}
+
+		a:hover {
+			color: #02384d;
+		}
+
+		ul li {
+			list-style-image: none;
+		}
+
+		code.highlighter-rouge {
+			background: #c4e2f5;
+			color: inherit;
+		}
+
+		header a.github-corner svg path {
+			fill: #c4e2f5;
+		}
+
+		header a.github-corner svg path.octo-body {
+			fill: #02506e;
+		}
+	}
+}

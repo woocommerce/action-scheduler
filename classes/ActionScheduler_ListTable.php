@@ -67,6 +67,13 @@ class ActionScheduler_ListTable extends ActionScheduler_Abstract_ListTable {
 	protected static $did_notification = false;
 
 	/**
+	 * Statuses for which the Claim ID column is shown.
+	 *
+	 * @var string[]
+	 */
+	private static $statuses_with_claim_id = array( 'in-progress', 'failed' );
+
+	/**
 	 * Array of seconds for common time periods, like week or month, alongside an internationalised string representation, i.e. "Day" or "Days"
 	 *
 	 * @var array
@@ -118,7 +125,7 @@ class ActionScheduler_ListTable extends ActionScheduler_Abstract_ListTable {
 
 		if ( empty( $request_status ) ) {
 			$this->sort_by[] = 'status';
-		} elseif ( in_array( $request_status, array( 'in-progress', 'failed' ), true ) ) {
+		} elseif ( in_array( $request_status, self::$statuses_with_claim_id, true ) ) {
 			$this->columns  += array( 'claim_id' => __( 'Claim ID', 'action-scheduler' ) );
 			$this->sort_by[] = 'claim_id';
 		}
@@ -387,7 +394,7 @@ class ActionScheduler_ListTable extends ActionScheduler_Abstract_ListTable {
 					$claim_count
 				),
 			);
-		} elseif ( $this->store->has_pending_actions_due() ) {
+		} elseif ( ! empty( $this->status_counts['past-due'] ) ) {
 
 			$async_request_lock_expiration = ActionScheduler::lock()->get_expiration( 'async-request-runner' );
 
@@ -618,6 +625,7 @@ class ActionScheduler_ListTable extends ActionScheduler_Abstract_ListTable {
 		$total_items = $this->store->query_actions( $query, 'count' );
 
 		$status_labels = $this->store->get_status_labels();
+		$show_claim_id = in_array( $this->get_request_status(), self::$statuses_with_claim_id, true );
 
 		foreach ( $this->store->query_actions( $query ) as $action_id ) {
 			try {
@@ -628,15 +636,16 @@ class ActionScheduler_ListTable extends ActionScheduler_Abstract_ListTable {
 			if ( is_a( $action, 'ActionScheduler_NullAction' ) ) {
 				continue;
 			}
+			$status_name               = $this->store->get_status( $action_id );
 			$this->items[ $action_id ] = array(
 				'ID'          => $action_id,
 				'hook'        => $action->get_hook(),
-				'status_name' => $this->store->get_status( $action_id ),
-				'status'      => $status_labels[ $this->store->get_status( $action_id ) ],
+				'status_name' => $status_name,
+				'status'      => $status_labels[ $status_name ],
 				'args'        => $action->get_args(),
 				'group'       => $action->get_group(),
 				'log_entries' => $this->logger->get_logs( $action_id ),
-				'claim_id'    => $this->store->get_claim_id( $action_id ),
+				'claim_id'    => $show_claim_id ? $this->store->get_claim_id( $action_id ) : null,
 				'recurrence'  => $this->get_recurrence( $action ),
 				'schedule'    => $action->get_schedule(),
 			);
@@ -649,14 +658,8 @@ class ActionScheduler_ListTable extends ActionScheduler_Abstract_ListTable {
 				'total_pages' => ceil( $total_items / $per_page ),
 			)
 		);
-	}
 
-	/**
-	 * Prints the available statuses so the user can click to filter.
-	 */
-	protected function display_filter_by_status() {
 		$this->status_counts = $this->store->action_counts() + $this->store->extra_action_counts();
-		parent::display_filter_by_status();
 	}
 
 	/**

@@ -98,7 +98,7 @@ abstract class ActionScheduler_Abstract_ListTable extends WP_List_Table {
 	/**
 	 * The status name => count combinations for this table's items. Used to display status filters.
 	 *
-	 * @var array
+	 * @var array<string,int>
 	 */
 	protected $status_counts = array();
 

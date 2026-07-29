@@ -3,6 +3,8 @@
 = 4.1.0 - xxxx-xx-xx =
 * Use `wp_admin_notice()` to render admin notices, instead of custom HTML.
 * Fix an oversight in the lock implementation (used to rate-limit async request runners) that could result in a database error in unusual cases.
+* Add protections to guard against the risk of object-injection/deserialization attacks when retrieving stored schedule data.
+* Dev - Add filters (`action_scheduler_allowed_nested_schedule_classes`, `action_scheduler_enforce_schedule_allowed_classes`) and an action (`action_scheduler_unexpected_schedule_class`) to tune and observe schedule deserialization.
 * Fix the behavior of the `wp action-schedule clean` command so that the `--before` option correctly defaults to 31 days ago.
 * Dev - Updates the `wpPostStore` to capture any database errors that might occur while claiming actions.
 * Performance - Reduce the number of SQL queries on Action Scheduler admin page.

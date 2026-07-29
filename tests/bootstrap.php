@@ -32,6 +32,10 @@ if ( class_exists( 'PHPUnit\Framework\TestResult' ) ) { // PHPUnit 6.0 or newer.
 }
 
 include_once 'phpunit/helpers/ActionScheduler_Callbacks.php';
+include_once 'phpunit/helpers/ActionScheduler_Test_Evil_Gadget.php';
+include_once 'phpunit/helpers/ActionScheduler_Test_Custom_Schedule.php';
+include_once 'phpunit/helpers/ActionScheduler_Test_Schedule_Helper.php';
+include_once 'phpunit/helpers/ActionScheduler_Test_Custom_Schedule_With_Property.php';
 include_once 'phpunit/ActionScheduler_Mocker.php';
 include_once 'phpunit/ActionScheduler_Mock_Async_Request_QueueRunner.php';
 include_once 'phpunit/jobstore/AbstractStoreTest.php';

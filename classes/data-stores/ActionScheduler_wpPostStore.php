@@ -238,13 +238,52 @@ class ActionScheduler_wpPostStore extends ActionScheduler_Store {
 		$args = json_decode( $post->post_content, true );
 		$this->validate_args( $args, $post->ID );
 
-		$schedule = get_post_meta( $post->ID, self::SCHEDULE_META_KEY, true );
+		$schedule = $this->get_schedule_from_post_meta( $post->ID );
 		$this->validate_schedule( $schedule, $post->ID );
 
 		$group = wp_get_object_terms( $post->ID, self::GROUP_TAXONOMY, array( 'fields' => 'names' ) );
 		$group = empty( $group ) ? '' : reset( $group );
 
 		return ActionScheduler::factory()->get_stored_action( $this->get_action_status_by_post_status( $post->post_status ), $hook, $args, $schedule, $group );
+	}
+
+	/**
+	 * Read a scheduled action's schedule from post meta without instantiating unexpected classes.
+	 *
+	 * Using get_post_meta() would run the stored blob through maybe_unserialize(), instantiating
+	 * whatever classes it names before we can vet them. Instead we read the raw serialized value and
+	 * hand it to ActionScheduler_ScheduleDeserializer, which only instantiates a valid schedule (and its
+	 * vetted supporting classes). @see https://github.com/woocommerce/action-scheduler/issues/1318
+	 *
+	 * @param int $post_id Post ID of the scheduled action.
+	 * @return mixed The schedule object, false if unusable, or the raw meta value when it is not a
+	 *               serialized object (left for validate_schedule() to reject, as before).
+	 */
+	protected function get_schedule_from_post_meta( $post_id ) {
+		global $wpdb;
+
+		// Direct, uncached query is intentional: we need the raw serialized value before the meta API
+		// runs it through maybe_unserialize(), so we bypass get_post_meta() and its cache here.
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+		$raw = $wpdb->get_var(
+			$wpdb->prepare(
+				"SELECT meta_value FROM {$wpdb->postmeta} WHERE post_id = %d AND meta_key = %s ORDER BY meta_id ASC LIMIT 1",
+				$post_id,
+				self::SCHEDULE_META_KEY
+			)
+		);
+
+		if ( null === $raw ) {
+			return false;
+		}
+
+		// Schedule objects are stored serialized by the meta API. A non-serialized value cannot be a
+		// schedule object, so there is nothing to protect against — return it as-is for validation.
+		if ( ! is_serialized( $raw ) ) {
+			return $raw;
+		}
+
+		return ActionScheduler_ScheduleDeserializer::unserialize( $raw );
 	}
 
 	/**

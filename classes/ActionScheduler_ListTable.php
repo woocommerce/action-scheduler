@@ -330,6 +330,22 @@ class ActionScheduler_ListTable extends ActionScheduler_Abstract_ListTable {
 	}
 
 	/**
+	 * Render the hook name and action ID.
+	 *
+	 * @param array $row Action data.
+	 * @return string
+	 */
+	public function column_hook( $row ) {
+		$action_id = sprintf(
+			/* translators: %d: Action ID. */
+			__( 'ID: %d', 'action-scheduler' ),
+			absint( $row['ID'] )
+		);
+
+		return esc_html( $row['hook'] ) . '<br><small>' . esc_html( $action_id ) . '</small>' . $this->maybe_render_actions( $row, 'hook' );
+	}
+
+	/**
 	 * Only display row actions for pending actions.
 	 *
 	 * @param array  $row         Row to render.
@@ -666,7 +682,7 @@ class ActionScheduler_ListTable extends ActionScheduler_Abstract_ListTable {
 	 * Get the text to display in the search box on the list table.
 	 */
 	protected function get_search_box_button_text() {
-		return __( 'Search hook, args and claim ID', 'action-scheduler' );
+		return __( 'Search hook, args, action ID and claim ID', 'action-scheduler' );
 	}
 
 	/**

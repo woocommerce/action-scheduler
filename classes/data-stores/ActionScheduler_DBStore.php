@@ -648,10 +648,11 @@ AND args = %s
 				$sql_params[] = sprintf( '%%%s%%', $query['search'] );
 			}
 
-			$search_claim_id = (int) $query['search'];
-			if ( $search_claim_id ) {
-				$sql         .= ' OR a.claim_id = %d';
-				$sql_params[] = $search_claim_id;
+			$search_id = (int) $query['search'];
+			if ( $search_id ) {
+				$sql         .= ' OR a.action_id = %d OR a.claim_id = %d';
+				$sql_params[] = $search_id;
+				$sql_params[] = $search_id;
 			}
 
 			$sql .= ')';

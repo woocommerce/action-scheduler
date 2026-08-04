@@ -115,6 +115,18 @@ abstract class AbstractStoreTest extends ActionScheduler_UnitTestCase {
 		);
 	}
 
+	public function test_query_actions_search_by_action_id() {
+		$store    = $this->get_store();
+		$schedule = new ActionScheduler_SimpleSchedule( as_get_datetime_object( 'tomorrow' ) );
+
+		$action_id       = $store->save_action( new ActionScheduler_Action( 'search_action_id', array( 'first' ), $schedule ) );
+		$other_action_id = $store->save_action( new ActionScheduler_Action( 'search_action_id', array( 'second' ), $schedule ) );
+		$results         = array_map( 'intval', $store->query_actions( array( 'search' => (string) $action_id ) ) );
+
+		$this->assertContains( $action_id, $results );
+		$this->assertNotContains( $other_action_id, $results );
+	}
+
 	// phpcs:ignore Squiz.PHP.CommentedOutCode.Found
 	// End tests for \ActionScheduler_Store::query_actions().
 

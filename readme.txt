@@ -1,7 +1,7 @@
 === Action Scheduler ===
 Contributors: Automattic, wpmuguru, vedjain, konamiman, barryhughes-1, crstauf, jorgeatorres, coreymckrill, prettyboymp, ovidiul
 Tags: scheduler, cron
-Stable tag: 4.0.0
+Stable tag: 4.1.0
 License: GPLv3
 Requires at least: 6.8
 Tested up to: 7.0
@@ -46,6 +46,18 @@ Action Scheduler is developed and maintained by [Automattic](http://automattic.c
 Collaboration is cool. We'd love to work with you to improve Action Scheduler. [Pull Requests](https://github.com/woocommerce/action-scheduler/pulls) welcome.
 
 == Changelog ==
+
+= 4.1.0 - 2026-08-05 =
+* Fix - Correct an oversight in the lock implementation (used to rate-limit async request runners) that could leave a lock permanently stuck and result in database errors in unusual cases.
+* Fix - Correct the behavior of the `wp action-scheduler clean` command so that the `--before` option defaults to 31 days ago.
+* Performance - Reduce the number of SQL queries on the Action Scheduler admin page.
+* Performance - Cache resolved group IDs to reduce the number of SQL queries.
+* Performance - Use the WordPress caching layer for the option lock component.
+* Enhancement - Display action IDs in the admin list and allow searching by action ID.
+* Enhancement - Use `wp_admin_notice()` to render admin notices, instead of custom HTML.
+* Security - Add protections to guard against the risk of object-injection/deserialization attacks when retrieving stored schedule data.
+* Dev - Include the underlying database error in the exception thrown when the legacy post store fails to claim actions.
+* Dev - Add filters (`action_scheduler_allowed_nested_schedule_classes`, `action_scheduler_enforce_schedule_allowed_classes`) and an action (`action_scheduler_unexpected_schedule_class`) to tune and observe schedule deserialization.
 
 = 4.0.0 - 2026-06-16 =
 * Breaking change: action args are taken into account when scheduling unique actions.

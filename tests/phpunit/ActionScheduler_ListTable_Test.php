@@ -16,7 +16,7 @@ class ActionScheduler_ListTable_Test extends ActionScheduler_UnitTestCase {
 			)
 		);
 
-		$this->assertStringContainsString( '&lt;script&gt;test&lt;/script&gt;', $output );
+		$this->assertStringContainsString( '&lt;script&gt;test&lt;/script&gt;', $output, 'HTML elements will be escaped' );
 		$this->assertStringContainsString( 'ID: 123', $output );
 		$this->assertStringNotContainsString( '<script>', $output );
 	}

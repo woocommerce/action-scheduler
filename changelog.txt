@@ -1,6 +1,7 @@
 *** Changelog ***
 
 = 4.1.0 - xxxx-xx-xx =
+* Enhancement - Display action IDs in the admin list and allow searching by action ID.
 * Use `wp_admin_notice()` to render admin notices, instead of custom HTML.
 * Fix an oversight in the lock implementation (used to rate-limit async request runners) that could result in a database error in unusual cases.
 * Add protections to guard against the risk of object-injection/deserialization attacks when retrieving stored schedule data.

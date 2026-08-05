@@ -115,6 +115,12 @@ class ActionScheduler_ListTable extends ActionScheduler_Abstract_ListTable {
 			'group',
 		);
 
+		/*
+		 * Only the emptiness of this property matters here: it is what causes the search box to be
+		 * rendered. The individual entries are unused, because this class overrides prepare_items()
+		 * and delegates searching to the store, rather than using the parent's
+		 * get_items_query_search().
+		 */
 		$this->search_by = array(
 			'hook',
 			'args',
@@ -327,6 +333,22 @@ class ActionScheduler_ListTable extends ActionScheduler_Abstract_ListTable {
 		$date = $log_entry->get_date();
 		$date->setTimezone( $timezone );
 		return sprintf( '<li><strong>%s</strong><br/>%s</li>', esc_html( $date->format( 'Y-m-d H:i:s O' ) ), esc_html( $log_entry->get_message() ) );
+	}
+
+	/**
+	 * Render the hook name and action ID.
+	 *
+	 * @param array $row Action data.
+	 * @return string
+	 */
+	public function column_hook( $row ) {
+		$action_id = sprintf(
+			/* translators: %d: Action ID. */
+			__( 'ID: %d', 'action-scheduler' ),
+			absint( $row['ID'] )
+		);
+
+		return esc_html( $row['hook'] ) . '<br><small>' . esc_html( $action_id ) . '</small>' . $this->maybe_render_actions( $row, 'hook' );
 	}
 
 	/**
@@ -666,7 +688,7 @@ class ActionScheduler_ListTable extends ActionScheduler_Abstract_ListTable {
 	 * Get the text to display in the search box on the list table.
 	 */
 	protected function get_search_box_button_text() {
-		return __( 'Search hook, args and claim ID', 'action-scheduler' );
+		return __( 'Search hook, args, action ID and claim ID', 'action-scheduler' );
 	}
 
 	/**

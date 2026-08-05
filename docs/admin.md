@@ -12,10 +12,11 @@ The administration interface is accessible through both:
 
 Among other tasks, from the admin screen you can:
 
-* run a pending action
-* view the scheduled actions with a specific status, like the all actions which have failed or are in-progress (https://cldup.com/NNTwE88Xl8.png).
-* view the log entries for a specific action to find out why it failed.
-* sort scheduled actions by hook name, scheduled date, claim ID or group name.
+* Run a pending action.
+* View the scheduled actions with a specific status, like all actions which have failed or are in-progress [(screenshot)](https://cldup.com/NNTwE88Xl8.png).
+* View the log entries for a specific action to find out why it failed.
+* Sort scheduled actions by hook name, scheduled date, group, claim ID or status.
+* Search for actions by hook, args, action ID or claim ID.
 
 Still have questions? Check out the [FAQ](/faq).
 

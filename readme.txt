@@ -47,6 +47,23 @@ Collaboration is cool. We'd love to work with you to improve Action Scheduler. [
 
 == Changelog ==
 
+= 4.1.0 - 2026-08-05 =
+* Create release workflow fixes.
+* Merge release/4.0.0 into trunk.
+* Add release instructions and restrict releases to trunk or newer.
+* Use WP 6.4 Admin Notices.
+* Consolidate dev scripts around Composer and other tooling fixes.
+* Include database error in the exception message.
+* Option lock stuck locked with ''.
+* [Performance] Reduce the number of SQL queries on scheduler admin page.
+* [Performance] Cache resolved group IDs to reduce the number of SQL queries.
+* [Performance] Use the WordPress caching layer for the option lock component.
+* Fix default 'before' date in WP-CLI clean command #1343.
+* Add light colour scheme for GitHub Pages docs site.
+* Improve support for agents.
+* Schedule deserialization hardening.
+* Add action IDs to admin list and search.
+
 = 4.0.0 - 2026-06-16 =
 * Breaking change: action args are taken into account when scheduling unique actions.
 * Breaking change: failed actions are now automatically purged after 3 months by default, controlled by the `action_scheduler_retention_period_for_failed` filter.

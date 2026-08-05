@@ -1,7 +1,7 @@
 === Action Scheduler ===
 Contributors: Automattic, wpmuguru, vedjain, konamiman, barryhughes-1, crstauf, jorgeatorres, coreymckrill, prettyboymp, ovidiul
 Tags: scheduler, cron
-Stable tag: 4.0.0
+Stable tag: 4.1.0
 License: GPLv3
 Requires at least: 6.8
 Tested up to: 7.0

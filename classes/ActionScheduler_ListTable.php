@@ -115,6 +115,12 @@ class ActionScheduler_ListTable extends ActionScheduler_Abstract_ListTable {
 			'group',
 		);
 
+		/*
+		 * Only the emptiness of this property matters here: it is what causes the search box to be
+		 * rendered. The individual entries are unused, because this class overrides prepare_items()
+		 * and delegates searching to the store, rather than using the parent's
+		 * get_items_query_search().
+		 */
 		$this->search_by = array(
 			'hook',
 			'args',

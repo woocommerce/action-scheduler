@@ -48,21 +48,16 @@ Collaboration is cool. We'd love to work with you to improve Action Scheduler. [
 == Changelog ==
 
 = 4.1.0 - 2026-08-05 =
-* Create release workflow fixes.
-* Merge release/4.0.0 into trunk.
-* Add release instructions and restrict releases to trunk or newer.
-* Use WP 6.4 Admin Notices.
-* Consolidate dev scripts around Composer and other tooling fixes.
-* Include database error in the exception message.
-* Option lock stuck locked with ''.
-* [Performance] Reduce the number of SQL queries on scheduler admin page.
-* [Performance] Cache resolved group IDs to reduce the number of SQL queries.
-* [Performance] Use the WordPress caching layer for the option lock component.
-* Fix default 'before' date in WP-CLI clean command #1343.
-* Add light colour scheme for GitHub Pages docs site.
-* Improve support for agents.
-* Schedule deserialization hardening.
-* Add action IDs to admin list and search.
+* Fix - Correct an oversight in the lock implementation (used to rate-limit async request runners) that could leave a lock permanently stuck and result in database errors in unusual cases.
+* Fix - Correct the behavior of the `wp action-scheduler clean` command so that the `--before` option defaults to 31 days ago.
+* Performance - Reduce the number of SQL queries on the Action Scheduler admin page.
+* Performance - Cache resolved group IDs to reduce the number of SQL queries.
+* Performance - Use the WordPress caching layer for the option lock component.
+* Enhancement - Display action IDs in the admin list and allow searching by action ID.
+* Enhancement - Use `wp_admin_notice()` to render admin notices, instead of custom HTML.
+* Security - Add protections to guard against the risk of object-injection/deserialization attacks when retrieving stored schedule data.
+* Dev - Include the underlying database error in the exception thrown when the legacy post store fails to claim actions.
+* Dev - Add filters (`action_scheduler_allowed_nested_schedule_classes`, `action_scheduler_enforce_schedule_allowed_classes`) and an action (`action_scheduler_unexpected_schedule_class`) to tune and observe schedule deserialization.
 
 = 4.0.0 - 2026-06-16 =
 * Breaking change: action args are taken into account when scheduling unique actions.

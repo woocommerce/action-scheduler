@@ -7,6 +7,8 @@ Action Scheduler provides a range of functions for scheduling hooks to run at so
 
 To understand the scheduling functions, it can help to think of them as extensions to WordPress' `do_action()` function that add the ability to delay and repeat when the hook will be triggered.
 
+A scheduled timestamp is the earliest time an action is eligible to run, not a guarantee that it will run at that exact time. The action may run later depending on when the queue runner starts and how many actions are ahead of it in the queue.
+
 ## WP-Cron APIs vs. Action Scheduler APIs
 
 The Action Scheduler API functions are designed to mirror the WordPress [WP-Cron API functions](http://codex.wordpress.org/Category:WP-Cron_Functions).

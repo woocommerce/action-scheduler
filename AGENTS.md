@@ -116,7 +116,9 @@ Plugins can also load Action Scheduler in atypical ways, occasionally leaving an
 
 ## Backward Compatibility
 
-Any change to a **public or externally exposed** class, interface, function, or method signature is **high-risk** and **must state its backward-compatibility impact in the PR description**. Note that the parameters added to the published functions over time (`$unique`, `$priority`) are all optional and trailing: that is the shape a safe change to a published signature takes.
+Any change to a **public or externally exposed** class, interface, function, or method signature is **high-risk** and **must state its backward-compatibility impact in the PR description**. Note that the parameters added to the published functions over time (`$unique`, `$priority`) are all optional and trailing: that is considered to be a safe change, but should be supported by an update to `as_supports()` (and its list of supported features), as detailed elsewhere in the document.
+
+Parameter names should never be changed for public methods or functions, as this will cause errors if consumers take advantage of named argument syntax.
 
 Treat a symbol as **externally exposed** when it is implemented or consumed outside this repository. When in doubt, assume it is exposed and state the BC impact — this is a library embedded in other people's plugins, so every consumer is code we cannot see, and a fatal introduced here fatals whatever host plugin bundled us.
 

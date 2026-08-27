@@ -24,6 +24,7 @@ on:
 jobs:
   prep:
     if: ${{ inputs.step == 'release prep' }}
+    timeout-minutes: 5
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -225,6 +226,7 @@ jobs:
 
   release:
     if: ${{ inputs.step == 'release' }}
+    timeout-minutes: 15
     runs-on: ubuntu-latest
     permissions:
       contents: write

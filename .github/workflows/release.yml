@@ -226,7 +226,7 @@ jobs:
 
   release:
     if: ${{ inputs.step == 'release' }}
-    timeout-minutes: 5
+    timeout-minutes: 15
     runs-on: ubuntu-latest
     permissions:
       contents: write

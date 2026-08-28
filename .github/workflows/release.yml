@@ -54,7 +54,7 @@ jobs:
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
           repository: woocommerce/woo-product-deploy
-          ref: 8b790ecbac9e38798c44c31a5ae9747345efbfff # trunk @ 2026-06-15
+          ref: 1f35b88631478d8f57aa454f81363bb7eed309d3 # trunk @ 2026-08-24
           path: woo-product-deploy
           token: ${{ secrets.ORG_DEPLOY_SECRET }}
           sparse-checkout: .github/workflows/bin
@@ -266,7 +266,7 @@ jobs:
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
           repository: woocommerce/woo-product-deploy
-          ref: 8b790ecbac9e38798c44c31a5ae9747345efbfff # trunk @ 2026-06-15
+          ref: 1f35b88631478d8f57aa454f81363bb7eed309d3 # trunk @ 2026-08-24
           path: ./.github/actions/woo-product-deploy
           token: ${{ secrets.ORG_DEPLOY_SECRET }}
 

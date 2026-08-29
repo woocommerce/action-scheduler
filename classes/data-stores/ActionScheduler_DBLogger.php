@@ -121,6 +121,11 @@ class ActionScheduler_DBLogger extends ActionScheduler_Logger {
 	 * @param int $action_id Action ID.
 	 */
 	public function clear_deleted_action_logs( $action_id ) {
+		if ( defined( 'WP_CLI' ) && WP_CLI ) {
+			global $wpdb;
+			$wpdb->delete( $wpdb->actionscheduler_logs, array( 'action_id' => $action_id ), array( '%d' ) );
+			return;
+		}
 		$this->clear_deleted_action_logs_single_batch( $action_id, -1, 1, 4000 );
 	}
 

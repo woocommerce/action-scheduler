@@ -1167,6 +1167,26 @@ AND args = %s
 	}
 
 	/**
+	 * Purge claim records that are no longer referenced by any action.
+	 *
+	 * @return int|false Number of orphan claims deleted, or false on failure.
+	 */
+	public function purge_orphan_claims() {
+		/**
+		 * Global.
+		 *
+		 * @var \wpdb $wpdb
+		 */
+		global $wpdb;
+
+		$sql = "DELETE c FROM {$wpdb->actionscheduler_claims} c LEFT JOIN {$wpdb->actionscheduler_actions} a ON a.claim_id = c.claim_id WHERE a.action_id IS NULL";
+		// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- No user input, no placeholders needed.
+		$deleted = $wpdb->query( $sql );
+
+		return false === $deleted ? false : (int) $deleted;
+	}
+
+	/**
 	 * Return an action's claim ID, as stored in the claim_id column.
 	 *
 	 * @param string $action_id Action ID.

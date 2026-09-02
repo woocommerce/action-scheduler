@@ -172,6 +172,19 @@ WordPress exposes more contracts than class and function signatures. The followi
 ## Best practices and recommendations
 
 - The minimum supported PHP version is a hard constraint on the syntax we can use, not just a metadata field. Code must run on the version noted by `Requires PHP:` in ./action-scheduler.php (7.2 at time of writing), which rules out arrow functions, typed properties, `??=`, constructor property promotion, and other later additions. This is the most common way otherwise-sound code fails the test matrix. Note that phpcs is configured to check against this floor (see the `testVersion` config in ./phpcs.xml), but its `minimum_supported_wp_version` setting is *not* currently kept in step with the `Requires at least:` field, so it should not be treated as a guide to the WordPress floor.
+- Never use the `%i` identifier placeholder in `$wpdb->prepare()`. WordPress core supports it, but the database layer of a key deployment target does not, and a query that uses it fails outright there. Note that phpcs does not flag `%i`, so this is a review-time check. Use `%s`, `%d` and `%f` for values as usual, and handle identifiers (table and column names) as follows:
+  - Our custom tables are exposed as `$wpdb->actionscheduler_actions`, `$wpdb->actionscheduler_claims`, `$wpdb->actionscheduler_groups` and `$wpdb->actionscheduler_logs` (registered by `ActionScheduler_Abstract_Schema::register_tables()`), and the legacy store uses `$wpdb->posts` and friends. Interpolate these directly into the query string. The `WordPress.DB.PreparedSQL` sniff recognizes `$wpdb` properties as trusted, so no `phpcs:ignore` is needed for them; when the SQL is assembled in a variable before being passed to `prepare()`, the existing `// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared` convention applies.
+  - Any other table name should be built in a variable from a trusted source (`$wpdb->prefix . 'actionscheduler_actions'` is the established fallback) and interpolated, with `// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared` on that line. The sniff cannot tell a trusted table name from user input, so the ignore records that a human has made that evaluation.
+  - Column names, sort keys and other identifiers derived from input must be checked against an allowlist of known names before interpolation, as `ActionScheduler_DBStore::get_query_actions_sql()` does for `orderby`. Use `sanitize_sql_orderby()` for `ORDER BY` clauses where applicable.
+  - `esc_sql()` is a fallback for dynamic identifiers or lists where an allowlist is impractical. It escapes quotes and backslashes only, so it does not make an input-derived identifier safe on its own.
+
+```php
+$sql = "SELECT COUNT(*) FROM {$wpdb->actionscheduler_actions} WHERE status = %s";
+$sql = $wpdb->prepare( $sql, $status ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
+
+$count = (int) $wpdb->get_var( $sql ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
+```
+
 - `as_supports()` lets library consumers check whether the loaded version supports a given feature. Use it whenever a new feature might not be available at runtime, per the older-than-expected version problem noted above. Its feature list is a short, hardcoded `$supported_features` array inside the function itself (./functions.php), derived from nothing: a feature not explicitly added to that array reports itself as unsupported, so extending it is part of shipping the feature, not a follow-up.
 - If a new feature is added and the public API surface is changed, we should always make appropriate changes to our docs/.
 - It is normally expected for each feature or fix to result in a changelog entry. Changelogs are contained in ./changelog.txt.

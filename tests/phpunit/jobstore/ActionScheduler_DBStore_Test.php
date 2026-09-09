@@ -20,8 +20,9 @@ class ActionScheduler_DBStore_Test extends AbstractStoreTest {
 	public function setUp(): void {
 		global $wpdb;
 
-		// Delete all actions before each test.
+		// Delete all actions and orphan claims before each test.
 		$wpdb->query( "DELETE FROM {$wpdb->actionscheduler_actions}" );
+		$wpdb->query( "DELETE FROM {$wpdb->actionscheduler_claims}" );
 
 		parent::setUp();
 	}
@@ -136,7 +137,7 @@ class ActionScheduler_DBStore_Test extends AbstractStoreTest {
 	public function test_claim_actions() {
 		$created_actions = array();
 		$store           = new ActionScheduler_DBStore();
-		for ( $i = 3; $i > - 3; $i -- ) {
+		for ( $i = 3; $i > - 3; $i-- ) {
 			$time     = as_get_datetime_object( $i . ' hours' );
 			$schedule = new ActionScheduler_SimpleSchedule( $time );
 			$action   = new ActionScheduler_Action( ActionScheduler_Callbacks::HOOK_WITH_CALLBACK, array( $i ), $schedule, 'my_group' );
@@ -188,7 +189,7 @@ class ActionScheduler_DBStore_Test extends AbstractStoreTest {
 			$unique_hook_two,
 		);
 
-		for ( $i = 3; $i > - 3; $i -- ) {
+		for ( $i = 3; $i > - 3; $i-- ) {
 			foreach ( $unique_hooks as $unique_hook ) {
 				$time      = as_get_datetime_object( $i . ' hours' );
 				$schedule  = new ActionScheduler_SimpleSchedule( $time );
@@ -230,7 +231,7 @@ class ActionScheduler_DBStore_Test extends AbstractStoreTest {
 			$unique_group_two,
 		);
 
-		for ( $i = 3; $i > - 3; $i -- ) {
+		for ( $i = 3; $i > - 3; $i-- ) {
 			foreach ( $unique_groups as $unique_group ) {
 				$time     = as_get_datetime_object( $i . ' hours' );
 				$schedule = new ActionScheduler_SimpleSchedule( $time );
@@ -322,7 +323,7 @@ class ActionScheduler_DBStore_Test extends AbstractStoreTest {
 			$unique_group_two,
 		);
 
-		for ( $i = 3; $i > - 3; $i -- ) {
+		for ( $i = 3; $i > - 3; $i-- ) {
 			foreach ( $unique_hooks as $unique_hook ) {
 				foreach ( $unique_groups as $unique_group ) {
 					$time      = as_get_datetime_object( $i . ' hours' );
@@ -437,7 +438,7 @@ class ActionScheduler_DBStore_Test extends AbstractStoreTest {
 
 		// This callback is used to simulate the unusual conditions whereby MySQL might unexpectedly return future
 		// actions, contrary to the conditions used by the store object when staking its claim.
-		$simulate_unexpected_db_behavior = function( $sql ) use ( $action_ids ) {
+		$simulate_unexpected_db_behavior = function ( $sql ) use ( $action_ids ) {
 			global $wpdb;
 
 			// Look out for the claim update query, ignore all others.
@@ -466,7 +467,7 @@ class ActionScheduler_DBStore_Test extends AbstractStoreTest {
 	public function test_duplicate_claim() {
 		$created_actions = array();
 		$store           = new ActionScheduler_DBStore();
-		for ( $i = 0; $i > - 3; $i -- ) {
+		for ( $i = 0; $i > - 3; $i-- ) {
 			$time     = as_get_datetime_object( $i . ' hours' );
 			$schedule = new ActionScheduler_SimpleSchedule( $time );
 			$action   = new ActionScheduler_Action( ActionScheduler_Callbacks::HOOK_WITH_CALLBACK, array( $i ), $schedule, 'my_group' );
@@ -483,7 +484,7 @@ class ActionScheduler_DBStore_Test extends AbstractStoreTest {
 	public function test_release_claim() {
 		$created_actions = array();
 		$store           = new ActionScheduler_DBStore();
-		for ( $i = 0; $i > - 3; $i -- ) {
+		for ( $i = 0; $i > - 3; $i-- ) {
 			$time     = as_get_datetime_object( $i . ' hours' );
 			$schedule = new ActionScheduler_SimpleSchedule( $time );
 			$action   = new ActionScheduler_Action( ActionScheduler_Callbacks::HOOK_WITH_CALLBACK, array( $i ), $schedule, 'my_group' );
@@ -500,13 +501,12 @@ class ActionScheduler_DBStore_Test extends AbstractStoreTest {
 		$this->assertCount( 3, $claim2->get_actions() );
 		$store->release_claim( $claim2 );
 		$this->assertCount( 0, $store->find_actions_by_claim_id( $claim1->get_id() ) );
-
 	}
 
 	public function test_search() {
 		$created_actions = array();
 		$store           = new ActionScheduler_DBStore();
-		for ( $i = - 3; $i <= 3; $i ++ ) {
+		for ( $i = - 3; $i <= 3; $i++ ) {
 			$time     = as_get_datetime_object( $i . ' hours' );
 			$schedule = new ActionScheduler_SimpleSchedule( $time );
 			$action   = new ActionScheduler_Action( ActionScheduler_Callbacks::HOOK_WITH_CALLBACK, array( $i ), $schedule, 'my_group' );
@@ -760,9 +760,9 @@ class ActionScheduler_DBStore_Test extends AbstractStoreTest {
 		$this->original_wpdb = $wpdb;
 
 		$wpdb = $this->getMockBuilder( get_class( $wpdb ) )
-		             ->setMethods( [ 'db_server_info' ] )
-		             ->disableOriginalConstructor()
-		             ->getMock();
+					->setMethods( array( 'db_server_info' ) )
+					->disableOriginalConstructor()
+					->getMock();
 
 		$wpdb->method( 'db_server_info' )->willReturn( $db_server_info );
 
@@ -785,31 +785,31 @@ class ActionScheduler_DBStore_Test extends AbstractStoreTest {
 		return array(
 			'MySQL 5.6.1 does not support skip locked'    => array(
 				false,
-				'5.6.1'
+				'5.6.1',
 			),
 			'MySQL 8.0.0 does not support skip locked'    => array(
 				false,
-				'8.0.0'
+				'8.0.0',
 			),
 			'MySQL 8.0.1 does support skip locked'        => array(
 				true,
-				'8.0.1'
+				'8.0.1',
 			),
 			'MySQL 8.4.4 does support skip locked'        => array(
 				true,
-				'8.4.4'
+				'8.4.4',
 			),
 			'MariaDB 10.5.0 does not support skip locked' => array(
 				false,
-				$maria_db_prefix . '10.5.0-MariaDB'
+				$maria_db_prefix . '10.5.0-MariaDB',
 			),
 			'MariaDB 10.6.0 does support skip locked'     => array(
 				true,
-				$maria_db_prefix . '10.6.0-MariaDB'
+				$maria_db_prefix . '10.6.0-MariaDB',
 			),
 			'MariaDB 11.5.0 does support skip locked'     => array(
 				true,
-				$maria_db_prefix . '11.5.0-MariaDB'
+				$maria_db_prefix . '11.5.0-MariaDB',
 			),
 		);
 	}
@@ -951,5 +951,115 @@ class ActionScheduler_DBStore_Test extends AbstractStoreTest {
 		$this->assertSame( (int) wp_cache_get( 'cached_group', ActionScheduler_DBStore::GROUP_IDS_CACHE_GROUP ), $ids[0] );
 		$this->assertSame( (int) wp_cache_get( 'uncached_group', ActionScheduler_DBStore::GROUP_IDS_CACHE_GROUP ), $ids[1] );
 		$this->assertSame( (int) wp_cache_get( ActionScheduler_DBStore::GROUP_IDS_DEFAULT_CACHE_KEY, ActionScheduler_DBStore::GROUP_IDS_CACHE_GROUP ), $ids[2] );
+	}
+
+	/**
+	 * @testdox purge_orphan_claims() returns the number of removed orphan claims.
+	 */
+	public function test_purge_orphan_claims_returns_count() {
+		global $wpdb;
+
+		$store = new ActionScheduler_DBStore();
+
+		// Insert three raw claim rows with no referencing actions.
+		$wpdb->insert( $wpdb->actionscheduler_claims, array( 'date_created_gmt' => '2020-01-01 00:00:00' ) );
+		$wpdb->insert( $wpdb->actionscheduler_claims, array( 'date_created_gmt' => '2020-01-01 00:00:00' ) );
+		$wpdb->insert( $wpdb->actionscheduler_claims, array( 'date_created_gmt' => '2020-01-01 00:00:00' ) );
+
+		$deleted = $store->purge_orphan_claims();
+
+		$this->assertSame( 3, $deleted );
+		$this->assertSame( 0, (int) $wpdb->get_var( "SELECT COUNT(*) FROM {$wpdb->actionscheduler_claims}" ) );
+	}
+
+	/**
+	 * @testdox purge_orphan_claims() keeps claims that are still referenced by at least one action.
+	 */
+	public function test_purge_orphan_claims_keeps_referenced_claims() {
+		global $wpdb;
+		$store = new ActionScheduler_DBStore();
+
+		$schedule = new ActionScheduler_SimpleSchedule( as_get_datetime_object( '-1 hour' ) );
+		$action   = new ActionScheduler_Action( ActionScheduler_Callbacks::HOOK_WITH_CALLBACK, array(), $schedule );
+		$store->save_action( $action );
+
+		$claim = $store->stake_claim();
+		$this->assertNotEmpty( $claim->get_id() );
+
+		// Add two orphan claims on top of the one referenced by the action.
+		$wpdb->insert( $wpdb->actionscheduler_claims, array( 'date_created_gmt' => '2020-01-01 00:00:00' ) );
+		$wpdb->insert( $wpdb->actionscheduler_claims, array( 'date_created_gmt' => '2020-01-01 00:00:00' ) );
+
+		$deleted = $store->purge_orphan_claims();
+
+		$this->assertSame( 2, $deleted );
+		$this->assertSame( 1, (int) $wpdb->get_var( "SELECT COUNT(*) FROM {$wpdb->actionscheduler_claims}" ) );
+		$remaining_claim_id = (int) $wpdb->get_var( "SELECT claim_id FROM {$wpdb->actionscheduler_claims}" );
+		$this->assertSame( (int) $claim->get_id(), $remaining_claim_id );
+	}
+
+	/**
+	 * @testdox purge_orphan_claims() removes the claim of a deleted action once no action references it.
+	 */
+	public function test_purge_orphan_claims_clears_claim_after_action_deletion() {
+		global $wpdb;
+		$store = new ActionScheduler_DBStore();
+
+		$schedule  = new ActionScheduler_SimpleSchedule( as_get_datetime_object( '-1 hour' ) );
+		$action    = new ActionScheduler_Action( ActionScheduler_Callbacks::HOOK_WITH_CALLBACK, array(), $schedule );
+		$action_id = $store->save_action( $action );
+
+		$claim = $store->stake_claim();
+		$this->assertContains( $action_id, $claim->get_actions() );
+
+		$store->delete_action( $action_id );
+
+		// After delete_action() the claim row is still present (purging happens in a batch pass).
+		$this->assertSame( 1, (int) $wpdb->get_var( "SELECT COUNT(*) FROM {$wpdb->actionscheduler_claims}" ) );
+
+		$deleted = $store->purge_orphan_claims();
+
+		$this->assertSame( 1, $deleted );
+		$this->assertSame( 0, (int) $wpdb->get_var( "SELECT COUNT(*) FROM {$wpdb->actionscheduler_claims}" ) );
+	}
+
+	/**
+	 * @testdox purge_orphan_claims() is a no-op when there are no orphan claims.
+	 */
+	public function test_purge_orphan_claims_is_noop_when_no_orphans() {
+		global $wpdb;
+		$store = new ActionScheduler_DBStore();
+
+		$schedule = new ActionScheduler_SimpleSchedule( as_get_datetime_object( '-1 hour' ) );
+		$action   = new ActionScheduler_Action( ActionScheduler_Callbacks::HOOK_WITH_CALLBACK, array(), $schedule );
+		$store->save_action( $action );
+
+		$store->stake_claim();
+
+		$deleted = $store->purge_orphan_claims();
+
+		$this->assertSame( 0, $deleted );
+		$this->assertSame( 1, (int) $wpdb->get_var( "SELECT COUNT(*) FROM {$wpdb->actionscheduler_claims}" ) );
+	}
+
+	/**
+	 * @testdox delete_action() does not touch the claims table (the row is left for batch purging).
+	 */
+	public function test_delete_action_does_not_touch_claims_table() {
+		global $wpdb;
+		$store = new ActionScheduler_DBStore();
+
+		$schedule  = new ActionScheduler_SimpleSchedule( as_get_datetime_object( '-1 hour' ) );
+		$action    = new ActionScheduler_Action( ActionScheduler_Callbacks::HOOK_WITH_CALLBACK, array(), $schedule );
+		$action_id = $store->save_action( $action );
+
+		$store->stake_claim();
+		$claims_before = (int) $wpdb->get_var( "SELECT COUNT(*) FROM {$wpdb->actionscheduler_claims}" );
+
+		$store->delete_action( $action_id );
+
+		$claims_after = (int) $wpdb->get_var( "SELECT COUNT(*) FROM {$wpdb->actionscheduler_claims}" );
+
+		$this->assertSame( $claims_before, $claims_after, 'delete_action() must not modify the claims table; orphan cleanup is done in a batch pass.' );
 	}
 }

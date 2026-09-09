@@ -349,6 +349,7 @@ abstract class ActionScheduler {
 			'QueueRunner'                             => true,
 			'Command'                                 => true,
 			'ProgressBar'                             => true,
+			'Supervisor'                              => true,
 			'\Action_Scheduler\WP_CLI\Action_Command' => true,
 			'\Action_Scheduler\WP_CLI\System_Command' => true,
 		);

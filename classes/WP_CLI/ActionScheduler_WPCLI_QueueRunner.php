@@ -17,6 +17,20 @@ class ActionScheduler_WPCLI_QueueRunner extends ActionScheduler_Abstract_QueueRu
 	private $is_custom_cleaner;
 
 	/**
+	 * Whether one-time runner setup has been completed.
+	 *
+	 * @var bool
+	 */
+	private $is_initialized = false;
+
+	/**
+	 * Time of the most recent queue maintenance pass.
+	 *
+	 * @var float|null
+	 */
+	private $last_cleanup;
+
+	/**
 	 * Claimed actions.
 	 *
 	 * @var array
@@ -69,19 +83,8 @@ class ActionScheduler_WPCLI_QueueRunner extends ActionScheduler_Abstract_QueueRu
 	 * @throws \WP_CLI\ExitException When there are too many concurrent batches.
 	 */
 	public function setup( $batch_size, $hooks = array(), $group = '', $force = false ) {
-		$cleanup_time_limit = 10 * $this->get_time_limit();
-		// Backward compatibility: If the action cleaner is standard, cleaning will be performed as an action to improve throughput
-		// and enable daily runs. If not, cleaning will occur explicitly before processing actions to ensure backward compatibility.
-		if ( $this->is_custom_cleaner ) {
-			// Execute complete cleanup cycle, as in this logical branch deletion IS NOT executed via a separate action.
-			$this->cleaner->clean( $cleanup_time_limit );
-		} else {
-			// Execute partial cleanup cycle, as in this logical branch deletion IS executed via a separate action.
-			$this->cleaner->reset_timeouts( $cleanup_time_limit );
-			$this->cleaner->mark_failures( $cleanup_time_limit );
-		}
-
-		$this->add_hooks();
+		$this->initialize();
+		$this->maybe_perform_cleanup();
 
 		// Check to make sure there aren't too many concurrent processes running.
 		if ( $this->has_maximum_concurrent_batches() ) {
@@ -98,6 +101,50 @@ class ActionScheduler_WPCLI_QueueRunner extends ActionScheduler_Abstract_QueueRu
 		$this->actions = $this->claim->get_actions();
 
 		return count( $this->actions );
+	}
+
+	/**
+	 * Register hooks once per runner lifecycle.
+	 */
+	protected function initialize() {
+		if ( $this->is_initialized ) {
+			return;
+		}
+
+		$this->add_hooks();
+		$this->is_initialized = true;
+	}
+
+	/**
+	 * Perform queue maintenance no more than once per cleanup interval.
+	 */
+	protected function maybe_perform_cleanup() {
+		$cleanup_interval = 10 * $this->get_time_limit();
+
+		if ( null !== $this->last_cleanup && microtime( true ) - $this->last_cleanup < $cleanup_interval ) {
+			return;
+		}
+
+		$this->perform_cleanup( $cleanup_interval );
+		$this->last_cleanup = microtime( true );
+	}
+
+	/**
+	 * Perform queue maintenance.
+	 *
+	 * @param int $cleanup_time_limit Time limit used to find timed-out actions.
+	 */
+	protected function perform_cleanup( $cleanup_time_limit ) {
+		// Backward compatibility: If the action cleaner is standard, cleaning will be performed as an action to improve throughput
+		// and enable daily runs. If not, cleaning will occur explicitly before processing actions to ensure backward compatibility.
+		if ( $this->is_custom_cleaner ) {
+			// Execute complete cleanup cycle, as in this logical branch deletion IS NOT executed via a separate action.
+			$this->cleaner->clean( $cleanup_time_limit );
+		} else {
+			// Execute partial cleanup cycle, as in this logical branch deletion IS executed via a separate action.
+			$this->cleaner->reset_timeouts( $cleanup_time_limit );
+			$this->cleaner->mark_failures( $cleanup_time_limit );
+		}
 	}
 
 	/**
@@ -124,16 +171,22 @@ class ActionScheduler_WPCLI_QueueRunner extends ActionScheduler_Abstract_QueueRu
 	/**
 	 * Process actions in the queue.
 	 *
-	 * @param string $context Optional runner context. Default 'WP CLI'.
+	 * @param string        $context     Optional runner context. Default 'WP CLI'.
+	 * @param callable|null $should_stop Optional predicate checked before each action.
 	 *
 	 * @return int The number of actions processed.
 	 */
-	public function run( $context = 'WP CLI' ) {
+	public function run( $context = 'WP CLI', $should_stop = null ) {
 		do_action( 'action_scheduler_before_process_queue' );
 		$this->setup_progress_bar();
 
-		$claim_id = $this->claim->get_id();
+		$claim_id  = $this->claim->get_id();
+		$processed = 0;
 		foreach ( $this->actions as $action_id ) {
+			if ( is_callable( $should_stop ) && call_user_func( $should_stop, $processed ) ) {
+				break;
+			}
+
 			// Bail if we lost the claim.
 			if ( $claim_id !== $this->store->get_claim_id( $action_id ) ) {
 				WP_CLI::warning( __( 'The claim has been lost. Aborting current batch.', 'action-scheduler' ) );
@@ -142,6 +195,7 @@ class ActionScheduler_WPCLI_QueueRunner extends ActionScheduler_Abstract_QueueRu
 
 			$this->process_action( $action_id, $context );
 			$this->progress_bar->tick();
+			++$processed;
 		}
 
 		$completed = $this->progress_bar->current();

@@ -87,4 +87,41 @@ class ActionScheduler_RecurringActionScheduler_Test extends ActionScheduler_Unit
 			'No new recurring action should be scheduled due to transient hit.'
 		);
 	}
+
+	/**
+	 * Test that nothing is set up, and no action is scheduled, during a plugin uninstall.
+	 */
+	public function test_init_does_nothing_when_uninstalling() {
+		global $current_screen;
+
+		// An uninstall is an admin request, which is also when the housekeeping check normally runs.
+		$_current_screen = $current_screen;
+		set_current_screen( 'dashboard' );
+		$was_uninstalling = $this->set_uninstalling( true );
+
+		$scheduler = new ActionScheduler_RecurringActionScheduler();
+
+		try {
+			$scheduler->init();
+
+			// Fired synchronously by ActionScheduler::init() on a late bootstrap.
+			do_action( 'action_scheduler_init' ); // phpcs:ignore WooCommerce.Commenting.CommentHooks.HookCommentWrongStyle
+
+			$this->assertFalse(
+				has_action( 'action_scheduler_init', array( $scheduler, 'schedule_recurring_scheduler_hook' ) ),
+				'The housekeeping check should not be hooked into action_scheduler_init during an uninstall.'
+			);
+			$this->assertFalse(
+				has_action( 'action_scheduler_before_process_queue', array( $scheduler, 'schedule_recurring_scheduler_hook' ) ),
+				'The housekeeping check should not be hooked into action_scheduler_before_process_queue during an uninstall.'
+			);
+			$this->assertFalse(
+				as_has_scheduled_action( self::RUN_HOOK ),
+				'No recurring action should be scheduled during an uninstall.'
+			);
+		} finally {
+			$this->set_uninstalling( $was_uninstalling );
+			$current_screen = $_current_screen; // phpcs:ignore WordPress.WP.GlobalVariablesOverride.Prohibited
+		}
+	}
 }

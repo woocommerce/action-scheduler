@@ -649,4 +649,60 @@ class ActionScheduler_QueueRunner_Test extends ActionScheduler_UnitTestCase {
 		remove_action( 'baz', $baz );
 		remove_action( 'foobar', $foobar );
 	}
+
+	/**
+	 * Test that init() sets up the WP Cron event and the async request dispatcher.
+	 */
+	public function test_init_sets_up_cron_and_async_dispatch() {
+		$runner = ActionScheduler_Mocker::get_queue_runner();
+		$this->clear_queue_runner_cron_event();
+
+		$runner->init();
+
+		$this->assertNotFalse(
+			wp_next_scheduled( ActionScheduler_QueueRunner::WP_CRON_HOOK, array( 'WP Cron' ) ),
+			'The WP Cron event to run the queue should be scheduled.'
+		);
+		$this->assertNotFalse(
+			has_action( 'shutdown', array( $runner, 'maybe_dispatch_async_request' ) ),
+			'The async request dispatcher should be hooked into shutdown.'
+		);
+	}
+
+	/**
+	 * Test that init() creates no cron event and no shutdown callback during a plugin uninstall.
+	 *
+	 * WordPress deletes the host plugin's files later in the same request, so the shutdown callback
+	 * would fatal on the missing classes, and the cron event would outlive the code that serves it.
+	 */
+	public function test_init_skips_cron_and_async_dispatch_when_uninstalling() {
+		$runner = ActionScheduler_Mocker::get_queue_runner();
+		$this->clear_queue_runner_cron_event();
+		$was_uninstalling = $this->set_uninstalling( true );
+
+		try {
+			$runner->init();
+
+			$this->assertFalse(
+				wp_next_scheduled( ActionScheduler_QueueRunner::WP_CRON_HOOK, array( 'WP Cron' ) ),
+				'No WP Cron event should be scheduled during an uninstall.'
+			);
+			$this->assertFalse(
+				has_action( 'shutdown', array( $runner, 'maybe_dispatch_async_request' ) ),
+				'The async request dispatcher should not be hooked into shutdown during an uninstall.'
+			);
+		} finally {
+			$this->set_uninstalling( $was_uninstalling );
+		}
+	}
+
+	/**
+	 * Unschedule the queue runner cron event scheduled while bootstrapping the test suite.
+	 *
+	 * @return void
+	 */
+	private function clear_queue_runner_cron_event() {
+		wp_clear_scheduled_hook( ActionScheduler_QueueRunner::WP_CRON_HOOK, array( 'WP Cron' ) );
+		wp_clear_scheduled_hook( ActionScheduler_QueueRunner::WP_CRON_HOOK );
+	}
 }

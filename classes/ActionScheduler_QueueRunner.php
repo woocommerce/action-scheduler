@@ -79,21 +79,34 @@ class ActionScheduler_QueueRunner extends ActionScheduler_Abstract_QueueRunner {
 
 		add_filter( 'cron_schedules', array( self::instance(), 'add_wp_cron_schedule' ) ); // phpcs:ignore WordPress.WP.CronInterval.CronSchedulesInterval
 
-		// Check for and remove any WP Cron hook scheduled by Action Scheduler < 3.0.0, which didn't include the $context param.
-		$next_timestamp = wp_next_scheduled( self::WP_CRON_HOOK );
-		if ( $next_timestamp ) {
-			wp_unschedule_event( $next_timestamp, self::WP_CRON_HOOK );
-		}
+		// Neither a cron event nor an async request may be left behind by an uninstall: WordPress deletes
+		// the host plugin's files later in the same request, so the shutdown callback would fatal on the
+		// missing classes and the cron event would outlive the code that serves it.
+		if ( ! ActionScheduler::is_uninstalling() ) {
+			// Check for and remove any WP Cron hook scheduled by Action Scheduler < 3.0.0, which didn't include the $context param.
+			$next_timestamp = wp_next_scheduled( self::WP_CRON_HOOK );
+			if ( $next_timestamp ) {
+				wp_unschedule_event( $next_timestamp, self::WP_CRON_HOOK );
+			}
 
-		$cron_context = array( 'WP Cron' );
+			$cron_context = array( 'WP Cron' );
 
-		if ( ! wp_next_scheduled( self::WP_CRON_HOOK, $cron_context ) ) {
-			$schedule = apply_filters( 'action_scheduler_run_schedule', self::WP_CRON_SCHEDULE );
-			wp_schedule_event( time(), $schedule, self::WP_CRON_HOOK, $cron_context );
+			if ( ! wp_next_scheduled( self::WP_CRON_HOOK, $cron_context ) ) {
+				/**
+				 * Filters the WP Cron schedule the queue runner is registered on.
+				 *
+				 * @since 1.0
+				 *
+				 * @param string $schedule Name of a registered cron schedule.
+				 */
+				$schedule = apply_filters( 'action_scheduler_run_schedule', self::WP_CRON_SCHEDULE );
+				wp_schedule_event( time(), $schedule, self::WP_CRON_HOOK, $cron_context );
+			}
+
+			$this->hook_dispatch_async_request();
 		}
 
 		add_action( self::WP_CRON_HOOK, array( self::instance(), 'run' ) );
-		$this->hook_dispatch_async_request();
 
 		// Backward compatibility: If the action cleaner is standard, cleaning will be performed as an action to improve throughput
 		// and enable daily runs. If not, cleaning will occur explicitly before processing actions to ensure backward compatibility.

@@ -32,6 +32,13 @@ abstract class ActionScheduler {
 	private static $data_store_initialized = false;
 
 	/**
+	 * Initialized from a plugin's uninstall routine.
+	 *
+	 * @var bool
+	 */
+	private static $is_uninstalling = false;
+
+	/**
 	 * Factory.
 	 */
 	public static function factory() {
@@ -74,6 +81,22 @@ abstract class ActionScheduler {
 	 */
 	public static function admin_view() {
 		return ActionScheduler_AdminView::instance();
+	}
+
+	/**
+	 * Whether this copy of Action Scheduler was initialized from a plugin's uninstall routine.
+	 *
+	 * WordPress deactivates a plugin before including its uninstall.php, so a plugin that bundles
+	 * Action Scheduler has to load and initialize it there in order to clean up its own actions. Such
+	 * a request must not set up the runtime: WordPress deletes the host plugin's files later in the
+	 * same request, so anything left hooked or newly scheduled outlives the code that would serve it.
+	 *
+	 * @since 4.2.0
+	 *
+	 * @return bool
+	 */
+	public static function is_uninstalling() {
+		return self::$is_uninstalling;
 	}
 
 	/**
@@ -175,6 +198,10 @@ abstract class ActionScheduler {
 	public static function init( $plugin_file ) {
 		self::$plugin_file = $plugin_file;
 		spl_autoload_register( array( __CLASS__, 'autoload' ) );
+
+		// Must be captured here rather than tested on demand: on a normal request the runtime is set up
+		// on 'init', where the late-bootstrap test below would also pass.
+		self::$is_uninstalling = defined( 'WP_UNINSTALL_PLUGIN' ) && did_action( 'plugins_loaded' ) && ! doing_action( 'plugins_loaded' );
 
 		/**
 		 * Fires in the early stages of Action Scheduler init hook.

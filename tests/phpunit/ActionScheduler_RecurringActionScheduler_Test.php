@@ -5,9 +5,24 @@
  */
 class ActionScheduler_RecurringActionScheduler_Test extends ActionScheduler_UnitTestCase {
 
+	/**
+	 * The hook of the action the scheduler keeps scheduled.
+	 *
+	 * Mirrors ActionScheduler_RecurringActionScheduler::RUN_SCHEDULED_RECURRING_ACTIONS_HOOK, which is private.
+	 *
+	 * @var string
+	 */
+	private const RUN_SCHEDULED_RECURRING_ACTIONS_HOOK = 'action_scheduler_run_recurring_actions_schedule_hook';
+
+	public function set_up() {
+		delete_transient( 'as_is_ensure_recurring_actions_scheduled' );
+
+		parent::set_up();
+	}
+
 	public function tear_down() {
 		delete_transient( 'as_is_ensure_recurring_actions_scheduled' );
-		as_unschedule_action( 'action_scheduler_ensure_recurring_actions' );
+		as_unschedule_all_actions( self::RUN_SCHEDULED_RECURRING_ACTIONS_HOOK );
 
 		parent::tear_down();
 	}
@@ -16,34 +31,19 @@ class ActionScheduler_RecurringActionScheduler_Test extends ActionScheduler_Unit
 	 * Test that the init method hooks into 'action_scheduler_init' correctly.
 	 */
 	public function test_init_hooks_into_action_scheduler_init() {
-		global $current_screen;
-
-		$scheduler = new ActionScheduler_RecurringActionScheduler();
-		$scheduler->init();
-
-		// Only apply hooks when in the admin.
-		$_current_screen = $current_screen;
+		// The hook is only added in the admin.
 		set_current_screen( 'dashboard' );
 
 		try {
-			// Verify that the 'action_scheduler_init' hook is registered with the correct callback
-			$this->assertTrue(
-				has_action( 'action_scheduler_init', array(
-					ActionScheduler_RecurringActionScheduler::class,
-					'schedule_recurring_scheduler_hook'
-				) ) > 0,
+			$scheduler = new ActionScheduler_RecurringActionScheduler();
+			$scheduler->init();
+
+			$this->assertNotFalse(
+				has_action( 'action_scheduler_init', array( $scheduler, 'schedule_recurring_scheduler_hook' ) ),
 				'The schedule_recurring_scheduler_hook method should be hooked into action_scheduler_init.'
 			);
 		} finally {
-			// Clean up to avoid affecting any other tests.
-			$current_screen = $_current_screen;
-			remove_action(
-				'action_scheduler_init',
-				array(
-					ActionScheduler_RecurringActionScheduler::class,
-					'schedule_recurring_scheduler_hook'
-				)
-			);
+			set_current_screen( 'front' );
 		}
 	}
 
@@ -53,7 +53,7 @@ class ActionScheduler_RecurringActionScheduler_Test extends ActionScheduler_Unit
 	public function test_schedule_recurring_scheduler_hook_schedules_action() {
 		// Ensure no action is scheduled initially
 		$this->assertFalse(
-			as_has_scheduled_action( 'action_scheduler_ensure_recurring_actions' ),
+			as_has_scheduled_action( self::RUN_SCHEDULED_RECURRING_ACTIONS_HOOK ),
 			'No recurring action should be scheduled initially.'
 		);
 
@@ -61,7 +61,7 @@ class ActionScheduler_RecurringActionScheduler_Test extends ActionScheduler_Unit
 		$scheduler->schedule_recurring_scheduler_hook();
 
 		$this->assertTrue(
-			as_has_scheduled_action( 'action_scheduler_ensure_recurring_actions' ),
+			as_has_scheduled_action( self::RUN_SCHEDULED_RECURRING_ACTIONS_HOOK ),
 			'The recurring action should now be scheduled.'
 		);
 	}
@@ -72,7 +72,7 @@ class ActionScheduler_RecurringActionScheduler_Test extends ActionScheduler_Unit
 	public function test_schedule_recurring_scheduler_hook__respects_cache() {
 		// Ensure no action is scheduled initially
 		$this->assertFalse(
-			as_has_scheduled_action( 'action_scheduler_ensure_recurring_actions' ),
+			as_has_scheduled_action( self::RUN_SCHEDULED_RECURRING_ACTIONS_HOOK ),
 			'No recurring action should be scheduled initially.'
 		);
 
@@ -85,8 +85,41 @@ class ActionScheduler_RecurringActionScheduler_Test extends ActionScheduler_Unit
 
 		// Assert that no new action was scheduled due to transient hit
 		$this->assertFalse(
-			as_has_scheduled_action( 'action_scheduler_ensure_recurring_actions' ),
+			as_has_scheduled_action( self::RUN_SCHEDULED_RECURRING_ACTIONS_HOOK ),
 			'No new recurring action should be scheduled due to transient hit.'
 		);
+	}
+
+	/**
+	 * Test that nothing is set up, and no action is scheduled, during a plugin uninstall.
+	 */
+	public function test_init_does_nothing_when_uninstalling() {
+		// An uninstall is an admin request, which is also when the housekeeping check normally runs.
+		set_current_screen( 'dashboard' );
+		$was_uninstalling = $this->set_uninstalling( true );
+
+		try {
+			$scheduler = new ActionScheduler_RecurringActionScheduler();
+			$scheduler->init();
+
+			// Fired synchronously by ActionScheduler::init() on a late bootstrap.
+			do_action( 'action_scheduler_init' ); // phpcs:ignore WooCommerce.Commenting.CommentHooks.HookCommentWrongStyle
+
+			$this->assertFalse(
+				has_action( 'action_scheduler_init', array( $scheduler, 'schedule_recurring_scheduler_hook' ) ),
+				'The housekeeping check should not be hooked into action_scheduler_init during an uninstall.'
+			);
+			$this->assertFalse(
+				has_action( 'action_scheduler_before_process_queue', array( $scheduler, 'schedule_recurring_scheduler_hook' ) ),
+				'The housekeeping check should not be hooked into action_scheduler_before_process_queue during an uninstall.'
+			);
+			$this->assertFalse(
+				as_has_scheduled_action( self::RUN_SCHEDULED_RECURRING_ACTIONS_HOOK ),
+				'No recurring action should be scheduled during an uninstall.'
+			);
+		} finally {
+			$this->set_uninstalling( $was_uninstalling );
+			set_current_screen( 'front' );
+		}
 	}
 }

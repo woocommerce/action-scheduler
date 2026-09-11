@@ -23,6 +23,12 @@ class ActionScheduler_RecurringActionScheduler {
 	 * @return void
 	 */
 	public function init(): void {
+		// Housekeeping has no purpose on a site that is losing Action Scheduler, and the hook below is
+		// fired synchronously during init, which would schedule a fresh action mid-uninstall.
+		if ( ActionScheduler::is_uninstalling() ) {
+			return;
+		}
+
 		add_action( self::RUN_SCHEDULED_RECURRING_ACTIONS_HOOK, array( $this, 'run_recurring_scheduler_hook' ) );
 		// Also run the check during queue processing, so installs without admin traffic still schedule the recurring action.
 		add_action( 'action_scheduler_before_process_queue', array( $this, 'schedule_recurring_scheduler_hook' ) );

@@ -507,7 +507,10 @@ function as_get_datetime_object( $date_string = null, $timezone = 'UTC' ) {
  * @return bool True if the feature is supported, false otherwise.
  */
 function as_supports( string $feature ): bool {
-	$supported_features = array( 'ensure_recurring_actions_hook' );
+	$supported_features = array(
+		'ensure_recurring_actions_hook',
+		'uninstall_bootstrap',
+	);
 
 	return in_array( $feature, $supported_features, true );
 }

@@ -180,7 +180,158 @@ class ActionScheduler_HybridStore_Test extends ActionScheduler_UnitTestCase {
 		$this->assertEquals( 0, $source_store->get_claim_count() );
 		$this->assertEquals( 1, $destination_store->get_claim_count() );
 		$this->assertEquals( 1, $hybrid_store->get_claim_count() );
+	}
 
+	public function test_claim_by_group_with_actions_only_in_primary_store() {
+		$source_store       = new PostStore();
+		$destination_store  = new ActionScheduler_DBStore();
+		$source_logger      = new CommentLogger();
+		$destination_logger = new ActionScheduler_DBLogger();
+		$group              = md5( wp_rand() );
+		$schedule           = new ActionScheduler_SimpleSchedule( as_get_datetime_object( '-1 hour' ) );
+
+		$config = new Config();
+		$config->set_source_store( $source_store );
+		$config->set_source_logger( $source_logger );
+		$config->set_destination_store( $destination_store );
+		$config->set_destination_logger( $destination_logger );
+
+		$hook         = __FUNCTION__;
+		$hybrid_store = new ActionScheduler_HybridStore( $config );
+		$action_id    = $destination_store->save_action( new ActionScheduler_Action( $hook, array(), $schedule, $group ) );
+
+		$claim = $hybrid_store->stake_claim( 10, null, array( $hook ), $group );
+
+		$this->assertSame( array( $action_id ), $claim->get_actions() );
+	}
+
+	public function test_claim_by_group_migrates_matching_secondary_actions() {
+		$source_store       = new PostStore();
+		$destination_store  = new ActionScheduler_DBStore();
+		$source_logger      = new CommentLogger();
+		$destination_logger = new ActionScheduler_DBLogger();
+		$group              = md5( wp_rand() );
+		$other_group        = md5( wp_rand() );
+		$schedule           = new ActionScheduler_SimpleSchedule( as_get_datetime_object( '-1 hour' ) );
+
+		$config = new Config();
+		$config->set_source_store( $source_store );
+		$config->set_source_logger( $source_logger );
+		$config->set_destination_store( $destination_store );
+		$config->set_destination_logger( $destination_logger );
+
+		$hybrid_store     = new ActionScheduler_HybridStore( $config );
+		$source_action_id = $source_store->save_action( new ActionScheduler_Action( __FUNCTION__, array(), $schedule, $group ) );
+		$other_action_id  = $source_store->save_action( new ActionScheduler_Action( __FUNCTION__, array(), $schedule, $other_group ) );
+
+		$claim = $hybrid_store->stake_claim( 10, null, array(), $group );
+
+		$this->assertCount( 1, $claim->get_actions() );
+		$this->assertGreaterThanOrEqual( $this->demarkation_id, $claim->get_actions()[0] );
+		$this->assertInstanceOf( NullAction::class, $source_store->fetch_action( $source_action_id ) );
+		$this->assertSame( ActionScheduler_Store::STATUS_PENDING, $source_store->get_status( $other_action_id ) );
+	}
+
+	public function test_claim_by_group_with_no_eligible_primary_actions_returns_empty_claim() {
+		$source_store       = new PostStore();
+		$destination_store  = new ActionScheduler_DBStore();
+		$source_logger      = new CommentLogger();
+		$destination_logger = new ActionScheduler_DBLogger();
+		$group              = md5( wp_rand() );
+		$schedule           = new ActionScheduler_SimpleSchedule( as_get_datetime_object( '+1 hour' ) );
+
+		$config = new Config();
+		$config->set_source_store( $source_store );
+		$config->set_source_logger( $source_logger );
+		$config->set_destination_store( $destination_store );
+		$config->set_destination_logger( $destination_logger );
+
+		$hybrid_store = new ActionScheduler_HybridStore( $config );
+		$action_id    = $destination_store->save_action( new ActionScheduler_Action( __FUNCTION__, array(), $schedule, $group ) );
+
+		$claim = $hybrid_store->stake_claim( 10, as_get_datetime_object(), array(), $group );
+
+		$this->assertSame( array(), $claim->get_actions() );
+		$this->assertSame( ActionScheduler_Store::STATUS_PENDING, $destination_store->get_status( $action_id ) );
+	}
+
+	public function test_claim_by_secondary_group_with_no_matching_hook_returns_empty_claim() {
+		$source_store       = new PostStore();
+		$destination_store  = new ActionScheduler_DBStore();
+		$source_logger      = new CommentLogger();
+		$destination_logger = new ActionScheduler_DBLogger();
+		$group              = md5( wp_rand() );
+		$other_group        = md5( wp_rand() );
+		$schedule           = new ActionScheduler_SimpleSchedule( as_get_datetime_object( '-1 hour' ) );
+
+		$config = new Config();
+		$config->set_source_store( $source_store );
+		$config->set_source_logger( $source_logger );
+		$config->set_destination_store( $destination_store );
+		$config->set_destination_logger( $destination_logger );
+
+		$hybrid_store     = new ActionScheduler_HybridStore( $config );
+		$source_action_id = $source_store->save_action( new ActionScheduler_Action( __FUNCTION__ . '_source', array(), $schedule, $group ) );
+		$other_action_id  = $destination_store->save_action( new ActionScheduler_Action( __FUNCTION__ . '_other', array(), $schedule, $other_group ) );
+
+		$claim = $hybrid_store->stake_claim( 10, null, array( __FUNCTION__ . '_missing' ), $group );
+
+		$this->assertSame( array(), $claim->get_actions() );
+		$this->assertSame( ActionScheduler_Store::STATUS_PENDING, $source_store->get_status( $source_action_id ) );
+		$this->assertSame( ActionScheduler_Store::STATUS_PENDING, $destination_store->get_status( $other_action_id ) );
+	}
+
+	public function test_claim_by_secondary_group_with_no_due_actions_returns_empty_claim() {
+		$source_store       = new PostStore();
+		$destination_store  = new ActionScheduler_DBStore();
+		$source_logger      = new CommentLogger();
+		$destination_logger = new ActionScheduler_DBLogger();
+		$group              = md5( wp_rand() );
+		$schedule           = new ActionScheduler_SimpleSchedule( as_get_datetime_object( '+1 hour' ) );
+
+		$config = new Config();
+		$config->set_source_store( $source_store );
+		$config->set_source_logger( $source_logger );
+		$config->set_destination_store( $destination_store );
+		$config->set_destination_logger( $destination_logger );
+
+		$hybrid_store     = new ActionScheduler_HybridStore( $config );
+		$source_action_id = $source_store->save_action( new ActionScheduler_Action( __FUNCTION__, array(), $schedule, $group ) );
+
+		$claim = $hybrid_store->stake_claim( 10, as_get_datetime_object(), array(), $group );
+
+		$this->assertSame( array(), $claim->get_actions() );
+		$this->assertSame( ActionScheduler_Store::STATUS_PENDING, $source_store->get_status( $source_action_id ) );
+	}
+
+	public function test_claim_by_missing_group_throws_exception_without_claiming_other_groups() {
+		$source_store       = new PostStore();
+		$destination_store  = new ActionScheduler_DBStore();
+		$source_logger      = new CommentLogger();
+		$destination_logger = new ActionScheduler_DBLogger();
+		$missing_group      = md5( wp_rand() );
+		$other_group        = md5( wp_rand() );
+		$schedule           = new ActionScheduler_SimpleSchedule( as_get_datetime_object( '-1 hour' ) );
+
+		$config = new Config();
+		$config->set_source_store( $source_store );
+		$config->set_source_logger( $source_logger );
+		$config->set_destination_store( $destination_store );
+		$config->set_destination_logger( $destination_logger );
+
+		$hybrid_store      = new ActionScheduler_HybridStore( $config );
+		$source_action_id  = $source_store->save_action( new ActionScheduler_Action( __FUNCTION__, array(), $schedule, $other_group ) );
+		$primary_action_id = $destination_store->save_action( new ActionScheduler_Action( __FUNCTION__, array(), $schedule, $other_group ) );
+
+		try {
+			$hybrid_store->stake_claim( 10, null, array(), $missing_group );
+			$this->fail( 'Expected an exception for a group missing from both stores.' );
+		} catch ( InvalidArgumentException $exception ) {
+			$this->assertSame( 'The group "' . $missing_group . '" does not exist.', $exception->getMessage() );
+		}
+
+		$this->assertSame( ActionScheduler_Store::STATUS_PENDING, $source_store->get_status( $source_action_id ) );
+		$this->assertSame( ActionScheduler_Store::STATUS_PENDING, $destination_store->get_status( $primary_action_id ) );
 	}
 
 	public function test_fetch_respects_demarkation() {

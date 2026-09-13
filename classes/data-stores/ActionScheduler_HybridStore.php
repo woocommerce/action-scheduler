@@ -247,9 +247,19 @@ class ActionScheduler_HybridStore extends Store {
 	 * @param string        $group Group of actions to claim.
 	 *
 	 * @return ActionScheduler_ActionClaim
+	 * @throws InvalidArgumentException When the group does not exist in either store.
 	 */
 	public function stake_claim( $max_actions = 10, ?DateTime $before_date = null, $hooks = array(), $group = '' ) {
-		$claim = $this->secondary_store->stake_claim( $max_actions, $before_date, $hooks, $group );
+		try {
+			$claim = $this->secondary_store->stake_claim( $max_actions, $before_date, $hooks, $group );
+		} catch ( InvalidArgumentException $exception ) {
+			if ( empty( $group ) || ! $this->secondary_store instanceof ActionScheduler_wpPostStore ) {
+				throw $exception;
+			}
+
+			// The group may already have been migrated to the primary store.
+			return $this->primary_store->stake_claim( $max_actions, $before_date, $hooks, $group );
+		}
 
 		$claimed_actions = $claim->get_actions();
 		if ( ! empty( $claimed_actions ) ) {
@@ -258,7 +268,16 @@ class ActionScheduler_HybridStore extends Store {
 
 		$this->secondary_store->release_claim( $claim );
 
-		return $this->primary_store->stake_claim( $max_actions, $before_date, $hooks, $group );
+		try {
+			return $this->primary_store->stake_claim( $max_actions, $before_date, $hooks, $group );
+		} catch ( InvalidArgumentException $exception ) {
+			if ( empty( $group ) || ! empty( $claimed_actions ) || ! $this->primary_store instanceof ActionScheduler_DBStore ) {
+				throw $exception;
+			}
+
+			// The source group is valid but has no actions eligible for this claim.
+			return new ActionScheduler_ActionClaim( '', array() );
+		}
 	}
 
 	/**

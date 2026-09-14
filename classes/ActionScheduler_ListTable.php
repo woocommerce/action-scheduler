@@ -442,7 +442,7 @@ class ActionScheduler_ListTable extends ActionScheduler_Abstract_ListTable {
 			delete_transient( 'action_scheduler_admin_notice' );
 
 			$action           = $this->store->fetch_action( $notification['action_id'] );
-			$action_hook_html = '<strong><code>' . $action->get_hook() . '</code></strong>';
+			$action_hook_html = '<strong><code>' . esc_html( $action->get_hook() ) . '</code></strong>';
 
 			if ( 1 === (int) $notification['success'] ) {
 				$type = 'success';

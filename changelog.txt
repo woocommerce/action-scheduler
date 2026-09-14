@@ -2,6 +2,7 @@
 
 = 4.2.0 - xxxx-xx-xx =
 * Fix - Show the per-page Screen Option on WooCommerce's Scheduled Actions tab.
+* Fix - Show the number of actions and the link in the past-due actions admin notice, instead of raw placeholders.
 
 = 4.1.0 - 2026-08-05 =
 * Fix - Correct an oversight in the lock implementation (used to rate-limit async request runners) that could leave a lock permanently stuck and result in database errors in unusual cases.

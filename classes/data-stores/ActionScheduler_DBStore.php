@@ -73,7 +73,6 @@ class ActionScheduler_DBStore extends ActionScheduler_Store {
 	 *
 	 * @internal
 	 * @return void
-	 * @throws RuntimeException When stale keys cannot be released.
 	 */
 	public function release_stale_unique_action_keys() {
 		global $wpdb;
@@ -92,7 +91,9 @@ class ActionScheduler_DBStore extends ActionScheduler_Store {
 		);
 
 		if ( false === $released ) {
-			throw new RuntimeException( 'Unable to release stale unique action keys: ' . esc_html( $wpdb->last_error ) );
+			// phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log -- Report cleanup failure without interrupting other hook handlers.
+			error_log( 'Unable to release stale unique action keys: ' . $wpdb->last_error );
+			return;
 		}
 
 		if ( 1000 !== $released ) {
@@ -202,6 +203,28 @@ class ActionScheduler_DBStore extends ActionScheduler_Store {
 			// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- $insert_sql should be already prepared.
 			$query_result = $wpdb->query( $insert_sql );
 			$action_id    = $wpdb->insert_id;
+
+			if ( $unique && isset( $data['unique_key'] ) && 0 === $query_result && empty( $action_id ) ) {
+				// ON DUPLICATE KEY is a no-op, not a SQL error. Repair only this key if its action is terminal.
+				$released = $wpdb->query(
+					$wpdb->prepare(
+						"UPDATE {$wpdb->actionscheduler_actions} SET unique_key = NULL
+						WHERE unique_key = %s AND status IN (%s, %s, %s)",
+						$data['unique_key'],
+						self::STATUS_COMPLETE,
+						self::STATUS_FAILED,
+						self::STATUS_CANCELED
+					)
+				);
+
+				if ( false === $released ) {
+					$query_result = false;
+				} elseif ( $released > 0 ) {
+					// Retry once; the same atomic insert still protects against a competing scheduler.
+					$query_result = $wpdb->query( $insert_sql ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- Already prepared above.
+					$action_id    = $wpdb->insert_id;
+				}
+			}
 
 			if ( false === $query_result ) {
 				throw new \RuntimeException( $wpdb->last_error ? $wpdb->last_error : __( 'Database error.', 'action-scheduler' ) );

@@ -709,9 +709,12 @@ class ActionScheduler_DBStore_Test extends AbstractStoreTest {
 	}
 
 	/**
-	 * Test that the database constraint rejects an insert even when the lookup cannot see the conflicting active action.
+	 * A terminal action retaining its key is repaired during the next insert.
+	 *
+	 * @dataProvider stale_unique_status_provider
+	 * @param string $status Terminal status left by a custom store.
 	 */
-	public function test_unique_action_key_is_enforced_at_database_boundary() {
+	public function test_unique_action_insert_recovers_stale_key( $status ) {
 		global $wpdb;
 
 		$time       = as_get_datetime_object();
@@ -729,16 +732,19 @@ class ActionScheduler_DBStore_Test extends AbstractStoreTest {
 
 		$this->assertNotEmpty( $unique_key );
 
-		// Hide the row from the active-action lookup while retaining its key, simulating a competing insert after lookup.
+		// Simulate a custom terminal transition that does not release the unique key.
 		$wpdb->update(
 			$wpdb->actionscheduler_actions,
-			array( 'status' => ActionScheduler_Store::STATUS_COMPLETE ),
+			array( 'status' => $status ),
 			array( 'action_id' => $action_id ),
 			array( '%s' ),
 			array( '%d' )
 		);
 
-		$this->assertSame( 0, $store->save_unique_action( $action ) );
+		$replacement_id = $store->save_unique_action( $action );
+		$this->assertGreaterThan( $action_id, $replacement_id );
+		$this->assertSame( $status, $store->get_status( $action_id ) );
+		$this->assertSame( 0, $store->save_unique_action( $action ), 'The replacement remains unique.' );
 		$this->assertSame(
 			'1',
 			$wpdb->get_var(
@@ -747,6 +753,52 @@ class ActionScheduler_DBStore_Test extends AbstractStoreTest {
 					$unique_key
 				)
 			)
+		);
+	}
+
+	/**
+	 * A competing insert after key recovery still wins without a duplicate or retry loop.
+	 */
+	public function test_stale_key_retry_preserves_competing_insert() {
+		global $wpdb;
+
+		$store       = new ActionScheduler_DBStore();
+		$action      = new ActionScheduler_Action( 'stale_key_retry_race', array(), new ActionScheduler_SimpleSchedule( as_get_datetime_object() ) );
+		$original_id = $store->save_unique_action( $action );
+		$wpdb->update( $wpdb->actionscheduler_actions, array( 'status' => ActionScheduler_Store::STATUS_COMPLETE ), array( 'action_id' => $original_id ) );
+		$inserts       = 0;
+		$competitor_id = 0;
+		$interleave    = function ( $sql ) use ( &$interleave, &$inserts, &$competitor_id, $store, $action, $wpdb ) {
+			if ( false !== strpos( $sql, 'INSERT INTO ' . $wpdb->actionscheduler_actions ) && false !== strpos( $sql, 'stale_key_retry_race' ) ) {
+				++$inserts;
+				if ( 2 === $inserts ) {
+					remove_filter( 'query', $interleave );
+					$competitor_id = $store->save_unique_action( $action );
+					add_filter( 'query', $interleave );
+				}
+			}
+			return $sql;
+		};
+		add_filter( 'query', $interleave );
+		try {
+			$this->assertSame( 0, $store->save_unique_action( $action ) );
+		} finally {
+			remove_filter( 'query', $interleave );
+		}
+		$this->assertSame( 2, $inserts );
+		$this->assertGreaterThan( $original_id, $competitor_id );
+		$this->assertSame( ActionScheduler_Store::STATUS_PENDING, $store->get_status( $competitor_id ) );
+		$this->assertSame( 0, $store->save_unique_action( $action ) );
+	}
+
+	/**
+	 * @return array[] Terminal statuses that can release a stale key.
+	 */
+	public function stale_unique_status_provider() {
+		return array(
+			'completed' => array( ActionScheduler_Store::STATUS_COMPLETE ),
+			'failed'    => array( ActionScheduler_Store::STATUS_FAILED ),
+			'canceled'  => array( ActionScheduler_Store::STATUS_CANCELED ),
 		);
 	}
 
@@ -851,7 +903,6 @@ class ActionScheduler_DBStore_Test extends AbstractStoreTest {
 				),
 				array( 'action_id' => $action_id )
 			);
-			$this->assertSame( 0, $store->save_unique_action( $action ) );
 			$actions[ $action_id ] = $action;
 		}
 
@@ -944,13 +995,25 @@ class ActionScheduler_DBStore_Test extends AbstractStoreTest {
 		$wpdb->last_error              = 'Cleanup test failure';
 		$wpdb->expects( $this->once() )->method( 'query' )->willReturn( false );
 		$wpdb->method( 'prepare' )->willReturnCallback( array( $original_wpdb, 'prepare' ) );
+		$error_capture    = tmpfile();
+		$actual_error_log = ini_set( 'error_log', stream_get_meta_data( $error_capture )['uri'] ); // phpcs:ignore WordPress.PHP.IniSet.Risky
+		$continued        = false;
+		$store            = new ActionScheduler_DBStore();
+		$after_cleanup    = static function () use ( &$continued ) {
+			$continued = true;
+		};
+		$hook             = new WP_Hook();
+		$hook->add_filter( 'cleanup', array( $store, 'release_stale_unique_action_keys' ), 10, 0 );
+		$hook->add_filter( 'cleanup', $after_cleanup, 20, 0 );
 
 		try {
-			( new ActionScheduler_DBStore() )->release_stale_unique_action_keys();
-			$this->fail( 'A failed update must be reported.' );
-		} catch ( RuntimeException $exception ) {
-			$this->assertSame( 'Unable to release stale unique action keys: Cleanup test failure', $exception->getMessage() );
+			$hook->do_action( array() ); // phpcs:ignore WooCommerce.Commenting.CommentHooks -- Exercise isolated callbacks on the existing cleanup hook.
+			$this->assertTrue( $continued, 'A failed cleanup must not interrupt later hook handlers.' );
+			rewind( $error_capture );
+			$this->assertStringContainsString( 'Unable to release stale unique action keys: Cleanup test failure', stream_get_contents( $error_capture ) );
 		} finally {
+			ini_set( 'error_log', $actual_error_log ); // phpcs:ignore WordPress.PHP.IniSet.Risky
+			fclose( $error_capture ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fclose -- Close the temporary log capture.
 			$wpdb = $original_wpdb; // phpcs:ignore WordPress.WP.GlobalVariablesOverride.Prohibited -- Restore the database connection after the simulated failure.
 		}
 

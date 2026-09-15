@@ -63,6 +63,58 @@ class ActionScheduler_DBStore extends ActionScheduler_Store {
 		$table_maker = new ActionScheduler_StoreSchema();
 		$table_maker->init();
 		$table_maker->register_tables();
+
+		add_action( 'action_scheduler_run_actions_cleanup_hook', array( $this, 'release_stale_unique_action_keys' ), 10, 0 );
+		add_action( 'action_scheduler_continue_actions_cleanup_hook', array( $this, 'release_stale_unique_action_keys' ), 10, 0 );
+	}
+
+	/**
+	 * Release keys left behind by custom terminal-status transitions, without deleting action history.
+	 *
+	 * @internal
+	 * @return void
+	 */
+	public function release_stale_unique_action_keys() {
+		global $wpdb;
+
+		$released = $wpdb->query(
+			$wpdb->prepare(
+				"UPDATE {$wpdb->actionscheduler_actions}
+				SET unique_key = NULL
+				WHERE status IN (%s, %s, %s) AND unique_key IS NOT NULL
+				ORDER BY action_id
+				LIMIT 1000",
+				self::STATUS_COMPLETE,
+				self::STATUS_FAILED,
+				self::STATUS_CANCELED
+			)
+		);
+
+		if ( false === $released ) {
+			// phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log -- Report cleanup failure without interrupting other hook handlers.
+			error_log( 'Unable to release stale unique action keys: ' . $wpdb->last_error );
+			return;
+		}
+
+		if ( 1000 !== $released ) {
+			return;
+		}
+
+		$continuation_hook = 'action_scheduler_continue_actions_cleanup_hook';
+		$called_from_run   = doing_action( 'action_scheduler_run_actions_cleanup_hook' );
+		$pending           = as_get_scheduled_actions(
+			array(
+				'hook'     => $continuation_hook,
+				'status'   => self::STATUS_PENDING,
+				'per_page' => 1,
+			),
+			'ids'
+		);
+
+		// A running continuation must not prevent another batch from being scheduled.
+		if ( empty( $pending ) ) {
+			as_schedule_single_action( time(), $continuation_hook, array(), 'ActionScheduler', $called_from_run, 0 );
+		}
 	}
 
 	/**
@@ -142,14 +194,40 @@ class ActionScheduler_DBStore extends ActionScheduler_Store {
 				$data['extended_args'] = $args;
 			}
 
+			if ( $unique && self::STATUS_PENDING === $data['status'] ) {
+				$data['unique_key'] = $this->get_unique_action_key( $action );
+			}
+
 			$insert_sql = $this->build_insert_sql( $data, $unique );
 
 			// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- $insert_sql should be already prepared.
-			$wpdb->query( $insert_sql );
-			$action_id = $wpdb->insert_id;
+			$query_result = $wpdb->query( $insert_sql );
+			$action_id    = $wpdb->insert_id;
 
-			if ( is_wp_error( $action_id ) ) {
-				throw new \RuntimeException( $action_id->get_error_message() );
+			if ( $unique && isset( $data['unique_key'] ) && 0 === $query_result && empty( $action_id ) ) {
+				// ON DUPLICATE KEY is a no-op, not a SQL error. Repair only this key if its action is terminal.
+				$released = $wpdb->query(
+					$wpdb->prepare(
+						"UPDATE {$wpdb->actionscheduler_actions} SET unique_key = NULL
+						WHERE unique_key = %s AND status IN (%s, %s, %s)",
+						$data['unique_key'],
+						self::STATUS_COMPLETE,
+						self::STATUS_FAILED,
+						self::STATUS_CANCELED
+					)
+				);
+
+				if ( false === $released ) {
+					$query_result = false;
+				} elseif ( $released > 0 ) {
+					// Retry once; the same atomic insert still protects against a competing scheduler.
+					$query_result = $wpdb->query( $insert_sql ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- Already prepared above.
+					$action_id    = $wpdb->insert_id;
+				}
+			}
+
+			if ( false === $query_result ) {
+				throw new \RuntimeException( $wpdb->last_error ? $wpdb->last_error : __( 'Database error.', 'action-scheduler' ) );
 			} elseif ( empty( $action_id ) ) {
 				if ( $unique ) {
 					return 0;
@@ -186,13 +264,15 @@ class ActionScheduler_DBStore extends ActionScheduler_Store {
 		$column_sql      = '`' . implode( '`, `', $columns ) . '`';
 		$placeholder_sql = implode( ', ', $placeholders );
 		$where_clause    = $this->build_where_clause_for_insert( $data, $table_name, $unique );
+		$conflict_clause = $unique ? 'ON DUPLICATE KEY UPDATE `unique_key` = VALUES(`unique_key`)' : '';
 
-		// phpcs:disable WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare	 -- $column_sql and $where_clause are already prepared. $placeholder_sql is hardcoded.
+		// phpcs:disable WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare	 -- $column_sql and $where_clause are already prepared. $placeholder_sql and $conflict_clause are hardcoded.
 		$insert_query = $wpdb->prepare(
 			"
 INSERT INTO $table_name ( $column_sql )
 SELECT $placeholder_sql FROM DUAL
-WHERE ( $where_clause ) IS NULL",
+WHERE ( $where_clause ) IS NULL
+$conflict_clause",
 			$values
 		);
 		// phpcs:enable
@@ -263,9 +343,36 @@ AND args = %s
 			'last_attempt_gmt',
 			'last_attempt_local',
 			'extended_args',
+			'unique_key',
 		);
 
 		return in_array( $column_name, $string_columns, true ) ? '%s' : '%d';
+	}
+
+	/**
+	 * Generate the versioned identity key for a unique action.
+	 *
+	 * Scheduling details and priority are intentionally excluded to preserve the existing uniqueness contract.
+	 *
+	 * @param ActionScheduler_Action $action Action object.
+	 * @return string
+	 * @throws \RuntimeException If the action identity cannot be encoded.
+	 */
+	private function get_unique_action_key( ActionScheduler_Action $action ) {
+		$identity = wp_json_encode(
+			array(
+				'hook'  => $action->get_hook(),
+				'args'  => $action->get_args(),
+				'group' => $action->get_group(),
+			)
+		);
+
+		if ( false === $identity ) {
+			// phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped
+			throw new \RuntimeException( __( 'Unable to generate a unique action key.', 'action-scheduler' ) );
+		}
+
+		return 'v1:' . hash( 'sha256', $identity );
 	}
 
 	/**
@@ -767,9 +874,12 @@ AND args = %s
 
 		$updated = $wpdb->update(
 			$wpdb->actionscheduler_actions,
-			array( 'status' => self::STATUS_CANCELED ),
+			array(
+				'status'     => self::STATUS_CANCELED,
+				'unique_key' => null,
+			),
 			array( 'action_id' => $action_id ),
-			array( '%s' ),
+			array( '%s', '%s' ),
 			array( '%d' )
 		);
 		if ( false === $updated ) {
@@ -850,7 +960,7 @@ AND args = %s
 
 			$wpdb->query(
 				$wpdb->prepare(
-					"UPDATE {$wpdb->actionscheduler_actions} SET status = %s WHERE action_id IN {$query_in}", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+					"UPDATE {$wpdb->actionscheduler_actions} SET status = %s, unique_key = NULL WHERE action_id IN {$query_in}", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 					$parameters
 				)
 			);
@@ -1313,9 +1423,10 @@ AND args = %s
 				'status'             => self::STATUS_FAILED,
 				'last_attempt_gmt'   => current_time( 'mysql', true ),
 				'last_attempt_local' => current_time( 'mysql' ),
+				'unique_key'         => null,
 			),
 			array( 'action_id' => $action_id ),
-			array( '%s', '%s', '%s' ),
+			array( '%s', '%s', '%s', '%s' ),
 			array( '%d' )
 		);
 		if ( empty( $updated ) ) {
@@ -1381,9 +1492,10 @@ AND args = %s
 				'status'             => self::STATUS_COMPLETE,
 				'last_attempt_gmt'   => current_time( 'mysql', true ),
 				'last_attempt_local' => current_time( 'mysql' ),
+				'unique_key'         => null,
 			),
 			array( 'action_id' => $action_id ),
-			array( '%s', '%s', '%s' ),
+			array( '%s', '%s', '%s', '%s' ),
 			array( '%d' )
 		);
 		if ( empty( $updated ) ) {

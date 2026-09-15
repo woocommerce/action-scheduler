@@ -20,7 +20,7 @@ class ActionScheduler_StoreSchema extends ActionScheduler_Abstract_Schema {
 	 *
 	 * @var int
 	 */
-	protected $schema_version = 8;
+	protected $schema_version = 9;
 
 	/**
 	 * Construct.
@@ -73,7 +73,9 @@ class ActionScheduler_StoreSchema extends ActionScheduler_Abstract_Schema {
 				        last_attempt_local datetime NULL default '{$default_date}',
 				        claim_id bigint(20) unsigned NOT NULL default '0',
 				        extended_args varchar(8000) DEFAULT NULL,
+				        unique_key varchar(191) DEFAULT NULL,
 				        PRIMARY KEY  (action_id),
+				        UNIQUE KEY unique_key (unique_key),
 				        KEY hook_status_scheduled_date_gmt (hook($hook_status_scheduled_date_gmt_max_index_length), status, scheduled_date_gmt),
 				        KEY status_scheduled_date_gmt (status, scheduled_date_gmt),
 				        KEY scheduled_date_gmt (scheduled_date_gmt),

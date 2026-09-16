@@ -117,11 +117,19 @@ class ActionScheduler_DBLogger extends ActionScheduler_Logger {
 	/**
 	 * Delete the action logs for an action.
 	 *
+	 * In a WP-CLI context (typically `wp action-scheduler clean`), all logs are
+	 * removed in a single synchronous query so the caller sees the result
+	 * immediately and no orphaned follow-up actions are left behind. In a web
+	 * or background context, deletions are batched via
+	 * {@see self::clear_deleted_action_logs_single_batch()} to avoid long-running
+	 * queries triggered by the action-deletion hook fired in user requests.
+	 *
 	 * @since 3.9.3 the logs will be deleted in batches of 100.
 	 * @param int $action_id Action ID.
 	 */
 	public function clear_deleted_action_logs( $action_id ) {
-		$this->clear_deleted_action_logs_single_batch( $action_id, -1, 1, 4000 );
+		$batch_size = ( defined( 'WP_CLI' ) && WP_CLI ) ? PHP_INT_MAX : 4000;
+		$this->clear_deleted_action_logs_single_batch( $action_id, -1, 1, $batch_size );
 	}
 
 	/**

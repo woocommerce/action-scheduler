@@ -34,6 +34,7 @@
 			<file>./phpunit/ActionScheduler_RecurringActionScheduler_Test.php</file>
 			<file>./phpunit/ActionScheduler_ListTable_Test.php</file>
 			<file>./phpunit/ActionScheduler_AdminView_Test.php</file>
+			<file>./phpunit/ActionScheduler_Test.php</file>
 		</testsuite>
 	</testsuites>
 	<groups>

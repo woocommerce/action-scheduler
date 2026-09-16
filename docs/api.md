@@ -272,6 +272,7 @@ as_supports( $feature );
 The feature to check support for.  
 Currently supported:
 - `'ensure_recurring_actions_hook'` — Indicates support for the `action_scheduler_ensure_recurring_actions` hook.
+- `'uninstall_bootstrap'` - Indicates that Action Scheduler skips its runtime scheduling (the `action_scheduler_run_queue` cron event, the async request dispatcher and the housekeeping action) when it is initialized from a plugin's `uninstall.php`.
 
 ### Return value
 

@@ -47,6 +47,23 @@ Collaboration is cool. We'd love to work with you to improve Action Scheduler. [
 
 == Changelog ==
 
+= 4.1.1 - 2026-09-16 =
+* Merge release/4.1.0 into trunk.
+* Bump wp-coding-standards/wpcs from 3.3.0 to 3.4.1.
+* Add/issue PAY-798 - AGENTS.md backward compatibility guardrail.
+* Bump squizlabs/php_codesniffer from 3.13.5 to 3.13.6.
+* Pin GitHub Actions to full commit SHAs.
+* ci: add job-level timeout-minutes to workflow jobs.
+* Pin woo-product-deploy action dependencies.
+* Top up AGENTS.md backward-compatibility guardrails.
+* Rules relating to use of `%i` in prepared `$wpdb` queries.
+* Fix screen options on WooCommerce status page.
+* Fix placeholders and escaping in admin notices.
+* Run and correct the recurring action scheduler tests.
+* Make unique action inserts atomic.
+* Skip runtime scheduling side effects when bootstrapped from a plugin's uninstall.php.
+* Change 4.2.0 references to 4.1.1.
+
 = 4.1.0 - 2026-08-05 =
 * Fix - Correct an oversight in the lock implementation (used to rate-limit async request runners) that could leave a lock permanently stuck and result in database errors in unusual cases.
 * Fix - Correct the behavior of the `wp action-scheduler clean` command so that the `--before` option defaults to 31 days ago.

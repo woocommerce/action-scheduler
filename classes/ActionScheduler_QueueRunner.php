@@ -87,9 +87,11 @@ class ActionScheduler_QueueRunner extends ActionScheduler_Abstract_QueueRunner {
 			$this->cleaner->register_cleaner_hooks();
 		}
 
-		// Neither a cron event nor an async request may be left behind by an uninstall: WordPress deletes
-		// the host plugin's files later in the same request, so the shutdown callback would fatal on the
-		// missing classes and the cron event would outlive the code that serves it.
+		// The registrations above are kept during an uninstall: they create no state, and if WP Cron still
+		// spawns a queue run for this site, it should be served. Neither a cron event nor an async request
+		// may be left behind, though: WordPress deletes the host plugin's files later in the same request,
+		// so the shutdown callback would fatal on the missing classes and the cron event would outlive the
+		// code that serves it.
 		if ( ActionScheduler::is_uninstalling() ) {
 			return;
 		}

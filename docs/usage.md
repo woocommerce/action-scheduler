@@ -112,7 +112,12 @@ as_unschedule_all_actions( 'my_plugin_recurring_action' );
 // Versions before 4.2.0 set up the runtime here too, and their async request dispatcher runs on
 // 'shutdown' - by which point WordPress has deleted this plugin's files, so the request fatals.
 if ( ! $as_already_loaded && ! ( function_exists( 'as_supports' ) && as_supports( 'uninstall_bootstrap' ) ) ) {
-	ActionScheduler::runner()->unhook_dispatch_async_request();
+	$runner = ActionScheduler::runner();
+
+	// A site can swap the runner via 'action_scheduler_queue_runner_class'; only the default one has this method.
+	if ( method_exists( $runner, 'unhook_dispatch_async_request' ) ) {
+		$runner->unhook_dispatch_async_request();
+	}
 }
 ```
 

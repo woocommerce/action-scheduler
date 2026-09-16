@@ -91,7 +91,7 @@ abstract class ActionScheduler {
 	 * a request must not set up the runtime: WordPress deletes the host plugin's files later in the
 	 * same request, so anything left hooked or newly scheduled outlives the code that would serve it.
 	 *
-	 * @since 4.1.1
+	 * @since 4.2.0
 	 *
 	 * @return bool
 	 */

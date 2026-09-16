@@ -110,7 +110,7 @@ require_once plugin_dir_path( __FILE__ ) . '/libraries/action-scheduler/action-s
 
 as_unschedule_all_actions( 'my_plugin_recurring_action' );
 
-// Versions before 4.2.0 set up the runtime here too, and their async request dispatcher runs on
+// Versions before 4.1.1 set up the runtime here too, and their async request dispatcher runs on
 // 'shutdown' - by which point WordPress has deleted this plugin's files, so the request fatals.
 if ( ! $as_already_loaded && ! ( function_exists( 'as_supports' ) && as_supports( 'uninstall_bootstrap' ) ) ) {
 	$runner = ActionScheduler::runner();
@@ -122,7 +122,7 @@ if ( ! $as_already_loaded && ! ( function_exists( 'as_supports' ) && as_supports
 }
 ```
 
-Since Action Scheduler 4.2.0, initializing this way is recognized as an uninstall and no WP Cron event, async queue run or housekeeping action is created. The `$as_already_loaded` check matters because the version dependency handling described above has already run: if any active plugin loaded Action Scheduler earlier in the request, your `require_once` is a no-op and you are using that copy, whose runtime is set up legitimately and must be left alone.
+Since Action Scheduler 4.1.1, initializing this way is recognized as an uninstall and no WP Cron event, async queue run or housekeeping action is created. The `$as_already_loaded` check matters because the version dependency handling described above has already run: if any active plugin loaded Action Scheduler earlier in the request, your `require_once` is a no-op and you are using that copy, whose runtime is set up legitimately and must be left alone.
 
 Only cancel your own actions here. Action Scheduler's tables belong to the site, not to your plugin, and another plugin bundling it may still be active.
 

@@ -78,20 +78,9 @@ class ActionScheduler_QueueRunner extends ActionScheduler_Abstract_QueueRunner {
 	public function init() {
 
 		add_filter( 'cron_schedules', array( self::instance(), 'add_wp_cron_schedule' ) ); // phpcs:ignore WordPress.WP.CronInterval.CronSchedulesInterval
-		add_action( self::WP_CRON_HOOK, array( self::instance(), 'run' ) );
 
-		// Backward compatibility: If the action cleaner is standard, cleaning will be performed as an action to improve throughput
-		// and enable daily runs. If not, cleaning will occur explicitly before processing actions to ensure backward compatibility.
-		// The cleaner was initially designed as a QueueRunner dependency, which is why the hooks are registered here.
-		if ( ! $this->is_custom_cleaner ) {
-			$this->cleaner->register_cleaner_hooks();
-		}
-
-		// The registrations above are kept during an uninstall: they create no state, and if WP Cron still
-		// spawns a queue run for this site, it should be served. Neither a cron event nor an async request
-		// may be left behind, though: WordPress deletes the host plugin's files later in the same request,
-		// so the shutdown callback would fatal on the missing classes and the cron event would outlive the
-		// code that serves it.
+		// WordPress deletes the host plugin's files later in an uninstall request, so set up nothing that could
+		// run after that point or outlive the plugin.
 		if ( ActionScheduler::is_uninstalling() ) {
 			return;
 		}
@@ -109,7 +98,15 @@ class ActionScheduler_QueueRunner extends ActionScheduler_Abstract_QueueRunner {
 			wp_schedule_event( time(), $schedule, self::WP_CRON_HOOK, $cron_context );
 		}
 
+		add_action( self::WP_CRON_HOOK, array( self::instance(), 'run' ) );
 		$this->hook_dispatch_async_request();
+
+		// Backward compatibility: If the action cleaner is standard, cleaning will be performed as an action to improve throughput
+		// and enable daily runs. If not, cleaning will occur explicitly before processing actions to ensure backward compatibility.
+		// The cleaner was initially designed as a QueueRunner dependency, which is why the hooks are registered here.
+		if ( ! $this->is_custom_cleaner ) {
+			$this->cleaner->register_cleaner_hooks();
+		}
 	}
 
 	/**

@@ -670,19 +670,26 @@ class ActionScheduler_QueueRunner_Test extends ActionScheduler_UnitTestCase {
 	}
 
 	/**
-	 * Test that init() creates no cron event and no shutdown callback during a plugin uninstall.
+	 * Test that init() sets up no queue callback, cron event or shutdown callback during a plugin uninstall.
 	 *
-	 * WordPress deletes the host plugin's files later in the same request, so the shutdown callback
-	 * would fatal on the missing classes, and the cron event would outlive the code that serves it.
+	 * WordPress deletes the host plugin's files later in the same request, so anything that runs after
+	 * that point would fatal on the missing classes, and the cron event would outlive the code that serves it.
 	 */
 	public function test_init_skips_cron_and_async_dispatch_when_uninstalling() {
-		$runner = ActionScheduler_Mocker::get_queue_runner();
+		$runner       = ActionScheduler_Mocker::get_queue_runner();
+		$run_callback = array( ActionScheduler_QueueRunner::instance(), 'run' );
+		$priority     = has_action( ActionScheduler_QueueRunner::WP_CRON_HOOK, $run_callback );
 		$this->clear_queue_runner_cron_event();
+		remove_action( ActionScheduler_QueueRunner::WP_CRON_HOOK, $run_callback, $priority );
 		$was_uninstalling = $this->set_uninstalling( true );
 
 		try {
 			$runner->init();
 
+			$this->assertFalse(
+				has_action( ActionScheduler_QueueRunner::WP_CRON_HOOK, $run_callback ),
+				'The queue runner should not be hooked into the WP Cron hook during an uninstall.'
+			);
 			$this->assertFalse(
 				wp_next_scheduled( ActionScheduler_QueueRunner::WP_CRON_HOOK, array( 'WP Cron' ) ),
 				'No WP Cron event should be scheduled during an uninstall.'
@@ -693,6 +700,10 @@ class ActionScheduler_QueueRunner_Test extends ActionScheduler_UnitTestCase {
 			);
 		} finally {
 			$this->set_uninstalling( $was_uninstalling );
+
+			if ( false !== $priority ) {
+				add_action( ActionScheduler_QueueRunner::WP_CRON_HOOK, $run_callback, $priority );
+			}
 		}
 	}
 

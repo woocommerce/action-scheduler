@@ -102,7 +102,8 @@ WordPress deactivates a plugin before running its `uninstall.php`, so `'plugins_
 
 ```php
 <?php
-// Another still-active plugin may already have loaded Action Scheduler for this request.
+// Another still-active plugin may already have loaded Action Scheduler for this request,
+// or it may have been bootstrapped by an inactive plugin that was also being uninstalled.
 $as_already_loaded = class_exists( 'ActionScheduler', false );
 
 require_once plugin_dir_path( __FILE__ ) . '/libraries/action-scheduler/action-scheduler.php';

@@ -1,10 +1,10 @@
 === Action Scheduler ===
 Contributors: Automattic, wpmuguru, vedjain, konamiman, barryhughes-1, crstauf, jorgeatorres, coreymckrill, prettyboymp, ovidiul
 Tags: scheduler, cron
-Stable tag: 4.1.0
+Stable tag: 4.2.0
 License: GPLv3
-Requires at least: 6.8
-Tested up to: 7.0
+Requires at least: 6.9
+Tested up to: 7.1
 Requires PHP: 7.2
 
 Action Scheduler - Job Queue for WordPress
@@ -46,6 +46,13 @@ Action Scheduler is developed and maintained by [Automattic](http://automattic.c
 Collaboration is cool. We'd love to work with you to improve Action Scheduler. [Pull Requests](https://github.com/woocommerce/action-scheduler/pulls) welcome.
 
 == Changelog ==
+
+= 4.2.0 - 2026-09-16 =
+* Fix - Enforce unique action inserts atomically and release stale uniqueness keys during scheduled cleanup.
+* Fix - Show the per-page Screen Option on WooCommerce's Scheduled Actions tab.
+* Fix - Show the number of actions and the link in the past-due actions admin notice, instead of raw placeholders.
+* Fix - Escape the action hook name in the admin notice shown after a row action.
+* Add - Skip runtime scheduling (the WP Cron event, the async request dispatcher and the daily housekeeping action) when Action Scheduler is initialized from a plugin's `uninstall.php`, and add `as_supports( 'uninstall_bootstrap' )` so host plugins can detect it.
 
 = 4.1.0 - 2026-08-05 =
 * Fix - Correct an oversight in the lock implementation (used to rate-limit async request runners) that could leave a lock permanently stuck and result in database errors in unusual cases.

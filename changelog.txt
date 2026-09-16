@@ -1,6 +1,6 @@
 *** Changelog ***
 
-= 4.2.0 - xxxx-xx-xx =
+= 4.2.0 - 2026-09-16 =
 * Fix - Enforce unique action inserts atomically and release stale uniqueness keys during scheduled cleanup.
 * Fix - Show the per-page Screen Option on WooCommerce's Scheduled Actions tab.
 * Fix - Show the number of actions and the link in the past-due actions admin notice, instead of raw placeholders.

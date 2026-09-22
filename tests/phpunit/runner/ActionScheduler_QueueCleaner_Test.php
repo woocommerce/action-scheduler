@@ -586,4 +586,172 @@ class ActionScheduler_QueueCleaner_Test extends ActionScheduler_UnitTestCase {
 		remove_action( 'action_scheduler_run_actions_cleanup_hook', array( $cleaner, 'delete_old_actions' ) );
 		remove_action( 'action_scheduler_continue_actions_cleanup_hook', array( $cleaner, 'delete_old_actions' ) );
 	}
+
+	/**
+	 * Helper to create a scenario with two completed actions scheduled 32 days ago,
+	 * where Action B has a recent last_attempt_gmt to simulate a retried action.
+	 *
+	 * @return array{store: ActionScheduler_Store, action_a_id: int, action_b_id: int}
+	 */
+	private function create_cli_scenario() {
+		$store = ActionScheduler::store();
+		ActionScheduler_Callbacks::add_callbacks();
+		$scheduled_date_old = as_get_datetime_object( '-32 days' );
+
+		$action_a    = new ActionScheduler_Action(
+			ActionScheduler_Callbacks::HOOK_WITH_CALLBACK,
+			array( md5( wp_rand() ) ),
+			new ActionScheduler_SimpleSchedule( $scheduled_date_old )
+		);
+		$action_a_id = $store->save_action( $action_a );
+		$store->mark_complete( $action_a_id );
+		$this->force_last_attempt_date( $action_a_id, $scheduled_date_old );
+
+		$action_b    = new ActionScheduler_Action(
+			ActionScheduler_Callbacks::HOOK_WITH_CALLBACK,
+			array( md5( wp_rand() ) ),
+			new ActionScheduler_SimpleSchedule( $scheduled_date_old )
+		);
+		$action_b_id = $store->save_action( $action_b );
+		$store->mark_complete( $action_b_id );
+		$this->force_last_attempt_date( $action_b_id, as_get_datetime_object( '-1 hour' ) );
+
+		return array(
+			'store'       => $store,
+			'action_a_id' => $action_a_id,
+			'action_b_id' => $action_b_id,
+		);
+	}
+
+	/**
+	 * Regression test for #1107: clean_actions() with $date_type = 'date' deletes actions based on
+	 * scheduled_date_gmt, so even actions with a recent last_attempt_gmt are correctly cleaned up.
+	 */
+	public function test_clean_actions_uses_scheduled_date_when_date_type_is_date() {
+		$scenario    = $this->create_cli_scenario();
+		$store       = $scenario['store'];
+		$action_a_id = $scenario['action_a_id'];
+		$action_b_id = $scenario['action_b_id'];
+
+		$cleaner     = new ActionScheduler_QueueCleaner( $store );
+		$cutoff_date = as_get_datetime_object( '-31 days' );
+		$deleted     = $cleaner->clean_actions(
+			array( ActionScheduler_Store::STATUS_COMPLETE ),
+			$cutoff_date,
+			null,
+			'CLI',
+			'date'
+		);
+
+		$this->assertContains( $action_a_id, $deleted, 'Action A (old modified) should be deleted.' );
+		$this->assertContains( $action_b_id, $deleted, 'Action B (recent modified) SHOULD be deleted when using scheduled date.' );
+		$this->assertCount( 2, $deleted, 'Both actions should be deleted when using date-based filtering.' );
+
+		$this->assertInstanceOf( ActionScheduler_NullAction::class, $store->fetch_action( $action_a_id ) );
+		$this->assertInstanceOf( ActionScheduler_NullAction::class, $store->fetch_action( $action_b_id ) );
+	}
+
+	/**
+	 * Regression test for #1107: clean_actions() with $date_type = 'modified' skips
+	 * actions with a recent last_attempt_gmt. This demonstrates the original bug.
+	 */
+	public function test_clean_actions_with_modified_date_misses_recently_touched_actions() {
+		$scenario    = $this->create_cli_scenario();
+		$store       = $scenario['store'];
+		$action_a_id = $scenario['action_a_id'];
+		$action_b_id = $scenario['action_b_id'];
+
+		$cleaner     = new ActionScheduler_QueueCleaner( $store );
+		$cutoff_date = as_get_datetime_object( '-31 days' );
+		$deleted     = $cleaner->clean_actions(
+			array( ActionScheduler_Store::STATUS_COMPLETE ),
+			$cutoff_date,
+			null,
+			'CLI',
+			'modified'
+		);
+
+		$this->assertContains( $action_a_id, $deleted, 'Action A (old both dates) should be deleted.' );
+		$this->assertNotContains( $action_b_id, $deleted, 'Action B (recent last_attempt) escapes deletion — this is the bug #1107.' );
+		$this->assertCount( 1, $deleted, 'Only Action A is deleted. Action B escapes modified-based filtering.' );
+		$this->assertNotInstanceOf( ActionScheduler_NullAction::class, $store->fetch_action( $action_b_id ) );
+	}
+
+	/**
+	 * Scheduled (cron) cleanup always forces 'modified' date type, even if 'date' was requested externally.
+	 */
+	public function test_scheduled_cleanup_uses_modified_date() {
+		$store = ActionScheduler::store();
+		ActionScheduler_Callbacks::add_callbacks();
+
+		$action    = new ActionScheduler_Action(
+			ActionScheduler_Callbacks::HOOK_WITH_CALLBACK,
+			array( md5( wp_rand() ) ),
+			new ActionScheduler_SimpleSchedule( as_get_datetime_object( '-32 days' ) )
+		);
+		$action_id = $store->save_action( $action );
+		$store->mark_complete( $action_id );
+		$this->force_last_attempt_date( $action_id, as_get_datetime_object( '-5 minutes' ) );
+
+		$cleaner = new ActionScheduler_QueueCleaner( $store );
+		$cleaner->register_cleaner_hooks();
+		do_action( 'action_scheduler_run_actions_cleanup_hook' );
+
+		$fetched_action = $store->fetch_action( $action_id );
+		$this->assertNotInstanceOf( ActionScheduler_NullAction::class, $fetched_action, 'Scheduled cleanup should NOT delete actions with recent last_attempt.' );
+		$this->assertInstanceOf( ActionScheduler_FinishedAction::class, $fetched_action, 'The action should still exist as a FinishedAction.' );
+	}
+
+	/**
+	 * Verify orphan claims are cleaned up when deleting an action.
+	 */
+	public function test_orphan_claim_cleaned_on_action_delete() {
+		$store    = ActionScheduler::store();
+		$schedule = new ActionScheduler_SimpleSchedule( as_get_datetime_object( '-32 days' ) );
+
+		$action_a_id = $store->save_action( new ActionScheduler_Action( 'hook_a', array(), $schedule ) );
+		$action_b_id = $store->save_action( new ActionScheduler_Action( 'hook_b', array(), $schedule ) );
+
+		$claim    = $store->stake_claim( 10 );
+		$claim_id = $claim->get_id();
+
+		$store->delete_action( $action_a_id );
+
+		global $wpdb;
+		$claims_after_a = (int) $wpdb->get_var(
+			$wpdb->prepare( "SELECT COUNT(*) FROM {$wpdb->actionscheduler_claims} WHERE claim_id = %d", $claim_id )
+		);
+		$this->assertEquals( 1, $claims_after_a, 'Claim should still exist since action B references it.' );
+
+		$store->delete_action( $action_b_id );
+
+		$claims_after_b = (int) $wpdb->get_var(
+			$wpdb->prepare( "SELECT COUNT(*) FROM {$wpdb->actionscheduler_claims} WHERE claim_id = %d", $claim_id )
+		);
+		$this->assertEquals( 0, $claims_after_b, 'Orphan claim should be deleted when its last referencing action is deleted.' );
+	}
+
+	/**
+	 * Force the last_attempt_gmt and last_attempt_local columns to a specific datetime.
+	 *
+	 * @param int      $action_id Action ID.
+	 * @param DateTime $date      The date to set.
+	 */
+	private function force_last_attempt_date( $action_id, DateTime $date ) {
+		global $wpdb;
+		$date->setTimezone( new DateTimeZone( 'UTC' ) );
+		$gmt   = $date->format( 'Y-m-d H:i:s' );
+		$local = get_date_from_gmt( $gmt );
+
+		$wpdb->update(
+			$wpdb->actionscheduler_actions,
+			array(
+				'last_attempt_gmt'   => $gmt,
+				'last_attempt_local' => $local,
+			),
+			array( 'action_id' => $action_id ),
+			array( '%s', '%s' ),
+			array( '%d' )
+		);
+	}
 }

@@ -7,6 +7,24 @@ class ActionScheduler_wpCommentLogger extends ActionScheduler_Logger {
 	const AGENT = 'ActionScheduler';
 	const TYPE  = 'action_log';
 
+	public function clear_deleted_action_logs( $action_id ) {
+		global $wpdb;
+		$wpdb->query(
+			$wpdb->prepare(
+				"DELETE cm FROM {$wpdb->commentmeta} cm INNER JOIN {$wpdb->comments} c ON c.comment_ID = cm.comment_id WHERE c.comment_post_ID = %d AND c.comment_type = %s",
+				$action_id,
+				self::TYPE
+			)
+		);
+		$wpdb->query(
+			$wpdb->prepare(
+				"DELETE FROM {$wpdb->comments} WHERE comment_post_ID = %d AND comment_type = %s",
+				$action_id,
+				self::TYPE
+			)
+		);
+	}
+
 	/**
 	 * Create log entry.
 	 *
@@ -255,6 +273,8 @@ class ActionScheduler_wpCommentLogger extends ActionScheduler_Logger {
 		add_action( 'action_scheduler_after_process_queue', array( $this, 'enable_comment_counting' ), 10, 0 );
 
 		parent::init();
+		add_action( 'action_scheduler_deleted_action', array( $this, 'clear_deleted_action_logs' ), 10, 1 );
+		add_action( 'action_scheduler_canceled_corrupted_action', array( $this, 'clear_deleted_action_logs' ), 10, 1 );
 
 		add_action( 'pre_get_comments', array( $this, 'filter_comment_queries' ), 10, 1 );
 		add_action( 'wp_count_comments', array( $this, 'filter_comment_count' ), 20, 2 ); // run after WC_Comments::wp_count_comments() to make sure we exclude order notes and action logs.

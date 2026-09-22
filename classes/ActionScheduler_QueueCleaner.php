@@ -188,7 +188,7 @@ class ActionScheduler_QueueCleaner {
 	 *
 	 * @return array Actions deleted.
 	 */
-	public function clean_actions( array $statuses_to_purge, DateTime $cutoff_date, $batch_size = null, $context = 'old' ) {
+	public function clean_actions( array $statuses_to_purge, DateTime $cutoff_date, $batch_size = null, $context = 'old', $date_type = 'modified' ) {
 		$batch_size        = ! is_null( $batch_size ) ? $batch_size : $this->batch_size;
 		$cutoff            = ! is_null( $cutoff_date ) ? $cutoff_date : as_get_datetime_object( $this->month_in_seconds . ' seconds ago' );
 		$lifespan          = time() - $cutoff->getTimestamp();
@@ -198,6 +198,9 @@ class ActionScheduler_QueueCleaner {
 		// For inline cleanup during a queue run, the batch size should remain unchanged to avoid increasing the process footprint.
 		$is_scheduled_cleanup = doing_action( self::RUN_SCHEDULED_CLEANER_HOOK )
 			|| doing_action( self::CONTINUE_SCHEDULED_CLEANER_HOOK );
+		if ( $is_scheduled_cleanup ) {
+			$date_type = 'modified';
+		}
 		// 250 balances replication safety, backlog clearance speed, and claim slot duration on high-volume stores.
 		$iteration_batch_size       = $is_scheduled_cleanup ? max( 250, $batch_size ) : $batch_size;
 		$iteration_unused_budget    = 0;
@@ -231,15 +234,19 @@ class ActionScheduler_QueueCleaner {
 		$deleted_actions = array();
 		foreach ( $statuses_to_purge as $status ) {
 			$iteration_execution_budget = $iteration_batch_size + $iteration_unused_budget;
-			$actions_to_delete          = $this->store->query_actions(
-				array(
-					'status'           => $status,
-					'modified'         => $cutoff,
-					'modified_compare' => '<=',
-					'per_page'         => $iteration_execution_budget,
-					'orderby'          => 'none',
-				)
+			$query                    = array(
+				'status'   => $status,
+				'per_page' => $iteration_execution_budget,
+				'orderby'  => 'none',
 			);
+			if ( 'date' === $date_type ) {
+				$query['date']         = $cutoff;
+				$query['date_compare'] = '<=';
+			} else {
+				$query['modified']         = $cutoff;
+				$query['modified_compare'] = '<=';
+			}
+			$actions_to_delete          = $this->store->query_actions( $query );
 			$deleted_actions[]          = $this->delete_actions( $actions_to_delete, $lifespan, $context );
 
 			$fetched_actions_count      = count( $actions_to_delete );

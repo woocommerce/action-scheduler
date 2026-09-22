@@ -498,6 +498,15 @@ abstract class ActionScheduler_Store extends ActionScheduler_Store_Deprecated {
 	}
 
 	/**
+	 * Purge claim records that are no longer referenced by any action.
+	 *
+	 * @return int|false Number of orphan claims deleted, or false on failure.
+	 */
+	public function purge_orphan_claims() {
+		return 0;
+	}
+
+	/**
 	 * Get instance.
 	 *
 	 * @return ActionScheduler_Store

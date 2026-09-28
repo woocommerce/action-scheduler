@@ -1,5 +1,8 @@
 *** Changelog ***
 
+= 4.2.1 - xxxx-xx-xx =
+* Dev - Add a direct file access guard to the PHP files that lacked one, and stop shipping AGENTS.md and CLAUDE.md.
+
 = 4.2.0 - 2026-09-16 =
 * Fix - Enforce unique action inserts atomically and release stale uniqueness keys during scheduled cleanup.
 * Fix - Show the per-page Screen Option on WooCommerce's Scheduled Actions tab.

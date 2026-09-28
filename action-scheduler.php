@@ -29,6 +29,14 @@
  * @package ActionScheduler
  */
 
+if ( ! defined( 'ABSPATH' ) ) {
+	// Composer "files" autoloading can include this file before WordPress loads (see #589): only a direct web request exits.
+	if ( 'cli' === PHP_SAPI || __FILE__ !== get_included_files()[0] ) {
+		return;
+	}
+	exit;
+}
+
 if ( ! function_exists( 'action_scheduler_register_4_dot_2_dot_0' ) && function_exists( 'add_action' ) ) { // WRCS: DEFINED_VERSION.
 
 	if ( ! class_exists( 'ActionScheduler_Versions', false ) ) {

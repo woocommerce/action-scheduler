@@ -135,7 +135,8 @@ class ActionScheduler_WPCLI_Scheduler_command extends WP_CLI_Command {
 	 * @return array
 	 */
 	private function parse_comma_separated_string( $string ): array {
-		return array_filter( str_getcsv( $string ) );
+		// PHP 8.4+ deprecates omitting $escape.
+		return array_filter( str_getcsv( $string, ',', '"', '\\' ) );
 	}
 
 	/**

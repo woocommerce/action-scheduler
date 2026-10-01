@@ -29,6 +29,7 @@
 			<directory>./phpunit/runner</directory>
 			<directory>./phpunit/schedules</directory>
 			<directory>./phpunit/versioning</directory>
+			<directory>./phpunit/wp_cli</directory>
 			<file>./phpunit/logging/ActionScheduler_wpCommentLogger_Test.php</file>
 			<file>./phpunit/jobstore/ActionScheduler_wpPostStore_Test.php</file>
 			<file>./phpunit/ActionScheduler_RecurringActionScheduler_Test.php</file>

@@ -80,9 +80,57 @@ class ActionScheduler_DataController {
 	 * Unmark migration when a plugin is de-activated. Will not work in case of silent activation, for example in an update.
 	 * We do this to mitigate the bug of lost actions which happens if there was an AS 2.x to AS 3.x migration in the past, but that plugin is now
 	 * deactivated and the site was running on AS 2.x again.
+	 *
+	 * When hooked to `deactivate_plugin`, the flag is only cleared if the plugin being deactivated is the one providing
+	 * the running copy of Action Scheduler, as deactivating any other plugin cannot change which copy is loaded.
+	 *
+	 * @param string|null $plugin Optional. Path to the plugin file relative to the plugins directory, as passed by the
+	 *                            `deactivate_plugin` hook. When omitted, the flag is cleared unconditionally.
 	 */
-	public static function mark_migration_incomplete() {
+	public static function mark_migration_incomplete( $plugin = null ) {
+		if ( null !== $plugin && ! self::is_loaded_from_plugin( $plugin ) ) {
+			return;
+		}
+
 		delete_option( self::STATUS_FLAG );
+	}
+
+	/**
+	 * Determine whether the running copy of Action Scheduler is located within the given plugin's directory.
+	 *
+	 * @param mixed $plugin Path to the plugin file relative to the plugins directory.
+	 *
+	 * @return bool
+	 */
+	private static function is_loaded_from_plugin( $plugin ) {
+		$action_scheduler_dir = ActionScheduler::plugin_path( '' );
+
+		if ( ! is_string( $plugin ) || '' === $plugin || '' === $action_scheduler_dir || ! defined( 'WP_PLUGIN_DIR' ) ) {
+			return false;
+		}
+
+		$plugins_dir = self::resolve_path( WP_PLUGIN_DIR );
+		$plugin_dir  = self::resolve_path( dirname( WP_PLUGIN_DIR . '/' . $plugin ) );
+
+		// A single-file plugin sits directly in the plugins directory, so it cannot be the one providing Action Scheduler.
+		if ( $plugin_dir === $plugins_dir ) {
+			return false;
+		}
+
+		return 0 === strpos( self::resolve_path( $action_scheduler_dir ) . '/', $plugin_dir . '/' );
+	}
+
+	/**
+	 * Resolve symlinks and relative segments where possible, and normalize the path for comparison.
+	 *
+	 * @param string $path Path to resolve.
+	 *
+	 * @return string Normalized path, without a trailing slash.
+	 */
+	private static function resolve_path( $path ) {
+		$real_path = realpath( $path );
+
+		return untrailingslashit( wp_normalize_path( false === $real_path ? $path : $real_path ) );
 	}
 
 	/**

@@ -33,6 +33,30 @@ jobs:
         run: |
           printf '{ "plugins": [ "https://downloads.wordpress.org/plugin/plugin-check.%s.zip" ] }\n' "$PLUGIN_CHECK_VERSION" > .wp-env.override.json
 
+      # Existing findings, ignored because they are part of the design or the public API. Each code
+      # also suppresses new occurrences, so review before adding to this list. Built here because
+      # a YAML block cannot carry a comment per line.
+      - name: List ignored codes
+        id: ignored
+        run: |
+          codes=(
+            # Exceptions carry plain messages; escaping belongs to whatever displays them.
+            WordPress.Security.EscapeOutput.ExceptionNotEscaped
+            # The data stores query Action Scheduler's own tables.
+            WordPress.DB.DirectDatabaseQuery.DirectQuery
+            # Queue state must be read fresh, as claims change between requests.
+            WordPress.DB.DirectDatabaseQuery.NoCaching
+            # SQL is assembled from $wpdb table names and fragments prepared earlier.
+            PluginCheck.Security.DirectDB.UnescapedDBParameter
+            # The as_*() API and the deprecated wc_*() functions cannot be renamed.
+            WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedFunctionFound
+            # The pre_as_* filters are public, and the core hooks are fired deliberately.
+            WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound
+            # Actions fire the hooks their schedulers named.
+            WordPress.NamingConventions.PrefixAllGlobals.DynamicHooknameFound
+          )
+          echo "codes=$(IFS=,; echo "${codes[*]}")" >> "$GITHUB_OUTPUT"
+
       - name: Run Plugin Check
         uses: wordpress/plugin-check-action@10857da14b6c2246d15402b3e69f777edcf8c12e # v1.1.9
         with:
@@ -41,21 +65,4 @@ jobs:
           repo-token: ''
           # Fail on warnings too.
           strict: true
-          # Existing findings, ignored because they are part of the design or the public API. Each
-          # code also suppresses new occurrences, so review before adding to this list.
-          # (Comments cannot go inside the block below, as they would become part of the value.)
-          # - ExceptionNotEscaped: exceptions carry plain messages; escaping belongs to whatever displays them.
-          # - DirectQuery: the data stores query Action Scheduler's own tables.
-          # - NoCaching: queue state must be read fresh, as claims change between requests.
-          # - UnescapedDBParameter: SQL is assembled from $wpdb table names and fragments prepared earlier.
-          # - NonPrefixedFunctionFound: the as_*() API and the deprecated wc_*() functions cannot be renamed.
-          # - NonPrefixedHooknameFound: the pre_as_* filters are public, and the core hooks are fired deliberately.
-          # - DynamicHooknameFound: actions fire the hooks their schedulers named.
-          ignore-codes: |
-            WordPress.Security.EscapeOutput.ExceptionNotEscaped
-            WordPress.DB.DirectDatabaseQuery.DirectQuery
-            WordPress.DB.DirectDatabaseQuery.NoCaching
-            PluginCheck.Security.DirectDB.UnescapedDBParameter
-            WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedFunctionFound
-            WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound
-            WordPress.NamingConventions.PrefixAllGlobals.DynamicHooknameFound
+          ignore-codes: ${{ steps.ignored.outputs.codes }}

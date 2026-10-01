@@ -34,9 +34,10 @@ Additionally, in terms of GitHub actions, the following are supported:
 
 - `pr-lint` (./.github/workflows/pr-lint.yml) → lints the changed code.
 - `pr-unit-tests` (./.github/workflows/pr-unit-tests.yml) → runs the full test matrix (runs the test suite using a range of different PHP and WordPress versions).
+- `pr-plugin-check` (./.github/workflows/pr-plugin-check.yml) → runs WordPress.org's Plugin Check (pinned via `PLUGIN_CHECK_VERSION`) in strict mode, so warnings fail it too. It checks the `git archive` output rather than the checkout, so files marked `export-ignore` in ./.gitattributes are skipped, while ./lib/ and ./deprecated/ (excluded from phpcs) are checked. Codes that fire by design are ignored for the whole plugin in the workflow's `List ignored codes` step, one comment each; a single acceptable occurrence gets an inline `// phpcs:ignore <code> -- <reason>` instead, so the code stays enforced elsewhere.
 - `release` (./.github/workflows/release.yml) → prepares and builds a new release. Manually dispatched, and run in two steps (`release prep`, then `release`), each of which should first be run as a dry-run. WooRelease handles the version bump only; the changelog is managed by the workflow itself. See ./RELEASING.md for the full runbook.
 
-Linting checks and test suite runs under the test matrix are always performed within GitHub before a pull request is accepted and merged. Pull requests target `trunk`.
+Linting checks, Plugin Check and test suite runs under the test matrix are always performed within GitHub before a pull request is accepted and merged. Pull requests target `trunk`.
 
 Linting rules live in ./phpcs.xml (the `WooCommerce-Core` ruleset). Note that ./docs/, ./lib/ and ./deprecated/ are excluded from linting, as are ./node_modules/ and ./vendor/, so a clean phpcs run does not imply those paths were checked.
 

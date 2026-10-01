@@ -63,6 +63,7 @@ class ActionScheduler_Compatibility {
 
 		// phpcs:disable WordPress.PHP.IniSet.memory_limit_Blacklisted
 		// phpcs:disable WordPress.PHP.NoSilencedErrors.Discouraged
+		// phpcs:disable Squiz.PHP.DiscouragedFunctions.Discouraged
 
 		if ( -1 === $filtered_limit_int || ( $filtered_limit_int > $wp_max_limit_int && $filtered_limit_int > $current_limit_int ) ) {
 			if ( false !== @ini_set( 'memory_limit', $filtered_limit ) ) {
@@ -105,7 +106,7 @@ class ActionScheduler_Compatibility {
 		if ( function_exists( 'wc_set_time_limit' ) ) {
 			wc_set_time_limit( $raise_by );
 		} elseif ( function_exists( 'set_time_limit' ) && false === strpos( ini_get( 'disable_functions' ), 'set_time_limit' ) && ! ini_get( 'safe_mode' ) ) { // phpcs:ignore PHPCompatibility.IniDirectives.RemovedIniDirectives.safe_modeDeprecatedRemoved
-			@set_time_limit( $raise_by ); // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged
+			@set_time_limit( $raise_by ); // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged, Squiz.PHP.DiscouragedFunctions.Discouraged
 		}
 	}
 }

@@ -13,6 +13,8 @@ License: GNU General Public License v2.0
 License URI: https://github.com/deliciousbrains/wp-background-processing/commit/126d7945dd3d39f39cb6488ca08fe1fb66cb351a
 */
 
+defined( 'ABSPATH' ) || exit;
+
 if ( ! class_exists( 'WP_Async_Request' ) ) {
 
 	/**

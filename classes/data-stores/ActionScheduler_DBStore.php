@@ -1189,7 +1189,7 @@ AND args = %s
 		$skip_locked = $this->db_supports_skip_locked() ? ' SKIP LOCKED' : '';
 
 		// Selecting the action_ids that we plan to claim, while skipping any locked rows to avoid deadlocking.
-		$select_sql = $wpdb->prepare( "SELECT action_id from {$wpdb->actionscheduler_actions} {$where} {$order} LIMIT %d FOR UPDATE{$skip_locked}", array_merge( $where_params, array( $limit ) ) );
+		$select_sql = $wpdb->prepare( "SELECT action_id from {$wpdb->actionscheduler_actions} {$where} {$order} LIMIT %d FOR UPDATE{$skip_locked}", array_merge( $where_params, array( $limit ) ) ); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- $where holds placeholders, $order comes from the action_scheduler_claim_actions_order_by filter, $skip_locked is a literal.
 
 		// Now place it into an UPDATE statement by joining the result sets, allowing for the SKIP LOCKED behavior to take effect.
 		$update_sql    = "UPDATE {$wpdb->actionscheduler_actions} t1 JOIN ( $select_sql ) t2 ON t1.action_id = t2.action_id SET claim_id=%d, last_attempt_gmt=%s, last_attempt_local=%s";
@@ -1199,7 +1199,7 @@ AND args = %s
 			current_time( 'mysql' ),
 		);
 
-		$rows_affected = $wpdb->query( $wpdb->prepare( $update_sql, $update_params ) );
+		$rows_affected = $wpdb->query( $wpdb->prepare( $update_sql, $update_params ) ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- $update_sql embeds the already prepared $select_sql.
 		if ( false === $rows_affected ) {
 			$error = empty( $wpdb->last_error )
 				? _x( 'unknown', 'database error', 'action-scheduler' )

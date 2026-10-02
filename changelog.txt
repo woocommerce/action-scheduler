@@ -1,6 +1,7 @@
 *** Changelog ***
 
 = 4.3.0 - xxxx-xx-xx =
+* Dev - Add the `action_scheduler_schema_table_exists` filter for custom table existence checks, retaining the existing query as a fallback.
 * Dev - Add a direct file access guard to the PHP files that lacked one, and stop shipping AGENTS.md and CLAUDE.md.
 * Fix - Stop `wp action-scheduler run` from emitting a `str_getcsv()` deprecation notice on PHP 8.4 and newer.
 * Fix - Only reset the migration status when the plugin providing the running copy of Action Scheduler is deactivated, instead of when any plugin is deactivated.

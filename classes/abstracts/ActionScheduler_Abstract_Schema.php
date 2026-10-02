@@ -172,11 +172,30 @@ abstract class ActionScheduler_Abstract_Schema {
 		$tables_exist = true;
 
 		foreach ( $this->tables as $table_name ) {
-			$table_name     = $wpdb->prefix . $table_name;
-			$pattern        = str_replace( '_', '\\_', $table_name );
-			$existing_table = $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $pattern ) );
+			$table_name = $wpdb->prefix . $table_name;
 
-			if ( $existing_table !== $table_name ) {
+			/**
+			 * Short-circuit the existence check for an individual schema table.
+			 *
+			 * This allows integrations with knowledge of their database routing to
+			 * avoid catalog queries. Return null when the result is unknown so the
+			 * existing database-compatible check can run. Only booleans override it.
+			 *
+			 * @since 4.3.0
+			 *
+			 * @param bool|null                       $table_exists Whether the table exists, or null to use the default check.
+			 * @param string                          $table_name   Full table name, including the current site's prefix.
+			 * @param ActionScheduler_Abstract_Schema $schema       Schema requesting the existence check.
+			 */
+			$table_exists = apply_filters( 'action_scheduler_schema_table_exists', null, $table_name, $this );
+
+			if ( ! is_bool( $table_exists ) ) {
+				$pattern        = str_replace( '_', '\\_', $table_name );
+				$existing_table = $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $pattern ) );
+				$table_exists   = $existing_table === $table_name;
+			}
+
+			if ( ! $table_exists ) {
 				$tables_exist = false;
 				break;
 			}

@@ -177,7 +177,19 @@ abstract class ActionScheduler_Abstract_QueueRunner extends ActionScheduler_Abst
 	 */
 	private function handle_action_error( $action_id, $e, $context, $valid_action ) {
 		if ( $valid_action ) {
-			$this->store->mark_failure( $action_id );
+			try {
+				$this->store->mark_failure( $action_id );
+			} catch ( Exception $mark_failure_exception ) {
+				// phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log
+				error_log(
+					sprintf(
+						/* translators: %1$d is the action ID, %2$s is the exception message. */
+						__( 'Caught exception while marking action %1$d as failed: %2$s', 'action-scheduler' ),
+						$action_id,
+						$mark_failure_exception->getMessage()
+					)
+				);
+			}
 			/**
 			 * Runs when action execution fails.
 			 *

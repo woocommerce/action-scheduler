@@ -361,27 +361,35 @@ function as_next_scheduled_action( $hook, $args = null, $group = '' ) {
 		$params['args'] = $args;
 	}
 
-	$params['status'] = ActionScheduler_Store::STATUS_RUNNING;
-	$action_id        = ActionScheduler::store()->query_action( $params );
-	if ( $action_id ) {
-		return true;
-	}
-
-	$params['status'] = ActionScheduler_Store::STATUS_PENDING;
-	$action_id        = ActionScheduler::store()->query_action( $params );
+	$params['status'] = array( ActionScheduler_Store::STATUS_RUNNING, ActionScheduler_Store::STATUS_PENDING );
+	$store            = ActionScheduler::store();
+	$action_id        = $store->query_action( $params );
 	if ( null === $action_id ) {
 		return false;
 	}
 
-	$action         = ActionScheduler::store()->fetch_action( $action_id );
-	$scheduled_date = $action->get_schedule()->get_date();
-	if ( $scheduled_date ) {
-		return (int) $scheduled_date->format( 'U' );
-	} elseif ( null === $scheduled_date ) { // pending async action with NullSchedule.
-		return true;
+	try {
+		$status = $store->get_status( $action_id );
+	} catch ( \Exception $e ) {
+		// If the action has been deleted meanwhile, bail out early.
+		return false;
 	}
 
-	return false;
+	switch ( $status ) {
+		case ActionScheduler_Store::STATUS_PENDING:
+			$action         = $store->fetch_action( $action_id );
+			$scheduled_date = $action->get_schedule()->get_date();
+
+			// If the action has been deleted meanwhile, the instanceof check will correctly report the outcome.
+			return $scheduled_date ? (int) $scheduled_date->format( 'U' ) : ! ( $action instanceof ActionScheduler_NullAction );
+
+		case ActionScheduler_Store::STATUS_RUNNING:
+			return true;
+
+		default:
+			// The action transitioned to an irrelevant here status, report accordingly.
+			return false;
+	}
 }
 
 /**

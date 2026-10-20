@@ -512,6 +512,7 @@ function as_supports( string $feature ): bool {
 	$supported_features = array(
 		'ensure_recurring_actions_hook',
 		'uninstall_bootstrap',
+		'claim_top_up',
 	);
 
 	return in_array( $feature, $supported_features, true );

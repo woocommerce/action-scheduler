@@ -56,7 +56,7 @@ class ActionScheduler_WPCLI_Scheduler_command extends WP_CLI_Command {
 	 * : Only run actions from the specified group. Omitting this option runs actions from all groups.
 	 *
 	 * [--exclude-groups=<groups>]
-	 * : Run actions from all groups except the specified group(s). Define multiple groups as a comma separated string (without spaces), e.g. '--group_a,group_b'. This option is ignored when `--group` is used.
+	 * : Run actions from all groups except the specified group(s). Define multiple groups as a comma separated string (without spaces), e.g. '--group_a,group_b'. This option is ignored when `--group` is used (unless claim top-up is enabled).
 	 *
 	 * [--free-memory-on=<count>]
 	 * : The number of actions to process between freeing memory. 0 disables freeing memory. Default 50.

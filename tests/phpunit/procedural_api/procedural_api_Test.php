@@ -464,6 +464,7 @@ class Procedural_API_Test extends ActionScheduler_UnitTestCase {
 	public function test_as_supports_for_supported_feature() {
 		$this->assertTrue( as_supports( 'ensure_recurring_actions_hook' ) );
 		$this->assertTrue( as_supports( 'uninstall_bootstrap' ) );
+		$this->assertTrue( as_supports( 'claim_top_up' ) );
 	}
 
 	/**

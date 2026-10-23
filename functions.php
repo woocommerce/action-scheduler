@@ -363,7 +363,7 @@ function as_next_scheduled_action( $hook, $args = null, $group = '' ) {
 	}
 
 	$params['status'] = ActionScheduler_Store::STATUS_RUNNING;
-	$action_id        = $store->query_action( array_merge( $params, array( 'orderby' => 'none' ) ) );
+	$action_id        = $store->query_action( $params );
 	if ( $action_id ) {
 		return true;
 	}
@@ -405,16 +405,23 @@ function as_has_scheduled_action( $hook, $args = null, $group = '' ) {
 
 	$query_args = array(
 		'hook'    => $hook,
-		'status'  => array( ActionScheduler_Store::STATUS_RUNNING, ActionScheduler_Store::STATUS_PENDING ),
 		'group'   => $group,
 		'orderby' => 'none',
 	);
 
-	if ( null !== $args ) {
+	if ( is_array( $args ) ) {
 		$query_args['args'] = $args;
 	}
 
-	$action_id = ActionScheduler::store()->query_action( $query_args );
+	$store = ActionScheduler::store();
+	// Separate queries avoid SQL execution plan regression when the group JOIN combines with IN() on status.
+	if ( '' !== $group ) {
+		$action_id = $store->query_action( array_merge( $query_args, array( 'status' => ActionScheduler_Store::STATUS_RUNNING ) ) )
+			?? $store->query_action( array_merge( $query_args, array( 'status' => ActionScheduler_Store::STATUS_PENDING ) ) );
+	} else {
+		$query_args['status'] = array( ActionScheduler_Store::STATUS_RUNNING, ActionScheduler_Store::STATUS_PENDING );
+		$action_id            = $store->query_action( $query_args );
+	}
 
 	return null !== $action_id;
 }

@@ -350,7 +350,6 @@ function as_next_scheduled_action( $hook, $args = null, $group = '' ) {
 		return false;
 	}
 
-	$store  = ActionScheduler::store();
 	$params = array(
 		'hook'    => $hook,
 		'orderby' => 'date',
@@ -362,6 +361,7 @@ function as_next_scheduled_action( $hook, $args = null, $group = '' ) {
 		$params['args'] = $args;
 	}
 
+	$store            = ActionScheduler::store();
 	$params['status'] = ActionScheduler_Store::STATUS_RUNNING;
 	$action_id        = $store->query_action( $params );
 	if ( $action_id ) {

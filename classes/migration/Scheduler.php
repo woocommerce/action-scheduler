@@ -76,10 +76,8 @@ class Scheduler {
 	 * @return string The action ID
 	 */
 	public function schedule_migration( $when = 0 ) {
-		$next = as_next_scheduled_action( self::HOOK );
-
-		if ( ! empty( $next ) ) {
-			return $next;
+		if ( as_has_scheduled_action( self::HOOK ) ) {
+			return 0;
 		}
 
 		if ( empty( $when ) ) {

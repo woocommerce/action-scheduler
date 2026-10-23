@@ -1046,11 +1046,91 @@ AND args = %s
 		$claim_id = $this->generate_claim_id();
 
 		$this->claim_before_date = $before_date;
-		$this->claim_actions( $claim_id, $max_actions, $before_date, $hooks, $group );
+		$claimed                 = $this->claim_actions( $claim_id, $max_actions, $before_date, $hooks, $group );
+		$this->maybe_top_up_claim( $claim_id, $max_actions, $claimed, $before_date, $group );
 		$action_ids              = $this->find_actions_by_claim_id( $claim_id );
 		$this->claim_before_date = null;
 
 		return new ActionScheduler_ActionClaim( $claim_id, $action_ids );
+	}
+
+	/**
+	 * Fill the remainder of a claim that was scoped to a subset of groups.
+	 *
+	 * Requires opting in via the `action_scheduler_claim_top_up` filter. The second pass runs under
+	 * the same claim ID with the scope inverted: a claim filtered by `group` tops up from every
+	 * other group, one filtered by `exclude-groups` tops up from the excluded groups.
+	 *
+	 * @param int             $claim_id    Claim ID.
+	 * @param int             $max_actions Maximum number of actions the claim may include.
+	 * @param int             $claimed     Number of actions the first pass claimed.
+	 * @param DateTime|null   $before_date Jobs must be scheduled before this date.
+	 * @param string|string[] $group       Group the claim was scoped to by stake_claim(), if any.
+	 *
+	 * @return int Number of additional actions claimed.
+	 */
+	private function maybe_top_up_claim( $claim_id, $max_actions, $claimed, ?DateTime $before_date, $group ): int {
+		$previous_group = $this->get_claim_filter( 'group' );
+		$group          = ! empty( $group ) ? $group : $previous_group;
+		$excluded       = $this->get_claim_filter( 'exclude-groups' );
+
+		/**
+		 * Filters whether a claim scoped to a subset of groups fills its remaining capacity from
+		 * the other side of the scope. Disabled by default; only boolean true enables it.
+		 * DBStore only; other data stores ignore this filter.
+		 *
+		 * @param bool            $top_up   Whether to run a second claim pass against the inverted scope.
+		 * @param int             $claim_id Claim ID.
+		 * @param string|string[] $group    Group the claim is scoped to, if any.
+		 * @param string|string[] $excluded Groups the claim excludes, if any.
+		 *
+		 * @since 4.3.0
+		 */
+		$top_up = apply_filters( 'action_scheduler_claim_top_up', false, $claim_id, $group, $excluded );
+
+		if ( true !== $top_up || ( empty( $group ) && empty( $excluded ) ) ) {
+			return 0;
+		}
+
+		// A subclass may return a non-numeric or negative count; bail rather than
+		// fatal, or let the second pass claim beyond the claim's maximum size.
+		if ( ! is_numeric( $max_actions ) || ! is_numeric( $claimed ) || $claimed < 0 ) {
+			return 0;
+		}
+
+		$shortfall = (int) $max_actions - max( 0, (int) $claimed );
+		if ( $shortfall <= 0 ) {
+			return 0;
+		}
+
+		try {
+			// Invert the scope so the second pass claims from the side the first pass skipped.
+			// The top-up must honor any operator-set exclude-groups on top of the scoped group.
+			$exclude = empty( $excluded ) ? $group : array_unique( array_merge( (array) $group, (array) $excluded ) );
+			$this->set_claim_filter( 'group', empty( $group ) ? $excluded : '' );
+			$this->set_claim_filter( 'exclude-groups', empty( $group ) ? '' : $exclude );
+			$topped_up = $this->claim_actions( $claim_id, $shortfall, $before_date, array(), '' );
+		} catch ( \RuntimeException $e ) {
+			// The first pass already succeeded, so a top-up failure must not fail the claim.
+			return 0;
+		} finally {
+			$this->set_claim_filter( 'group', $previous_group );
+			$this->set_claim_filter( 'exclude-groups', $excluded );
+		}
+
+		if ( $topped_up > 0 ) {
+			/**
+			 * Fires after a claim's top-up pass claims additional actions.
+			 *
+			 * @param int $claim_id  Claim ID.
+			 * @param int $topped_up Number of actions claimed by the top-up pass.
+			 *
+			 * @since 4.3.0
+			 */
+			do_action( 'action_scheduler_claim_topped_up', $claim_id, $topped_up );
+		}
+
+		return $topped_up;
 	}
 
 	/**

@@ -37,6 +37,8 @@ class ActionScheduler_DBStore_Test extends AbstractStoreTest {
 			$wpdb                = $this->original_wpdb;
 			$this->original_wpdb = null;
 		}
+		remove_all_filters( 'action_scheduler_claim_top_up' );
+		remove_all_actions( 'action_scheduler_claim_topped_up' );
 		parent::tearDown();
 	}
 
@@ -300,6 +302,309 @@ class ActionScheduler_DBStore_Test extends AbstractStoreTest {
 			$claim->get_actions(),
 			'Including a specific group takes precedence over group exclusions.'
 		);
+		$store->release_claim( $claim );
+	}
+
+	/**
+	 * With top-up opted in, a claim scoped to a group with no due actions fills
+	 * the remainder from the other side of the scope.
+	 */
+	public function test_claim_top_up_when_scoped_group_has_no_due_actions(): void {
+		$store = new ActionScheduler_DBStore();
+
+		// Group A exists (a future-dated action) but has nothing due.
+		$store->save_action( new ActionScheduler_Action( 'topup_hook', array(), new ActionScheduler_SimpleSchedule( as_get_datetime_object( '+1 hour' ) ), 'topup_group_a' ) );
+
+		$expected = array();
+		for ( $i = 0; $i < 3; $i++ ) {
+			$expected[] = $store->save_action( new ActionScheduler_Action( 'topup_hook', array(), new ActionScheduler_SimpleSchedule( as_get_datetime_object( '-1 hour' ) ), 'topup_group_b' ) );
+		}
+
+		add_filter( 'action_scheduler_claim_top_up', '__return_true' );
+		$store->set_claim_filter( 'group', 'topup_group_a' );
+
+		$claim = $store->stake_claim( 10 );
+		$this->assertEqualSets( $expected, $claim->get_actions() );
+		$store->release_claim( $claim );
+	}
+
+	/**
+	 * Top-up claims the scoped group first, then the remainder from elsewhere.
+	 */
+	public function test_claim_top_up_fills_remainder_after_scoped_group(): void {
+		$store    = new ActionScheduler_DBStore();
+		$schedule = new ActionScheduler_SimpleSchedule( as_get_datetime_object( '-1 hour' ) );
+
+		$group_a = array();
+		for ( $i = 0; $i < 2; $i++ ) {
+			$group_a[] = $store->save_action( new ActionScheduler_Action( 'topup_hook', array(), $schedule, 'topup_group_a' ) );
+		}
+		for ( $i = 0; $i < 5; $i++ ) {
+			$store->save_action( new ActionScheduler_Action( 'topup_hook', array(), $schedule, 'topup_group_b' ) );
+		}
+
+		add_filter( 'action_scheduler_claim_top_up', '__return_true' );
+
+		// Scoped via the stake_claim() group param rather than set_claim_filter().
+		$claim          = $store->stake_claim( 4, null, array(), 'topup_group_a' );
+		$claimed        = $claim->get_actions();
+		$from_group_a   = array_intersect( $claimed, $group_a );
+		$from_elsewhere = array_diff( $claimed, $group_a );
+
+		$this->assertCount( 4, $claimed );
+		$this->assertEqualSets( $group_a, $from_group_a );
+		$this->assertCount( 2, $from_elsewhere );
+		$store->release_claim( $claim );
+	}
+
+	/**
+	 * Same, but the scope is an exclude-groups filter: the top-up reaches the excluded side.
+	 */
+	public function test_claim_top_up_from_excluded_groups(): void {
+		$store    = new ActionScheduler_DBStore();
+		$schedule = new ActionScheduler_SimpleSchedule( as_get_datetime_object( '-1 hour' ) );
+
+		$group_a = array();
+		for ( $i = 0; $i < 2; $i++ ) {
+			$group_a[] = $store->save_action( new ActionScheduler_Action( 'topup_hook', array(), $schedule, 'topup_group_a' ) );
+		}
+		$group_b = array();
+		for ( $i = 0; $i < 3; $i++ ) {
+			$group_b[] = $store->save_action( new ActionScheduler_Action( 'topup_hook', array(), $schedule, 'topup_group_b' ) );
+		}
+
+		add_filter( 'action_scheduler_claim_top_up', '__return_true' );
+		$store->set_claim_filter( 'exclude-groups', 'topup_group_b' );
+
+		$claim = $store->stake_claim( 5 );
+		$this->assertEqualSets( array_merge( $group_a, $group_b ), $claim->get_actions() );
+		$store->release_claim( $claim );
+	}
+
+	/**
+	 * Default behavior is unchanged: without the opt-in, a scoped claim that finds
+	 * nothing due returns nothing.
+	 */
+	public function test_claim_top_up_disabled_by_default(): void {
+		$store = new ActionScheduler_DBStore();
+
+		$store->save_action( new ActionScheduler_Action( 'topup_hook', array(), new ActionScheduler_SimpleSchedule( as_get_datetime_object( '+1 hour' ) ), 'topup_group_a' ) );
+		$store->save_action( new ActionScheduler_Action( 'topup_hook', array(), new ActionScheduler_SimpleSchedule( as_get_datetime_object( '-1 hour' ) ), 'topup_group_b' ) );
+
+		$store->set_claim_filter( 'group', 'topup_group_a' );
+		$claim = $store->stake_claim( 10 );
+
+		$this->assertCount( 0, $claim->get_actions() );
+		$store->release_claim( $claim );
+	}
+
+	/**
+	 * Two consecutive claims must never contain the same action.
+	 */
+	public function test_claim_top_up_does_not_double_claim(): void {
+		$store    = new ActionScheduler_DBStore();
+		$schedule = new ActionScheduler_SimpleSchedule( as_get_datetime_object( '-1 hour' ) );
+
+		$store->save_action( new ActionScheduler_Action( 'topup_hook', array(), $schedule, 'topup_group_a' ) );
+		$group_b = array();
+		for ( $i = 0; $i < 3; $i++ ) {
+			$group_b[] = $store->save_action( new ActionScheduler_Action( 'topup_hook', array(), $schedule, 'topup_group_b' ) );
+		}
+
+		add_filter( 'action_scheduler_claim_top_up', '__return_true' );
+		$store->set_claim_filter( 'group', 'topup_group_a' );
+
+		// First claim: the 1 due group-A action plus 1 topped-up group-B action.
+		$claim1 = $store->stake_claim( 2 );
+		$this->assertCount( 2, $claim1->get_actions() );
+
+		// Second claim: nothing left in scope, so the remaining 2 of group B top it up.
+		$claim2 = $store->stake_claim( 10 );
+		$this->assertCount( 2, $claim2->get_actions() );
+
+		$this->assertEmpty( array_intersect( $claim1->get_actions(), $claim2->get_actions() ) );
+
+		$store->release_claim( $claim1 );
+		$store->release_claim( $claim2 );
+	}
+
+	/**
+	 * Only boolean true enables top-up; truthy non-bool returns are ignored and
+	 * must not cause a fatal.
+	 */
+	public function test_claim_top_up_requires_strict_true(): void {
+		$store = new ActionScheduler_DBStore();
+
+		$store->save_action( new ActionScheduler_Action( 'topup_hook', array(), new ActionScheduler_SimpleSchedule( as_get_datetime_object( '+1 hour' ) ), 'topup_group_a' ) );
+		$store->save_action( new ActionScheduler_Action( 'topup_hook', array(), new ActionScheduler_SimpleSchedule( as_get_datetime_object( '-1 hour' ) ), 'topup_group_b' ) );
+
+		$store->set_claim_filter( 'group', 'topup_group_a' );
+
+		add_filter(
+			'action_scheduler_claim_top_up',
+			function () {
+				return 'yes';
+			}
+		);
+		$claim = $store->stake_claim( 10 );
+		$this->assertCount( 0, $claim->get_actions() );
+		$store->release_claim( $claim );
+		remove_all_filters( 'action_scheduler_claim_top_up' );
+
+		add_filter(
+			'action_scheduler_claim_top_up',
+			function () {
+				return array( 'yes' );
+			}
+		);
+		$claim = $store->stake_claim( 10 );
+		$this->assertCount( 0, $claim->get_actions() );
+		$store->release_claim( $claim );
+	}
+
+	/**
+	 * With a group scope and an exclude-groups filter both set, the top-up pass
+	 * must still honor the exclusions.
+	 */
+	public function test_claim_top_up_respects_exclude_groups_with_group_scope(): void {
+		$store = new ActionScheduler_DBStore();
+
+		// Group A exists but has nothing due.
+		$store->save_action( new ActionScheduler_Action( 'topup_hook', array(), new ActionScheduler_SimpleSchedule( as_get_datetime_object( '+1 hour' ) ), 'topup_group_a' ) );
+		$excluded = $store->save_action( new ActionScheduler_Action( 'topup_hook', array(), new ActionScheduler_SimpleSchedule( as_get_datetime_object( '-1 hour' ) ), 'topup_group_b' ) );
+		$other    = $store->save_action( new ActionScheduler_Action( 'topup_hook', array(), new ActionScheduler_SimpleSchedule( as_get_datetime_object( '-1 hour' ) ), 'topup_group_c' ) );
+
+		add_filter( 'action_scheduler_claim_top_up', '__return_true' );
+		$store->set_claim_filter( 'group', 'topup_group_a' );
+		$store->set_claim_filter( 'exclude-groups', 'topup_group_b' );
+
+		$claim = $store->stake_claim( 10 );
+		$this->assertEquals( array( $other ), $claim->get_actions() );
+		$store->release_claim( $claim );
+	}
+
+	/**
+	 * With the feature off, a subclass whose claim_actions() returns a non-numeric
+	 * value must not fatal: the result is never used arithmetically.
+	 */
+	public function test_claim_top_up_off_tolerates_non_numeric_claim_actions(): void {
+		$store = new class() extends ActionScheduler_DBStore {
+			protected function claim_actions( $claim_id, $limit, ?DateTime $before_date = null, $hooks = array(), $group = '' ) {
+				parent::claim_actions( $claim_id, $limit, $before_date, $hooks, $group );
+				return 'non-numeric';
+			}
+		};
+
+		$action_id = $store->save_action( new ActionScheduler_Action( 'topup_hook', array(), new ActionScheduler_SimpleSchedule( as_get_datetime_object( '-1 hour' ) ), 'topup_group_a' ) );
+
+		$store->set_claim_filter( 'group', 'topup_group_a' );
+		$claim = $store->stake_claim( 10 );
+
+		$this->assertEquals( array( $action_id ), $claim->get_actions() );
+		$store->release_claim( $claim );
+	}
+
+	/**
+	 * If the top-up pass fails, the claim keeps the actions its first pass
+	 * claimed instead of throwing, and the claim filters are restored.
+	 */
+	public function test_claim_top_up_second_pass_failure_keeps_claim(): void {
+		$store = new class() extends ActionScheduler_DBStore {
+			/**
+			 * Number of claim_actions() calls seen.
+			 *
+			 * @var int
+			 */
+			public $calls = 0;
+
+			protected function claim_actions( $claim_id, $limit, ?DateTime $before_date = null, $hooks = array(), $group = '' ) {
+				++$this->calls;
+				if ( 2 === $this->calls ) {
+					throw new RuntimeException( 'top-up pass failed' );
+				}
+				return parent::claim_actions( $claim_id, $limit, $before_date, $hooks, $group );
+			}
+		};
+
+		$due = $store->save_action( new ActionScheduler_Action( 'topup_hook', array(), new ActionScheduler_SimpleSchedule( as_get_datetime_object( '-1 hour' ) ), 'topup_group_a' ) );
+		$store->save_action( new ActionScheduler_Action( 'topup_hook', array(), new ActionScheduler_SimpleSchedule( as_get_datetime_object( '-1 hour' ) ), 'topup_group_b' ) );
+
+		add_filter( 'action_scheduler_claim_top_up', '__return_true' );
+		$store->set_claim_filter( 'group', 'topup_group_a' );
+
+		$claim = $store->stake_claim( 10 );
+		$this->assertEquals( array( $due ), $claim->get_actions() );
+		$this->assertSame( 'topup_group_a', $store->get_claim_filter( 'group' ) );
+		$store->release_claim( $claim );
+	}
+
+	/**
+	 * The opt-in filter receives the claim ID and the effective scope.
+	 */
+	public function test_claim_top_up_filter_receives_effective_scope(): void {
+		$store = new ActionScheduler_DBStore();
+
+		// Group A exists but has nothing due; the due action sits in group B.
+		$store->save_action( new ActionScheduler_Action( 'topup_hook', array(), new ActionScheduler_SimpleSchedule( as_get_datetime_object( '+1 hour' ) ), 'topup_group_a' ) );
+		$due = $store->save_action( new ActionScheduler_Action( 'topup_hook', array(), new ActionScheduler_SimpleSchedule( as_get_datetime_object( '-1 hour' ) ), 'topup_group_b' ) );
+
+		$seen = array();
+		add_filter(
+			'action_scheduler_claim_top_up',
+			function ( $top_up, $claim_id, $group, $excluded ) use ( &$seen ) {
+				$seen = array( $claim_id, $group, $excluded );
+				return true;
+			},
+			10,
+			4
+		);
+		$store->set_claim_filter( 'exclude-groups', 'topup_group_x' );
+
+		$claim = $store->stake_claim( 10, null, array(), 'topup_group_a' );
+
+		$this->assertEquals( array( $claim->get_id(), 'topup_group_a', 'topup_group_x' ), $seen );
+		$this->assertEquals( array( $due ), $claim->get_actions() );
+		$store->release_claim( $claim );
+	}
+
+	/**
+	 * A subclass reporting a negative first-pass count cannot be trusted: the
+	 * top-up pass must not run, so the claim can never exceed the maximum size.
+	 */
+	public function test_claim_top_up_negative_claimed_count_never_overclaims(): void {
+		$store = new class() extends ActionScheduler_DBStore {
+			/**
+			 * Limit each claim_actions() call was given.
+			 *
+			 * @var int[]
+			 */
+			public $limits = array();
+
+			protected function claim_actions( $claim_id, $limit, ?DateTime $before_date = null, $hooks = array(), $group = '' ) {
+				$this->limits[] = $limit;
+				parent::claim_actions( $claim_id, $limit, $before_date, $hooks, $group );
+				return -5;
+			}
+		};
+
+		$schedule = new ActionScheduler_SimpleSchedule( as_get_datetime_object( '-1 hour' ) );
+		$group_a  = array();
+		for ( $i = 0; $i < 2; $i++ ) {
+			$group_a[] = $store->save_action( new ActionScheduler_Action( 'topup_hook', array(), $schedule, 'topup_group_a' ) );
+		}
+		for ( $i = 0; $i < 5; $i++ ) {
+			$store->save_action( new ActionScheduler_Action( 'topup_hook', array(), $schedule, 'topup_group_b' ) );
+		}
+
+		add_filter( 'action_scheduler_claim_top_up', '__return_true' );
+
+		$claim = $store->stake_claim( 3, null, array(), 'topup_group_a' );
+
+		// No second pass runs: the claim keeps only the actions the first pass
+		// actually claimed, and stays within the maximum.
+		$this->assertCount( 1, $store->limits );
+		$this->assertEqualSets( $group_a, $claim->get_actions() );
+		$this->assertLessThanOrEqual( 3, count( $claim->get_actions() ) );
 		$store->release_claim( $claim );
 	}
 

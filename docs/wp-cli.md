@@ -39,7 +39,7 @@ These are the commands available to use with Action Scheduler:
     * `--batches` - This is the number of batches to run. Using 0 means that batches will continue running until there are no more actions to run.
     * `--hooks` - Process only actions with specific hook or hooks, like `'woocommerce_scheduled_subscription_payment'`. By default, actions with any hook will be processed. Define multiple hooks as a comma separated string (without spaces), e.g. `--hooks=woocommerce_scheduled_subscription_trial_end,woocommerce_scheduled_subscription_payment,woocommerce_scheduled_subscription_expiration`
     * `--group` - Process only actions in a specific group, like `'woocommerce-memberships'`. By default, actions in any group (or no group) will be processed.
-    * `--exclude-groups` - Ignore actions from the specified group or groups (to specify multiple groups, supply a comma-separated list of slugs). This option is ignored if `--group` is also specified.
+    * `--exclude-groups` - Ignore actions from the specified group or groups (to specify multiple groups, supply a comma-separated list of slugs). This option is ignored if `--group` is also specified (unless claim top-up is enabled).
     * `--force` - By default, Action Scheduler limits the number of concurrent batches that can be run at once to ensure the server does not get overwhelmed. Using the `--force` flag overrides this behavior to force the WP CLI queue to run.
     
 * `action-scheduler action cancel`
@@ -98,3 +98,13 @@ If you can batch based on each action's group, then you can improve performance 
 For example, if one queue is created to process emails, another to process membership updates, and another to process renewal payments, then the same queries won't be run at the same time, and 3 separate queues will be able to run more efficiently.
 
 The WP CLI runner can achieve this using the `--group` option to create queue runners that focus on a specific group and, optionally, the `--exclude-groups` option to create one or more 'catch-all' queue runners that ignore those groups. 
+
+A scoped queue runner goes idle whenever its side of the scope has no due actions, even while the rest of the queue has due work. To let a scoped claim fill any remaining capacity from the other side of the scope, opt in via the `action_scheduler_claim_top_up` filter:
+
+```php
+add_filter( 'action_scheduler_claim_top_up', '__return_true' );
+```
+
+A `--group` runner then tops up each claim from all other groups, and an `--exclude-groups` runner tops up from the excluded groups. Both passes run under the same claim, so an action can never be claimed twice, and the `action_scheduler_claim_topped_up` action fires whenever a top-up occurs. Operator-set exclusions are still honored: a `--group=A --exclude-groups=B` runner tops up from everything except `A` and `B`.
+
+The filter is DBStore only: it is honored when the custom tables data store (`ActionScheduler_DBStore`) is active, and ignored by other data stores.

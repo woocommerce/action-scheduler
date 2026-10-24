@@ -85,13 +85,13 @@ class Procedural_API_Test extends ActionScheduler_UnitTestCase {
 	}
 
 	public function test_get_next() {
-		$time = as_get_datetime_object( 'tomorrow' );
-		$hook = md5( wp_rand() );
-		as_schedule_recurring_action( $time->getTimestamp(), HOUR_IN_SECONDS, $hook );
+		$timestamp = as_get_datetime_object( 'tomorrow' )->getTimestamp();
+		$hook      = md5( wp_rand() );
+		as_schedule_recurring_action( $timestamp, HOUR_IN_SECONDS, $hook );
 
 		$next = as_next_scheduled_action( $hook );
 
-		$this->assertEquals( $time->getTimestamp(), $next );
+		$this->assertSame( $timestamp, $next );
 	}
 
 	public function test_get_next_async() {
@@ -103,6 +103,11 @@ class Procedural_API_Test extends ActionScheduler_UnitTestCase {
 		$this->assertTrue( $next );
 
 		$store = ActionScheduler::store();
+
+		// Running async actions should return true.
+		$store->log_execution( $action_id );
+		$next = as_next_scheduled_action( $hook );
+		$this->assertTrue( $next );
 
 		// Completed async actions should still return false.
 		$store->mark_complete( $action_id );

@@ -73,20 +73,14 @@ class Scheduler {
 	 *
 	 * @param int $when Optional timestamp to run the next migration batch. Defaults to now.
 	 *
-	 * @return string The action ID
+	 * @return int The action ID
 	 */
 	public function schedule_migration( $when = 0 ) {
-		$next = as_next_scheduled_action( self::HOOK );
-
-		if ( ! empty( $next ) ) {
-			return $next;
+		if ( ! as_has_scheduled_action( self::HOOK ) ) {
+			return as_schedule_single_action( $when ? $when : time() + MINUTE_IN_SECONDS, self::HOOK, array(), self::GROUP );
 		}
 
-		if ( empty( $when ) ) {
-			$when = time() + MINUTE_IN_SECONDS;
-		}
-
-		return as_schedule_single_action( $when, self::HOOK, array(), self::GROUP );
+		return 0;
 	}
 
 	/**

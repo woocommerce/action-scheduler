@@ -353,26 +353,27 @@ class ActionScheduler_ActionFactory {
 	 */
 	protected function store_unique_action( ActionScheduler_Action $action ) {
 		$store = ActionScheduler_Store::instance();
-		if ( method_exists( $store, 'save_unique_action' ) ) {
+		if ( $store instanceof \ActionScheduler_DBStore ) {
 			return $store->save_unique_action( $action );
-		} else {
-			/**
-			 * Fallback to non-unique action if the store doesn't support unique actions.
-			 * We try to save the action as unique, accepting that there might be a race condition.
-			 * This is likely still better than giving up on unique actions entirely.
-			 */
-			$existing_action_id = (int) $store->find_action(
-				$action->get_hook(),
-				array(
-					'args'   => $action->get_args(),
-					'status' => ActionScheduler_Store::STATUS_PENDING,
-					'group'  => $action->get_group(),
-				)
-			);
-			if ( $existing_action_id > 0 ) {
-				return 0;
-			}
-			return $store->save_action( $action );
 		}
+
+		// Fallback for stores without atomic uniqueness: check-then-insert with an inherent race window.
+		$query_args = array(
+			'hook'    => $action->get_hook(),
+			'args'    => $action->get_args(),
+			'orderby' => 'none',
+		);
+
+		$group = $action->get_group();
+		if ( '' !== $group ) {
+			$query_args['group'] = $group;
+			$action_id           = $store->query_action( array_merge( $query_args, array( 'status' => ActionScheduler_Store::STATUS_RUNNING ) ) )
+				?? $store->query_action( array_merge( $query_args, array( 'status' => ActionScheduler_Store::STATUS_PENDING ) ) );
+		} else {
+			$query_args['status'] = array( ActionScheduler_Store::STATUS_RUNNING, ActionScheduler_Store::STATUS_PENDING );
+			$action_id            = $store->query_action( $query_args );
+		}
+
+		return null !== $action_id ? 0 : $store->save_action( $action );
 	}
 }

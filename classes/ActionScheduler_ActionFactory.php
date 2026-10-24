@@ -365,6 +365,7 @@ class ActionScheduler_ActionFactory {
 		);
 
 		$group = $action->get_group();
+		// Separate queries avoid SQL execution plan regression when the group JOIN combines with IN() on status.
 		if ( '' !== $group ) {
 			$query_args['group'] = $group;
 			$action_id           = $store->query_action( array_merge( $query_args, array( 'status' => ActionScheduler_Store::STATUS_RUNNING ) ) )

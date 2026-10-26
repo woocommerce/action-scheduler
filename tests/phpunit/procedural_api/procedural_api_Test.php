@@ -85,13 +85,13 @@ class Procedural_API_Test extends ActionScheduler_UnitTestCase {
 	}
 
 	public function test_get_next() {
-		$time = as_get_datetime_object( 'tomorrow' );
-		$hook = md5( wp_rand() );
-		as_schedule_recurring_action( $time->getTimestamp(), HOUR_IN_SECONDS, $hook );
+		$timestamp = as_get_datetime_object( 'tomorrow' )->getTimestamp();
+		$hook      = md5( wp_rand() );
+		as_schedule_recurring_action( $timestamp, HOUR_IN_SECONDS, $hook );
 
 		$next = as_next_scheduled_action( $hook );
 
-		$this->assertEquals( $time->getTimestamp(), $next );
+		$this->assertSame( $timestamp, $next );
 	}
 
 	public function test_get_next_async() {
@@ -103,6 +103,11 @@ class Procedural_API_Test extends ActionScheduler_UnitTestCase {
 		$this->assertTrue( $next );
 
 		$store = ActionScheduler::store();
+
+		// Running async actions should return true.
+		$store->log_execution( $action_id );
+		$next = as_next_scheduled_action( $hook );
+		$this->assertTrue( $next );
 
 		// Completed async actions should still return false.
 		$store->mark_complete( $action_id );
@@ -299,26 +304,35 @@ class Procedural_API_Test extends ActionScheduler_UnitTestCase {
 		$this->assertEquals( $datetime->format( $f ), $as_datetime->format( $f ) );
 	}
 
-	public function test_as_has_scheduled_action() {
+	/**
+	 * @testdox as_has_scheduled_action() returns correct results across status transitions.
+	 *
+	 * @testWith [""]
+	 *           ["test_group"]
+	 *
+	 * @param string $group Action group.
+	 */
+	public function test_as_has_scheduled_action( $group ) {
 		$store = ActionScheduler::store();
+		$hook  = md5( wp_rand() );
 
-		$time      = as_get_datetime_object( 'tomorrow' );
-		$action_id = as_schedule_single_action( $time->getTimestamp(), 'hook_1' );
+		$action_id = as_schedule_single_action( as_get_datetime_object( 'tomorrow' )->getTimestamp(), $hook, array(), $group );
 
-		$this->assertTrue( as_has_scheduled_action( 'hook_1' ) );
-		$this->assertFalse( as_has_scheduled_action( 'hook_2' ) );
+		$this->assertTrue( as_has_scheduled_action( $hook, null, $group ) );
+		$this->assertTrue( as_has_scheduled_action( $hook, array(), $group ) );
+		$this->assertFalse( as_has_scheduled_action( $hook . '_nonexistent', null, $group ) );
 
 		// Go to in-progress.
 		$store->log_execution( $action_id );
-		$this->assertTrue( as_has_scheduled_action( 'hook_1' ) );
+		$this->assertTrue( as_has_scheduled_action( $hook, null, $group ) );
 
 		// Go to complete.
 		$store->mark_complete( $action_id );
-		$this->assertFalse( as_has_scheduled_action( 'hook_1' ) );
+		$this->assertFalse( as_has_scheduled_action( $hook, null, $group ) );
 
 		// Go to failed.
 		$store->mark_failure( $action_id );
-		$this->assertFalse( as_has_scheduled_action( 'hook_1' ) );
+		$this->assertFalse( as_has_scheduled_action( $hook, null, $group ) );
 	}
 
 	public function test_as_has_scheduled_action_with_args() {
@@ -329,13 +343,6 @@ class Procedural_API_Test extends ActionScheduler_UnitTestCase {
 
 		// Test for any args.
 		$this->assertTrue( as_has_scheduled_action( 'hook_1', array( 'a' ) ) );
-	}
-
-	public function test_as_has_scheduled_action_with_group() {
-		as_schedule_single_action( time(), 'hook_1', array(), 'group_1' );
-
-		$this->assertTrue( as_has_scheduled_action( 'hook_1', null, 'group_1' ) );
-		$this->assertTrue( as_has_scheduled_action( 'hook_1', array(), 'group_1' ) );
 	}
 	// phpcs:enable
 

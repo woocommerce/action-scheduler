@@ -361,20 +361,20 @@ function as_next_scheduled_action( $hook, $args = null, $group = '' ) {
 		$params['args'] = $args;
 	}
 
+	$store            = ActionScheduler::store();
 	$params['status'] = ActionScheduler_Store::STATUS_RUNNING;
-	$action_id        = ActionScheduler::store()->query_action( $params );
+	$action_id        = $store->query_action( $params );
 	if ( $action_id ) {
 		return true;
 	}
 
 	$params['status'] = ActionScheduler_Store::STATUS_PENDING;
-	$action_id        = ActionScheduler::store()->query_action( $params );
+	$action_id        = $store->query_action( $params );
 	if ( null === $action_id ) {
 		return false;
 	}
 
-	$action         = ActionScheduler::store()->fetch_action( $action_id );
-	$scheduled_date = $action->get_schedule()->get_date();
+	$scheduled_date = $store->fetch_action( $action_id )->get_schedule()->get_date();
 	if ( $scheduled_date ) {
 		return (int) $scheduled_date->format( 'U' );
 	} elseif ( null === $scheduled_date ) { // pending async action with NullSchedule.
@@ -405,16 +405,23 @@ function as_has_scheduled_action( $hook, $args = null, $group = '' ) {
 
 	$query_args = array(
 		'hook'    => $hook,
-		'status'  => array( ActionScheduler_Store::STATUS_RUNNING, ActionScheduler_Store::STATUS_PENDING ),
 		'group'   => $group,
 		'orderby' => 'none',
 	);
 
-	if ( null !== $args ) {
+	if ( is_array( $args ) ) {
 		$query_args['args'] = $args;
 	}
 
-	$action_id = ActionScheduler::store()->query_action( $query_args );
+	$store = ActionScheduler::store();
+	// Separate queries avoid SQL execution plan regression when the group JOIN combines with IN() on status.
+	if ( '' !== $group ) {
+		$action_id = $store->query_action( array_merge( $query_args, array( 'status' => ActionScheduler_Store::STATUS_RUNNING ) ) )
+			?? $store->query_action( array_merge( $query_args, array( 'status' => ActionScheduler_Store::STATUS_PENDING ) ) );
+	} else {
+		$query_args['status'] = array( ActionScheduler_Store::STATUS_RUNNING, ActionScheduler_Store::STATUS_PENDING );
+		$action_id            = $store->query_action( $query_args );
+	}
 
 	return null !== $action_id;
 }

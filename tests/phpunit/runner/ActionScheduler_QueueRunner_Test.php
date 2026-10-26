@@ -344,6 +344,43 @@ class ActionScheduler_QueueRunner_Test extends ActionScheduler_UnitTestCase {
 	}
 
 	/**
+	 * When an action is deleted by another process while it is being executed, marking it as failed should not
+	 * raise an uncaught exception that escalates into a fatal error.
+	 *
+	 * @see https://github.com/woocommerce/action-scheduler/issues/970
+	 *
+	 * @return void
+	 */
+	public function test_failure_is_handled_when_action_deleted_mid_execution() {
+		$store  = ActionScheduler_Store::instance();
+		$runner = ActionScheduler_Mocker::get_queue_runner( $store );
+
+		$hook      = 'as_test_action_deleted_mid_execution';
+		$action_id = as_schedule_single_action( time(), $hook );
+
+		// Mimic another process deleting the action between it being claimed and its failure being recorded.
+		$callback = function () use ( $store, $action_id ) {
+			$store->delete_action( $action_id );
+			throw new RuntimeException( 'Action failed after being deleted by another process.' );
+		};
+		add_action( $hook, $callback );
+
+		$failed_execution_fired = false;
+		$spy                    = function () use ( &$failed_execution_fired ) {
+			$failed_execution_fired = true;
+		};
+		add_action( 'action_scheduler_failed_execution', $spy );
+
+		// Before the fix, mark_failure() throws because the action no longer exists and the exception is uncaught.
+		$runner->process_action( $action_id );
+
+		$this->assertTrue( $failed_execution_fired, 'The action_scheduler_failed_execution hook should still fire when the action was already deleted.' );
+
+		remove_action( $hook, $callback );
+		remove_action( 'action_scheduler_failed_execution', $spy );
+	}
+
+	/**
 	 * If a recurring action continually fails, it will not be re-scheduled. However, a hook makes it possible to
 	 * exempt specific actions from this behavior (without impacting other unrelated recurring actions).
 	 *

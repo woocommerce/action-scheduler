@@ -254,6 +254,10 @@ class ActionScheduler_QueueCleaner {
 			as_schedule_single_action( time(), self::CONTINUE_SCHEDULED_CLEANER_HOOK, array(), 'ActionScheduler', $called_from_run, 0 );
 		}
 
+		// After batched deletions, remove claim records that are no longer referenced by any action.
+		// Done once per cleaning pass instead of once per deleted action.
+		$this->store->purge_orphan_claims();
+
 		return array_merge( array(), ...$deleted_actions );
 	}
 

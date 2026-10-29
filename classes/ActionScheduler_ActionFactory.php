@@ -353,7 +353,7 @@ class ActionScheduler_ActionFactory {
 	 */
 	protected function store_unique_action( ActionScheduler_Action $action ) {
 		$store = ActionScheduler_Store::instance();
-		if ( $store instanceof \ActionScheduler_DBStore ) {
+		if ( method_exists( $store, 'save_unique_action' ) ) {
 			return $store->save_unique_action( $action );
 		}
 

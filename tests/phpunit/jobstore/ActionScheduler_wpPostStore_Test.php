@@ -471,4 +471,40 @@ class ActionScheduler_wpPostStore_Test extends AbstractStoreTest {
 		remove_filter( 'query', $simulate_unexpected_db_behavior );
 		$store->release_claim( $claim );
 	}
+
+	/**
+	 * @testdox store_unique_action() fallback uses check-then-insert when the store is not ActionScheduler_DBStore.
+	 *
+	 * @testWith [""]
+	 *           ["test_group"]
+	 *
+	 * @param string $group Action group.
+	 */
+	public function test_store_unique_action_fallback( $group ) {
+		$store = new ActionScheduler_wpPostStore();
+
+		// Inject the store which will trigger fallback branch; use reflection as the factory is singleton with already populated store instance.
+		$prop = new ReflectionProperty( ActionScheduler_Store::class, 'store' );
+		$prop->setAccessible( true );
+		$original_store = $prop->getValue();
+		$prop->setValue( null, $store );
+
+		try {
+			$hook    = md5( wp_rand() );
+			$factory = new ActionScheduler_ActionFactory();
+
+			$action_id = $factory->single_unique( $hook, array( 1 ), 'tomorrow', $group );
+			$this->assertNotSame( 0, $action_id, 'Unique action with no prior match is stored.' );
+			$this->assertSame( 0, $factory->single_unique( $hook, array( 1 ), 'tomorrow', $group ), 'Pending duplicate is rejected.' );
+			$this->assertNotSame( 0, $factory->single_unique( $hook, array( 2 ), 'tomorrow', $group ), 'Same hook with different args is stored.' );
+
+			$store->log_execution( $action_id );
+			$this->assertSame( 0, $factory->single_unique( $hook, array( 1 ), 'tomorrow', $group ), 'In-progress duplicate is rejected.' );
+
+			$store->mark_complete( $action_id );
+			$this->assertNotSame( 0, $factory->single_unique( $hook, array( 1 ), 'tomorrow', $group ), 'Completed action no longer blocks a new one.' );
+		} finally {
+			$prop->setValue( null, $original_store );
+		}
+	}
 }

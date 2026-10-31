@@ -1021,6 +1021,23 @@ class ActionScheduler_DBStore_Test extends AbstractStoreTest {
 	}
 
 	/**
+	 * ActionScheduler_DBStore::bulk_cancel_actions() takes query arguments. It must not share its name
+	 * with the base class's private helper, which takes action IDs.
+	 *
+	 * @see https://github.com/woocommerce/action-scheduler/issues/998
+	 */
+	public function test_bulk_cancel_actions_does_not_shadow_base_class_method() {
+		$base = new ReflectionClass( 'ActionScheduler_Store' );
+		$this->assertFalse( $base->hasMethod( 'bulk_cancel_actions' ) );
+		$this->assertTrue( $base->getMethod( 'bulk_cancel_actions_by_id' )->isPrivate() );
+
+		$method = new ReflectionMethod( 'ActionScheduler_DBStore', 'bulk_cancel_actions' );
+		$this->assertSame( 'ActionScheduler_DBStore', $method->getDeclaringClass()->getName() );
+		$this->assertTrue( $method->isProtected() );
+		$this->assertSame( 'query_args', $method->getParameters()[0]->getName() );
+	}
+
+	/**
 	 * Test that bulk cancellation releases unique keys.
 	 */
 	public function test_bulk_cancel_releases_unique_action_key() {

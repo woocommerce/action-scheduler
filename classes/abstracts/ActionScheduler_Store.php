@@ -399,7 +399,7 @@ abstract class ActionScheduler_Store extends ActionScheduler_Store_Deprecated {
 				)
 			);
 
-			$this->bulk_cancel_actions( $action_ids );
+			$this->bulk_cancel_actions_by_id( $action_ids );
 		}
 	}
 
@@ -424,20 +424,25 @@ abstract class ActionScheduler_Store extends ActionScheduler_Store_Deprecated {
 				)
 			);
 
-			$this->bulk_cancel_actions( $action_ids );
+			$this->bulk_cancel_actions_by_id( $action_ids );
 		}
 	}
 
 	/**
 	 * Cancel a set of action IDs.
 	 *
+	 * Named apart from ActionScheduler_DBStore::bulk_cancel_actions(), which takes query arguments
+	 * rather than action IDs. Being private, this method is not inherited by, and cannot be
+	 * overridden by, data stores extending this class.
+	 *
 	 * @since 3.0.0
+	 * @since 4.3.0 Renamed from bulk_cancel_actions().
 	 *
 	 * @param int[] $action_ids List of action IDs.
 	 *
 	 * @return void
 	 */
-	private function bulk_cancel_actions( $action_ids ) {
+	private function bulk_cancel_actions_by_id( $action_ids ) {
 		foreach ( $action_ids as $action_id ) {
 			$this->cancel_action( $action_id );
 		}

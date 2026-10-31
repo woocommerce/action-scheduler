@@ -128,6 +128,42 @@ class ActionScheduler_wpPostStore_Test extends AbstractStoreTest {
 		}
 	}
 
+	/**
+	 * This store uses the base class's cancel_actions_by_hook() and cancel_actions_by_group(). Both must
+	 * still report the IDs they cancel through the action_scheduler_bulk_cancel_actions hook, and leave
+	 * other actions alone.
+	 *
+	 * @see https://github.com/woocommerce/action-scheduler/issues/998
+	 */
+	public function test_bulk_cancellation_reports_canceled_action_ids() {
+		$store    = new ActionScheduler_wpPostStore();
+		$reported = array();
+		$listener = function ( $action_ids ) use ( &$reported ) {
+			$reported = array_merge( $reported, $action_ids );
+		};
+		add_action( 'action_scheduler_bulk_cancel_actions', $listener );
+
+		$schedule = new ActionScheduler_SimpleSchedule( as_get_datetime_object( '+1 day' ) );
+		$by_hook  = array(
+			$store->save_action( new ActionScheduler_Action( 'bulk_cancel_by_hook_test', array( 1 ), $schedule ) ),
+			$store->save_action( new ActionScheduler_Action( 'bulk_cancel_by_hook_test', array( 2 ), $schedule ) ),
+		);
+		$by_group = array(
+			$store->save_action( new ActionScheduler_Action( ActionScheduler_Callbacks::HOOK_WITH_CALLBACK, array( 3 ), $schedule, 'bulk_cancel_by_group_test' ) ),
+		);
+		$other    = $store->save_action( new ActionScheduler_Action( ActionScheduler_Callbacks::HOOK_WITH_CALLBACK, array( 4 ), $schedule ) );
+
+		$store->cancel_actions_by_hook( 'bulk_cancel_by_hook_test' );
+		$store->cancel_actions_by_group( 'bulk_cancel_by_group_test' );
+		remove_action( 'action_scheduler_bulk_cancel_actions', $listener );
+
+		$expected = array_merge( $by_hook, $by_group );
+		sort( $expected );
+		sort( $reported );
+		$this->assertSame( array_map( 'intval', $expected ), array_map( 'intval', $reported ) );
+		$this->assertSame( ActionScheduler_Store::STATUS_PENDING, $store->get_status( $other ) );
+	}
+
 	public function test_claim_actions() {
 		$created_actions = array();
 		$store           = new ActionScheduler_wpPostStore();

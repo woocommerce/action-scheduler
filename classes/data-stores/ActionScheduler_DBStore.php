@@ -916,9 +916,6 @@ AND args = %s
 	/**
 	 * Bulk cancel actions.
 	 *
-	 * Cancels the pending actions matching the query arguments. This is not an override of the
-	 * private ActionScheduler_Store::bulk_cancel_actions_by_id(), which takes a list of action IDs.
-	 *
 	 * @since 3.0.0
 	 *
 	 * @param array $query_args Query parameters.

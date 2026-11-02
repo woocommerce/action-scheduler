@@ -132,8 +132,6 @@ class ActionScheduler_wpPostStore_Test extends AbstractStoreTest {
 	 * This store uses the base class's cancel_actions_by_hook() and cancel_actions_by_group(). Both must
 	 * still report the IDs they cancel through the action_scheduler_bulk_cancel_actions hook, and leave
 	 * other actions alone.
-	 *
-	 * @see https://github.com/woocommerce/action-scheduler/issues/998
 	 */
 	public function test_bulk_cancellation_reports_canceled_action_ids() {
 		$store    = new ActionScheduler_wpPostStore();

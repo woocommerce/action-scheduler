@@ -40,7 +40,19 @@ These are the commands available to use with Action Scheduler:
     * `--hooks` - Process only actions with specific hook or hooks, like `'woocommerce_scheduled_subscription_payment'`. By default, actions with any hook will be processed. Define multiple hooks as a comma separated string (without spaces), e.g. `--hooks=woocommerce_scheduled_subscription_trial_end,woocommerce_scheduled_subscription_payment,woocommerce_scheduled_subscription_expiration`
     * `--group` - Process only actions in a specific group, like `'woocommerce-memberships'`. By default, actions in any group (or no group) will be processed.
     * `--exclude-groups` - Ignore actions from the specified group or groups (to specify multiple groups, supply a comma-separated list of slugs). This option is ignored if `--group` is also specified.
+    * `--free-memory-on` - Free process-local caches after this many actions. Default `50`; `0` disables it.
+    * `--pause` - Seconds to pause when freeing memory. Default `0`.
+    * `--max-actions` - Stop after processing this many actions. Default `0` means unlimited.
+    * `--max-runtime` - Stop after this many seconds. Default `0` means unlimited.
+    * `--memory-limit` - Stop when memory usage reaches this value in megabytes. Default `0` means unlimited.
+    * `--poll-every-ms=<milliseconds>` - Keep polling for new actions at this positive-integer interval. Workers are launched in fresh processes and recycled when a configured limit is reached.
     * `--force` - By default, Action Scheduler limits the number of concurrent batches that can be run at once to ensure the server does not get overwhelmed. Using the `--force` flag overrides this behavior to force the WP CLI queue to run.
+
+    Polling mode is enabled by specifying `--poll-every-ms` and is intended to run under a process monitor such as systemd or Supervisor. It requires PHP's PCNTL extension. The current action is allowed to finish when the process receives `SIGINT` or `SIGTERM`; the worker exits before starting another action. Each worker is a subprocess with a fresh WordPress bootstrap. Use the action, runtime, or memory limit to recycle it periodically:
+
+    ```sh
+    wp action-scheduler run --poll-every-ms=1000 --group=emails --max-runtime=3600 --memory-limit=256
+    ```
     
 * `action-scheduler action cancel`
 * `action-scheduler action create`

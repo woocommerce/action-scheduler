@@ -28,6 +28,10 @@ There you will find:
 * [Administration Guide](https://actionscheduler.org/admin/): guide to managing scheduled actions via the administration screen
 * [Guide to Background Processing at Scale](https://actionscheduler.org/perf/): instructions for running Action Scheduler at scale via the default WP Cron queue runner
 
+## Custom Table Existence Checks
+
+The `action_scheduler_schema_table_exists` filter lets integrations provide their own schema table existence checks while retaining the built-in check as a fallback. See [Custom Table Existence Checks](docs/perf.md#custom-table-existence-checks) for the callback contract and integration requirements.
+
 ## Credits
 
 Action Scheduler is developed and maintained by [Automattic](http://automattic.com/) with significant early development completed by [Flightless](https://flightless.us/).

@@ -136,10 +136,17 @@ abstract class ActionScheduler {
 		$classes_dir = self::plugin_path( 'classes' . $d );
 		$separator   = strrpos( $class, '\\' );
 		if ( false !== $separator ) {
-			if ( 0 !== strpos( $class, 'Action_Scheduler' ) ) {
+			if ( 0 !== strpos( $class, 'Action_Scheduler\\' ) ) {
 				return;
 			}
 			$class = substr( $class, $separator + 1 );
+		} elseif (
+			0 !== stripos( $class, 'ActionScheduler_' )
+			&& 'CronExpression' !== $class && 0 !== strpos( $class, 'CronExpression_' )
+			&& 'WP_Async_Request' !== $class
+		) {
+			// CronExpression and WP_Async_Request are bundled libraries, so their global classes must also be supported.
+			return;
 		}
 
 		if ( 'Deprecated' === substr( $class, -10 ) ) {

@@ -150,7 +150,9 @@ if ( ! class_exists( 'WP_Async_Request' ) ) {
 				'timeout'   => 0.01,
 				'blocking'  => false,
 				'body'      => $this->data,
-				'cookies'   => $_COOKIE,
+				// WordPress slashes $_COOKIE (wp_magic_quotes), so unslash it. Otherwise every chained
+				// async request adds another layer of backslashes until the Cookie header is too large.
+				'cookies'   => wp_unslash( $_COOKIE ),
 				'sslverify' => apply_filters( 'https_local_ssl_verify', false ),
 			);
 

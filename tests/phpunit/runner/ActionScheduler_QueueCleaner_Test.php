@@ -5,6 +5,69 @@
  */
 class ActionScheduler_QueueCleaner_Test extends ActionScheduler_UnitTestCase {
 
+	public function tearDown(): void {
+		parent::tearDown();
+		$wpdb = $GLOBALS['wpdb'];
+		$wpdb->query( "TRUNCATE TABLE {$wpdb->prefix}actionscheduler_actions" );
+		$wpdb->query( "TRUNCATE TABLE {$wpdb->prefix}actionscheduler_claims" );
+	}
+
+	/**
+	 * @testdox clean_actions() invokes purge_orphan_claims() once at the end of a cleaning pass.
+	 */
+	public function test_clean_actions_purges_orphan_claims_once() {
+		$store = $this->getMockBuilder( ActionScheduler_Store::class )->disableOriginalConstructor()->getMock();
+
+		// No actions to delete, so delete_action() is never called.
+		$store->expects( $this->never() )->method( 'delete_action' );
+
+		// But purge_orphan_claims() must be called exactly once, after the loop over statuses.
+		$store->expects( $this->once() )
+			->method( 'purge_orphan_claims' )
+			->willReturn( 0 );
+
+		// query_actions() returns 0 matching actions for every status, so no batches are processed.
+		$store->expects( $this->any() )
+			->method( 'query_actions' )
+			->willReturn( array() );
+
+		$statuses = array( 'complete', 'canceled' );
+		$cutoff   = as_get_datetime_object( '31 days ago' );
+
+		$cleaner = new ActionScheduler_QueueCleaner( $store );
+		$cleaner->clean_actions( $statuses, $cutoff, 100, 'CLI' );
+	}
+
+	/**
+	 * @testdox clean_actions() calls purge_orphan_claims() even when the cleaning pass actually deleted actions.
+	 */
+	public function test_clean_actions_purges_orphan_claims_after_real_deletions() {
+		$store = $this->getMockBuilder( ActionScheduler_Store::class )->disableOriginalConstructor()->getMock();
+
+		// Two fake action IDs will be deleted.
+		$store->expects( $this->exactly( 2 ) )
+			->method( 'delete_action' )
+			->willReturn( true );
+
+		// query_actions() returns two pending IDs, then an empty list so the loop terminates.
+		$store->expects( $this->any() )
+			->method( 'query_actions' )
+			->willReturnOnConsecutiveCalls( array( 1, 2 ), array() );
+
+		// purge_orphan_claims() is called exactly once after the loop finishes.
+		$store->expects( $this->once() )
+			->method( 'purge_orphan_claims' )
+			->willReturn( 1 );
+
+		$statuses = array( 'complete', 'canceled' );
+		$cutoff   = as_get_datetime_object( '31 days ago' );
+
+		$cleaner = new ActionScheduler_QueueCleaner( $store );
+		$deleted = $cleaner->clean_actions( $statuses, $cutoff, 20, 'CLI' );
+
+		$this->assertCount( 2, $deleted );
+	}
+
 	public function test_delete_old_actions() {
 		$store    = ActionScheduler::store();
 		$runner   = ActionScheduler_Mocker::get_queue_runner( $store );

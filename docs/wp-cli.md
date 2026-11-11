@@ -41,6 +41,7 @@ These are the commands available to use with Action Scheduler:
     * `--group` - Process only actions in a specific group, like `'woocommerce-memberships'`. By default, actions in any group (or no group) will be processed.
     * `--exclude-groups` - Ignore actions from the specified group or groups (to specify multiple groups, supply a comma-separated list of slugs). This option is ignored if `--group` is also specified.
     * `--force` - By default, Action Scheduler limits the number of concurrent batches that can be run at once to ensure the server does not get overwhelmed. Using the `--force` flag overrides this behavior to force the WP CLI queue to run.
+    * `--force-up-to` - Like `--force`, but only while fewer than the specified number of batches are in progress, e.g. `--force-up-to=20`. Useful when running the queue from the system scheduler, to exceed the usual concurrency limit while still capping it. Takes precedence over `--force`.
     
 * `action-scheduler action cancel`
 * `action-scheduler action create`

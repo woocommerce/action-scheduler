@@ -67,6 +67,9 @@ class ActionScheduler_WPCLI_Scheduler_command extends WP_CLI_Command {
 	 * [--force]
 	 * : Whether to force execution despite the maximum number of concurrent processes being exceeded.
 	 *
+	 * [--force-up-to=<limit>]
+	 * : Force execution despite the maximum number of concurrent processes being exceeded, but only while fewer than this number of batches are in progress. Takes precedence over --force.
+	 *
 	 * @param array $args Positional arguments.
 	 * @param array $assoc_args Keyed arguments.
 	 * @throws \WP_CLI\ExitException When an error occurs.
@@ -85,6 +88,15 @@ class ActionScheduler_WPCLI_Scheduler_command extends WP_CLI_Command {
 		$free_on        = \WP_CLI\Utils\get_flag_value( $assoc_args, 'free-memory-on', 50 );
 		$sleep          = \WP_CLI\Utils\get_flag_value( $assoc_args, 'pause', 0 );
 		$force          = \WP_CLI\Utils\get_flag_value( $assoc_args, 'force', false );
+		$force_up_to    = \WP_CLI\Utils\get_flag_value( $assoc_args, 'force-up-to', null );
+
+		if ( null !== $force_up_to ) {
+			$force_up_to = filter_var( $force_up_to, FILTER_VALIDATE_INT, array( 'options' => array( 'min_range' => 1 ) ) );
+
+			if ( false === $force_up_to ) {
+				WP_CLI::error( __( 'The --force-up-to value must be a positive integer.', 'action-scheduler' ) );
+			}
+		}
 
 		ActionScheduler_DataController::set_free_ticks( $free_on );
 		ActionScheduler_DataController::set_sleep_time( $sleep );
@@ -108,7 +120,7 @@ class ActionScheduler_WPCLI_Scheduler_command extends WP_CLI_Command {
 			$runner = new ActionScheduler_WPCLI_QueueRunner( null, null, $cleaner );
 
 			// Determine how many tasks will be run in the first batch.
-			$total = $runner->setup( $batch, $hooks, $group, $force );
+			$total = $runner->setup( $batch, $hooks, $group, $this->should_force_batch( $force, $force_up_to ) );
 
 			// Run actions for as long as possible.
 			while ( $total > 0 ) {
@@ -117,7 +129,7 @@ class ActionScheduler_WPCLI_Scheduler_command extends WP_CLI_Command {
 				$batches_completed++;
 
 				// Maybe set up tasks for the next batch.
-				$total = ( $unlimited || $batches_completed < $batches ) ? $runner->setup( $batch, $hooks, $group, $force ) : 0;
+				$total = ( $unlimited || $batches_completed < $batches ) ? $runner->setup( $batch, $hooks, $group, $this->should_force_batch( $force, $force_up_to ) ) : 0;
 			}
 		} catch ( Exception $e ) {
 			$this->print_error( $e );
@@ -125,6 +137,22 @@ class ActionScheduler_WPCLI_Scheduler_command extends WP_CLI_Command {
 
 		$this->print_total_batches( $batches_completed );
 		$this->print_success( $actions_completed );
+	}
+
+	/**
+	 * Determines whether the next batch should run even if the maximum number of concurrent batches has been reached.
+	 *
+	 * @param bool     $force       Whether the --force flag was supplied.
+	 * @param int|null $force_up_to The --force-up-to limit, if supplied.
+	 *
+	 * @return bool
+	 */
+	private function should_force_batch( $force, $force_up_to ): bool {
+		if ( null === $force_up_to ) {
+			return (bool) $force;
+		}
+
+		return ActionScheduler::store()->get_claim_count() < $force_up_to;
 	}
 
 	/**

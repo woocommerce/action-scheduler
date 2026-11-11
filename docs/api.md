@@ -15,7 +15,7 @@ Functions return similar values and accept similar arguments to their WP-Cron co
 
 * `as_schedule_single_action()` & `as_schedule_recurring_action()` will return the ID of the scheduled action rather than boolean indicating whether the event was scheduled
 * `as_schedule_recurring_action()` takes an interval in seconds as the recurring interval rather than an arbitrary string
-* `as_schedule_single_action()` & `as_schedule_recurring_action()` can accept a `$group` parameter to group different actions for the one plugin together.
+* `as_schedule_single_action()` & `as_schedule_recurring_action()` can accept a `$group` parameter to group different actions for the one plugin together (see [Action Groups](#action-groups)).
 * the `wp_` prefix is substituted with `as_` and the term `event` is replaced with `action`
 
 ## API Function Availability
@@ -26,6 +26,43 @@ Do not use Action Scheduler API functions prior to `'init'` hook with priority `
 
 - Action Scheduler provides `Action_Scheduler::is_initialized()` for use in hooks to confirm that the data stores have been initialized.
 - It also provides the `'action_scheduler_init'` action hook. It is safe to call API functions during or after this event has fired (tip: you can take advantage of WordPress's [did_action()](https://developer.wordpress.org/reference/functions/did_action/) function to check this).
+
+## Action Groups
+
+The `$group` parameter accepted by the scheduling functions is an optional label, such as your plugin's slug, that is stored alongside the action. Groups are created automatically the first time they are used.
+
+A group has no effect on when, or in what order, actions run: the queue runner does not run the actions in a group together, or as a single batch. Instead, groups make it easier to find and manage related actions:
+
+* The group of each action is shown on the [Scheduled Actions administration screen](admin.md), where actions can be sorted by group.
+* `as_get_scheduled_actions()` can return only the actions in a given group, via its `'group'` argument.
+* `as_unschedule_action()`, `as_unschedule_all_actions()`, `as_next_scheduled_action()` and `as_has_scheduled_action()` only match actions in the given group. When the group is omitted (or is an empty string), they match actions in any group.
+* `as_unschedule_all_actions()` can cancel every pending action in a group, whatever its hook, by passing an empty hook: `as_unschedule_all_actions( '', array(), 'my-plugin' )`.
+* The `wp action-scheduler run` [WP CLI command](wp-cli.md) can process only the actions in a group (`--group`), or skip the actions in some groups (`--exclude-groups`).
+* The group is part of what makes an action [unique](#unique-actions).
+
+## Unique Actions
+
+When the `$unique` parameter of a scheduling function is `true`, the action will only be scheduled if there is no other pending or in-progress action with the same hook, arguments and group. If there is, the action is not scheduled, and the function returns `0`.
+
+```php
+// Schedules the action and returns its ID.
+as_schedule_single_action( time() + HOUR_IN_SECONDS, 'my_plugin_sync', array( 'post_id' => 123 ), 'my-plugin', true );
+
+// Returns 0: an equivalent action is already pending, even though it is scheduled for a different time.
+as_enqueue_async_action( 'my_plugin_sync', array( 'post_id' => 123 ), 'my-plugin', true );
+
+// Schedules the action: the arguments are different.
+as_enqueue_async_action( 'my_plugin_sync', array( 'post_id' => 456 ), 'my-plugin', true );
+```
+
+Some details are worth bearing in mind:
+
+* Only the hook, arguments and group are compared (versions of Action Scheduler prior to 4.0.0 did not compare the arguments). The type of schedule (single, async, recurring or cron), the scheduled date and the priority are ignored.
+* The arguments must be identical, including their order and type: `array( 'post_id' => 123 )` and `array( 'post_id' => '123' )` are different arguments.
+* Only pending and in-progress actions are checked. Once an action is complete, failed or canceled, an equivalent action can be scheduled again.
+* Any matching action counts, including one that was scheduled without `$unique`. However, `$unique` only applies to the call it is passed to: a later call made without it will schedule a duplicate action.
+* The check takes place when an action is scheduled. The later occurrences of a recurring or cron action are scheduled by Action Scheduler itself, each time an occurrence runs, so they are not subject to it.
+* With the default data store, which uses custom database tables, uniqueness is enforced atomically, even when several requests try to schedule the same action at once. Other data stores, including the one used while a site is still migrating to the custom tables, rely on a lookup made before the action is saved, so concurrent requests could occasionally schedule a duplicate action.
 
 ## Function Reference / `as_enqueue_async_action()`
 
@@ -43,8 +80,8 @@ as_enqueue_async_action( $hook, $args, $group, $unique, $priority );
 
 - **$hook** (string)(required) Name of the action hook.
 - **$args** (array) Arguments to pass to callbacks when the hook triggers. Default: _`array()`_.
-- **$group** (string) The group to assign this job to. Default: _''_.
-- **$unique** (boolean) Whether the action should be unique. Default: _`false`_.
+- **$group** (string) The group to assign this job to. See [Action Groups](#action-groups). Default: _''_.
+- **$unique** (boolean) Whether the action should be unique. See [Unique Actions](#unique-actions). Default: _`false`_.
 - **$priority** (integer) Lower values take precedence over higher values. Defaults to 10, with acceptable values falling in the range 0-255.
 
 ### Return value
@@ -68,8 +105,8 @@ as_schedule_single_action( $timestamp, $hook, $args, $group, $unique, $priority 
 - **$timestamp** (integer)(required) The Unix timestamp representing the date you want the action to run.
 - **$hook** (string)(required) Name of the action hook.
 - **$args** (array) Arguments to pass to callbacks when the hook triggers. Default: _`array()`_.
-- **$group** (string) The group to assign this job to. Default: _''_.
-- **$unique** (boolean) Whether the action should be unique. Default: _`false`_.
+- **$group** (string) The group to assign this job to. See [Action Groups](#action-groups). Default: _''_.
+- **$unique** (boolean) Whether the action should be unique. See [Unique Actions](#unique-actions). Default: _`false`_.
 - **$priority** (integer) Lower values take precedence over higher values. Defaults to 10, with acceptable values falling in the range 0-255.)
 
 ### Return value
@@ -94,8 +131,8 @@ as_schedule_recurring_action( $timestamp, $interval_in_seconds, $hook, $args, $g
 - **$interval_in_seconds** (integer)(required) How long to wait between runs.
 - **$hook** (string)(required) Name of the action hook.
 - **$args** (array) Arguments to pass to callbacks when the hook triggers. Default: _`array()`_.
-- **$group** (string) The group to assign this job to. Default: _''_.
-- **$unique** (boolean) Whether the action should be unique. Default: _`false`_.
+- **$group** (string) The group to assign this job to. See [Action Groups](#action-groups). Default: _''_.
+- **$unique** (boolean) Whether the action should be unique. See [Unique Actions](#unique-actions). Default: _`false`_.
 - **$priority** (integer) Lower values take precedence over higher values. Defaults to 10, with acceptable values falling in the range 0-255.
 
 ### Return value
@@ -122,8 +159,8 @@ as_schedule_cron_action( $timestamp, $schedule, $hook, $args, $group, $unique, $
 - **$schedule** (string)(required) $schedule A cron-like schedule string, see http://en.wikipedia.org/wiki/Cron.
 - **$hook** (string)(required) Name of the action hook.
 - **$args** (array) Arguments to pass to callbacks when the hook triggers. Default: _`array()`_.
-- **$group** (string) The group to assign this job to. Default: _''_.
-- **$unique** (boolean) Whether the action should be unique. Default: _`false`_.
+- **$group** (string) The group to assign this job to. See [Action Groups](#action-groups). Default: _''_.
+- **$unique** (boolean) Whether the action should be unique. See [Unique Actions](#unique-actions). Default: _`false`_.
 - **$priority** (integer) Lower values take precedence over higher values. Defaults to 10, with acceptable values falling in the range 0-255.
 
 ### Return value

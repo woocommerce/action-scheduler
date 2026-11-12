@@ -60,8 +60,9 @@ Some details are worth bearing in mind:
 * Only the hook, arguments and group are compared (versions of Action Scheduler prior to 4.0.0 did not compare the arguments). The type of schedule (single, async, recurring or cron), the scheduled date and the priority are ignored.
 * The arguments must be identical, including their order and type: `array( 'post_id' => 123 )` and `array( 'post_id' => '123' )` are different arguments.
 * Only pending and in-progress actions are checked. Once an action is complete, failed or canceled, an equivalent action can be scheduled again.
-* Any matching action counts, including one that was scheduled without `$unique`. However, `$unique` only applies to the call it is passed to: a later call made without it will schedule a duplicate action.
-* The check takes place when an action is scheduled. The later occurrences of a recurring or cron action are scheduled by Action Scheduler itself, each time an occurrence runs, so they are not subject to it.
+* Any matching action blocks the new one, including one that was scheduled without `$unique`.
+* Uniqueness is only checked by calls where `$unique` is `true`. A later call made without `$unique` schedules a duplicate, even when a matching action exists.
+* When later instances of a recurring or cron action are scheduled (internally, by Action Scheduler), uniqueness is not checked.
 * With the default data store, which uses custom database tables, uniqueness is enforced atomically, even when several requests try to schedule the same action at once. Other data stores, including the one used while a site is still migrating to the custom tables, rely on a lookup made before the action is saved, so concurrent requests could occasionally schedule a duplicate action.
 
 ## Function Reference / `as_enqueue_async_action()`

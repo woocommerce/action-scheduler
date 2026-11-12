@@ -21,6 +21,12 @@ require_once __DIR__ . '/../vendor/yoast/phpunit-polyfills/phpunitpolyfills-auto
 
 $wordpress_tests_dir = getenv( 'WP_TESTS_DIR' ) ? getenv( 'WP_TESTS_DIR' ) : sys_get_temp_dir() . '/wordpress-tests-lib';
 require_once $wordpress_tests_dir . '/includes/functions.php';
+
+// Isolated PHPUnit children reuse the database installed by the parent process.
+if ( isset( $GLOBALS['__PHPUNIT_BOOTSTRAP'] ) ) {
+	putenv( 'WP_TESTS_SKIP_INSTALL=1' ); // phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.runtime_configuration_putenv -- WordPress reads this flag before installing the test database.
+}
+
 require $wordpress_tests_dir . '/includes/bootstrap.php';
 
 require_once dirname( dirname( __FILE__ ) ) . '/action-scheduler.php';

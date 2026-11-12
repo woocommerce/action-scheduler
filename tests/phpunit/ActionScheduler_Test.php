@@ -45,10 +45,17 @@ class ActionScheduler_Test extends ActionScheduler_UnitTestCase {
 	}
 
 	/**
-	 * A lookalike namespace must not include the loaded migration controller again.
+	 * Namespaces must match the classes they contain.
 	 */
-	public function test_namespace_prefix_requires_a_separator() {
+	public function test_namespaces_must_match_classes() {
 		$this->assertTrue( class_exists( 'Action_Scheduler\\Migration\\Controller' ) );
+		$this->assertTrue( class_exists( 'Action_Scheduler\\WP_CLI\\ProgressBar' ) );
+		$this->assertTrue( class_exists( 'ActionScheduler_DBStoreMigrator' ) );
 		$this->assertFalse( class_exists( 'Action_SchedulerExtra\\Migration\\Controller' ) );
+		$this->assertFalse( class_exists( 'Action_Scheduler\\WP_CLI\\Controller' ) );
+		$this->assertFalse( class_exists( 'Action_Scheduler\\Migration\\ProgressBar' ) );
+		$this->assertFalse( class_exists( 'Action_Scheduler\\Migration\\Extra\\Controller' ) );
+		$this->assertFalse( class_exists( 'Action_Scheduler\\Hypothetical\\ActionScheduler_Store' ) );
+		$this->assertFalse( class_exists( 'Action_Scheduler\\Migration\\ActionScheduler_DBStoreMigrator' ) );
 	}
 }

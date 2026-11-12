@@ -139,7 +139,15 @@ abstract class ActionScheduler {
 			if ( 0 !== strpos( $class, 'Action_Scheduler\\' ) ) {
 				return;
 			}
-			$class = substr( $class, $separator + 1 );
+			$namespace    = strtolower( substr( $class, 0, $separator ) );
+			$class        = substr( $class, $separator + 1 );
+			$is_migration = 'action_scheduler\\migration' === $namespace && self::is_class_migration( $class );
+			$is_cli       = 'action_scheduler\\wp_cli' === $namespace && self::is_class_cli( $class );
+
+			// ActionScheduler_* classes are global, including those in the migration and CLI directories.
+			if ( 0 === stripos( $class, 'ActionScheduler_' ) || ( ! $is_migration && ! $is_cli ) ) {
+				return;
+			}
 		} elseif (
 			0 !== stripos( $class, 'ActionScheduler_' )
 			&& 'CronExpression' !== $class && 0 !== strpos( $class, 'CronExpression_' )

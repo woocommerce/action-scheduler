@@ -12,15 +12,9 @@ permissions:
 
 jobs:
   test-build:
-    name: Build the plugin and share ways to test it
+    name: Build the plugin and share a way to test it
     timeout-minutes: 10
     runs-on: ubuntu-latest
-    env:
-      # NOT PROVISIONED YET: Action Scheduler is not registered with the Jetpack Beta Builder, and this
-      # secret does not exist. Until both are in place (see .github/playground/README.md), the Jetpack
-      # Beta Builder steps are skipped and the comment says that Options 1 and 2 are not available yet.
-      # Fork PRs never receive secrets, so they always take that path.
-      BETA_BUILDER_SECRET: ${{ secrets.ACTION_SCHEDULER_BETA_BUILDER_SECRET }}
     steps:
       - name: Checkout code
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
@@ -41,7 +35,6 @@ jobs:
       # The version Action Scheduler registers with ActionScheduler_Versions is the code's own and is left
       # alone: it decides which copy runs when several plugins bundle one.
       - name: Stamp the dev version
-        id: version
         env:
           PR_NUMBER: ${{ github.event.number }}
           PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
@@ -55,62 +48,28 @@ jobs:
           sed -i "s/^Stable tag: .*$/Stable tag: ${DEV_VERSION}/" readme.txt
 
           echo "Dev version: $DEV_VERSION" >> "$GITHUB_STEP_SUMMARY"
-          echo "dev-version=$DEV_VERSION" >> "$GITHUB_OUTPUT"
 
       # The same command the release uses, so what gets tested is what would ship.
       - name: Build the plugin
         run: npm run build
 
-      # Jetpack Beta installs dev builds into a `<slug>-dev` folder, next to the released plugin. The
-      # Playground artifact carries the same zip plus the preview mu-plugin, which is not in the zip.
-      - name: Arrange the artifacts
+      # The artifact carries the plugin zip plus the preview mu-plugin, which is not in the zip.
+      - name: Arrange the artifact
         env:
           OUT: ${{ runner.temp }}/test-build
         run: |
-          mkdir -p "$OUT/unpacked" "$OUT/plugins" "$OUT/playground"
-          unzip -q action-scheduler.zip -d "$OUT/unpacked"
-          mv "$OUT/unpacked/action-scheduler" "$OUT/unpacked/action-scheduler-dev"
-          ( cd "$OUT/unpacked" && zip -q -r "$OUT/plugins/action-scheduler-dev.zip" action-scheduler-dev )
-          cp "$OUT/plugins/action-scheduler-dev.zip" .github/playground/action-scheduler-playground-preview.php "$OUT/playground/"
+          mkdir -p "$OUT/playground"
+          cp action-scheduler.zip .github/playground/action-scheduler-playground-preview.php "$OUT/playground/"
 
       # The Playground links in the comment download this artifact on every click, so it is kept for
-      # longer. The run ID in the name ties each link to the files of one run.
+      # 14 days. The run ID in the name ties each link to the files of one run.
       - name: Upload the build for the Playground previews
-        id: playground-artifact
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: playground-preview-${{ github.run_id }}
           path: ${{ runner.temp }}/test-build/playground
           if-no-files-found: error
           retention-days: 14
-
-      - name: Upload the build for the Jetpack Beta Builder
-        if: env.BETA_BUILDER_SECRET != ''
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
-        with:
-          name: plugins # Hard-coded value for the Jetpack Beta Builder.
-          path: ${{ runner.temp }}/test-build/plugins
-          if-no-files-found: error
-          # The Jetpack Beta Builder copies it, so a day is enough.
-          retention-days: 1
-
-      - name: Inform the Jetpack Beta Builder
-        id: beta
-        if: env.BETA_BUILDER_SECRET != ''
-        env:
-          DEV_VERSION: ${{ steps.version.outputs.dev-version }}
-          PR_NUMBER: ${{ github.event.number }}
-          # GITHUB_REF is refs/pull/<n>/merge here, and testers look builds up by the PR's branch name.
-          PR_HEAD_REF: ${{ github.event.pull_request.head.ref }}
-        run: |
-          PLUGIN_DATA=$( jq -cn --arg version "$DEV_VERSION" '{ "action-scheduler": { version: $version } }' )
-
-          curl --fail -L \
-            --url "https://betadownload.jetpack.me/gh-action.php?run_id=$GITHUB_RUN_ID&pr=$PR_NUMBER&commit=$GITHUB_SHA" \
-            --form-string "repo=$GITHUB_REPOSITORY" \
-            --form-string "branch=$PR_HEAD_REF" \
-            --form-string "plugins=$PLUGIN_DATA" \
-            --form-string "secret=$BETA_BUILDER_SECRET"
 
       # WordPress Playground runs in the visitor's browser and can only fetch public URLs. Its artifact
       # proxy serves this workflow's artifacts for the PR, looked up by workflow name - hence
@@ -120,8 +79,6 @@ jobs:
       # The pull request build is installed before WooCommerce so that it creates the sample actions.
       - name: Build the WordPress Playground links
         id: playground
-        # Still offered when only the Jetpack Beta Builder call failed.
-        if: ${{ !cancelled() && steps.playground-artifact.outcome == 'success' }}
         env:
           PR_NUMBER: ${{ github.event.number }}
         run: |
@@ -145,7 +102,7 @@ jobs:
                 { step: "unzip", zipFile: { resource: "url", url: $artifact, caption: "Downloading the Action Scheduler build for this PR" }, extractToPath: "/tmp/pr" },
                 { step: "mkdir", path: "/wordpress/wp-content/mu-plugins" },
                 { step: "cp", fromPath: "/tmp/pr/action-scheduler-playground-preview.php", toPath: "/wordpress/wp-content/mu-plugins/action-scheduler-playground-preview.php" },
-                { step: "installPlugin", pluginData: { resource: "vfs", path: "/tmp/pr/action-scheduler-dev.zip" }, options: { activate: true } }
+                { step: "installPlugin", pluginData: { resource: "vfs", path: "/tmp/pr/action-scheduler.zip" }, options: { activate: true } }
               ] as $action_scheduler
             | [
                 { step: "installPlugin", pluginData: { resource: "wordpress.org/plugins", slug: "woocommerce" }, options: { activate: true } },
@@ -161,61 +118,17 @@ jobs:
             echo "woocommerce-url=https://playground.wordpress.net/#$( jq -rn --argjson blueprints "$BLUEPRINTS" '$blueprints.woocommerce|tojson|@uri' )"
           } >> "$GITHUB_OUTPUT"
 
-      # The comment always has the same three options. Options 1 and 2 need the Jetpack Beta Builder to have
-      # accepted this build (Jurassic Ninja launches a branch by asking it for the build), so without that
-      # they say what is missing instead of offering a link that cannot work.
       - name: Write the test instructions
-        id: instructions
-        if: ${{ !cancelled() && steps.playground.outcome == 'success' }}
         env:
-          BETA_OUTCOME: ${{ steps.beta.outcome }}
-          FROM_FORK: ${{ github.event.pull_request.head.repo.full_name != github.repository }}
-          README_URL: ${{ github.server_url }}/${{ github.repository }}/blob/${{ github.base_ref }}/.github/playground/README.md#jetpack-beta-and-jurassic-ninja
-          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
           PLAYGROUND_URL: ${{ steps.playground.outputs.url }}
           PLAYGROUND_WOOCOMMERCE_URL: ${{ steps.playground.outputs.woocommerce-url }}
-          PR_NUMBER: ${{ github.event.number }}
           PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
-          PR_HEAD_REF: ${{ github.event.pull_request.head.ref }}
           BODY_FILE: ${{ runner.temp }}/test-build/comment.md
         run: |
-          if [ "$BETA_OUTCOME" = "success" ]; then
-            JN_URL="https://jurassic.ninja/create/?jetpack-beta&nojetpack&branches.action-scheduler=$( jq -rn --arg ref "$PR_HEAD_REF" '$ref|@uri' )"
-
-            JETPACK_BETA="- Install and activate [Jetpack Beta](https://jetpack.com/beta/#download-and-install).
-          - Use this build by searching for PR number \`${PR_NUMBER}\` or branch name \`${PR_HEAD_REF}\` in your-test.site/wp-admin/admin.php?page=jetpack-beta&plugin=action-scheduler
-
-          :information_source: This runs on your own site. If another active plugin bundles a higher version of Action Scheduler, that copy runs instead of this build: the **Help** tab on **Tools > Scheduled Actions** shows which one is loaded."
-
-            JURASSIC_NINJA=":warning: Log in at [jurassic.ninja](https://jurassic.ninja/) first. Without a login, the link below takes you to the Jurassic Ninja homepage and no site is created.
-
-          :rocket: [Launch a JN site with this branch](${JN_URL}) :rocket:
-
-          :information_source: The link adds no WooCommerce, so this build is the only copy of Action Scheduler on the site."
-          else
-            if [ "$BETA_OUTCOME" = "failure" ]; then
-              JETPACK_BETA=":x: Not available for this build. The Jetpack Beta Builder did not accept it: see the [workflow run](${RUN_URL})."
-            elif [ "$FROM_FORK" = "true" ]; then
-              JETPACK_BETA=":no_entry_sign: Not available for this pull request. It comes from a fork, and a fork's build is not sent to the Jetpack Beta Builder."
-            else
-              JETPACK_BETA=":construction: Not available yet. Action Scheduler is not registered with the Jetpack Beta Builder, so Jetpack Beta cannot list this build. It needs that registration and the webhook secret that comes with it: see [what is missing](${README_URL})."
-            fi
-
-            JURASSIC_NINJA=":construction: Not available, for the same reason as Option 1: Jurassic Ninja gets a branch's build from the Jetpack Beta Builder."
-          fi
-
           cat > "$BODY_FILE" <<EOF
           ### Test the build
 
-          #### Option 1. Jetpack Beta
-
-          ${JETPACK_BETA}
-
-          #### Option 2. Jurassic Ninja - available for logged-in A12s
-
-          ${JURASSIC_NINJA}
-
-          #### Option 3. WordPress Playground - runs in your browser
+          #### WordPress Playground - runs in your browser
 
           - :alarm_clock: [Open Action Scheduler on its own](${PLAYGROUND_URL}): this build is the only copy of Action Scheduler on the site.
           - :shopping_cart: [Open with WooCommerce](${PLAYGROUND_WOOCOMMERCE_URL}): WooCommerce bundles its own copy, and the copy with the higher version runs. On a tie this build wins, because it loads first.
@@ -239,7 +152,7 @@ jobs:
       # Fork and Dependabot PRs get a read-only token, so their instructions stay in the run summary
       # written above.
       - name: Add or update the comment in the PR
-        if: ${{ !cancelled() && steps.instructions.outcome == 'success' && github.event.pull_request.head.repo.full_name == github.repository && github.actor != 'dependabot[bot]' }}
+        if: ${{ github.event.pull_request.head.repo.full_name == github.repository && github.actor != 'dependabot[bot]' }}
         env:
           GH_TOKEN: ${{ github.token }}
           PR_NUMBER: ${{ github.event.number }}

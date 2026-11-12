@@ -31,7 +31,7 @@ Do not use Action Scheduler API functions prior to `'init'` hook with priority `
 
 The `$group` parameter accepted by the scheduling functions is an optional label, such as your plugin's slug, that is stored alongside the action. Groups are created automatically the first time they are used.
 
-A group has no effect on when, or in what order, actions run: the queue runner does not run the actions in a group together, or as a single batch. Instead, groups make it easier to find and manage related actions:
+Under the default queue runner, a group has no effect on when or in what order actions run. The actions in a group are not run together or as a single batch. Instead, groups make it easier to find and manage related actions:
 
 * The group of each action is shown on the [Scheduled Actions administration screen](admin.md), where actions can be sorted by group.
 * `as_get_scheduled_actions()` can return only the actions in a given group, via its `'group'` argument.

@@ -6,6 +6,7 @@
 * Fix - Only reset the migration status when the plugin providing the running copy of Action Scheduler is deactivated, instead of when any plugin is deactivated.
 * Performance - Optimize as_has_scheduled_action function for larger datasets.
 * Dev - Rename private method `ActionScheduler_Store::bulk_cancel_actions()` to `bulk_cancel_actions_by_id()`, limiting the potential for future confusion with `ActionScheduler_DBStore::bulk_cancel_actions()`.
+* Dev - Document what action groups and unique actions do, and correct the `$unique` docblocks, which did not say that the arguments are compared.
 
 = 4.2.0 - 2026-09-16 =
 * Fix - Enforce unique action inserts atomically and release stale uniqueness keys during scheduled cleanup.

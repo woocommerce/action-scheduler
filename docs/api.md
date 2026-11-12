@@ -59,6 +59,7 @@ Some details are worth bearing in mind:
 
 * Only the hook, arguments and group are compared (versions of Action Scheduler prior to 4.0.0 did not compare the arguments). The type of schedule (single, async, recurring or cron), the scheduled date and the priority are ignored.
 * The arguments must be identical, including their order and type: `array( 'post_id' => 123 )` and `array( 'post_id' => '123' )` are different arguments.
+* An empty group only matches actions that have no group. This is different from `as_has_scheduled_action()` and similar functions, where an empty group matches any group.
 * Only pending and in-progress actions are checked. Once an action is complete, failed or canceled, an equivalent action can be scheduled again.
 * Any matching action blocks the new one, including one that was scheduled without `$unique`.
 * Uniqueness is only checked by calls where `$unique` is `true`. A later call made without `$unique` schedules a duplicate, even when a matching action exists.

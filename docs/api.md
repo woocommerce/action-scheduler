@@ -88,7 +88,7 @@ as_enqueue_async_action( $hook, $args, $group, $unique, $priority );
 
 ### Return value
 
-`(integer)` the action's ID. Zero if there was an error scheduling the action. The error will be sent to `error_log`.
+`(integer)` the action's ID. Zero if the action was not scheduled, because `$unique` is `true` and a matching action exists, or because of an error. Errors are sent to `error_log`.
 
 ## Function Reference / `as_schedule_single_action()`
 
@@ -113,7 +113,7 @@ as_schedule_single_action( $timestamp, $hook, $args, $group, $unique, $priority 
 
 ### Return value
 
-`(integer)` the action's ID. Zero if there was an error scheduling the action. The error will be sent to `error_log`.
+`(integer)` the action's ID. Zero if the action was not scheduled, because `$unique` is `true` and a matching action exists, or because of an error. Errors are sent to `error_log`.
 
 ## Function Reference / `as_schedule_recurring_action()`
 
@@ -139,7 +139,7 @@ as_schedule_recurring_action( $timestamp, $interval_in_seconds, $hook, $args, $g
 
 ### Return value
 
-`(integer)` the action's ID. Zero if there was an error scheduling the action. The error will be sent to `error_log`.
+`(integer)` the action's ID. Zero if the action was not scheduled, because `$unique` is `true` and a matching action exists, or because of an error. Errors are sent to `error_log`.
 
 ## Function Reference / `as_schedule_cron_action()`
 
@@ -167,7 +167,7 @@ as_schedule_cron_action( $timestamp, $schedule, $hook, $args, $group, $unique, $
 
 ### Return value
 
-`(integer)` the action's ID. Zero if there was an error scheduling the action. The error will be sent to `error_log`.
+`(integer)` the action's ID. Zero if the action was not scheduled, because `$unique` is `true` and a matching action exists, or because of an error. Errors are sent to `error_log`.
 
 ## Function Reference / `as_unschedule_action()`
 

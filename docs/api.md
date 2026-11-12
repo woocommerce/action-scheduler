@@ -64,7 +64,7 @@ Some details are worth bearing in mind:
 * Any matching action blocks the new one, including one that was scheduled without `$unique`.
 * Uniqueness is only checked by calls where `$unique` is `true`. A later call made without `$unique` schedules a duplicate, even when a matching action exists.
 * When later instances of a recurring or cron action are scheduled (internally, by Action Scheduler), uniqueness is not checked.
-* With the default data store, which uses custom database tables, uniqueness is enforced atomically, even when several requests try to schedule the same action at once. Other data stores, including the one used while a site is still migrating to the custom tables, rely on a lookup made before the action is saved, so concurrent requests could occasionally schedule a duplicate action.
+* With the default data store, which uses custom database tables, uniqueness is enforced atomically (since Action Scheduler 4.2.0), even when several requests try to schedule the same action at once. Other data stores, including the one used while a site is still migrating to the custom tables, rely on a lookup made before the action is saved, so concurrent requests could occasionally schedule a duplicate action.
 
 ## Function Reference / `as_enqueue_async_action()`
 

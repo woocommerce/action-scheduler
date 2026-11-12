@@ -1,0 +1,171 @@
+name: Test build on PR
+on:
+  pull_request
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  test-build:
+    name: Build the plugin and share a way to test it
+    timeout-minutes: 10
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@0f7f1d08e3e32076e51cae65eb0b0c871405b16e # v2.34.1
+        with:
+          php-version: '8.3'
+          tools: composer
+          coverage: none
+
+      - name: Setup Node
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: '20'
+
+      # Only the plugin header and the readme are stamped, so a tester can tell which build is installed.
+      # The version Action Scheduler registers with ActionScheduler_Versions is the code's own and is left
+      # alone: it decides which copy runs when several plugins bundle one.
+      - name: Stamp the dev version
+        env:
+          PR_NUMBER: ${{ github.event.number }}
+          PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          VERSION=$( grep -m1 -oP '^ \* Version:\s*\K[0-9]+\.[0-9]+\.[0-9]+' action-scheduler.php )
+          MAJOR=$( echo "$VERSION" | cut -d. -f1 )
+          MINOR=$( echo "$VERSION" | cut -d. -f2 )
+          DEV_VERSION="${MAJOR}.$(( MINOR + 1 )).0-dev_PR-${PR_NUMBER}_commit-${PR_HEAD_SHA:0:7}"
+
+          sed -i "s/^ \* Version: .*$/ * Version: ${DEV_VERSION}/" action-scheduler.php
+          sed -i "s/^Stable tag: .*$/Stable tag: ${DEV_VERSION}/" readme.txt
+
+          echo "Dev version: $DEV_VERSION" >> "$GITHUB_STEP_SUMMARY"
+
+      # The same command the release uses, so what gets tested is what would ship.
+      - name: Build the plugin
+        run: npm run build
+
+      # The artifact carries the plugin zip plus the preview mu-plugin, which is not in the zip.
+      - name: Arrange the artifact
+        env:
+          OUT: ${{ runner.temp }}/test-build
+        run: |
+          mkdir -p "$OUT/playground"
+          cp action-scheduler.zip .github/playground/action-scheduler-playground-preview.php "$OUT/playground/"
+
+      # The Playground links in the comment download this artifact on every click, so it is kept for
+      # 14 days. The run ID in the name ties each link to the files of one run.
+      - name: Upload the build for the Playground previews
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: playground-preview-${{ github.run_id }}
+          path: ${{ runner.temp }}/test-build/playground
+          if-no-files-found: error
+          retention-days: 14
+
+      # WordPress Playground runs in the visitor's browser and can only fetch public URLs. Its artifact
+      # proxy serves this workflow's artifacts for the PR, looked up by workflow name - hence
+      # GITHUB_WORKFLOW rather than a literal that a rename would silently break. An artifact is a zip
+      # wrapping what was uploaded, so the Blueprints unzip it before installing the plugin zip inside.
+      #
+      # The pull request build is installed before WooCommerce so that it creates the sample actions.
+      - name: Build the WordPress Playground links
+        id: playground
+        env:
+          PR_NUMBER: ${{ github.event.number }}
+        run: |
+          ARTIFACT_URL=$( jq -rn \
+            --arg org "$GITHUB_REPOSITORY_OWNER" \
+            --arg repo "${GITHUB_REPOSITORY#*/}" \
+            --arg workflow "$GITHUB_WORKFLOW" \
+            --arg pr "$PR_NUMBER" \
+            --arg artifact "playground-preview-$GITHUB_RUN_ID" \
+            '"https://playground.wordpress.net/plugin-proxy.php?org=\($org|@uri)&repo=\($repo|@uri)&workflow=\($workflow|@uri)&pr=\($pr|@uri)&artifact=\($artifact|@uri)"' )
+
+          BLUEPRINTS=$( jq -cn --arg artifact "$ARTIFACT_URL" '
+            {
+              "$schema": "https://playground.wordpress.net/blueprint-schema.json",
+              landingPage: "/wp-admin/tools.php?page=action-scheduler",
+              preferredVersions: { php: "8.3", wp: "latest" },
+              features: { networking: true }
+            } as $base
+            | [
+                { step: "login", username: "admin" },
+                { step: "unzip", zipFile: { resource: "url", url: $artifact, caption: "Downloading the Action Scheduler build for this PR" }, extractToPath: "/tmp/pr" },
+                { step: "mkdir", path: "/wordpress/wp-content/mu-plugins" },
+                { step: "cp", fromPath: "/tmp/pr/action-scheduler-playground-preview.php", toPath: "/wordpress/wp-content/mu-plugins/action-scheduler-playground-preview.php" },
+                { step: "installPlugin", pluginData: { resource: "vfs", path: "/tmp/pr/action-scheduler.zip" }, options: { activate: true } }
+              ] as $action_scheduler
+            | [
+                { step: "installPlugin", pluginData: { resource: "wordpress.org/plugins", slug: "woocommerce" }, options: { activate: true } },
+                { step: "runPHP", code: "<?php require \"/wordpress/wp-load.php\"; delete_transient( \"_wc_activation_redirect\" ); update_option( \"woocommerce_onboarding_profile\", array( \"skipped\" => true ) );" }
+              ] as $woocommerce
+            | {
+                standalone: ( $base + { steps: $action_scheduler } ),
+                woocommerce: ( $base + { steps: ( $action_scheduler + $woocommerce ) } )
+              }' )
+
+          {
+            echo "url=https://playground.wordpress.net/#$( jq -rn --argjson blueprints "$BLUEPRINTS" '$blueprints.standalone|tojson|@uri' )"
+            echo "woocommerce-url=https://playground.wordpress.net/#$( jq -rn --argjson blueprints "$BLUEPRINTS" '$blueprints.woocommerce|tojson|@uri' )"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Write the test instructions
+        env:
+          PLAYGROUND_URL: ${{ steps.playground.outputs.url }}
+          PLAYGROUND_WOOCOMMERCE_URL: ${{ steps.playground.outputs.woocommerce-url }}
+          PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          BODY_FILE: ${{ runner.temp }}/test-build/comment.md
+        run: |
+          cat > "$BODY_FILE" <<EOF
+          ### Test the build
+
+          #### WordPress Playground - runs in your browser
+
+          - :alarm_clock: [Open Action Scheduler on its own](${PLAYGROUND_URL}): this build is the only copy of Action Scheduler on the site.
+          - :shopping_cart: [Open with WooCommerce](${PLAYGROUND_WOOCOMMERCE_URL}): WooCommerce bundles its own copy, and the copy with the higher version runs. On a tie this build wins, because it loads first.
+
+          Both open **Tools > Scheduled Actions** with a few sample actions, and a notice there says which copy of Action Scheduler is running.
+
+          :information_source: WordPress Playground has WP-Cron disabled, so actions do not run on their own there: use the **Run** link under an action, **Run the queue now** in the notice, or \`wp action-scheduler run\` in Playground's **Dev Tools > Terminal**, which takes WP-CLI commands. The links stop working 14 days after the last build.
+
+          ---
+
+          Build info:
+
+          - Latest commit: ${PR_HEAD_SHA}
+          - Build time: $(date -u "+%Y-%m-%d %H:%M:%S UTC")
+
+          _Note: the build is updated when a new commit is pushed to this PR._
+          EOF
+
+          cat "$BODY_FILE" >> "$GITHUB_STEP_SUMMARY"
+
+      # Fork and Dependabot PRs get a read-only token, so their instructions stay in the run summary
+      # written above.
+      - name: Add or update the comment in the PR
+        if: ${{ github.event.pull_request.head.repo.full_name == github.repository && github.actor != 'dependabot[bot]' }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ github.event.number }}
+          BODY_FILE: ${{ runner.temp }}/test-build/comment.md
+        run: |
+          # Only ever edit this workflow's own comment.
+          COMMENT_ID=$( gh api "repos/${GITHUB_REPOSITORY}/issues/${PR_NUMBER}/comments" --paginate \
+            --jq '.[] | select( .user.login == "github-actions[bot]" and ( .body | startswith( "### Test the build" ) ) ) | .id' | head -n 1 )
+
+          if [ -n "$COMMENT_ID" ]; then
+            gh api "repos/${GITHUB_REPOSITORY}/issues/comments/${COMMENT_ID}" -X PATCH -F body=@"$BODY_FILE" --silent
+            echo "Updated comment ${COMMENT_ID}."
+          else
+            gh api "repos/${GITHUB_REPOSITORY}/issues/${PR_NUMBER}/comments" -F body=@"$BODY_FILE" --silent
+            echo "Created the comment."
+          fi

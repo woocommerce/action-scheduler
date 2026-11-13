@@ -84,7 +84,9 @@ abstract class ActionScheduler_Abstract_QueueRunner extends ActionScheduler_Abst
 		 * exceptions (and an exception thrown from a catch block cannot be caught by a later catch block in the *same*
 		 * structure).
 		 */
-		$valid_action = true;
+		$valid_action           = true;
+		$unschedule_listener    = null;
+		$recurrence_unscheduled = false;
 		try {
 			try {
 				do_action( 'action_scheduler_before_execute', $action_id, $context );
@@ -104,6 +106,16 @@ abstract class ActionScheduler_Abstract_QueueRunner extends ActionScheduler_Abst
 					return;
 				}
 
+				if ( $action->get_schedule()->is_recurring() ) {
+					// Notice if the action is unscheduled while it runs, as its next instance does not exist yet.
+					$unschedule_listener = function ( $hook, $args = null, $group = '' ) use ( $action, &$recurrence_unscheduled ) {
+						if ( $this->unschedule_request_matches_action( $action, $hook, $args, $group ) ) {
+							$recurrence_unscheduled = true;
+						}
+					};
+					add_action( 'action_scheduler_before_unschedule', $unschedule_listener, 10, 3 );
+				}
+
 				$this->store->log_execution( $action_id );
 				$action->execute();
 
@@ -120,11 +132,47 @@ abstract class ActionScheduler_Abstract_QueueRunner extends ActionScheduler_Abst
 			$this->handle_action_error( $action_id, $e, $context, $valid_action );
 		} finally {
 			restore_error_handler();
+
+			if ( null !== $unschedule_listener ) {
+				remove_action( 'action_scheduler_before_unschedule', $unschedule_listener, 10 );
+			}
 		}
 
 		if ( isset( $action ) && is_a( $action, 'ActionScheduler_Action' ) && $action->get_schedule()->is_recurring() ) {
-			$this->schedule_next_instance( $action, $action_id );
+			if ( $recurrence_unscheduled ) {
+				ActionScheduler_Logger::instance()->log(
+					$action_id,
+					__( 'This action was unscheduled while it was running. A new instance will not be scheduled.', 'action-scheduler' )
+				);
+			} else {
+				$this->schedule_next_instance( $action, $action_id );
+			}
 		}
+	}
+
+	/**
+	 * Determines if a request to unschedule actions (made via as_unschedule_action() or as_unschedule_all_actions())
+	 * matches the specified action.
+	 *
+	 * The criteria are matched in the same way as the data store matches them when it looks for pending actions.
+	 *
+	 * @param ActionScheduler_Action $action The action to test.
+	 * @param mixed                  $hook   The hook to match. An empty value matches any hook.
+	 * @param mixed                  $args   The args to match. A non-array value matches any args.
+	 * @param mixed                  $group  The group to match. An empty value matches any group.
+	 *
+	 * @return bool
+	 */
+	private function unschedule_request_matches_action( ActionScheduler_Action $action, $hook, $args, $group ) {
+		if ( ! empty( $hook ) && $hook !== $action->get_hook() ) {
+			return false;
+		}
+
+		if ( ! empty( $group ) && $group !== $action->get_group() ) {
+			return false;
+		}
+
+		return ! is_array( $args ) || wp_json_encode( $args ) === wp_json_encode( $action->get_args() );
 	}
 
 	/**

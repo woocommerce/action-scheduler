@@ -260,6 +260,9 @@ function as_schedule_cron_action( $timestamp, $schedule, $hook, $args = array(),
  * then the following instance will never be scheduled (or exist), which is effectively the same as being unscheduled
  * by this method also.
  *
+ * When called while a matching recurring or cron action is being run in the same request (for example, from within
+ * the action's own callback), the next instance of that action will not be scheduled once it finishes running.
+ *
  * @param string $hook The hook that the job will trigger.
  * @param array  $args Args that would have been passed to the job.
  * @param string $group The group the job is assigned to.
@@ -270,6 +273,22 @@ function as_unschedule_action( $hook, $args = array(), $group = '' ) {
 	if ( ! ActionScheduler::is_initialized( __FUNCTION__ ) ) {
 		return 0;
 	}
+
+	/**
+	 * Fires before pending actions are unscheduled by as_unschedule_action() or as_unschedule_all_actions().
+	 *
+	 * Action Scheduler uses this to stop a recurring or cron action from being rescheduled, when it is unscheduled
+	 * while it is being run in the same request. Note that as_unschedule_all_actions() may fire this more than once
+	 * with the same criteria.
+	 *
+	 * @since 4.3.0
+	 *
+	 * @param string     $hook  The hook of the actions to unschedule. An empty string matches any hook.
+	 * @param array|null $args  The args of the actions to unschedule. Null matches any args.
+	 * @param string     $group The group of the actions to unschedule. An empty string matches any group.
+	 */
+	do_action( 'action_scheduler_before_unschedule', $hook, is_array( $args ) ? $args : null, $group );
+
 	$params = array(
 		'hook'    => $hook,
 		'status'  => ActionScheduler_Store::STATUS_PENDING,
@@ -307,6 +326,9 @@ function as_unschedule_action( $hook, $args = array(), $group = '' ) {
 /**
  * Cancel all occurrences of a scheduled action.
  *
+ * When called while a matching recurring or cron action is being run in the same request (for example, from within
+ * the action's own callback), the next instance of that action will not be scheduled once it finishes running.
+ *
  * @param string $hook The hook that the job will trigger.
  * @param array  $args Args that would have been passed to the job.
  * @param string $group The group the job is assigned to.
@@ -317,10 +339,22 @@ function as_unschedule_all_actions( $hook, $args = array(), $group = '' ) {
 	}
 	if ( empty( $args ) ) {
 		if ( ! empty( $hook ) && empty( $group ) ) {
+			/**
+			 * This action is documented in as_unschedule_action().
+			 *
+			 * @since 4.3.0
+			 */
+			do_action( 'action_scheduler_before_unschedule', $hook, null, '' );
 			ActionScheduler_Store::instance()->cancel_actions_by_hook( $hook );
 			return;
 		}
 		if ( ! empty( $group ) && empty( $hook ) ) {
+			/**
+			 * This action is documented in as_unschedule_action().
+			 *
+			 * @since 4.3.0
+			 */
+			do_action( 'action_scheduler_before_unschedule', '', null, $group );
 			ActionScheduler_Store::instance()->cancel_actions_by_group( $group );
 			return;
 		}
@@ -519,6 +553,7 @@ function as_supports( string $feature ): bool {
 	$supported_features = array(
 		'ensure_recurring_actions_hook',
 		'uninstall_bootstrap',
+		'unschedule_running_recurring_action',
 	);
 
 	return in_array( $feature, $supported_features, true );

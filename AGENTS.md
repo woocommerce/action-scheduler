@@ -53,7 +53,7 @@ Many existing classes exist in the global namespace, but it is preferred that ne
 
 `ActionScheduler::autoload()` (./classes/abstracts/ActionScheduler.php) is *not* PSR-4, and adding a class usually means editing it:
 
-- Namespaced classes are rejected unless prefixed `Action_Scheduler`. The namespace is then discarded entirely, and only the bare class name is resolved — so a new sub-namespace does not map to a new directory on its own.
+- Namespaced classes must have the `Action_Scheduler\` prefix and match the `Migration` or `WP_CLI` namespace and its class classifier. Global `ActionScheduler_*` classes are rejected in namespaced requests. The bare class name is then resolved, so a new sub-namespace does not map to a new directory on its own.
 - Resolution runs through hardcoded `static` arrays, one per helper (`is_class_abstract()`, `is_class_migration()`, `is_class_cli()`), plus suffix branches for `Schedule`/`Action`/`Schema`/`Deprecated` and a prefix branch for `ActionScheduler_`.
 - A name matching none of the above falls through to the top level of ./classes/, or is not loaded at all.
 

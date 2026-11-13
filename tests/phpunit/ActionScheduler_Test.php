@@ -35,4 +35,27 @@ class ActionScheduler_Test extends ActionScheduler_UnitTestCase {
 			'The uninstall flag should reflect the state at initialization, not the state when it is read.'
 		);
 	}
+
+	/**
+	 * A global Controller lookup must not include the loaded migration controller again.
+	 */
+	public function test_foreign_lookups_do_not_include_files() {
+		$this->assertTrue( class_exists( 'Action_Scheduler\\Migration\\Controller' ) );
+		$this->assertFalse( class_exists( 'Controller' ) );
+	}
+
+	/**
+	 * Namespaces must match the classes they contain.
+	 */
+	public function test_namespaces_must_match_classes() {
+		$this->assertTrue( class_exists( 'Action_Scheduler\\Migration\\Controller' ) );
+		$this->assertTrue( class_exists( 'Action_Scheduler\\WP_CLI\\ProgressBar' ) );
+		$this->assertTrue( class_exists( 'ActionScheduler_DBStoreMigrator' ) );
+		$this->assertFalse( class_exists( 'Action_SchedulerExtra\\Migration\\Controller' ) );
+		$this->assertFalse( class_exists( 'Action_Scheduler\\WP_CLI\\Controller' ) );
+		$this->assertFalse( class_exists( 'Action_Scheduler\\Migration\\ProgressBar' ) );
+		$this->assertFalse( class_exists( 'Action_Scheduler\\Migration\\Extra\\Controller' ) );
+		$this->assertFalse( class_exists( 'Action_Scheduler\\Hypothetical\\ActionScheduler_Store' ) );
+		$this->assertFalse( class_exists( 'Action_Scheduler\\Migration\\ActionScheduler_DBStoreMigrator' ) );
+	}
 }

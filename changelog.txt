@@ -7,6 +7,7 @@
 * Performance - Optimize as_has_scheduled_action function for larger datasets.
 * Dev - Rename private method `ActionScheduler_Store::bulk_cancel_actions()` to `bulk_cancel_actions_by_id()`, limiting the potential for future confusion with `ActionScheduler_DBStore::bulk_cancel_actions()`.
 * Dev - Document what action groups and unique actions do, and correct the `$unique` docblocks, which did not say that the arguments are compared.
+* Add - Write a log entry when an action schedules a new action with the same hook while it is running, to help spot unintended rescheduling. The new `action_scheduler_rescheduled_during_execution` hook fires at the same time, and the `action_scheduler_stored_action` hook now also receives the stored action.
 
 = 4.2.0 - 2026-09-16 =
 * Fix - Enforce unique action inserts atomically and release stale uniqueness keys during scheduled cleanup.

@@ -541,4 +541,39 @@ class ActionScheduler_wpPostStore_Test extends AbstractStoreTest {
 			$prop->setValue( null, $original_store );
 		}
 	}
+
+	/**
+	 * @testdox store_unique_action() fallback only treats ungrouped actions as duplicates of an ungrouped unique action.
+	 */
+	public function test_store_unique_action_fallback_respects_empty_group() {
+		$store = new ActionScheduler_wpPostStore();
+
+		// Inject the store which will trigger fallback branch; use reflection as the factory is singleton with already populated store instance.
+		$prop = new ReflectionProperty( ActionScheduler_Store::class, 'store' );
+		$prop->setAccessible( true );
+		$original_store = $prop->getValue();
+		$prop->setValue( null, $store );
+
+		try {
+			$hook    = md5( wp_rand() );
+			$factory = new ActionScheduler_ActionFactory();
+
+			$grouped_id = $factory->single( $hook, array( 1 ), 'tomorrow', 'test_group' );
+			$this->assertNotSame( 0, $grouped_id, 'Grouped action is stored.' );
+
+			$ungrouped_id = $factory->single_unique( $hook, array( 1 ), 'tomorrow' );
+			$this->assertNotSame( 0, $ungrouped_id, 'A matching action in another group does not block an ungrouped unique action.' );
+			$this->assertSame( 0, $factory->single_unique( $hook, array( 1 ), 'tomorrow' ), 'Pending ungrouped duplicate is rejected while a grouped match also exists.' );
+			$this->assertSame( 0, $factory->single_unique( $hook, array( 1 ), 'tomorrow', 'test_group' ), 'Pending duplicate in the same group is rejected.' );
+			$this->assertNotSame( 0, $factory->single_unique( $hook, array( 1 ), 'tomorrow', 'other_group' ), 'A unique action in a different group is stored.' );
+
+			$store->log_execution( $ungrouped_id );
+			$this->assertSame( 0, $factory->single_unique( $hook, array( 1 ), 'tomorrow' ), 'In-progress ungrouped duplicate is rejected.' );
+
+			$store->mark_complete( $ungrouped_id );
+			$this->assertNotSame( 0, $factory->single_unique( $hook, array( 1 ), 'tomorrow' ), 'Only grouped matches remain, so an ungrouped unique action is stored.' );
+		} finally {
+			$prop->setValue( null, $original_store );
+		}
+	}
 }

@@ -235,7 +235,16 @@ class ActionScheduler_DBStore extends ActionScheduler_Store {
 				throw new \RuntimeException( $wpdb->last_error ? $wpdb->last_error : __( 'Database error.', 'action-scheduler' ) );
 			}
 
-			do_action( 'action_scheduler_stored_action', $action_id );
+			/**
+			 * Fires after an action has been saved to the data store.
+			 *
+			 * @since 1.0
+			 * @since 4.3.0 Added the `$action` parameter.
+			 *
+			 * @param int                    $action_id The ID of the stored action.
+			 * @param ActionScheduler_Action $action    The stored action.
+			 */
+			do_action( 'action_scheduler_stored_action', $action_id, $action );
 
 			return $action_id;
 		} catch ( \Exception $e ) {

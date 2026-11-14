@@ -84,7 +84,8 @@ abstract class ActionScheduler_Abstract_QueueRunner extends ActionScheduler_Abst
 		 * exceptions (and an exception thrown from a catch block cannot be caught by a later catch block in the *same*
 		 * structure).
 		 */
-		$valid_action = true;
+		$valid_action         = true;
+		$reschedule_detection = null;
 		try {
 			try {
 				do_action( 'action_scheduler_before_execute', $action_id, $context );
@@ -105,6 +106,10 @@ abstract class ActionScheduler_Abstract_QueueRunner extends ActionScheduler_Abst
 				}
 
 				$this->store->log_execution( $action_id );
+
+				$reschedule_detection = $this->get_reschedule_detection_callback( $action, $action_id, $context );
+				add_action( 'action_scheduler_stored_action', $reschedule_detection, 10, 2 );
+
 				$action->execute();
 
 				do_action( 'action_scheduler_after_execute', $action_id, $action, $context );
@@ -119,12 +124,53 @@ abstract class ActionScheduler_Abstract_QueueRunner extends ActionScheduler_Abst
 			// This catch block exists for compatibility with PHP 5.6.
 			$this->handle_action_error( $action_id, $e, $context, $valid_action );
 		} finally {
+			if ( null !== $reschedule_detection ) {
+				remove_action( 'action_scheduler_stored_action', $reschedule_detection, 10 );
+			}
+
 			restore_error_handler();
 		}
 
 		if ( isset( $action ) && is_a( $action, 'ActionScheduler_Action' ) && $action->get_schedule()->is_recurring() ) {
 			$this->schedule_next_instance( $action, $action_id );
 		}
+	}
+
+	/**
+	 * Returns a callback that detects when the action being executed reschedules itself.
+	 *
+	 * The callback is attached to `action_scheduler_stored_action` only while the action's callback runs, so any action
+	 * stored with the same hook during that time was scheduled by the action itself (or by code reacting to it). This is
+	 * distinct from the routine scheduling of the next instance of a recurring action, which happens after execution.
+	 *
+	 * @param ActionScheduler_Action $action    The action being executed.
+	 * @param int                    $action_id The ID of the action being executed.
+	 * @param string                 $context   Execution context.
+	 *
+	 * @return Closure
+	 */
+	private function get_reschedule_detection_callback( ActionScheduler_Action $action, $action_id, $context ) {
+		return function ( $new_action_id, $new_action = null ) use ( $action, $action_id, $context ) {
+			// Stores that predate the second hook argument only pass the action ID.
+			if ( ! $new_action instanceof ActionScheduler_Action ) {
+				$new_action = $this->store->fetch_action( $new_action_id );
+			}
+
+			if ( ! $new_action instanceof ActionScheduler_Action || $new_action->get_hook() !== $action->get_hook() ) {
+				return;
+			}
+
+			/**
+			 * Fires when an action schedules a new action with the same hook while it is being executed.
+			 *
+			 * @since 4.3.0
+			 *
+			 * @param int    $action_id     The ID of the action being executed.
+			 * @param int    $new_action_id The ID of the newly scheduled action.
+			 * @param string $context       Execution context.
+			 */
+			do_action( 'action_scheduler_rescheduled_during_execution', $action_id, $new_action_id, $context );
+		};
 	}
 
 	/**

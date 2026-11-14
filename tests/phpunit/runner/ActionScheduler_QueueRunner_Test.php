@@ -708,6 +708,210 @@ class ActionScheduler_QueueRunner_Test extends ActionScheduler_UnitTestCase {
 	}
 
 	/**
+	 * When an action schedules a new action with the same hook while it is being executed, the event should be
+	 * highlighted by a log entry on the action that was executing.
+	 *
+	 * @return void
+	 */
+	public function test_action_rescheduling_itself_during_execution_is_logged() {
+		$hook          = __METHOD__;
+		$runner        = ActionScheduler_Mocker::get_queue_runner( ActionScheduler::store() );
+		$new_action_id = 0;
+		$events        = $this->watch_rescheduled_during_execution();
+
+		$reschedule = function ( $step ) use ( $hook, &$new_action_id ) {
+			$new_action_id = as_schedule_single_action( time() + HOUR_IN_SECONDS, $hook, array( $step + 1 ) );
+		};
+
+		add_action( $hook, $reschedule );
+		$action_id = as_enqueue_async_action( $hook, array( 1 ) );
+		$runner->process_action( $action_id, 'Unit Tests' );
+		remove_action( $hook, $reschedule );
+
+		$this->assertGreaterThan( 0, $new_action_id, 'The action scheduled a new instance of itself.' );
+		$this->assertSame(
+			array( array( $action_id, $new_action_id, 'Unit Tests' ) ),
+			$events(),
+			'The action_scheduler_rescheduled_during_execution hook fired once, with the expected arguments.'
+		);
+		$this->assertContains(
+			"action rescheduled itself during execution (new action ID: {$new_action_id})",
+			$this->get_log_messages( $action_id ),
+			'The executing action was logged as having rescheduled itself.'
+		);
+		$this->assertNotContains(
+			"action rescheduled itself during execution (new action ID: {$new_action_id})",
+			$this->get_log_messages( $new_action_id ),
+			'The log entry was added to the executing action, not to the new action.'
+		);
+	}
+
+	/**
+	 * Actions are free to schedule actions with other hooks as part of their work, and that should not be reported as
+	 * rescheduling.
+	 *
+	 * @return void
+	 */
+	public function test_scheduling_actions_with_other_hooks_during_execution_is_not_logged() {
+		$hook     = __METHOD__;
+		$runner   = ActionScheduler_Mocker::get_queue_runner( ActionScheduler::store() );
+		$events   = $this->watch_rescheduled_during_execution();
+		$schedule = function () use ( $hook ) {
+			as_enqueue_async_action( $hook . '_follow_up' );
+		};
+
+		add_action( $hook, $schedule );
+		$action_id = as_enqueue_async_action( $hook );
+		$runner->process_action( $action_id, 'Unit Tests' );
+		remove_action( $hook, $schedule );
+
+		$this->assertCount( 1, as_get_scheduled_actions( array( 'hook' => $hook . '_follow_up' ), 'ids' ), 'The follow-up action was scheduled.' );
+		$this->assertSame( array(), $events(), 'Scheduling an action with a different hook is not treated as rescheduling.' );
+		$this->assertSame(
+			array( 'action created', 'action started via Unit Tests', 'action complete via Unit Tests' ),
+			$this->get_log_messages( $action_id )
+		);
+	}
+
+	/**
+	 * The next instance of a recurring action is scheduled by the queue runner after execution, which is routine and
+	 * should not be reported. Nor should actions scheduled once execution has finished.
+	 *
+	 * @return void
+	 */
+	public function test_routine_scheduling_of_the_next_recurring_instance_is_not_logged() {
+		$hook   = __METHOD__;
+		$runner = ActionScheduler_Mocker::get_queue_runner( ActionScheduler::store() );
+		$events = $this->watch_rescheduled_during_execution();
+
+		add_action( $hook, '__return_null' );
+		$action_id = as_schedule_recurring_action( time() - MINUTE_IN_SECONDS, HOUR_IN_SECONDS, $hook );
+		$runner->process_action( $action_id, 'Unit Tests' );
+		remove_action( $hook, '__return_null' );
+
+		$this->assertCount(
+			1,
+			as_get_scheduled_actions(
+				array(
+					'hook'   => $hook,
+					'status' => ActionScheduler_Store::STATUS_PENDING,
+				),
+				'ids'
+			),
+			'The next instance of the recurring action was scheduled.'
+		);
+
+		as_enqueue_async_action( $hook, array( 'scheduled after execution' ) );
+
+		$this->assertSame( array(), $events(), 'Neither the next recurring instance nor later scheduling is treated as rescheduling.' );
+		$this->assertSame(
+			array( 'action created', 'action started via Unit Tests', 'action complete via Unit Tests' ),
+			$this->get_log_messages( $action_id )
+		);
+	}
+
+	/**
+	 * Rescheduling should still be detected if the action subsequently fails, and detection should stop once the
+	 * failed action has been processed.
+	 *
+	 * @return void
+	 */
+	public function test_action_rescheduling_itself_before_failing_is_logged() {
+		$hook          = __METHOD__;
+		$runner        = ActionScheduler_Mocker::get_queue_runner( ActionScheduler::store() );
+		$new_action_id = 0;
+		$events        = $this->watch_rescheduled_during_execution();
+
+		$reschedule_then_fail = function () use ( $hook, &$new_action_id ) {
+			$new_action_id = as_schedule_single_action( time() + HOUR_IN_SECONDS, $hook, array( 'retry' ) );
+			throw new Exception( 'Execution failed' );
+		};
+
+		add_action( $hook, $reschedule_then_fail );
+		$action_id = as_enqueue_async_action( $hook );
+		$runner->process_action( $action_id, 'Unit Tests' );
+		remove_action( $hook, $reschedule_then_fail );
+
+		as_enqueue_async_action( $hook, array( 'scheduled after execution' ) );
+
+		$this->assertSame( ActionScheduler_Store::STATUS_FAILED, ActionScheduler::store()->get_status( $action_id ) );
+		$this->assertSame( array( array( $action_id, $new_action_id, 'Unit Tests' ) ), $events() );
+		$this->assertSame(
+			array(
+				'action created',
+				'action started via Unit Tests',
+				"action rescheduled itself during execution (new action ID: {$new_action_id})",
+				'action failed via Unit Tests: Execution failed',
+			),
+			$this->get_log_messages( $action_id )
+		);
+	}
+
+	/**
+	 * Custom stores may only pass the action ID to the action_scheduler_stored_action hook, in which case the stored
+	 * action should be fetched in order to compare hooks.
+	 *
+	 * @return void
+	 */
+	public function test_rescheduling_is_detected_when_the_store_only_passes_the_action_id() {
+		$hook             = __METHOD__;
+		$runner           = ActionScheduler_Mocker::get_queue_runner( ActionScheduler::store() );
+		$events           = $this->watch_rescheduled_during_execution();
+		$same_hook_id     = as_schedule_single_action( time() + HOUR_IN_SECONDS, $hook, array( 'same hook' ) );
+		$other_hook_id    = as_schedule_single_action( time() + HOUR_IN_SECONDS, $hook . '_other' );
+		$mimic_old_stores = function () use ( $same_hook_id, $other_hook_id ) {
+			foreach ( array( $other_hook_id, $same_hook_id ) as $stored_action_id ) {
+				do_action( 'action_scheduler_stored_action', $stored_action_id ); // phpcs:ignore WooCommerce.Commenting.CommentHooks -- Invoke an existing hook, not a new declaration.
+			}
+		};
+
+		add_action( $hook, $mimic_old_stores );
+		$action_id = as_enqueue_async_action( $hook );
+		$runner->process_action( $action_id, 'Unit Tests' );
+		remove_action( $hook, $mimic_old_stores );
+
+		$this->assertSame( array( array( $action_id, $same_hook_id, 'Unit Tests' ) ), $events() );
+	}
+
+	/**
+	 * Records the arguments passed to the action_scheduler_rescheduled_during_execution hook for the rest of the test.
+	 *
+	 * @return callable Returns the list of recorded hook arguments when called.
+	 */
+	private function watch_rescheduled_during_execution() {
+		$events = array();
+
+		add_action(
+			'action_scheduler_rescheduled_during_execution',
+			function ( $action_id, $new_action_id, $context ) use ( &$events ) {
+				$events[] = array( (int) $action_id, (int) $new_action_id, $context );
+			},
+			10,
+			3
+		);
+
+		return function () use ( &$events ) {
+			return $events;
+		};
+	}
+
+	/**
+	 * Returns the log messages recorded for an action, oldest first.
+	 *
+	 * @param int $action_id Action ID.
+	 *
+	 * @return string[]
+	 */
+	private function get_log_messages( $action_id ) {
+		return array_map(
+			function ( $entry ) {
+				return $entry->get_message();
+			},
+			ActionScheduler_Logger::instance()->get_logs( $action_id )
+		);
+	}
+
+	/**
 	 * Unschedule the queue runner cron event scheduled while bootstrapping the test suite.
 	 *
 	 * @return void

@@ -274,4 +274,41 @@ class ActionScheduler_HybridStore_Test extends ActionScheduler_UnitTestCase {
 			$this->assertInstanceOf( ActionScheduler_FinishedAction::class, $action );
 		}
 	}
+
+	/**
+	 * @testdox Unique actions without a group are only blocked by ungrouped actions, including unmigrated ones.
+	 */
+	public function test_unique_action_without_group_ignores_grouped_actions() {
+		$source_store       = new PostStore();
+		$destination_store  = new ActionScheduler_DBStore();
+		$source_logger      = new CommentLogger();
+		$destination_logger = new ActionScheduler_DBLogger();
+
+		$config = new Config();
+		$config->set_source_store( $source_store );
+		$config->set_source_logger( $source_logger );
+		$config->set_destination_store( $destination_store );
+		$config->set_destination_logger( $destination_logger );
+
+		$hybrid_store = new ActionScheduler_HybridStore( $config );
+
+		// Inject the store, as the factory uses the store singleton.
+		$prop = new ReflectionProperty( ActionScheduler_Store::class, 'store' );
+		$prop->setAccessible( true );
+		$original_store = $prop->getValue();
+		$prop->setValue( null, $hybrid_store );
+
+		try {
+			$schedule = new ActionScheduler_SimpleSchedule( as_get_datetime_object( 'tomorrow' ) );
+			$source_store->save_action( new ActionScheduler_Action( __FUNCTION__, array( 1 ), $schedule, 'test_group' ) );
+
+			$factory = new ActionScheduler_ActionFactory();
+
+			$this->assertNotSame( 0, $factory->single_unique( __FUNCTION__, array( 1 ), 'tomorrow' ), 'A matching action in another group does not block an ungrouped unique action.' );
+			$this->assertSame( 0, $factory->single_unique( __FUNCTION__, array( 1 ), 'tomorrow' ), 'Pending ungrouped duplicate is rejected.' );
+			$this->assertSame( 0, $factory->single_unique( __FUNCTION__, array( 1 ), 'tomorrow', 'test_group' ), 'Pending duplicate in the same group is rejected.' );
+		} finally {
+			$prop->setValue( null, $original_store );
+		}
+	}
 }

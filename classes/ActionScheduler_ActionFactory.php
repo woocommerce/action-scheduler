@@ -373,6 +373,19 @@ class ActionScheduler_ActionFactory {
 		} else {
 			$query_args['status'] = array( ActionScheduler_Store::STATUS_RUNNING, ActionScheduler_Store::STATUS_PENDING );
 			$action_id            = $store->query_action( $query_args );
+
+			// An empty group only matches ungrouped actions, but store queries treat it as "any group", so check the group of each match.
+			if ( null !== $action_id && '' !== $store->fetch_action( $action_id )->get_group() ) {
+				$action_id              = null;
+				$query_args['per_page'] = 0;
+
+				foreach ( $store->query_actions( $query_args ) as $matching_action_id ) {
+					if ( '' === $store->fetch_action( $matching_action_id )->get_group() ) {
+						$action_id = (int) $matching_action_id;
+						break;
+					}
+				}
+			}
 		}
 
 		return null !== $action_id ? 0 : $store->save_action( $action );

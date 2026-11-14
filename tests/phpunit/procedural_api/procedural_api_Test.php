@@ -199,6 +199,38 @@ class Procedural_API_Test extends ActionScheduler_UnitTestCase {
 	}
 
 	/**
+	 * The action_scheduler_before_unschedule hook should describe the actions that are about to be unscheduled, in the
+	 * same way that they are matched when looking for pending actions.
+	 */
+	public function test_unschedule_functions_fire_before_unschedule_hook() {
+		$fired    = array();
+		$listener = function ( $hook, $args, $group ) use ( &$fired ) {
+			$fired[] = array( $hook, $args, $group );
+		};
+
+		add_action( 'action_scheduler_before_unschedule', $listener, 10, 3 );
+
+		as_unschedule_action( 'my_hook', array( 'post_id' => 1 ), 'my-group' );
+		as_unschedule_action( 'my_hook' );
+		as_unschedule_action( 'my_hook', null, 'my-group' );
+		as_unschedule_all_actions( 'my_hook' );
+		as_unschedule_all_actions( '', array(), 'my-group' );
+
+		remove_action( 'action_scheduler_before_unschedule', $listener, 10 );
+
+		$this->assertSame(
+			array(
+				array( 'my_hook', array( 'post_id' => 1 ), 'my-group' ),
+				array( 'my_hook', array(), '' ),
+				array( 'my_hook', null, 'my-group' ),
+				array( 'my_hook', null, '' ),
+				array( '', null, 'my-group' ),
+			),
+			$fired
+		);
+	}
+
+	/**
 	 * @dataProvider provider_time_hook_args_group
 	 */
 	public function test_unschedule_all( $time, $hook, $args, $group ) {
@@ -471,6 +503,7 @@ class Procedural_API_Test extends ActionScheduler_UnitTestCase {
 	public function test_as_supports_for_supported_feature() {
 		$this->assertTrue( as_supports( 'ensure_recurring_actions_hook' ) );
 		$this->assertTrue( as_supports( 'uninstall_bootstrap' ) );
+		$this->assertTrue( as_supports( 'unschedule_running_recurring_action' ) );
 	}
 
 	/**

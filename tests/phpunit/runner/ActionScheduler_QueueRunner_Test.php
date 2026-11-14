@@ -402,6 +402,227 @@ class ActionScheduler_QueueRunner_Test extends ActionScheduler_UnitTestCase {
 		remove_filter( 'action_scheduler_recurring_action_is_consistently_failing', $filter, 10, 2 );
 	}
 
+	/**
+	 * The next instance of a recurring action is only scheduled once the current instance has run, so unscheduling it
+	 * from within its own callback has no pending instance to cancel. Instead, the runner should not schedule the next
+	 * instance, and should log that it did not.
+	 *
+	 * @dataProvider provide_unschedule_callbacks
+	 *
+	 * @param callable $unschedule Unschedules the running action, given its hook, args and group.
+	 *
+	 * @return void
+	 */
+	public function test_recurring_action_unscheduled_during_execution_is_not_rescheduled( $unschedule ) {
+		$store     = ActionScheduler::store();
+		$runner    = ActionScheduler_Mocker::get_queue_runner( $store );
+		$hook      = md5( wp_rand() );
+		$args      = array( 'post_id' => 123 );
+		$group     = 'unschedule-during-execution';
+		$action_id = as_schedule_recurring_action( as_get_datetime_object( '1 hour ago' )->getTimestamp(), HOUR_IN_SECONDS, $hook, $args, $group );
+
+		$callback = function () use ( $unschedule, $hook, $args, $group ) {
+			$unschedule( $hook, $args, $group );
+		};
+
+		add_action( $hook, $callback );
+		$runner->process_action( $action_id );
+		remove_action( $hook, $callback );
+
+		$this->assertEquals( ActionScheduler_Store::STATUS_COMPLETE, $store->get_status( $action_id ), 'The running action itself should still be completed.' );
+		$this->assertFalse( as_has_scheduled_action( $hook ), 'The next instance of the recurring action should not have been scheduled.' );
+		$this->assertContains(
+			'This action was unscheduled while it was running. A new instance will not be scheduled.',
+			$this->get_log_messages( $action_id ),
+			'The reason for not scheduling the next instance should have been logged.'
+		);
+	}
+
+	/**
+	 * Provides different ways of unscheduling a running action.
+	 *
+	 * @return array
+	 */
+	public function provide_unschedule_callbacks() {
+		return array(
+			'as_unschedule_action()'                => array(
+				function ( $hook, $args, $group ) {
+					as_unschedule_action( $hook, $args, $group );
+				},
+			),
+			'as_unschedule_action() without group'  => array(
+				function ( $hook, $args ) {
+					as_unschedule_action( $hook, $args );
+				},
+			),
+			'as_unschedule_all_actions()'           => array(
+				function ( $hook, $args, $group ) {
+					as_unschedule_all_actions( $hook, $args, $group );
+				},
+			),
+			'as_unschedule_all_actions() by hook'   => array(
+				function ( $hook ) {
+					as_unschedule_all_actions( $hook );
+				},
+			),
+			'as_unschedule_all_actions() by group'  => array(
+				function ( $hook, $args, $group ) {
+					as_unschedule_all_actions( '', array(), $group );
+				},
+			),
+			'as_unschedule_action() with null args' => array(
+				function ( $hook, $args, $group ) {
+					as_unschedule_action( $hook, null, $group );
+				},
+			),
+		);
+	}
+
+	/**
+	 * Unscheduling actions that do not match the running recurring action (in the same way that they would not match
+	 * a pending instance of it) should not stop its next instance from being scheduled.
+	 *
+	 * @dataProvider provide_non_matching_unschedule_callbacks
+	 *
+	 * @param callable $unschedule Unschedules other actions, given the running action's hook, args and group.
+	 *
+	 * @return void
+	 */
+	public function test_recurring_action_is_rescheduled_when_other_actions_are_unscheduled_during_execution( $unschedule ) {
+		$store     = ActionScheduler::store();
+		$runner    = ActionScheduler_Mocker::get_queue_runner( $store );
+		$hook      = md5( wp_rand() );
+		$args      = array( 'post_id' => 123 );
+		$group     = 'unschedule-during-execution';
+		$action_id = as_schedule_recurring_action( as_get_datetime_object( '1 hour ago' )->getTimestamp(), HOUR_IN_SECONDS, $hook, $args, $group );
+
+		$callback = function () use ( $unschedule, $hook, $args, $group ) {
+			$unschedule( $hook, $args, $group );
+		};
+
+		add_action( $hook, $callback );
+		$runner->process_action( $action_id );
+		remove_action( $hook, $callback );
+
+		$this->assertEquals( ActionScheduler_Store::STATUS_COMPLETE, $store->get_status( $action_id ) );
+		$this->assertTrue( as_has_scheduled_action( $hook, $args, $group ), 'The next instance of the recurring action should have been scheduled.' );
+		$this->assertNotContains( 'This action was unscheduled while it was running. A new instance will not be scheduled.', $this->get_log_messages( $action_id ) );
+	}
+
+	/**
+	 * Provides different ways of unscheduling actions other than the running action.
+	 *
+	 * @return array
+	 */
+	public function provide_non_matching_unschedule_callbacks() {
+		return array(
+			'different hook'                       => array(
+				function ( $hook, $args, $group ) {
+					as_unschedule_action( $hook . '-other', $args, $group );
+				},
+			),
+			'different args'                       => array(
+				function ( $hook, $args, $group ) {
+					as_unschedule_action( $hook, array( 'post_id' => 456 ), $group );
+				},
+			),
+			'args of a different type'             => array(
+				function ( $hook, $args, $group ) {
+					as_unschedule_action( $hook, array( 'post_id' => '123' ), $group );
+				},
+			),
+			'empty args (only matches empty args)' => array(
+				function ( $hook, $args, $group ) {
+					as_unschedule_action( $hook, array(), $group );
+				},
+			),
+			'different group'                      => array(
+				function () {
+					as_unschedule_all_actions( '', array(), 'other-group' );
+				},
+			),
+			'different hook, all actions'          => array(
+				function ( $hook ) {
+					as_unschedule_all_actions( $hook . '-other' );
+				},
+			),
+		);
+	}
+
+	/**
+	 * Unscheduling a recurring action from within its callback should be honored even if the callback then fails.
+	 *
+	 * @return void
+	 */
+	public function test_failing_recurring_action_unscheduled_during_execution_is_not_rescheduled() {
+		$store     = ActionScheduler::store();
+		$runner    = ActionScheduler_Mocker::get_queue_runner( $store );
+		$hook      = md5( wp_rand() );
+		$action_id = as_schedule_cron_action( as_get_datetime_object( '1 hour ago' )->getTimestamp(), '0 * * * *', $hook );
+
+		$callback = function () use ( $hook ) {
+			as_unschedule_action( $hook );
+			throw new Exception( 'Failed after unscheduling.' );
+		};
+
+		add_action( $hook, $callback );
+		$runner->process_action( $action_id );
+		remove_action( $hook, $callback );
+
+		$this->assertEquals( ActionScheduler_Store::STATUS_FAILED, $store->get_status( $action_id ) );
+		$this->assertFalse( as_has_scheduled_action( $hook ), 'The next instance of the cron action should not have been scheduled.' );
+	}
+
+	/**
+	 * Only unscheduling performed while the recurring action runs should be considered: the listener should not be left
+	 * behind to affect later actions.
+	 *
+	 * @return void
+	 */
+	public function test_unscheduling_outside_of_execution_does_not_affect_later_recurring_actions() {
+		$store     = ActionScheduler::store();
+		$runner    = ActionScheduler_Mocker::get_queue_runner( $store );
+		$hook      = md5( wp_rand() );
+		$action_id = as_schedule_recurring_action( as_get_datetime_object( '1 hour ago' )->getTimestamp(), HOUR_IN_SECONDS, $hook );
+
+		$runner->process_action( $action_id );
+		$this->assertFalse( has_action( 'action_scheduler_before_unschedule' ), 'No unschedule listener should remain once the action has run.' );
+
+		// Unscheduling now cancels the pending next instance, as usual.
+		$next_action_id = as_unschedule_action( $hook );
+		$this->assertNotEmpty( $next_action_id );
+		$this->assertEquals( ActionScheduler_Store::STATUS_CANCELED, $store->get_status( $next_action_id ) );
+
+		// A new recurring action with the same hook is rescheduled as usual when it runs.
+		$action_id = as_schedule_recurring_action( as_get_datetime_object( '1 hour ago' )->getTimestamp(), HOUR_IN_SECONDS, $hook );
+		$runner->process_action( $action_id );
+		$this->assertTrue( as_has_scheduled_action( $hook ) );
+	}
+
+	/**
+	 * Unscheduling a single action from within its own callback should have no unexpected side effects.
+	 *
+	 * @return void
+	 */
+	public function test_single_action_unscheduled_during_execution() {
+		$store     = ActionScheduler::store();
+		$runner    = ActionScheduler_Mocker::get_queue_runner( $store );
+		$hook      = md5( wp_rand() );
+		$action_id = as_schedule_single_action( as_get_datetime_object( '1 hour ago' )->getTimestamp(), $hook );
+
+		$callback = function () use ( $hook ) {
+			as_unschedule_action( $hook );
+		};
+
+		add_action( $hook, $callback );
+		$runner->process_action( $action_id );
+		remove_action( $hook, $callback );
+
+		$this->assertEquals( ActionScheduler_Store::STATUS_COMPLETE, $store->get_status( $action_id ) );
+		$this->assertFalse( as_has_scheduled_action( $hook ) );
+		$this->assertNotContains( 'This action was unscheduled while it was running. A new instance will not be scheduled.', $this->get_log_messages( $action_id ) );
+	}
+
 	public function test_hooked_into_wp_cron() {
 		$next = wp_next_scheduled( ActionScheduler_QueueRunner::WP_CRON_HOOK, array( 'WP Cron' ) );
 		$this->assertNotEmpty( $next );
@@ -712,6 +933,22 @@ class ActionScheduler_QueueRunner_Test extends ActionScheduler_UnitTestCase {
 	 *
 	 * @return void
 	 */
+	/**
+	 * Returns the messages logged for the specified action.
+	 *
+	 * @param int $action_id Action ID.
+	 *
+	 * @return string[]
+	 */
+	private function get_log_messages( $action_id ) {
+		return array_map(
+			function ( ActionScheduler_LogEntry $log_entry ) {
+				return $log_entry->get_message();
+			},
+			ActionScheduler_Logger::instance()->get_logs( $action_id )
+		);
+	}
+
 	private function clear_queue_runner_cron_event() {
 		wp_clear_scheduled_hook( ActionScheduler_QueueRunner::WP_CRON_HOOK, array( 'WP Cron' ) );
 		wp_clear_scheduled_hook( ActionScheduler_QueueRunner::WP_CRON_HOOK );

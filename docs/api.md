@@ -187,6 +187,23 @@ as_unschedule_action( $hook, $args, $group );
 - **$args** (array) Arguments passed to callbacks when the hook triggers. Default: _`array()`_.
 - **$group** (string) The group the job is assigned to. Default: _''_.
 
+### Unscheduling a recurring action while it runs
+
+The next instance of a recurring or cron action is only scheduled once the current instance has finished running. When this function is called while a matching recurring or cron action is running in the same request (for example, from within the action's own callback), there is no pending instance to cancel yet, so Action Scheduler instead skips scheduling the next instance once the current one finishes. A note is added to the action's log when this happens.
+
+```php
+add_action( 'my_plugin_process_post', function ( $post_id ) {
+	my_plugin_process_next_batch( $post_id );
+
+	if ( my_plugin_processing_is_complete( $post_id ) ) {
+		// Stops the recurring action: no further instances will be scheduled.
+		as_unschedule_action( 'my_plugin_process_post', array( $post_id ), 'my-plugin' );
+	}
+} );
+```
+
+This only applies to the action being run by the current request: actions that are running in other requests are not affected. It is available since Action Scheduler 4.3.0, which can be checked with `as_supports( 'unschedule_running_recurring_action' )`.
+
 ### Return value
 
 `(null)`
@@ -208,6 +225,8 @@ as_unschedule_all_actions( $hook, $args, $group )
 - **$hook** (string)(required) Name of the action hook.
 - **$args** (array) Arguments passed to callbacks when the hook triggers. Default: _`array()`_.
 - **$group** (string) The group the job is assigned to. Default: _''_.
+
+As with `as_unschedule_action()`, calling this while a matching recurring or cron action is running in the same request stops the next instance of that action from being scheduled.
 
 ### Return value
 
@@ -312,6 +331,7 @@ The feature to check support for.
 Currently supported:
 - `'ensure_recurring_actions_hook'` — Indicates support for the `action_scheduler_ensure_recurring_actions` hook.
 - `'uninstall_bootstrap'` - Indicates that Action Scheduler skips its runtime scheduling (the `action_scheduler_run_queue` cron event, the async request dispatcher and the housekeeping action) when it is initialized from a plugin's `uninstall.php`.
+- `'unschedule_running_recurring_action'` - Indicates that calling `as_unschedule_action()` or `as_unschedule_all_actions()` while a matching recurring or cron action is running in the same request (for example, from its own callback) stops the next instance of that action from being scheduled.
 
 ### Return value
 

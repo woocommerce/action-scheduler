@@ -38,6 +38,13 @@ class ActionScheduler_WPCLI_QueueRunner extends ActionScheduler_Abstract_QueueRu
 	protected $progress_bar;
 
 	/**
+	 * Time (as returned by microtime( true )) after which no further actions will be started, or 0 for no limit.
+	 *
+	 * @var float
+	 */
+	private $run_deadline = 0;
+
+	/**
 	 * ActionScheduler_WPCLI_QueueRunner constructor.
 	 *
 	 * @param ActionScheduler_Store|null             $store Store object.
@@ -101,6 +108,27 @@ class ActionScheduler_WPCLI_QueueRunner extends ActionScheduler_Abstract_QueueRu
 	}
 
 	/**
+	 * Set a time after which no further actions will be started.
+	 *
+	 * The deadline is checked before each action: actions that are already running are not interrupted, and
+	 * any claimed actions that have not been started are released when the batch ends.
+	 *
+	 * @param float|int $deadline Unix timestamp, as returned by microtime( true ). Use 0 to remove the deadline.
+	 */
+	public function set_run_deadline( $deadline ) {
+		$this->run_deadline = max( 0, (float) $deadline );
+	}
+
+	/**
+	 * Whether the deadline set via set_run_deadline(), if any, has been reached.
+	 *
+	 * @return bool
+	 */
+	public function run_deadline_reached() {
+		return $this->run_deadline > 0 && microtime( true ) >= $this->run_deadline;
+	}
+
+	/**
 	 * Add our hooks to the appropriate actions.
 	 */
 	protected function add_hooks() {
@@ -134,6 +162,11 @@ class ActionScheduler_WPCLI_QueueRunner extends ActionScheduler_Abstract_QueueRu
 
 		$claim_id = $this->claim->get_id();
 		foreach ( $this->actions as $action_id ) {
+			// Bail if the deadline has been reached. Any remaining actions are released along with the claim.
+			if ( $this->run_deadline_reached() ) {
+				break;
+			}
+
 			// Bail if we lost the claim.
 			if ( $claim_id !== $this->store->get_claim_id( $action_id ) ) {
 				WP_CLI::warning( __( 'The claim has been lost. Aborting current batch.', 'action-scheduler' ) );

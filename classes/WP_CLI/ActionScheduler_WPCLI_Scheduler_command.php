@@ -64,6 +64,9 @@ class ActionScheduler_WPCLI_Scheduler_command extends WP_CLI_Command {
 	 * [--pause=<seconds>]
 	 * : The number of seconds to pause when freeing memory. Default no pause.
 	 *
+	 * [--time-limit=<seconds>]
+	 * : Stop starting new actions once this many seconds have passed since the command started. Actions that are already running are allowed to finish. Defaults to 0, meaning there is no time limit.
+	 *
 	 * [--force]
 	 * : Whether to force execution despite the maximum number of concurrent processes being exceeded.
 	 *
@@ -85,6 +88,14 @@ class ActionScheduler_WPCLI_Scheduler_command extends WP_CLI_Command {
 		$free_on        = \WP_CLI\Utils\get_flag_value( $assoc_args, 'free-memory-on', 50 );
 		$sleep          = \WP_CLI\Utils\get_flag_value( $assoc_args, 'pause', 0 );
 		$force          = \WP_CLI\Utils\get_flag_value( $assoc_args, 'force', false );
+		$time_limit     = \WP_CLI\Utils\get_flag_value( $assoc_args, 'time-limit', 0 );
+
+		$time_limit = filter_var( $time_limit, FILTER_VALIDATE_INT, array( 'options' => array( 'min_range' => 0 ) ) );
+		if ( false === $time_limit ) {
+			WP_CLI::error( __( 'The --time-limit value must be a non-negative integer.', 'action-scheduler' ) );
+		}
+
+		$deadline = $time_limit > 0 ? microtime( true ) + $time_limit : 0;
 
 		ActionScheduler_DataController::set_free_ticks( $free_on );
 		ActionScheduler_DataController::set_sleep_time( $sleep );
@@ -106,6 +117,7 @@ class ActionScheduler_WPCLI_Scheduler_command extends WP_CLI_Command {
 
 			// Get the queue runner instance.
 			$runner = new ActionScheduler_WPCLI_QueueRunner( null, null, $cleaner );
+			$runner->set_run_deadline( $deadline );
 
 			// Determine how many tasks will be run in the first batch.
 			$total = $runner->setup( $batch, $hooks, $group, $force );
@@ -115,6 +127,11 @@ class ActionScheduler_WPCLI_Scheduler_command extends WP_CLI_Command {
 				$this->print_total_actions( $total );
 				$actions_completed += $runner->run();
 				$batches_completed++;
+
+				if ( $runner->run_deadline_reached() ) {
+					$this->print_time_limit_reached( $time_limit );
+					break;
+				}
 
 				// Maybe set up tasks for the next batch.
 				$total = ( $unlimited || $batches_completed < $batches ) ? $runner->setup( $batch, $hooks, $group, $force ) : 0;
@@ -165,6 +182,21 @@ class ActionScheduler_WPCLI_Scheduler_command extends WP_CLI_Command {
 				/* translators: %d refers to the total number of batches executed */
 				_n( '%d batch executed.', '%d batches executed.', $batches_completed, 'action-scheduler' ),
 				$batches_completed
+			)
+		);
+	}
+
+	/**
+	 * Print WP CLI message about the time limit having been reached.
+	 *
+	 * @param int $time_limit The time limit, in seconds.
+	 */
+	protected function print_time_limit_reached( $time_limit ) {
+		WP_CLI::log(
+			sprintf(
+				/* translators: %d refers to the time limit, in seconds */
+				_n( 'The time limit of %d second has been reached, so no further actions will be started.', 'The time limit of %d seconds has been reached, so no further actions will be started.', $time_limit, 'action-scheduler' ),
+				$time_limit
 			)
 		);
 	}

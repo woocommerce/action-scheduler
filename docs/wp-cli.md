@@ -40,6 +40,7 @@ These are the commands available to use with Action Scheduler:
     * `--hooks` - Process only actions with specific hook or hooks, like `'woocommerce_scheduled_subscription_payment'`. By default, actions with any hook will be processed. Define multiple hooks as a comma separated string (without spaces), e.g. `--hooks=woocommerce_scheduled_subscription_trial_end,woocommerce_scheduled_subscription_payment,woocommerce_scheduled_subscription_expiration`
     * `--group` - Process only actions in a specific group, like `'woocommerce-memberships'`. By default, actions in any group (or no group) will be processed.
     * `--exclude-groups` - Ignore actions from the specified group or groups (to specify multiple groups, supply a comma-separated list of slugs). This option is ignored if `--group` is also specified.
+    * `--time-limit` - Stop starting new actions once the specified number of seconds has passed since the command started, e.g. `--time-limit=600`. Actions that are already running are allowed to finish, so the command can run for longer than the limit if an action is slow. Claimed actions that were not started are released, so another queue runner can process them. The default, `0`, means there is no time limit.
     * `--force` - By default, Action Scheduler limits the number of concurrent batches that can be run at once to ensure the server does not get overwhelmed. Using the `--force` flag overrides this behavior to force the WP CLI queue to run.
     
 * `action-scheduler action cancel`

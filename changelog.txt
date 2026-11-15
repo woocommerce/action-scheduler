@@ -8,6 +8,7 @@
 * Performance - Optimize as_has_scheduled_action function for larger datasets.
 * Dev - Rename private method `ActionScheduler_Store::bulk_cancel_actions()` to `bulk_cancel_actions_by_id()`, limiting the potential for future confusion with `ActionScheduler_DBStore::bulk_cancel_actions()`.
 * Dev - Document what action groups and unique actions do, and correct the `$unique` docblocks, which did not say that the arguments are compared.
+* Add - New `--time-limit=<seconds>` option for `wp action-scheduler run`, which stops the command from starting new actions once the specified number of seconds has passed.
 
 = 4.2.0 - 2026-09-16 =
 * Fix - Enforce unique action inserts atomically and release stale uniqueness keys during scheduled cleanup.

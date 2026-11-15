@@ -25,6 +25,13 @@ class ProgressBar {
 	protected $total_ticks;
 
 	/**
+	 * Number of ticks performed since the current progress bar was set up.
+	 *
+	 * @var int
+	 */
+	private $current_bar_ticks = 0;
+
+	/**
 	 * Total number of ticks.
 	 *
 	 * @var integer
@@ -83,6 +90,7 @@ class ProgressBar {
 
 		$this->progress_bar->tick();
 		$this->total_ticks++;
+		++$this->current_bar_ticks;
 
 		do_action( 'action_scheduler/progress_tick', $this->total_ticks ); // phpcs:ignore WordPress.NamingConventions.ValidHookName.UseUnderscores
 	}
@@ -90,10 +98,14 @@ class ProgressBar {
 	/**
 	 * Get the progress bar tick count.
 	 *
+	 * The ticks are counted here rather than read from the underlying progress bar: when output is not sent to a
+	 * terminal (for example, when WP CLI runs from the system scheduler or its output is piped), WP CLI supplies a
+	 * no-op progress bar, which does not count them.
+	 *
 	 * @return int
 	 */
 	public function current() {
-		return $this->progress_bar ? $this->progress_bar->current() : 0;
+		return $this->progress_bar ? $this->current_bar_ticks : 0;
 	}
 
 	/**
@@ -104,7 +116,8 @@ class ProgressBar {
 			$this->progress_bar->finish();
 		}
 
-		$this->progress_bar = null;
+		$this->progress_bar      = null;
+		$this->current_bar_ticks = 0;
 	}
 
 	/**

@@ -35,6 +35,7 @@ Additionally, in terms of GitHub actions, the following are supported:
 - `pr-lint` (./.github/workflows/pr-lint.yml) → lints the changed code.
 - `pr-unit-tests` (./.github/workflows/pr-unit-tests.yml) → runs the full test matrix (runs the test suite using a range of different PHP and WordPress versions).
 - `pr-plugin-check` (./.github/workflows/pr-plugin-check.yml) → runs WordPress.org's Plugin Check (pinned via `PLUGIN_CHECK_VERSION`) in strict mode, so warnings fail it too. It checks the `git archive` output rather than the checkout, so files marked `export-ignore` in ./.gitattributes are skipped, while ./lib/ and ./deprecated/ (excluded from phpcs) are checked. Codes that fire by design are ignored for the whole plugin in the workflow's `List ignored codes` step, one comment each; a single acceptable occurrence gets an inline `// phpcs:ignore <code> -- <reason>` instead, so the code stays enforced elsewhere.
+- `pr-test-build` (./.github/workflows/pr-test-build.yml) → builds the plugin zip with `npm run build` and posts a "Test the build" comment on the pull request with WordPress Playground links (pull requests from forks get it in the run summary instead). The links install the build together with the sample data in ./.github/playground/, which never ships; see ./.github/playground/README.md for how the links work.
 - `release` (./.github/workflows/release.yml) → prepares and builds a new release. Manually dispatched, and run in two steps (`release prep`, then `release`), each of which should first be run as a dry-run. WooRelease handles the version bump only; the changelog is managed by the workflow itself. See ./RELEASING.md for the full runbook.
 
 Linting checks, Plugin Check and test suite runs under the test matrix are always performed within GitHub before a pull request is accepted and merged. Pull requests target `trunk`.
@@ -52,7 +53,7 @@ Many existing classes exist in the global namespace, but it is preferred that ne
 
 `ActionScheduler::autoload()` (./classes/abstracts/ActionScheduler.php) is *not* PSR-4, and adding a class usually means editing it:
 
-- Namespaced classes are rejected unless prefixed `Action_Scheduler`. The namespace is then discarded entirely, and only the bare class name is resolved — so a new sub-namespace does not map to a new directory on its own.
+- Namespaced classes must have the `Action_Scheduler\` prefix and match the `Migration` or `WP_CLI` namespace and its class classifier. Global `ActionScheduler_*` classes are rejected in namespaced requests. The bare class name is then resolved, so a new sub-namespace does not map to a new directory on its own.
 - Resolution runs through hardcoded `static` arrays, one per helper (`is_class_abstract()`, `is_class_migration()`, `is_class_cli()`), plus suffix branches for `Schedule`/`Action`/`Schema`/`Deprecated` and a prefix branch for `ActionScheduler_`.
 - A name matching none of the above falls through to the top level of ./classes/, or is not loaded at all.
 

@@ -161,9 +161,11 @@ class ActionScheduler_WPCLI_QueueRunner extends ActionScheduler_Abstract_QueueRu
 			 *
 			 * @since 4.3.0
 			 *
-			 * @param int $total_processed The number of items processed so far by the current runner, across all batches.
+			 * @param int    $total_processed The number of items processed so far by the current runner, across all
+			 *                                its batches. Migrations run outside WP-CLI use a new runner for each batch.
+			 * @param string $context         The source: the queue runner's context ('WP CLI' by default), or 'migration'.
 			 */
-			do_action( 'action_scheduler_runner_item_processed', $this->total_processed_actions );
+			do_action( 'action_scheduler_runner_item_processed', $this->total_processed_actions, $context );
 		}
 
 		$this->progress_bar->finish();

@@ -165,7 +165,7 @@ class Runner {
 			 *
 			 * @since 4.3.0
 			 */
-			do_action( 'action_scheduler_runner_item_processed', $this->total_processed_actions );
+			do_action( 'action_scheduler_runner_item_processed', $this->total_processed_actions, 'migration' );
 		}
 
 		if ( $this->progress_bar ) {

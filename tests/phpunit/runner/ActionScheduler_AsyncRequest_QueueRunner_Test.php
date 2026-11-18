@@ -78,6 +78,29 @@ class ActionScheduler_AsyncRequest_QueueRunner_Test extends ActionScheduler_Unit
 	}
 
 	/**
+	 * The 5 second default timeout of newer WP_Async_Request copies is replaced with a short one, so dispatching the
+	 * runner does not hold up the current request.
+	 */
+	public function test_post_args_use_short_timeout() {
+		$this->assertSame( 0.01, $this->get_post_args()['timeout'] );
+	}
+
+	/**
+	 * A timeout set through the post args filter is left alone.
+	 */
+	public function test_post_args_keep_filtered_timeout() {
+		add_filter(
+			'as_async_request_queue_runner_post_args',
+			function ( $args ) {
+				$args['timeout'] = 3;
+				return $args;
+			}
+		);
+
+		$this->assertSame( 3, $this->get_post_args()['timeout'] );
+	}
+
+	/**
 	 * Handling a request still ends with wp_die() by default.
 	 */
 	public function test_maybe_handle_dies_by_default() {

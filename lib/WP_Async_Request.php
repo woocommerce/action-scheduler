@@ -12,10 +12,8 @@ Author URI: https://deliciousbrains.com/
 License: GNU General Public License v2.0
 License URI: https://github.com/deliciousbrains/wp-background-processing/commit/126d7945dd3d39f39cb6488ca08fe1fb66cb351a
 
-Modified for Action Scheduler: wrapped in a direct access guard and a class_exists() check, and the post args timeout
-is kept at 0.01 (upstream: 5). WordPress's cURL transport waits for the timeout even for non-blocking requests, so a
-longer timeout would delay the request that dispatches the async queue runner. The reason upstream gave for raising it
-(https://github.com/deliciousbrains/wp-background-processing/pull/103) does not apply to requests sent via WP_Http.
+Modified for Action Scheduler: wrapped in a direct access guard and a class_exists() check only. Customize behavior in
+ActionScheduler_AsyncRequest_QueueRunner instead, since another plugin's copy of this class may be the one loaded.
 */
 
 defined( 'ABSPATH' ) || exit;
@@ -156,7 +154,7 @@ if ( ! class_exists( 'WP_Async_Request' ) ) {
 			}
 
 			$args = array(
-				'timeout'   => 0.01,
+				'timeout'   => 5,
 				'blocking'  => false,
 				'body'      => $this->data,
 				'cookies'   => $_COOKIE, // Passing cookies ensures request is performed as initiating user.

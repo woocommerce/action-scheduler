@@ -59,4 +59,44 @@ class ActionScheduler_WPCLI_Scheduler_Command_Test extends ActionScheduler_UnitT
 			'quoted value containing a comma'      => array( '"group,a",group-b', array( 'group,a', 'group-b' ) ),
 		);
 	}
+
+	/**
+	 * @dataProvider force_batch_provider
+	 *
+	 * @param int      $claims      Number of claims in progress.
+	 * @param bool     $force       Value of the --force flag.
+	 * @param int|null $force_up_to Value of the --force-up-to option.
+	 * @param bool     $expected    Whether the batch should be forced.
+	 */
+	public function test_should_force_batch( $claims, $force, $force_up_to, $expected ) {
+		$store = ActionScheduler::store();
+
+		for ( $i = 0; $i < $claims; $i++ ) {
+			as_schedule_single_action( time() - 1, __METHOD__ );
+			$store->stake_claim( 1 );
+		}
+
+		$this->assertSame( $claims, $store->get_claim_count() );
+
+		$method = new ReflectionMethod( ActionScheduler_WPCLI_Scheduler_command::class, 'should_force_batch' );
+		if ( PHP_VERSION_ID < 80100 ) {
+			$method->setAccessible( true );
+		}
+
+		$this->assertSame( $expected, $method->invoke( new ActionScheduler_WPCLI_Scheduler_command(), $force, $force_up_to ) );
+	}
+
+	/**
+	 * @return array[]
+	 */
+	public function force_batch_provider() {
+		return array(
+			'neither option'                              => array( 2, false, null, false ),
+			'--force'                                     => array( 2, true, null, true ),
+			'--force-up-to above the claim count'         => array( 2, false, 3, true ),
+			'--force-up-to equal to the claim count'      => array( 2, false, 2, false ),
+			'--force-up-to below the claim count'         => array( 2, false, 1, false ),
+			'--force-up-to takes precedence over --force' => array( 2, true, 2, false ),
+		);
+	}
 }

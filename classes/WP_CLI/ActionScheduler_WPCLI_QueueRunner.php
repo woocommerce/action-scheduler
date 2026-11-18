@@ -38,6 +38,13 @@ class ActionScheduler_WPCLI_QueueRunner extends ActionScheduler_Abstract_QueueRu
 	protected $progress_bar;
 
 	/**
+	 * Number of actions processed by this runner, across all batches.
+	 *
+	 * @var int
+	 */
+	private $total_processed_actions = 0;
+
+	/**
 	 * ActionScheduler_WPCLI_QueueRunner constructor.
 	 *
 	 * @param ActionScheduler_Store|null             $store Store object.
@@ -111,22 +118,14 @@ class ActionScheduler_WPCLI_QueueRunner extends ActionScheduler_Abstract_QueueRu
 
 	/**
 	 * Set up the WP CLI progress bar.
-	 *
-	 * The same progress bar is reused for each batch, so its tick count (used to decide when to free memory) carries
-	 * across batches.
 	 */
 	protected function setup_progress_bar() {
-		$count = count( $this->actions );
-		/* translators: %d: amount of actions */
-		$message = sprintf( _n( 'Running %d action', 'Running %d actions', $count, 'action-scheduler' ), $count );
-
-		if ( $this->progress_bar instanceof ProgressBar ) {
-			$this->progress_bar->set_message( $message );
-			$this->progress_bar->set_count( $count );
-			return;
-		}
-
-		$this->progress_bar = new ProgressBar( $message, $count );
+		$count              = count( $this->actions );
+		$this->progress_bar = new ProgressBar(
+			/* translators: %d: amount of actions */
+			sprintf( _n( 'Running %d action', 'Running %d actions', $count, 'action-scheduler' ), $count ),
+			$count
+		);
 	}
 
 	/**
@@ -152,6 +151,18 @@ class ActionScheduler_WPCLI_QueueRunner extends ActionScheduler_Abstract_QueueRu
 			$this->process_action( $action_id, $context );
 			$this->progress_bar->tick();
 			++$completed;
+			++$this->total_processed_actions;
+
+			/**
+			 * Fires after each item processed by the WP-CLI queue runner or the migration runner.
+			 *
+			 * Action Scheduler uses this to periodically free memory during WP-CLI runs (see `--free-memory-on`).
+			 *
+			 * @since 4.3.0
+			 *
+			 * @param int $total_processed The number of items processed so far by the current runner, across all batches.
+			 */
+			do_action( 'action_scheduler_runner_item_processed', $this->total_processed_actions );
 		}
 
 		$this->progress_bar->finish();

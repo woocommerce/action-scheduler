@@ -70,6 +70,13 @@ class Runner {
 	private $progress_bar;
 
 	/**
+	 * Number of actions migrated by this runner, across all batches.
+	 *
+	 * @var int
+	 */
+	private $total_processed_actions = 0;
+
+	/**
 	 * Runner constructor.
 	 *
 	 * @param Config $config Migration configuration object.
@@ -150,6 +157,15 @@ class Runner {
 			if ( $this->progress_bar ) {
 				$this->progress_bar->tick();
 			}
+
+			++$this->total_processed_actions;
+
+			/**
+			 * This action is documented in classes/WP_CLI/ActionScheduler_WPCLI_QueueRunner.php.
+			 *
+			 * @since 4.3.0
+			 */
+			do_action( 'action_scheduler_runner_item_processed', $this->total_processed_actions );
 		}
 
 		if ( $this->progress_bar ) {

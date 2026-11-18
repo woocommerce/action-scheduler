@@ -242,7 +242,10 @@ class ActionScheduler_DataController {
 			Controller::init();
 		}
 
-		add_action( 'action_scheduler/progress_tick', array( 'ActionScheduler_DataController', 'maybe_free_memory' ) );
+		// Freeing memory relies on WP-CLI, and the migration runner also runs outside of it.
+		if ( defined( 'WP_CLI' ) && WP_CLI ) {
+			add_action( 'action_scheduler_runner_item_processed', array( 'ActionScheduler_DataController', 'maybe_free_memory' ) );
+		}
 	}
 
 	/**

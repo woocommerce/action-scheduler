@@ -708,6 +708,119 @@ class ActionScheduler_QueueRunner_Test extends ActionScheduler_UnitTestCase {
 	}
 
 	/**
+	 * When a recurring action completes, its next instance should already exist. Otherwise, code that checks for an
+	 * existing action before scheduling one (a common pattern on `init`) can find nothing and create a duplicate.
+	 *
+	 * @see https://github.com/woocommerce/action-scheduler/issues/698
+	 */
+	public function test_next_instance_of_recurring_action_exists_before_completion() {
+		$hook      = 'as_test_698_' . md5( wp_rand() );
+		$action_id = as_schedule_recurring_action( as_get_datetime_object( '1 minute ago' )->getTimestamp(), HOUR_IN_SECONDS, $hook );
+		$found     = null;
+
+		add_action( $hook, '__return_null' );
+
+		// Simulate concurrent requests, which try to schedule the same action at the moment the current one completes.
+		$on_complete = function ( $completed_action_id ) use ( $action_id, $hook, &$found ) {
+			if ( $completed_action_id !== $action_id ) {
+				return;
+			}
+
+			$found = as_has_scheduled_action( $hook );
+
+			if ( ! $found ) {
+				as_schedule_recurring_action( time(), HOUR_IN_SECONDS, $hook );
+			}
+
+			as_schedule_recurring_action( time(), HOUR_IN_SECONDS, $hook, array(), '', true );
+		};
+
+		add_action( 'action_scheduler_completed_action', $on_complete );
+		ActionScheduler_Mocker::get_queue_runner( ActionScheduler::store() )->run();
+		remove_action( 'action_scheduler_completed_action', $on_complete );
+
+		$this->assertTrue( $found, 'The next instance exists by the time the current action is marked complete.' );
+		$this->assertEquals( ActionScheduler_Store::STATUS_COMPLETE, ActionScheduler::store()->get_status( $action_id ) );
+		$this->assertCount(
+			1,
+			as_get_scheduled_actions(
+				array(
+					'hook'   => $hook,
+					'status' => ActionScheduler_Store::STATUS_PENDING,
+				),
+				'ids'
+			),
+			'Exactly one pending instance of the recurring action exists.'
+		);
+	}
+
+	/**
+	 * If the action cannot be marked as complete after its next instance was scheduled, it is marked as failed, but a
+	 * second instance must not be scheduled.
+	 */
+	public function test_recurring_action_is_rescheduled_once_if_marking_complete_fails() {
+		$hook      = 'as_test_698_' . md5( wp_rand() );
+		$action_id = as_schedule_recurring_action( as_get_datetime_object( '1 minute ago' )->getTimestamp(), HOUR_IN_SECONDS, $hook );
+		add_action( $hook, '__return_null' );
+
+		$on_complete = function ( $completed_action_id ) use ( $action_id ) {
+			if ( $completed_action_id === $action_id ) {
+				throw new Exception( 'Simulated failure while marking the action as complete.' );
+			}
+		};
+
+		add_action( 'action_scheduler_completed_action', $on_complete );
+		ActionScheduler_Mocker::get_queue_runner( ActionScheduler::store() )->run();
+		remove_action( 'action_scheduler_completed_action', $on_complete );
+
+		$this->assertEquals( ActionScheduler_Store::STATUS_FAILED, ActionScheduler::store()->get_status( $action_id ) );
+		$this->assertCount(
+			1,
+			as_get_scheduled_actions(
+				array(
+					'hook'   => $hook,
+					'status' => ActionScheduler_Store::STATUS_PENDING,
+				),
+				'ids'
+			),
+			'Exactly one pending instance of the recurring action exists.'
+		);
+	}
+
+	/**
+	 * A recurring action that ran successfully is still marked complete, even if scheduling its next instance raises
+	 * an error.
+	 */
+	public function test_recurring_action_is_marked_complete_if_rescheduling_errors() {
+		$store     = ActionScheduler::store();
+		$hook      = 'as_test_698_' . md5( wp_rand() );
+		$action_id = as_schedule_recurring_action( as_get_datetime_object( '1 minute ago' )->getTimestamp(), HOUR_IN_SECONDS, $hook );
+		$failures  = array();
+
+		add_action( $hook, '__return_null' );
+
+		$runner = new class( $store ) extends ActionScheduler_QueueRunner {
+			// phpcs:ignore Generic.CodeAnalysis.UnusedFunctionParameter.FoundAfterLastUsed
+			protected function schedule_next_instance( ActionScheduler_Action $action, $action_id ) {
+				throw new Error( 'Simulated error while scheduling the next instance.' );
+			}
+		};
+
+		$on_failed_to_schedule = function ( $failed_action_id, $e ) use ( &$failures ) {
+			$failures[ $failed_action_id ] = $e;
+		};
+
+		add_action( 'action_scheduler_failed_to_schedule_next_instance', $on_failed_to_schedule, 10, 2 );
+		$runner->process_action( $action_id );
+		remove_action( 'action_scheduler_failed_to_schedule_next_instance', $on_failed_to_schedule, 10 );
+
+		$this->assertEquals( ActionScheduler_Store::STATUS_COMPLETE, $store->get_status( $action_id ), 'The action is marked complete.' );
+		$this->assertCount( 1, $failures, 'The failure to schedule the next instance was reported once.' );
+		$this->assertArrayHasKey( $action_id, $failures );
+		$this->assertInstanceOf( Exception::class, $failures[ $action_id ], 'The error is passed to callbacks as an exception.' );
+	}
+
+	/**
 	 * Unschedule the queue runner cron event scheduled while bootstrapping the test suite.
 	 *
 	 * @return void

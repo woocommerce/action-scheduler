@@ -146,12 +146,17 @@ function my_plugin_activate() {
         as_schedule_recurring_action(
             time(),
             HOUR_IN_SECONDS,
-            'my_plugin_recurring_action'
+            'my_plugin_recurring_action',
+            array(),
+            '',
+            true // Unique: only one pending instance may exist.
         );
     }
 }
 register_activation_hook( __FILE__, 'my_plugin_activate' );
 ```
+
+The final `true` marks the action as unique (supported since Action Scheduler 3.6.0). The `as_has_scheduled_action()` check avoids unnecessary work, but on its own it cannot stop two requests that run at the same moment from both scheduling the action, leaving two copies that each keep recurring. With the unique flag set, only one of them will be created.
 
 ### Ensuring Recurring Actions Remain Scheduled
 
@@ -167,7 +172,10 @@ add_action( 'action_scheduler_ensure_recurring_actions', function() {
         as_schedule_recurring_action(
             time(),
             HOUR_IN_SECONDS,
-            'my_plugin_recurring_action'
+            'my_plugin_recurring_action',
+            array(),
+            '',
+            true // Unique: only one pending instance may exist.
         );
     }
 });
@@ -191,7 +199,10 @@ function my_plugin_schedule_my_recurring_action() {
 		as_schedule_recurring_action(
 			time(),
 			HOUR_IN_SECONDS,
-			'my_plugin_recurring_action'
+			'my_plugin_recurring_action',
+			array(),
+			'',
+			true // Unique: only one pending instance may exist.
 		);
 	}
 }

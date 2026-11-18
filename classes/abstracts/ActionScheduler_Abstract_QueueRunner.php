@@ -84,8 +84,9 @@ abstract class ActionScheduler_Abstract_QueueRunner extends ActionScheduler_Abst
 		 * exceptions (and an exception thrown from a catch block cannot be caught by a later catch block in the *same*
 		 * structure).
 		 */
-		$valid_action = true;
-		$rescheduled  = false;
+		$valid_action     = true;
+		$rescheduled      = false;
+		$reschedule_error = null;
 		try {
 			try {
 				do_action( 'action_scheduler_before_execute', $action_id, $context );
@@ -122,18 +123,8 @@ abstract class ActionScheduler_Abstract_QueueRunner extends ActionScheduler_Abst
 					try {
 						$this->schedule_next_instance( $action, $action_id );
 					} catch ( Throwable $e ) {
-						/**
-						 * Fires when the next instance of a recurring action could not be scheduled.
-						 *
-						 * The action itself ran successfully, so it is still marked as complete.
-						 *
-						 * @since 3.0.0
-						 *
-						 * @param int                  $action_id Action ID.
-						 * @param Exception              $e         Exception instance.
-						 * @param ActionScheduler_Action $action    The recurring action.
-						 */
-						do_action( 'action_scheduler_failed_to_schedule_next_instance', $action_id, new Exception( $e->getMessage(), $e->getCode(), $e ), $action );
+						// The action ran successfully, so it should still be marked complete. The error is re-thrown below.
+						$reschedule_error = $e;
 					}
 				}
 
@@ -153,6 +144,10 @@ abstract class ActionScheduler_Abstract_QueueRunner extends ActionScheduler_Abst
 		// Failed actions are rescheduled only after being marked as failed, as schedule_next_instance() relies on that.
 		if ( ! $rescheduled && isset( $action ) && is_a( $action, 'ActionScheduler_Action' ) && $action->get_schedule()->is_recurring() ) {
 			$this->schedule_next_instance( $action, $action_id );
+		}
+
+		if ( null !== $reschedule_error ) {
+			throw $reschedule_error;
 		}
 	}
 

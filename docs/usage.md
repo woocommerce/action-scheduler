@@ -156,7 +156,7 @@ function my_plugin_activate() {
 register_activation_hook( __FILE__, 'my_plugin_activate' );
 ```
 
-The final `true` marks the action as unique (supported since Action Scheduler 3.6.0). The `as_has_scheduled_action()` check avoids unnecessary work, but on its own it cannot stop two requests that run at the same moment from both scheduling the action, leaving two copies that each keep recurring. With the unique flag set, only one of them will be created.
+The final `true` marks the action as unique (supported since Action Scheduler 3.6.0). The `as_has_scheduled_action()` check avoids unnecessary work, but on its own it cannot stop two requests that run at the same moment from both scheduling the action, leaving two copies that each keep recurring. With the unique flag set, only one of them will be created. This guarantee requires Action Scheduler 4.2.0 or later with its default custom tables. Earlier versions, and the legacy post-based store, still check and insert as separate steps, which narrows the window without closing it.
 
 ### Ensuring Recurring Actions Remain Scheduled
 

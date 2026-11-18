@@ -788,14 +788,14 @@ class ActionScheduler_QueueRunner_Test extends ActionScheduler_UnitTestCase {
 	}
 
 	/**
-	 * A recurring action that ran successfully is still marked complete, even if scheduling its next instance raises
-	 * an error.
+	 * A recurring action that ran successfully is still marked complete if scheduling its next instance raises an
+	 * error. As before, the error is not swallowed.
 	 */
 	public function test_recurring_action_is_marked_complete_if_rescheduling_errors() {
 		$store     = ActionScheduler::store();
 		$hook      = 'as_test_698_' . md5( wp_rand() );
 		$action_id = as_schedule_recurring_action( as_get_datetime_object( '1 minute ago' )->getTimestamp(), HOUR_IN_SECONDS, $hook );
-		$failures  = array();
+		$error     = null;
 
 		add_action( $hook, '__return_null' );
 
@@ -806,18 +806,15 @@ class ActionScheduler_QueueRunner_Test extends ActionScheduler_UnitTestCase {
 			}
 		};
 
-		$on_failed_to_schedule = function ( $failed_action_id, $e ) use ( &$failures ) {
-			$failures[ $failed_action_id ] = $e;
-		};
+		try {
+			$runner->process_action( $action_id );
+		} catch ( Error $e ) {
+			$error = $e;
+		}
 
-		add_action( 'action_scheduler_failed_to_schedule_next_instance', $on_failed_to_schedule, 10, 2 );
-		$runner->process_action( $action_id );
-		remove_action( 'action_scheduler_failed_to_schedule_next_instance', $on_failed_to_schedule, 10 );
-
+		$this->assertInstanceOf( Error::class, $error, 'The error raised while scheduling the next instance is re-thrown.' );
+		$this->assertEquals( 'Simulated error while scheduling the next instance.', $error->getMessage() );
 		$this->assertEquals( ActionScheduler_Store::STATUS_COMPLETE, $store->get_status( $action_id ), 'The action is marked complete.' );
-		$this->assertCount( 1, $failures, 'The failure to schedule the next instance was reported once.' );
-		$this->assertArrayHasKey( $action_id, $failures );
-		$this->assertInstanceOf( Exception::class, $failures[ $action_id ], 'The error is passed to callbacks as an exception.' );
 	}
 
 	/**

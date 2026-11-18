@@ -85,6 +85,29 @@ class ActionScheduler_AsyncRequest_QueueRunner extends WP_Async_Request {
 	}
 
 	/**
+	 * Get post args, with the forwarded cookies unslashed.
+	 *
+	 * WordPress slashes $_COOKIE, and WP_Async_Request (possibly another plugin's copy) forwards it as-is, so each
+	 * chained request would otherwise add more backslashes to the Cookie header.
+	 *
+	 * @return array
+	 */
+	protected function get_post_args() {
+		$args = parent::get_post_args();
+
+		if ( isset( $args['cookies'] ) && is_array( $args['cookies'] ) ) {
+			foreach ( $args['cookies'] as $name => $value ) {
+				// Leave cookies that were added or changed by a filter as they are.
+				if ( isset( $_COOKIE[ $name ] ) && $value === $_COOKIE[ $name ] ) {
+					$args['cookies'][ $name ] = wp_unslash( $value );
+				}
+			}
+		}
+
+		return $args;
+	}
+
+	/**
 	 * Chaining async requests can crash MySQL. A brief sleep call in PHP prevents that.
 	 */
 	protected function get_sleep_seconds() {

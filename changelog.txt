@@ -9,6 +9,7 @@
 * Dev - Rename private method `ActionScheduler_Store::bulk_cancel_actions()` to `bulk_cancel_actions_by_id()`, limiting the potential for future confusion with `ActionScheduler_DBStore::bulk_cancel_actions()`.
 * Dev - Document what action groups and unique actions do, and correct the `$unique` docblocks, which did not say that the arguments are compared.
 * Fix - Report the number of completed actions correctly in `wp action-scheduler run` when its output is not sent to a terminal, for instance when it runs from the system scheduler, instead of always reporting zero.
+* Fix - Make `--free-memory-on` in `wp action-scheduler run` count actions across all batches, so memory is also freed when the batch size is smaller than the `--free-memory-on` value.
 
 = 4.2.0 - 2026-09-16 =
 * Fix - Enforce unique action inserts atomically and release stale uniqueness keys during scheduled cleanup.

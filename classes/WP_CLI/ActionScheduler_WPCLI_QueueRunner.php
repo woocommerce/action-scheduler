@@ -111,14 +111,22 @@ class ActionScheduler_WPCLI_QueueRunner extends ActionScheduler_Abstract_QueueRu
 
 	/**
 	 * Set up the WP CLI progress bar.
+	 *
+	 * The same progress bar is reused for each batch, so its tick count (used to decide when to free memory) carries
+	 * across batches.
 	 */
 	protected function setup_progress_bar() {
-		$count              = count( $this->actions );
-		$this->progress_bar = new ProgressBar(
-			/* translators: %d: amount of actions */
-			sprintf( _n( 'Running %d action', 'Running %d actions', $count, 'action-scheduler' ), $count ),
-			$count
-		);
+		$count = count( $this->actions );
+		/* translators: %d: amount of actions */
+		$message = sprintf( _n( 'Running %d action', 'Running %d actions', $count, 'action-scheduler' ), $count );
+
+		if ( $this->progress_bar instanceof ProgressBar ) {
+			$this->progress_bar->set_message( $message );
+			$this->progress_bar->set_count( $count );
+			return;
+		}
+
+		$this->progress_bar = new ProgressBar( $message, $count );
 	}
 
 	/**

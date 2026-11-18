@@ -143,7 +143,7 @@ class ActionScheduler_WPCLI_QueueRunner extends ActionScheduler_Abstract_QueueRu
 
 			$this->process_action( $action_id, $context );
 			$this->progress_bar->tick();
-			$completed++;
+			++$completed;
 		}
 
 		$this->progress_bar->finish();

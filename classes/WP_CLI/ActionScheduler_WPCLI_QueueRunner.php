@@ -132,7 +132,8 @@ class ActionScheduler_WPCLI_QueueRunner extends ActionScheduler_Abstract_QueueRu
 		do_action( 'action_scheduler_before_process_queue' );
 		$this->setup_progress_bar();
 
-		$claim_id = $this->claim->get_id();
+		$completed = 0;
+		$claim_id  = $this->claim->get_id();
 		foreach ( $this->actions as $action_id ) {
 			// Bail if we lost the claim.
 			if ( $claim_id !== $this->store->get_claim_id( $action_id ) ) {
@@ -142,9 +143,9 @@ class ActionScheduler_WPCLI_QueueRunner extends ActionScheduler_Abstract_QueueRu
 
 			$this->process_action( $action_id, $context );
 			$this->progress_bar->tick();
+			++$completed;
 		}
 
-		$completed = $this->progress_bar->current();
 		$this->progress_bar->finish();
 		$this->store->release_claim( $this->claim );
 		do_action( 'action_scheduler_after_process_queue' );

@@ -154,7 +154,8 @@ class ActionScheduler_WPCLI_QueueRunner extends ActionScheduler_Abstract_QueueRu
 			++$this->total_processed_actions;
 
 			/**
-			 * Fires after each item processed by the WP-CLI queue runner or the migration runner.
+			 * Fires after each item processed by the WP-CLI queue runner or the migration runner. Does not fire for the
+			 * WP-Cron or async queue runners.
 			 *
 			 * Action Scheduler uses this to periodically free memory during WP-CLI runs (see `--free-memory-on`).
 			 *

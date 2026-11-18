@@ -96,8 +96,6 @@ class Runner_Test extends ActionScheduler_UnitTestCase {
 		$remaining = $source_store->query_actions( $args );
 		$this->assertCount( 0, $remaining );
 
-		remove_action( 'action_scheduler_runner_item_processed', $record_count );
-
 		// The count carries across batches rather than restarting with each one.
 		$this->assertSame( range( 1, 15 ), $processed_counts );
 	}

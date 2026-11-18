@@ -68,7 +68,7 @@ class ActionScheduler_WPCLI_Scheduler_command extends WP_CLI_Command {
 	 * : Whether to force execution despite the maximum number of concurrent processes being exceeded.
 	 *
 	 * [--force-up-to=<limit>]
-	 * : Force execution despite the maximum number of concurrent processes being exceeded, but only while fewer than this number of batches are in progress. Takes precedence over --force.
+	 * : Force execution despite the maximum number of concurrent processes being exceeded, but only while fewer than this number of batches are in progress. It never lowers the normal limit set by the `action_scheduler_queue_runner_concurrent_batches` filter. Takes precedence over --force.
 	 *
 	 * @param array $args Positional arguments.
 	 * @param array $assoc_args Keyed arguments.
@@ -147,9 +147,9 @@ class ActionScheduler_WPCLI_Scheduler_command extends WP_CLI_Command {
 	 *
 	 * @return bool
 	 */
-	private function should_force_batch( $force, $force_up_to ): bool {
+	private function should_force_batch( bool $force, ?int $force_up_to ): bool {
 		if ( null === $force_up_to ) {
-			return (bool) $force;
+			return $force;
 		}
 
 		return ActionScheduler::store()->get_claim_count() < $force_up_to;

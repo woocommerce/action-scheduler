@@ -142,7 +142,7 @@ abstract class ActionScheduler_Abstract_QueueRunner extends ActionScheduler_Abst
 		}
 
 		// Failed actions are rescheduled only after being marked as failed, as schedule_next_instance() relies on that.
-		if ( ! $rescheduled && isset( $action ) && is_a( $action, 'ActionScheduler_Action' ) && $action->get_schedule()->is_recurring() ) {
+		if ( ! $rescheduled && isset( $action ) && ( $action instanceof ActionScheduler_Action ) && $action->get_schedule()->is_recurring() ) {
 			$this->schedule_next_instance( $action, $action_id );
 		}
 

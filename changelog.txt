@@ -1,6 +1,7 @@
 *** Changelog ***
 
 = 4.3.0 - xxxx-xx-xx =
+* Dev - Document all WP-CLI commands and subcommands, including `fix-schema`, `source` and `action logs`, and correct the name of the `data-store` command.
 * Fix - Schedule the next instance of a recurring action before marking the current one complete, so that code checking for an existing action at that moment cannot create a duplicate.
 * Fix - Update the bundled WP_Async_Request library, adding the `maybe_wp_die()` method that plugins extending newer copies of it may call.
 * Fix - Stop cookie values gaining backslashes with each chained async queue runner request, which could grow the Cookie header until the server rejected it.

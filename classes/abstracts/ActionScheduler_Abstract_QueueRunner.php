@@ -84,7 +84,9 @@ abstract class ActionScheduler_Abstract_QueueRunner extends ActionScheduler_Abst
 		 * exceptions (and an exception thrown from a catch block cannot be caught by a later catch block in the *same*
 		 * structure).
 		 */
-		$valid_action = true;
+		$valid_action     = true;
+		$rescheduled      = false;
+		$reschedule_error = null;
 		try {
 			try {
 				do_action( 'action_scheduler_before_execute', $action_id, $context );
@@ -109,6 +111,23 @@ abstract class ActionScheduler_Abstract_QueueRunner extends ActionScheduler_Abst
 
 				do_action( 'action_scheduler_after_execute', $action_id, $action, $context );
 
+				/*
+				 * Schedule the next instance of a recurring action while this one is still in progress, so there is never
+				 * a moment where neither is pending or in progress. Otherwise, code that checks for an existing action
+				 * before scheduling one (such as as_has_scheduled_action(), or unique actions) can find nothing and
+				 * create a duplicate.
+				 */
+				if ( $action->get_schedule()->is_recurring() ) {
+					$rescheduled = true;
+
+					try {
+						$this->schedule_next_instance( $action, $action_id );
+					} catch ( Throwable $e ) {
+						// The action ran successfully, so it should still be marked complete. The error is re-thrown below.
+						$reschedule_error = $e;
+					}
+				}
+
 				$this->store->mark_complete( $action_id );
 			} catch ( Throwable $e ) {
 				// Throwable is defined when executing under PHP 7.0 and up. We convert it to an exception, for
@@ -122,8 +141,13 @@ abstract class ActionScheduler_Abstract_QueueRunner extends ActionScheduler_Abst
 			restore_error_handler();
 		}
 
-		if ( isset( $action ) && is_a( $action, 'ActionScheduler_Action' ) && $action->get_schedule()->is_recurring() ) {
+		// Failed actions are rescheduled only after being marked as failed, as schedule_next_instance() relies on that.
+		if ( ! $rescheduled && isset( $action ) && is_a( $action, 'ActionScheduler_Action' ) && $action->get_schedule()->is_recurring() ) {
 			$this->schedule_next_instance( $action, $action_id );
+		}
+
+		if ( null !== $reschedule_error ) {
+			throw $reschedule_error;
 		}
 	}
 

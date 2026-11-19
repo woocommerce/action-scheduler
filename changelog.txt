@@ -1,6 +1,7 @@
 *** Changelog ***
 
 = 4.3.0 - xxxx-xx-xx =
+* Dev - Describe the `wp action-scheduler` command group accurately in WP-CLI help, rather than as "System info WP-CLI commands".
 * Dev - Document all WP-CLI commands and subcommands, including `fix-schema`, `source` and `action logs`, and correct the name of the `data-store` command.
 * Fix - Schedule the next instance of a recurring action before marking the current one complete, so that code checking for an existing action at that moment cannot create a duplicate.
 * Fix - Mark the running copy of Action Scheduler as active in the output of `wp action-scheduler source --all`, which previously showed `no` for every copy.

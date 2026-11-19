@@ -286,7 +286,12 @@ abstract class ActionScheduler {
 			WP_CLI::add_command( 'action-scheduler', 'ActionScheduler_WPCLI_Scheduler_command' );
 			WP_CLI::add_command( 'action-scheduler', 'ActionScheduler_WPCLI_Clean_Command' );
 			WP_CLI::add_command( 'action-scheduler action', '\Action_Scheduler\WP_CLI\Action_Command' );
-			WP_CLI::add_command( 'action-scheduler', '\Action_Scheduler\WP_CLI\System_Command' );
+			// Each registration replaces the group's description, so this must remain the last 'action-scheduler' call.
+			WP_CLI::add_command(
+				'action-scheduler',
+				'\Action_Scheduler\WP_CLI\System_Command',
+				array( 'shortdesc' => 'Manage Action Scheduler and its queue of scheduled actions.' )
+			);
 			if ( ! ActionScheduler_DataController::is_migration_complete() && Controller::instance()->allow_migration() ) {
 				$command = new Migration_Command();
 				$command->register();

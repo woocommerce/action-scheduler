@@ -291,6 +291,82 @@ as_get_scheduled_actions( $args, $return_format );
 
 `(array)` Array of action rows matching the criteria specified with `$args`.
 
+## Function Reference / `as_get_executing_action_id()`
+
+### Description
+
+Get the ID of the action currently being executed by Action Scheduler, so that code can tell whether it is running as part of a scheduled action.
+
+Actions are not only processed via WP Cron, but also via async requests, WP CLI and the [Scheduled Actions administration screen](admin.md), so `wp_doing_cron()` cannot be relied on for this.
+
+An action is considered to be executing from the moment the `action_scheduler_begin_execute` hook fires until it has been marked as complete or failed. That includes the callbacks hooked to the action itself, any code they call, and the callbacks of the hooks fired in between, such as `action_scheduler_after_execute`, `action_scheduler_completed_action` and `action_scheduler_failed_execution`. If an action is processed from within the callback of another action, the inner action is returned until it has been processed, and then the outer action again.
+
+*Available since 4.3.0.*
+
+### Usage
+
+```php
+as_get_executing_action_id();
+```
+
+### Parameters
+
+None.
+
+### Return value
+
+`(integer)` The ID of the action being executed, or `0` if no action is being executed.
+
+### Example
+
+```php
+add_filter( 'http_request_args', function ( $args, $url ) {
+    // Allow requests made by our scheduled actions more time to complete. Check the function exists first, in case an
+    // older version of Action Scheduler is loaded.
+    if (
+        function_exists( 'as_get_executing_action_id' )
+        && as_get_executing_action_id()
+        && 0 === strpos( $url, 'https://api.example.com/' )
+    ) {
+        $args['timeout'] = 30;
+    }
+
+    return $args;
+}, 10, 2 );
+```
+
+## Function Reference / `as_get_executing_action_context()`
+
+### Description
+
+Get the context in which the action currently being executed by Action Scheduler is being processed. See `as_get_executing_action_id()`, above, for when an action is considered to be executing.
+
+The context is a string identifying how the action is being processed. Action Scheduler's own queue runners use:
+
+- `'WP Cron'` when the queue is run by WP Cron.
+- `'Async Request'` when the queue is run by an async request.
+- `'WP CLI'` when the queue is run by `wp action-scheduler run`.
+- `'Action Scheduler CLI'` when the action is run by `wp action-scheduler action run`.
+- `'Admin List Table'` when the action is run from the Scheduled Actions administration screen.
+
+Custom queue runners, and code which triggers the `action_scheduler_run_queue` hook directly, can use other values.
+
+*Available since 4.3.0.*
+
+### Usage
+
+```php
+as_get_executing_action_context();
+```
+
+### Parameters
+
+None.
+
+### Return value
+
+`(string)` The context, or an empty string if no action is being executed (or if the code processing it did not specify a context).
+
 ## Function Reference / `as_supports()`
 
 ### Description

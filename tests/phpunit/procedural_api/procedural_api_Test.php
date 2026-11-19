@@ -481,6 +481,154 @@ class Procedural_API_Test extends ActionScheduler_UnitTestCase {
 	}
 
 	/**
+	 * Test that no action is reported as executing when no action is being processed.
+	 */
+	public function test_as_get_executing_action_outside_of_execution() {
+		$this->assertSame( 0, as_get_executing_action_id() );
+		$this->assertSame( '', as_get_executing_action_context() );
+	}
+
+	/**
+	 * Test that the executing action and its context are available from the moment the action begins to execute
+	 * until it has been marked as complete.
+	 */
+	public function test_as_get_executing_action_during_execution() {
+		$hook      = 'as_test_executing_action_' . md5( wp_rand() );
+		$action_id = as_enqueue_async_action( $hook );
+		$observed  = array();
+
+		$observe = function ( $label ) use ( &$observed ) {
+			return function () use ( $label, &$observed ) {
+				$observed[ $label ] = array( as_get_executing_action_id(), as_get_executing_action_context() );
+			};
+		};
+
+		add_action( 'action_scheduler_before_execute', $observe( 'before_execute' ), 10, 0 );
+		add_action( 'action_scheduler_begin_execute', $observe( 'begin_execute' ), 10, 0 );
+		add_action( $hook, $observe( 'callback' ), 10, 0 );
+		add_action( 'action_scheduler_completed_action', $observe( 'completed_action' ), 10, 0 );
+
+		ActionScheduler_Mocker::get_queue_runner()->process_action( $action_id, 'Test Context' );
+
+		$this->assertEquals( ActionScheduler_Store::STATUS_COMPLETE, ActionScheduler::store()->get_status( $action_id ) );
+		$this->assertSame( array( 0, '' ), $observed['before_execute'], 'The action is not reported before it is known that it will be executed.' );
+		$this->assertSame( array( $action_id, 'Test Context' ), $observed['begin_execute'] );
+		$this->assertSame( array( $action_id, 'Test Context' ), $observed['callback'] );
+		$this->assertSame( array( $action_id, 'Test Context' ), $observed['completed_action'] );
+		$this->assertSame( 0, as_get_executing_action_id(), 'The action is no longer reported once it has been processed.' );
+		$this->assertSame( '', as_get_executing_action_context() );
+	}
+
+	/**
+	 * Test that the context of actions processed by the queue runner is reported.
+	 */
+	public function test_as_get_executing_action_context_when_running_the_queue() {
+		$hook      = 'as_test_executing_action_' . md5( wp_rand() );
+		$action_id = as_enqueue_async_action( $hook );
+		$observed  = null;
+
+		add_action(
+			$hook,
+			function () use ( &$observed ) {
+				$observed = array( as_get_executing_action_id(), as_get_executing_action_context() );
+			}
+		);
+
+		ActionScheduler_Mocker::get_queue_runner()->run();
+
+		$this->assertSame( array( $action_id, 'WP Cron' ), $observed );
+		$this->assertSame( 0, as_get_executing_action_id() );
+	}
+
+	/**
+	 * Test that the executing action is reported while it is marked as failed, and is no longer reported afterwards.
+	 */
+	public function test_as_get_executing_action_when_action_fails() {
+		$hook      = 'as_test_executing_action_' . md5( wp_rand() );
+		$action_id = as_enqueue_async_action( $hook );
+		$observed  = null;
+
+		add_action(
+			$hook,
+			function () {
+				throw new Exception( 'Simulated failure.' );
+			}
+		);
+
+		add_action(
+			'action_scheduler_failed_execution',
+			function () use ( &$observed ) {
+				$observed = array( as_get_executing_action_id(), as_get_executing_action_context() );
+			}
+		);
+
+		ActionScheduler_Mocker::get_queue_runner()->process_action( $action_id, 'Test Context' );
+
+		$this->assertEquals( ActionScheduler_Store::STATUS_FAILED, ActionScheduler::store()->get_status( $action_id ) );
+		$this->assertSame( array( $action_id, 'Test Context' ), $observed );
+		$this->assertSame( 0, as_get_executing_action_id() );
+		$this->assertSame( '', as_get_executing_action_context() );
+	}
+
+	/**
+	 * Test that an action which is not pending, and is therefore not executed, is not reported as executing.
+	 */
+	public function test_as_get_executing_action_when_action_is_ignored() {
+		$hook      = 'as_test_executing_action_' . md5( wp_rand() );
+		$action_id = as_enqueue_async_action( $hook );
+		$observed  = null;
+
+		ActionScheduler::store()->cancel_action( $action_id );
+
+		add_action(
+			'action_scheduler_execution_ignored',
+			function () use ( &$observed ) {
+				$observed = array( as_get_executing_action_id(), as_get_executing_action_context() );
+			}
+		);
+
+		ActionScheduler_Mocker::get_queue_runner()->process_action( $action_id, 'Test Context' );
+
+		$this->assertSame( array( 0, '' ), $observed );
+		$this->assertSame( 0, as_get_executing_action_id() );
+	}
+
+	/**
+	 * Test that, when an action is processed from within the callback of another action, the inner action is reported
+	 * until it has been processed, and then the outer action is reported again.
+	 */
+	public function test_as_get_executing_action_with_nested_actions() {
+		$outer_hook      = 'as_test_executing_action_outer_' . md5( wp_rand() );
+		$inner_hook      = 'as_test_executing_action_inner_' . md5( wp_rand() );
+		$outer_action_id = as_enqueue_async_action( $outer_hook );
+		$inner_action_id = as_enqueue_async_action( $inner_hook );
+		$runner          = ActionScheduler_Mocker::get_queue_runner();
+		$observed        = array();
+
+		add_action(
+			$inner_hook,
+			function () use ( &$observed ) {
+				$observed['inner'] = array( as_get_executing_action_id(), as_get_executing_action_context() );
+			}
+		);
+
+		add_action(
+			$outer_hook,
+			function () use ( $runner, $inner_action_id, &$observed ) {
+				$runner->process_action( $inner_action_id, 'Inner Context' );
+				$observed['outer'] = array( as_get_executing_action_id(), as_get_executing_action_context() );
+			}
+		);
+
+		$runner->process_action( $outer_action_id, 'Outer Context' );
+
+		$this->assertSame( array( $inner_action_id, 'Inner Context' ), $observed['inner'] );
+		$this->assertSame( array( $outer_action_id, 'Outer Context' ), $observed['outer'] );
+		$this->assertSame( 0, as_get_executing_action_id() );
+		$this->assertSame( '', as_get_executing_action_context() );
+	}
+
+	/**
 	 * Helper method to set actions scheduler store.
 	 *
 	 * @param ActionScheduler_Store $store Store instance to set.

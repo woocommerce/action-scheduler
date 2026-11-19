@@ -37,6 +37,16 @@ abstract class ActionScheduler_Abstract_QueueRunner extends ActionScheduler_Abst
 	private $created_time;
 
 	/**
+	 * The action currently being executed, if any, as an array with 'id' and 'context' keys.
+	 *
+	 * Static, because more than one queue runner instance can process actions within the same request (the WP CLI and
+	 * admin list table runners, for example), and callbacks need not know which of them is executing their action.
+	 *
+	 * @var array|null
+	 */
+	private static $executing_action = null;
+
+	/**
 	 * ActionScheduler_Abstract_QueueRunner constructor.
 	 *
 	 * @param ActionScheduler_Store|null             $store Store object.
@@ -87,6 +97,11 @@ abstract class ActionScheduler_Abstract_QueueRunner extends ActionScheduler_Abst
 		$valid_action     = true;
 		$rescheduled      = false;
 		$reschedule_error = null;
+
+		// Restored once the action has been processed. Normally null, unless an action is being processed from within
+		// the callback of another action.
+		$previous_executing_action = self::$executing_action;
+
 		try {
 			try {
 				do_action( 'action_scheduler_before_execute', $action_id, $context );
@@ -96,6 +111,12 @@ abstract class ActionScheduler_Abstract_QueueRunner extends ActionScheduler_Abst
 					do_action( 'action_scheduler_execution_ignored', $action_id, $context );
 					return;
 				}
+
+				// The context can originate from the action_scheduler_run_queue hook, so it is not guaranteed to be a string.
+				self::$executing_action = array(
+					'id'      => (int) $action_id,
+					'context' => is_scalar( $context ) ? (string) $context : '',
+				);
 
 				do_action( 'action_scheduler_begin_execute', $action_id, $context );
 
@@ -138,6 +159,7 @@ abstract class ActionScheduler_Abstract_QueueRunner extends ActionScheduler_Abst
 			// This catch block exists for compatibility with PHP 5.6.
 			$this->handle_action_error( $action_id, $e, $context, $valid_action );
 		} finally {
+			self::$executing_action = $previous_executing_action;
 			restore_error_handler();
 		}
 
@@ -149,6 +171,38 @@ abstract class ActionScheduler_Abstract_QueueRunner extends ActionScheduler_Abst
 		if ( null !== $reschedule_error ) {
 			throw $reschedule_error;
 		}
+	}
+
+	/**
+	 * Returns the ID of the action currently being executed by a queue runner.
+	 *
+	 * An action is considered to be executing from the moment the `action_scheduler_begin_execute` hook fires until
+	 * it has been marked as complete or failed. If an action is processed from within the callback of another action,
+	 * the inner action is returned until it has been processed, and then the outer action again.
+	 *
+	 * @see as_get_executing_action_id()
+	 *
+	 * @since 4.3.0
+	 *
+	 * @return int The ID of the executing action, or 0 if no action is being executed.
+	 */
+	public static function get_executing_action_id(): int {
+		return null === self::$executing_action ? 0 : self::$executing_action['id'];
+	}
+
+	/**
+	 * Returns the context in which the action currently being executed by a queue runner is being processed.
+	 *
+	 * @see as_get_executing_action_context()
+	 * @see ActionScheduler_Abstract_QueueRunner::get_executing_action_id()
+	 *
+	 * @since 4.3.0
+	 *
+	 * @return string The context passed to process_action(), such as 'WP Cron', 'Async Request' or 'WP CLI', or an
+	 *                empty string if no action is being executed (or if no context was specified).
+	 */
+	public static function get_executing_action_context(): string {
+		return null === self::$executing_action ? '' : self::$executing_action['context'];
 	}
 
 	/**

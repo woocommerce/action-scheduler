@@ -206,7 +206,7 @@ class ActionScheduler_DataController {
 
 		$wpdb->queries = array();
 
-		if ( ! is_a( $wp_object_cache, 'WP_Object_Cache' ) ) {
+		if ( ! ( $wp_object_cache instanceof WP_Object_Cache ) ) {
 			return;
 		}
 

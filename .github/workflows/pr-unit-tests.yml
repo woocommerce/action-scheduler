@@ -10,14 +10,15 @@ jobs:
       fail-fast: false
       matrix:
         # We test against the earliest and latest PHP versions for each major supported version.
-        php: [ '7.2', '7.4', '8.0', '8.3' ]
-        wp: [ '6.5', '6.6', 'latest', 'nightly' ]
+        php: [ '7.2', '7.4', '8.0', '8.6' ]
+        # We test against our minimum supported WordPress version (see `Requires at least` in action-scheduler.php), plus later versions.
+        wp: [ '6.9', '7.0', 'latest', 'nightly' ]
         multisite: [ '0', '1' ]
         db: [ 'mysql:5.6', 'mysql:8.1', 'mariadb:10.4', 'mariadb:10.6']
         exclude:
-          # WordPress 6.6+ requires PHP 7.2+
+          # WordPress 7.0+ requires PHP 7.4+
           - php: 7.2
-            wp: 6.6
+            wp: '7.0'
           - php: 7.2
             wp: latest
           - php: 7.2
@@ -35,7 +36,7 @@ jobs:
         uses: actions/checkout@0717577d45739eb3c851188b29f50ed6c0b2194e # v2
 
       - name: Setup PHP
-        uses: shivammathur/setup-php@0f7f1d08e3e32076e51cae65eb0b0c871405b16e # v2.34.1
+        uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962 # v2.40.0
         with:
           php-version: ${{ matrix.php }}
           tools: composer

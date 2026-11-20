@@ -1328,4 +1328,90 @@ class ActionScheduler_DBStore_Test extends AbstractStoreTest {
 		$this->assertSame( (int) wp_cache_get( 'uncached_group', ActionScheduler_DBStore::GROUP_IDS_CACHE_GROUP ), $ids[1] );
 		$this->assertSame( (int) wp_cache_get( ActionScheduler_DBStore::GROUP_IDS_DEFAULT_CACHE_KEY, ActionScheduler_DBStore::GROUP_IDS_CACHE_GROUP ), $ids[2] );
 	}
+
+	/**
+	 * Test partial_args_matching with both 'like' and 'json' modes for short and extended args.
+	 *
+	 * Each case also saves a decoy action under the same hook, with args of the other length, so that the query has
+	 * to cope with both storage formats at once (on MySQL, JSON_EXTRACT() fails on the hash stored in `args` for long
+	 * args, which used to break JSON matching for every action sharing the hook).
+	 *
+	 * @dataProvider partial_args_matching_provider
+	 *
+	 * @param string $mode              Partial args matching mode: 'like' or 'json'.
+	 * @param bool   $use_extended_args Whether the target action's args are long enough to be stored in extended_args.
+	 */
+	public function test_partial_args_matching( $mode, $use_extended_args ) {
+		if ( 'json' === $mode ) {
+			try {
+				$store = new ActionScheduler_DBStore();
+				$store->query_actions(
+					array(
+						'hook'                  => 'nonexistent_hook',
+						'args'                  => array( 'test' => 'value' ),
+						'partial_args_matching' => 'json',
+					)
+				);
+			} catch ( \RuntimeException $e ) {
+				$this->markTestSkipped( 'JSON functions not supported by database' );
+			}
+		}
+
+		global $wpdb;
+		$store    = new ActionScheduler_DBStore();
+		$schedule = new ActionScheduler_SimpleSchedule( as_get_datetime_object( 'tomorrow' ) );
+		$hook     = "test_hook_{$mode}";
+
+		$long_args  = array(
+			'key1' => str_repeat( 'a', 200 ),
+			'key2' => 'findme',
+		);
+		$short_args = array(
+			'key1' => 'value1',
+			'key2' => 'findme',
+		);
+
+		$args       = $use_extended_args ? $long_args : $short_args;
+		$decoy_args = $use_extended_args ? $short_args : $long_args;
+
+		$decoy_args['key2'] = 'decoy';
+
+		$action_id = $store->save_action( new ActionScheduler_Action( $hook, $args, $schedule ) );
+		$decoy_id  = $store->save_action( new ActionScheduler_Action( $hook, $decoy_args, $schedule ) );
+
+		$long_id = $use_extended_args ? $action_id : $decoy_id;
+		$row     = $wpdb->get_row( $wpdb->prepare( "SELECT args, extended_args FROM {$wpdb->actionscheduler_actions} WHERE action_id = %d", $long_id ) );
+		$this->assertNotNull( $row->extended_args, 'Extended args should be set for long args' );
+
+		$query = function ( $value ) use ( $store, $hook, $mode ) {
+			return array_map(
+				'intval',
+				$store->query_actions(
+					array(
+						'hook'                  => $hook,
+						'args'                  => array( 'key2' => $value ),
+						'partial_args_matching' => $mode,
+					)
+				)
+			);
+		};
+
+		$this->assertSame( array( $action_id ), $query( 'findme' ), 'Only the target action should match.' );
+		$this->assertSame( array( $decoy_id ), $query( 'decoy' ), 'Only the decoy action should match.' );
+		$this->assertSame( array(), $query( 'notfound' ), 'No action should match.' );
+	}
+
+	/**
+	 * Data provider for partial_args_matching tests.
+	 *
+	 * @return array Test cases with mode and extended_args flag.
+	 */
+	public function partial_args_matching_provider() {
+		return array(
+			'like mode with short args'    => array( 'like', false ),
+			'like mode with extended args' => array( 'like', true ),
+			'json mode with short args'    => array( 'json', false ),
+			'json mode with extended args' => array( 'json', true ),
+		);
+	}
 }

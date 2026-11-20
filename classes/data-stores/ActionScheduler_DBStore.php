@@ -1278,6 +1278,46 @@ AND args = %s
 	}
 
 	/**
+	 * Purge old claim records that are no longer referenced by any action.
+	 *
+	 * Claims are only purged once they are at least a day old: a new claim record is created a moment
+	 * before any actions are assigned to it, so a recent claim with no actions may still be in use. At
+	 * most 1000 claims are purged per call, to bound the work on sites with a large backlog.
+	 *
+	 * @since 4.3.0
+	 *
+	 * @return int|false Number of orphan claims deleted, or false on failure.
+	 */
+	public function purge_orphan_claims() {
+		global $wpdb;
+
+		$cutoff = as_get_datetime_object( DAY_IN_SECONDS . ' seconds ago' );
+		$sql    = "
+			SELECT c.claim_id
+			FROM {$wpdb->actionscheduler_claims} c
+			WHERE c.date_created_gmt < %s
+			AND NOT EXISTS (
+				SELECT 1
+				FROM {$wpdb->actionscheduler_actions} a
+				WHERE a.claim_id = c.claim_id
+			)
+			LIMIT %d
+		";
+		$sql    = $wpdb->prepare( $sql, $cutoff->format( 'Y-m-d H:i:s' ), 1000 ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
+
+		$claim_ids = $wpdb->get_col( $sql ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
+		if ( empty( $claim_ids ) ) {
+			return $wpdb->last_error ? false : 0;
+		}
+
+		// Old claims cannot gain actions (claims are assigned immediately after creation), so a separate delete is safe.
+		$claim_id_string = implode( ',', array_map( 'absint', $claim_ids ) );
+		$deleted         = $wpdb->query( "DELETE FROM {$wpdb->actionscheduler_claims} WHERE claim_id IN ({$claim_id_string})" ); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+
+		return false === $deleted ? false : (int) $deleted;
+	}
+
+	/**
 	 * Return an action's claim ID, as stored in the claim_id column.
 	 *
 	 * @param string $action_id Action ID.

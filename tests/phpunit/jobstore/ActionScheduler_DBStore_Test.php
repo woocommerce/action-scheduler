@@ -20,8 +20,9 @@ class ActionScheduler_DBStore_Test extends AbstractStoreTest {
 	public function setUp(): void {
 		global $wpdb;
 
-		// Delete all actions before each test.
+		// Delete all actions and claims before each test.
 		$wpdb->query( "DELETE FROM {$wpdb->actionscheduler_actions}" );
+		$wpdb->query( "DELETE FROM {$wpdb->actionscheduler_claims}" );
 
 		parent::setUp();
 	}
@@ -1413,5 +1414,114 @@ class ActionScheduler_DBStore_Test extends AbstractStoreTest {
 			'json mode with short args'    => array( 'json', false ),
 			'json mode with extended args' => array( 'json', true ),
 		);
+	}
+
+	/**
+	 * @testdox purge_orphan_claims() deletes old claims that no action references, and returns how many it deleted.
+	 */
+	public function test_purge_orphan_claims_returns_count() {
+		global $wpdb;
+		$store = new ActionScheduler_DBStore();
+
+		for ( $i = 0; $i < 3; $i++ ) {
+			$wpdb->insert( $wpdb->actionscheduler_claims, array( 'date_created_gmt' => '2020-01-01 00:00:00' ) );
+		}
+
+		$this->assertSame( 3, $store->purge_orphan_claims() );
+		$this->assertSame( 0, (int) $wpdb->get_var( "SELECT COUNT(*) FROM {$wpdb->actionscheduler_claims}" ) );
+	}
+
+	/**
+	 * @testdox purge_orphan_claims() keeps claims that are still referenced by an action.
+	 */
+	public function test_purge_orphan_claims_keeps_referenced_claims() {
+		global $wpdb;
+		$store = new ActionScheduler_DBStore();
+		$store->save_action( new ActionScheduler_Action( ActionScheduler_Callbacks::HOOK_WITH_CALLBACK, array(), new ActionScheduler_SimpleSchedule( as_get_datetime_object( '-1 hour' ) ) ) );
+
+		$claim = $store->stake_claim();
+		$this->assertCount( 1, $claim->get_actions() );
+
+		// Age the referenced claim past the purge cutoff, so that only the action reference protects it.
+		$wpdb->update( $wpdb->actionscheduler_claims, array( 'date_created_gmt' => '2020-01-01 00:00:00' ), array( 'claim_id' => $claim->get_id() ) );
+		$wpdb->insert( $wpdb->actionscheduler_claims, array( 'date_created_gmt' => '2020-01-01 00:00:00' ) );
+		$wpdb->insert( $wpdb->actionscheduler_claims, array( 'date_created_gmt' => '2020-01-01 00:00:00' ) );
+
+		$this->assertSame( 2, $store->purge_orphan_claims() );
+		$this->assertSame( array( (string) $claim->get_id() ), $wpdb->get_col( "SELECT claim_id FROM {$wpdb->actionscheduler_claims}" ) );
+	}
+
+	/**
+	 * @testdox purge_orphan_claims() deletes the old claim of a deleted action.
+	 */
+	public function test_purge_orphan_claims_clears_claim_after_action_deletion() {
+		global $wpdb;
+		$store     = new ActionScheduler_DBStore();
+		$action_id = $store->save_action( new ActionScheduler_Action( ActionScheduler_Callbacks::HOOK_WITH_CALLBACK, array(), new ActionScheduler_SimpleSchedule( as_get_datetime_object( '-1 hour' ) ) ) );
+
+		$claim = $store->stake_claim();
+		$wpdb->update( $wpdb->actionscheduler_claims, array( 'date_created_gmt' => '2020-01-01 00:00:00' ), array( 'claim_id' => $claim->get_id() ) );
+		$this->assertSame( 0, $store->purge_orphan_claims(), 'The claim is kept while its action exists.' );
+
+		$store->delete_action( $action_id );
+
+		$this->assertSame( 1, $store->purge_orphan_claims() );
+		$this->assertSame( 0, (int) $wpdb->get_var( "SELECT COUNT(*) FROM {$wpdb->actionscheduler_claims}" ) );
+	}
+
+	/**
+	 * @testdox purge_orphan_claims() keeps recent claims even if no action references them yet.
+	 */
+	public function test_purge_orphan_claims_keeps_recent_orphans() {
+		global $wpdb;
+		$store = new ActionScheduler_DBStore();
+
+		$wpdb->insert( $wpdb->actionscheduler_claims, array( 'date_created_gmt' => as_get_datetime_object()->format( 'Y-m-d H:i:s' ) ) );
+		$wpdb->insert( $wpdb->actionscheduler_claims, array( 'date_created_gmt' => as_get_datetime_object( '23 hours ago' )->format( 'Y-m-d H:i:s' ) ) );
+		$wpdb->insert( $wpdb->actionscheduler_claims, array( 'date_created_gmt' => as_get_datetime_object( '25 hours ago' )->format( 'Y-m-d H:i:s' ) ) );
+
+		$this->assertSame( 1, $store->purge_orphan_claims() );
+		$this->assertSame( 2, (int) $wpdb->get_var( "SELECT COUNT(*) FROM {$wpdb->actionscheduler_claims}" ) );
+	}
+
+	/**
+	 * @testdox purge_orphan_claims() does not delete a claim created between claim row insertion and action assignment.
+	 */
+	public function test_purge_orphan_claims_does_not_delete_claim_being_staked() {
+		global $wpdb;
+		$store = new ActionScheduler_DBStore();
+		$store->save_action( new ActionScheduler_Action( ActionScheduler_Callbacks::HOOK_WITH_CALLBACK, array(), new ActionScheduler_SimpleSchedule( as_get_datetime_object( '-1 hour' ) ) ) );
+
+		// Simulate a concurrent cleaner running after generate_claim_id() but before claim_actions() assigns the claim.
+		$fired  = false;
+		$filter = function ( $sql ) use ( $store, &$fired ) {
+			if ( ! $fired && 0 === strpos( trim( $sql ), 'UPDATE' ) && false !== strpos( $sql, 'SET claim_id=' ) ) {
+				$fired = true;
+				$store->purge_orphan_claims();
+			}
+			return $sql;
+		};
+		add_filter( 'query', $filter );
+		$claim = $store->stake_claim();
+		remove_filter( 'query', $filter );
+
+		$this->assertTrue( $fired, 'The claim assignment query was intercepted.' );
+		$this->assertCount( 1, $claim->get_actions() );
+		$this->assertSame( 1, (int) $wpdb->get_var( $wpdb->prepare( "SELECT COUNT(*) FROM {$wpdb->actionscheduler_claims} WHERE claim_id = %d", $claim->get_id() ) ), 'The live claim row survived the purge.' );
+		$this->assertSame( 1, $store->get_claim_count(), 'The active claim is still counted for concurrency limiting.' );
+	}
+
+	/**
+	 * @testdox purge_orphan_claims() deletes at most 1000 claims per call.
+	 */
+	public function test_purge_orphan_claims_is_bounded() {
+		global $wpdb;
+		$store = new ActionScheduler_DBStore();
+
+		$wpdb->query( "INSERT INTO {$wpdb->actionscheduler_claims} (date_created_gmt) VALUES " . implode( ',', array_fill( 0, 1001, "('2020-01-01 00:00:00')" ) ) ); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+
+		$this->assertSame( 1000, $store->purge_orphan_claims() );
+		$this->assertSame( 1, $store->purge_orphan_claims() );
+		$this->assertSame( 0, $store->purge_orphan_claims() );
 	}
 }

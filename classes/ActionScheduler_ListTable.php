@@ -115,6 +115,12 @@ class ActionScheduler_ListTable extends ActionScheduler_Abstract_ListTable {
 			'group',
 		);
 
+		/*
+		 * Only the emptiness of this property matters here: it is what causes the search box to be
+		 * rendered. The individual entries are unused, because this class overrides prepare_items()
+		 * and delegates searching to the store, rather than using the parent's
+		 * get_items_query_search().
+		 */
 		$this->search_by = array(
 			'hook',
 			'args',
@@ -330,6 +336,22 @@ class ActionScheduler_ListTable extends ActionScheduler_Abstract_ListTable {
 	}
 
 	/**
+	 * Render the hook name and action ID.
+	 *
+	 * @param array $row Action data.
+	 * @return string
+	 */
+	public function column_hook( $row ) {
+		$action_id = sprintf(
+			/* translators: %d: Action ID. */
+			__( 'ID: %d', 'action-scheduler' ),
+			absint( $row['ID'] )
+		);
+
+		return esc_html( $row['hook'] ) . '<br><small>' . esc_html( $action_id ) . '</small>' . $this->maybe_render_actions( $row, 'hook' );
+	}
+
+	/**
 	 * Only display row actions for pending actions.
 	 *
 	 * @param array  $row         Row to render.
@@ -356,7 +378,14 @@ class ActionScheduler_ListTable extends ActionScheduler_Abstract_ListTable {
 	public function display_admin_notices() {
 		global $wpdb;
 
-		if ( ( is_a( $this->store, 'ActionScheduler_HybridStore' ) || is_a( $this->store, 'ActionScheduler_DBStore' ) ) && apply_filters( 'action_scheduler_enable_recreate_data_store', true ) ) {
+		/**
+		 * Filter whether to check for missing custom tables, and attempt to recreate any that are missing, when displaying admin notices.
+		 *
+		 * @since 3.1.3
+		 *
+		 * @param bool $enable_recreate Whether to check for and recreate missing tables. Default true.
+		 */
+		if ( ( ( $this->store instanceof ActionScheduler_HybridStore ) || ( $this->store instanceof ActionScheduler_DBStore ) ) && apply_filters( 'action_scheduler_enable_recreate_data_store', true ) ) {
 			$table_list = array(
 				'actionscheduler_actions',
 				'actionscheduler_logs',
@@ -420,7 +449,7 @@ class ActionScheduler_ListTable extends ActionScheduler_Abstract_ListTable {
 			delete_transient( 'action_scheduler_admin_notice' );
 
 			$action           = $this->store->fetch_action( $notification['action_id'] );
-			$action_hook_html = '<strong><code>' . $action->get_hook() . '</code></strong>';
+			$action_hook_html = '<strong><code>' . esc_html( $action->get_hook() ) . '</code></strong>';
 
 			if ( 1 === (int) $notification['success'] ) {
 				$type = 'success';
@@ -476,7 +505,7 @@ class ActionScheduler_ListTable extends ActionScheduler_Abstract_ListTable {
 
 		$schedule_display_string = '';
 
-		if ( is_a( $schedule, 'ActionScheduler_NullSchedule' ) ) {
+		if ( $schedule instanceof ActionScheduler_NullSchedule ) {
 			return __( 'async', 'action-scheduler' );
 		}
 
@@ -553,7 +582,7 @@ class ActionScheduler_ListTable extends ActionScheduler_Abstract_ListTable {
 	 * Force the data store schema updates.
 	 */
 	protected function recreate_tables() {
-		if ( is_a( $this->store, 'ActionScheduler_HybridStore' ) ) {
+		if ( $this->store instanceof ActionScheduler_HybridStore ) {
 			$store = $this->store;
 		} else {
 			$store = new ActionScheduler_HybridStore();
@@ -633,7 +662,7 @@ class ActionScheduler_ListTable extends ActionScheduler_Abstract_ListTable {
 			} catch ( Exception $e ) {
 				continue;
 			}
-			if ( is_a( $action, 'ActionScheduler_NullAction' ) ) {
+			if ( $action instanceof ActionScheduler_NullAction ) {
 				continue;
 			}
 			$status_name               = $this->store->get_status( $action_id );
@@ -666,7 +695,7 @@ class ActionScheduler_ListTable extends ActionScheduler_Abstract_ListTable {
 	 * Get the text to display in the search box on the list table.
 	 */
 	protected function get_search_box_button_text() {
-		return __( 'Search hook, args and claim ID', 'action-scheduler' );
+		return __( 'Search hook, args, action ID and claim ID', 'action-scheduler' );
 	}
 
 	/**

@@ -20,9 +20,8 @@ class ActionScheduler_DBStore_Test extends AbstractStoreTest {
 	public function setUp(): void {
 		global $wpdb;
 
-		// Delete all actions and orphan claims before each test.
+		// Delete all actions before each test.
 		$wpdb->query( "DELETE FROM {$wpdb->actionscheduler_actions}" );
-		$wpdb->query( "DELETE FROM {$wpdb->actionscheduler_claims}" );
 
 		parent::setUp();
 	}
@@ -137,7 +136,7 @@ class ActionScheduler_DBStore_Test extends AbstractStoreTest {
 	public function test_claim_actions() {
 		$created_actions = array();
 		$store           = new ActionScheduler_DBStore();
-		for ( $i = 3; $i > - 3; $i-- ) {
+		for ( $i = 3; $i > - 3; $i -- ) {
 			$time     = as_get_datetime_object( $i . ' hours' );
 			$schedule = new ActionScheduler_SimpleSchedule( $time );
 			$action   = new ActionScheduler_Action( ActionScheduler_Callbacks::HOOK_WITH_CALLBACK, array( $i ), $schedule, 'my_group' );
@@ -189,7 +188,7 @@ class ActionScheduler_DBStore_Test extends AbstractStoreTest {
 			$unique_hook_two,
 		);
 
-		for ( $i = 3; $i > - 3; $i-- ) {
+		for ( $i = 3; $i > - 3; $i -- ) {
 			foreach ( $unique_hooks as $unique_hook ) {
 				$time      = as_get_datetime_object( $i . ' hours' );
 				$schedule  = new ActionScheduler_SimpleSchedule( $time );
@@ -231,7 +230,7 @@ class ActionScheduler_DBStore_Test extends AbstractStoreTest {
 			$unique_group_two,
 		);
 
-		for ( $i = 3; $i > - 3; $i-- ) {
+		for ( $i = 3; $i > - 3; $i -- ) {
 			foreach ( $unique_groups as $unique_group ) {
 				$time     = as_get_datetime_object( $i . ' hours' );
 				$schedule = new ActionScheduler_SimpleSchedule( $time );
@@ -323,7 +322,7 @@ class ActionScheduler_DBStore_Test extends AbstractStoreTest {
 			$unique_group_two,
 		);
 
-		for ( $i = 3; $i > - 3; $i-- ) {
+		for ( $i = 3; $i > - 3; $i -- ) {
 			foreach ( $unique_hooks as $unique_hook ) {
 				foreach ( $unique_groups as $unique_group ) {
 					$time      = as_get_datetime_object( $i . ' hours' );
@@ -438,7 +437,7 @@ class ActionScheduler_DBStore_Test extends AbstractStoreTest {
 
 		// This callback is used to simulate the unusual conditions whereby MySQL might unexpectedly return future
 		// actions, contrary to the conditions used by the store object when staking its claim.
-		$simulate_unexpected_db_behavior = function ( $sql ) use ( $action_ids ) {
+		$simulate_unexpected_db_behavior = function( $sql ) use ( $action_ids ) {
 			global $wpdb;
 
 			// Look out for the claim update query, ignore all others.
@@ -467,7 +466,7 @@ class ActionScheduler_DBStore_Test extends AbstractStoreTest {
 	public function test_duplicate_claim() {
 		$created_actions = array();
 		$store           = new ActionScheduler_DBStore();
-		for ( $i = 0; $i > - 3; $i-- ) {
+		for ( $i = 0; $i > - 3; $i -- ) {
 			$time     = as_get_datetime_object( $i . ' hours' );
 			$schedule = new ActionScheduler_SimpleSchedule( $time );
 			$action   = new ActionScheduler_Action( ActionScheduler_Callbacks::HOOK_WITH_CALLBACK, array( $i ), $schedule, 'my_group' );
@@ -484,7 +483,7 @@ class ActionScheduler_DBStore_Test extends AbstractStoreTest {
 	public function test_release_claim() {
 		$created_actions = array();
 		$store           = new ActionScheduler_DBStore();
-		for ( $i = 0; $i > - 3; $i-- ) {
+		for ( $i = 0; $i > - 3; $i -- ) {
 			$time     = as_get_datetime_object( $i . ' hours' );
 			$schedule = new ActionScheduler_SimpleSchedule( $time );
 			$action   = new ActionScheduler_Action( ActionScheduler_Callbacks::HOOK_WITH_CALLBACK, array( $i ), $schedule, 'my_group' );
@@ -501,12 +500,13 @@ class ActionScheduler_DBStore_Test extends AbstractStoreTest {
 		$this->assertCount( 3, $claim2->get_actions() );
 		$store->release_claim( $claim2 );
 		$this->assertCount( 0, $store->find_actions_by_claim_id( $claim1->get_id() ) );
+
 	}
 
 	public function test_search() {
 		$created_actions = array();
 		$store           = new ActionScheduler_DBStore();
-		for ( $i = - 3; $i <= 3; $i++ ) {
+		for ( $i = - 3; $i <= 3; $i ++ ) {
 			$time     = as_get_datetime_object( $i . ' hours' );
 			$schedule = new ActionScheduler_SimpleSchedule( $time );
 			$action   = new ActionScheduler_Action( ActionScheduler_Callbacks::HOOK_WITH_CALLBACK, array( $i ), $schedule, 'my_group' );
@@ -671,6 +671,382 @@ class ActionScheduler_DBStore_Test extends AbstractStoreTest {
 	}
 
 	/**
+	 * Test that the unique action key column is nullable and database-enforced.
+	 */
+	public function test_unique_action_key_schema() {
+		global $wpdb;
+
+		$column = $wpdb->get_row( "SHOW COLUMNS FROM {$wpdb->actionscheduler_actions} LIKE 'unique_key'", ARRAY_A );
+		$index  = $wpdb->get_row( "SHOW INDEX FROM {$wpdb->actionscheduler_actions} WHERE Key_name = 'unique_key'", ARRAY_A );
+
+		$this->assertNotNull( $column );
+		$this->assertSame( 'YES', $column['Null'] );
+		$this->assertNull( $column['Default'] );
+		$this->assertNotNull( $index );
+		$this->assertSame( '0', $index['Non_unique'] );
+	}
+
+	/**
+	 * Test that non-unique actions leave the unique key empty.
+	 */
+	public function test_non_unique_action_does_not_store_unique_key() {
+		global $wpdb;
+
+		$time      = as_get_datetime_object();
+		$schedule  = new ActionScheduler_SimpleSchedule( $time );
+		$store     = new ActionScheduler_DBStore();
+		$action    = new ActionScheduler_Action( md5( wp_rand() ), array(), $schedule );
+		$action_id = $store->save_action( $action );
+
+		$this->assertNull(
+			$wpdb->get_var(
+				$wpdb->prepare(
+					"SELECT unique_key FROM {$wpdb->actionscheduler_actions} WHERE action_id = %d",
+					$action_id
+				)
+			)
+		);
+	}
+
+	/**
+	 * A terminal action retaining its key is repaired during the next insert.
+	 *
+	 * @dataProvider stale_unique_status_provider
+	 * @param string $status Terminal status left by a custom store.
+	 */
+	public function test_unique_action_insert_recovers_stale_key( $status ) {
+		global $wpdb;
+
+		$time       = as_get_datetime_object();
+		$hook       = md5( wp_rand() );
+		$schedule   = new ActionScheduler_SimpleSchedule( $time );
+		$store      = new ActionScheduler_DBStore();
+		$action     = new ActionScheduler_Action( $hook, array( 'foo' => 'bar' ), $schedule, 'my_group' );
+		$action_id  = $store->save_unique_action( $action );
+		$unique_key = $wpdb->get_var(
+			$wpdb->prepare(
+				"SELECT unique_key FROM {$wpdb->actionscheduler_actions} WHERE action_id = %d",
+				$action_id
+			)
+		);
+
+		$this->assertNotEmpty( $unique_key );
+
+		// Simulate a custom terminal transition that does not release the unique key.
+		$wpdb->update(
+			$wpdb->actionscheduler_actions,
+			array( 'status' => $status ),
+			array( 'action_id' => $action_id ),
+			array( '%s' ),
+			array( '%d' )
+		);
+
+		$replacement_id = $store->save_unique_action( $action );
+		$this->assertGreaterThan( $action_id, $replacement_id );
+		$this->assertSame( $status, $store->get_status( $action_id ) );
+		$this->assertSame( 0, $store->save_unique_action( $action ), 'The replacement remains unique.' );
+		$this->assertSame(
+			'1',
+			$wpdb->get_var(
+				$wpdb->prepare(
+					"SELECT COUNT(*) FROM {$wpdb->actionscheduler_actions} WHERE unique_key = %s",
+					$unique_key
+				)
+			)
+		);
+	}
+
+	/**
+	 * A competing insert after key recovery still wins without a duplicate or retry loop.
+	 */
+	public function test_stale_key_retry_preserves_competing_insert() {
+		global $wpdb;
+
+		$store       = new ActionScheduler_DBStore();
+		$action      = new ActionScheduler_Action( 'stale_key_retry_race', array(), new ActionScheduler_SimpleSchedule( as_get_datetime_object() ) );
+		$original_id = $store->save_unique_action( $action );
+		$wpdb->update( $wpdb->actionscheduler_actions, array( 'status' => ActionScheduler_Store::STATUS_COMPLETE ), array( 'action_id' => $original_id ) );
+		$inserts       = 0;
+		$competitor_id = 0;
+		$interleave    = function ( $sql ) use ( &$interleave, &$inserts, &$competitor_id, $store, $action, $wpdb ) {
+			if ( false !== strpos( $sql, 'INSERT INTO ' . $wpdb->actionscheduler_actions ) && false !== strpos( $sql, 'stale_key_retry_race' ) ) {
+				++$inserts;
+				if ( 2 === $inserts ) {
+					remove_filter( 'query', $interleave );
+					$competitor_id = $store->save_unique_action( $action );
+					add_filter( 'query', $interleave );
+				}
+			}
+			return $sql;
+		};
+		add_filter( 'query', $interleave );
+		try {
+			$this->assertSame( 0, $store->save_unique_action( $action ) );
+		} finally {
+			remove_filter( 'query', $interleave );
+		}
+		$this->assertSame( 2, $inserts );
+		$this->assertGreaterThan( $original_id, $competitor_id );
+		$this->assertSame( ActionScheduler_Store::STATUS_PENDING, $store->get_status( $competitor_id ) );
+		$this->assertSame( 0, $store->save_unique_action( $action ) );
+	}
+
+	/**
+	 * @return array[] Terminal statuses that can release a stale key.
+	 */
+	public function stale_unique_status_provider() {
+		return array(
+			'completed' => array( ActionScheduler_Store::STATUS_COMPLETE ),
+			'failed'    => array( ActionScheduler_Store::STATUS_FAILED ),
+			'canceled'  => array( ActionScheduler_Store::STATUS_CANCELED ),
+		);
+	}
+
+	/**
+	 * Test that an in-progress action retains its key and continues blocking duplicates.
+	 */
+	public function test_in_progress_unique_action_retains_key() {
+		global $wpdb;
+
+		$time       = as_get_datetime_object();
+		$hook       = md5( wp_rand() );
+		$schedule   = new ActionScheduler_SimpleSchedule( $time );
+		$store      = new ActionScheduler_DBStore();
+		$action     = new ActionScheduler_Action( $hook, array(), $schedule );
+		$action_id  = $store->save_unique_action( $action );
+		$unique_key = $wpdb->get_var(
+			$wpdb->prepare(
+				"SELECT unique_key FROM {$wpdb->actionscheduler_actions} WHERE action_id = %d",
+				$action_id
+			)
+		);
+
+		$store->log_execution( $action_id );
+
+		$this->assertNotEmpty( $unique_key );
+		$this->assertSame(
+			$unique_key,
+			$wpdb->get_var(
+				$wpdb->prepare(
+					"SELECT unique_key FROM {$wpdb->actionscheduler_actions} WHERE action_id = %d",
+					$action_id
+				)
+			)
+		);
+		$this->assertSame( 0, $store->save_unique_action( $action ) );
+	}
+
+	/**
+	 * Test that terminal status transitions release the unique key.
+	 *
+	 * @dataProvider terminal_status_transition_provider
+	 *
+	 * @param string $transition Store method used to move the action to a terminal status.
+	 */
+	public function test_terminal_status_releases_unique_action_key( $transition ) {
+		global $wpdb;
+
+		$time      = as_get_datetime_object();
+		$hook      = md5( wp_rand() );
+		$schedule  = new ActionScheduler_SimpleSchedule( $time );
+		$store     = new ActionScheduler_DBStore();
+		$action    = new ActionScheduler_Action( $hook, array(), $schedule );
+		$action_id = $store->save_unique_action( $action );
+
+		$store->$transition( $action_id );
+
+		$this->assertNull(
+			$wpdb->get_var(
+				$wpdb->prepare(
+					"SELECT unique_key FROM {$wpdb->actionscheduler_actions} WHERE action_id = %d",
+					$action_id
+				)
+			)
+		);
+		$this->assertNotSame( 0, $store->save_unique_action( $action ) );
+	}
+
+	/**
+	 * Terminal status transitions that must release an action's unique key.
+	 *
+	 * @return array[]
+	 */
+	public function terminal_status_transition_provider() {
+		return array(
+			'completed' => array( 'mark_complete' ),
+			'failed'    => array( 'mark_failure' ),
+			'canceled'  => array( 'cancel_action' ),
+		);
+	}
+
+	/**
+	 * Scheduled cleanup repairs terminal rows without deleting their history.
+	 */
+	public function test_scheduled_cleanup_releases_stale_unique_action_keys() {
+		global $wpdb;
+
+		$store    = new ActionScheduler_DBStore();
+		$schedule = new ActionScheduler_SimpleSchedule( as_get_datetime_object() );
+		$actions  = array();
+		$statuses = array( ActionScheduler_Store::STATUS_COMPLETE, ActionScheduler_Store::STATUS_FAILED, ActionScheduler_Store::STATUS_CANCELED );
+		$store->init();
+
+		foreach ( $statuses as $status ) {
+			$action    = new ActionScheduler_Action( 'stale_unique_' . $status, array(), $schedule );
+			$action_id = $store->save_unique_action( $action );
+			// Simulate an older store override that updates the status without releasing the key.
+			$wpdb->update(
+				$wpdb->actionscheduler_actions,
+				array(
+					'status'           => $status,
+					'last_attempt_gmt' => gmdate( 'Y-m-d H:i:s' ),
+				),
+				array( 'action_id' => $action_id )
+			);
+			$actions[ $action_id ] = $action;
+		}
+
+		do_action( 'action_scheduler_run_actions_cleanup_hook' ); // phpcs:ignore WooCommerce.Commenting.CommentHooks -- Invoke an existing hook, not a new declaration.
+
+		foreach ( $actions as $action_id => $action ) {
+			$this->assertNotSame( 0, $store->save_unique_action( $action ) );
+			$this->assertContains( $store->get_status( $action_id ), $statuses, 'Cleanup must retain action history.' );
+		}
+	}
+
+	/**
+	 * Cleanup must not release keys belonging to pending or running actions.
+	 */
+	public function test_scheduled_cleanup_preserves_active_unique_action_keys() {
+		$store    = new ActionScheduler_DBStore();
+		$schedule = new ActionScheduler_SimpleSchedule( as_get_datetime_object() );
+		$pending  = new ActionScheduler_Action( 'pending_unique_cleanup', array(), $schedule );
+		$running  = new ActionScheduler_Action( 'running_unique_cleanup', array(), $schedule );
+		$store->init();
+
+		$pending_id = $store->save_unique_action( $pending );
+		$running_id = $store->save_unique_action( $running );
+		$store->log_execution( $running_id );
+
+		do_action( 'action_scheduler_run_actions_cleanup_hook' ); // phpcs:ignore WooCommerce.Commenting.CommentHooks -- Invoke an existing hook, not a new declaration.
+
+		$this->assertSame( 0, $store->save_unique_action( $pending ) );
+		$this->assertSame( 0, $store->save_unique_action( $running ) );
+		$this->assertSame( ActionScheduler_Store::STATUS_PENDING, $store->get_status( $pending_id ) );
+		$this->assertSame( ActionScheduler_Store::STATUS_RUNNING, $store->get_status( $running_id ) );
+	}
+
+	/**
+	 * Bounded cleanup continues past a running batch and reuses a pending continuation.
+	 */
+	public function test_stale_unique_key_cleanup_continues_while_cleanup_is_running() {
+		global $wpdb;
+
+		$store             = new ActionScheduler_DBStore();
+		$continuation_hook = 'action_scheduler_continue_actions_cleanup_hook';
+		$running_id        = as_schedule_single_action( time(), $continuation_hook, array(), 'ActionScheduler', true, 0 );
+		ActionScheduler::store()->log_execution( $running_id );
+
+		$values = array();
+		for ( $i = 0; $i < 2001; $i++ ) {
+			$values[] = $wpdb->prepare( '(%s, %s, %s, %s)', 'stale_cleanup_batch', ActionScheduler_Store::STATUS_COMPLETE, 'stale-' . $i, gmdate( 'Y-m-d H:i:s' ) );
+		}
+		$wpdb->query( "INSERT INTO {$wpdb->actionscheduler_actions} (hook, status, unique_key, last_attempt_gmt) VALUES " . implode( ', ', $values ) ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
+
+		// Execute only this store callback, retaining WordPress's running-hook context.
+		$callbacks = clone $GLOBALS['wp_filter'][ $continuation_hook ];
+		remove_all_actions( $continuation_hook );
+		add_action( $continuation_hook, array( $store, 'release_stale_unique_action_keys' ), 10, 0 );
+		try {
+			do_action( $continuation_hook ); // phpcs:ignore WooCommerce.Commenting.CommentHooks -- Invoke an existing hook, not a new declaration.
+		} finally {
+			$GLOBALS['wp_filter'][ $continuation_hook ] = $callbacks; // phpcs:ignore WordPress.WP.GlobalVariablesOverride.Prohibited -- Restore the callbacks isolated by this test.
+		}
+
+		$remaining_sql = "SELECT COUNT(*) FROM {$wpdb->actionscheduler_actions} WHERE hook = 'stale_cleanup_batch' AND unique_key IS NOT NULL";
+		$this->assertSame( '1001', $wpdb->get_var( $remaining_sql ) ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
+		$pending_query = array(
+			'hook'     => $continuation_hook,
+			'status'   => ActionScheduler_Store::STATUS_PENDING,
+			'per_page' => 10,
+		);
+		$pending       = as_get_scheduled_actions( $pending_query, 'ids' );
+		$this->assertCount( 1, $pending, 'A running continuation must allow the next batch.' );
+
+		$store->release_stale_unique_action_keys();
+		$this->assertSame( '1', $wpdb->get_var( $remaining_sql ) ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
+		$this->assertSame( $pending, as_get_scheduled_actions( $pending_query, 'ids' ), 'Reuse an already pending continuation.' );
+
+		$store->release_stale_unique_action_keys();
+		$this->assertSame( '0', $wpdb->get_var( $remaining_sql ) ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
+		$this->assertSame( '2001', $wpdb->get_var( "SELECT COUNT(*) FROM {$wpdb->actionscheduler_actions} WHERE hook = 'stale_cleanup_batch'" ) );
+		$this->assertSame( ActionScheduler_Store::STATUS_RUNNING, ActionScheduler::store()->get_status( $running_id ) );
+	}
+
+	/**
+	 * A failed update must not schedule another cleanup batch.
+	 */
+	public function test_stale_unique_key_cleanup_reports_database_failure() {
+		global $wpdb;
+
+		$original_wpdb                 = $wpdb;
+		$wpdb                          = $this->getMockBuilder( wpdb::class )->disableOriginalConstructor()->onlyMethods( array( 'query', 'prepare' ) )->getMock(); // phpcs:ignore WordPress.WP.GlobalVariablesOverride.Prohibited -- Simulate a database failure without damaging the test schema.
+		$wpdb->actionscheduler_actions = $original_wpdb->actionscheduler_actions;
+		$wpdb->last_error              = 'Cleanup test failure';
+		$wpdb->expects( $this->once() )->method( 'query' )->willReturn( false );
+		$wpdb->method( 'prepare' )->willReturnCallback( array( $original_wpdb, 'prepare' ) );
+		$error_capture    = tmpfile();
+		$actual_error_log = ini_set( 'error_log', stream_get_meta_data( $error_capture )['uri'] ); // phpcs:ignore WordPress.PHP.IniSet.Risky
+		$continued        = false;
+		$store            = new ActionScheduler_DBStore();
+		$after_cleanup    = static function () use ( &$continued ) {
+			$continued = true;
+		};
+		$hook             = new WP_Hook();
+		$hook->add_filter( 'cleanup', array( $store, 'release_stale_unique_action_keys' ), 10, 0 );
+		$hook->add_filter( 'cleanup', $after_cleanup, 20, 0 );
+
+		try {
+			$hook->do_action( array() ); // phpcs:ignore WooCommerce.Commenting.CommentHooks -- Exercise isolated callbacks on the existing cleanup hook.
+			$this->assertTrue( $continued, 'A failed cleanup must not interrupt later hook handlers.' );
+			rewind( $error_capture );
+			$this->assertStringContainsString( 'Unable to release stale unique action keys: Cleanup test failure', stream_get_contents( $error_capture ) );
+		} finally {
+			ini_set( 'error_log', $actual_error_log ); // phpcs:ignore WordPress.PHP.IniSet.Risky
+			fclose( $error_capture ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fclose -- Close the temporary log capture.
+			$wpdb = $original_wpdb; // phpcs:ignore WordPress.WP.GlobalVariablesOverride.Prohibited -- Restore the database connection after the simulated failure.
+		}
+
+		$this->assertFalse( as_has_scheduled_action( 'action_scheduler_continue_actions_cleanup_hook' ) );
+	}
+
+	/**
+	 * Test that bulk cancellation releases unique keys.
+	 */
+	public function test_bulk_cancel_releases_unique_action_key() {
+		global $wpdb;
+
+		$time      = as_get_datetime_object();
+		$hook      = md5( wp_rand() );
+		$schedule  = new ActionScheduler_SimpleSchedule( $time );
+		$store     = new ActionScheduler_DBStore();
+		$action    = new ActionScheduler_Action( $hook, array(), $schedule );
+		$action_id = $store->save_unique_action( $action );
+
+		$store->cancel_actions_by_hook( $hook );
+
+		$this->assertNull(
+			$wpdb->get_var(
+				$wpdb->prepare(
+					"SELECT unique_key FROM {$wpdb->actionscheduler_actions} WHERE action_id = %d",
+					$action_id
+				)
+			)
+		);
+		$this->assertNotSame( 0, $store->save_unique_action( $action ) );
+	}
+
+	/**
 	 * When a set of claimed actions are processed, they should be executed in the expected order (by priority,
 	 * then by least number of attempts, then by scheduled date, then finally by action ID).
 	 *
@@ -760,9 +1136,9 @@ class ActionScheduler_DBStore_Test extends AbstractStoreTest {
 		$this->original_wpdb = $wpdb;
 
 		$wpdb = $this->getMockBuilder( get_class( $wpdb ) )
-					->setMethods( array( 'db_server_info' ) )
-					->disableOriginalConstructor()
-					->getMock();
+		             ->setMethods( [ 'db_server_info' ] )
+		             ->disableOriginalConstructor()
+		             ->getMock();
 
 		$wpdb->method( 'db_server_info' )->willReturn( $db_server_info );
 
@@ -785,31 +1161,31 @@ class ActionScheduler_DBStore_Test extends AbstractStoreTest {
 		return array(
 			'MySQL 5.6.1 does not support skip locked'    => array(
 				false,
-				'5.6.1',
+				'5.6.1'
 			),
 			'MySQL 8.0.0 does not support skip locked'    => array(
 				false,
-				'8.0.0',
+				'8.0.0'
 			),
 			'MySQL 8.0.1 does support skip locked'        => array(
 				true,
-				'8.0.1',
+				'8.0.1'
 			),
 			'MySQL 8.4.4 does support skip locked'        => array(
 				true,
-				'8.4.4',
+				'8.4.4'
 			),
 			'MariaDB 10.5.0 does not support skip locked' => array(
 				false,
-				$maria_db_prefix . '10.5.0-MariaDB',
+				$maria_db_prefix . '10.5.0-MariaDB'
 			),
 			'MariaDB 10.6.0 does support skip locked'     => array(
 				true,
-				$maria_db_prefix . '10.6.0-MariaDB',
+				$maria_db_prefix . '10.6.0-MariaDB'
 			),
 			'MariaDB 11.5.0 does support skip locked'     => array(
 				true,
-				$maria_db_prefix . '11.5.0-MariaDB',
+				$maria_db_prefix . '11.5.0-MariaDB'
 			),
 		);
 	}
@@ -954,112 +1330,88 @@ class ActionScheduler_DBStore_Test extends AbstractStoreTest {
 	}
 
 	/**
-	 * @testdox purge_orphan_claims() returns the number of removed orphan claims.
+	 * Test partial_args_matching with both 'like' and 'json' modes for short and extended args.
+	 *
+	 * Each case also saves a decoy action under the same hook, with args of the other length, so that the query has
+	 * to cope with both storage formats at once (on MySQL, JSON_EXTRACT() fails on the hash stored in `args` for long
+	 * args, which used to break JSON matching for every action sharing the hook).
+	 *
+	 * @dataProvider partial_args_matching_provider
+	 *
+	 * @param string $mode              Partial args matching mode: 'like' or 'json'.
+	 * @param bool   $use_extended_args Whether the target action's args are long enough to be stored in extended_args.
 	 */
-	public function test_purge_orphan_claims_returns_count() {
+	public function test_partial_args_matching( $mode, $use_extended_args ) {
+		if ( 'json' === $mode ) {
+			try {
+				$store = new ActionScheduler_DBStore();
+				$store->query_actions(
+					array(
+						'hook'                  => 'nonexistent_hook',
+						'args'                  => array( 'test' => 'value' ),
+						'partial_args_matching' => 'json',
+					)
+				);
+			} catch ( \RuntimeException $e ) {
+				$this->markTestSkipped( 'JSON functions not supported by database' );
+			}
+		}
+
 		global $wpdb;
+		$store    = new ActionScheduler_DBStore();
+		$schedule = new ActionScheduler_SimpleSchedule( as_get_datetime_object( 'tomorrow' ) );
+		$hook     = "test_hook_{$mode}";
 
-		$store = new ActionScheduler_DBStore();
+		$long_args  = array(
+			'key1' => str_repeat( 'a', 200 ),
+			'key2' => 'findme',
+		);
+		$short_args = array(
+			'key1' => 'value1',
+			'key2' => 'findme',
+		);
 
-		// Insert three raw claim rows with no referencing actions.
-		$wpdb->insert( $wpdb->actionscheduler_claims, array( 'date_created_gmt' => '2020-01-01 00:00:00' ) );
-		$wpdb->insert( $wpdb->actionscheduler_claims, array( 'date_created_gmt' => '2020-01-01 00:00:00' ) );
-		$wpdb->insert( $wpdb->actionscheduler_claims, array( 'date_created_gmt' => '2020-01-01 00:00:00' ) );
+		$args       = $use_extended_args ? $long_args : $short_args;
+		$decoy_args = $use_extended_args ? $short_args : $long_args;
 
-		$deleted = $store->purge_orphan_claims();
+		$decoy_args['key2'] = 'decoy';
 
-		$this->assertSame( 3, $deleted );
-		$this->assertSame( 0, (int) $wpdb->get_var( "SELECT COUNT(*) FROM {$wpdb->actionscheduler_claims}" ) );
+		$action_id = $store->save_action( new ActionScheduler_Action( $hook, $args, $schedule ) );
+		$decoy_id  = $store->save_action( new ActionScheduler_Action( $hook, $decoy_args, $schedule ) );
+
+		$long_id = $use_extended_args ? $action_id : $decoy_id;
+		$row     = $wpdb->get_row( $wpdb->prepare( "SELECT args, extended_args FROM {$wpdb->actionscheduler_actions} WHERE action_id = %d", $long_id ) );
+		$this->assertNotNull( $row->extended_args, 'Extended args should be set for long args' );
+
+		$query = function ( $value ) use ( $store, $hook, $mode ) {
+			return array_map(
+				'intval',
+				$store->query_actions(
+					array(
+						'hook'                  => $hook,
+						'args'                  => array( 'key2' => $value ),
+						'partial_args_matching' => $mode,
+					)
+				)
+			);
+		};
+
+		$this->assertSame( array( $action_id ), $query( 'findme' ), 'Only the target action should match.' );
+		$this->assertSame( array( $decoy_id ), $query( 'decoy' ), 'Only the decoy action should match.' );
+		$this->assertSame( array(), $query( 'notfound' ), 'No action should match.' );
 	}
 
 	/**
-	 * @testdox purge_orphan_claims() keeps claims that are still referenced by at least one action.
+	 * Data provider for partial_args_matching tests.
+	 *
+	 * @return array Test cases with mode and extended_args flag.
 	 */
-	public function test_purge_orphan_claims_keeps_referenced_claims() {
-		global $wpdb;
-		$store = new ActionScheduler_DBStore();
-
-		$schedule = new ActionScheduler_SimpleSchedule( as_get_datetime_object( '-1 hour' ) );
-		$action   = new ActionScheduler_Action( ActionScheduler_Callbacks::HOOK_WITH_CALLBACK, array(), $schedule );
-		$store->save_action( $action );
-
-		$claim = $store->stake_claim();
-		$this->assertNotEmpty( $claim->get_id() );
-
-		// Add two orphan claims on top of the one referenced by the action.
-		$wpdb->insert( $wpdb->actionscheduler_claims, array( 'date_created_gmt' => '2020-01-01 00:00:00' ) );
-		$wpdb->insert( $wpdb->actionscheduler_claims, array( 'date_created_gmt' => '2020-01-01 00:00:00' ) );
-
-		$deleted = $store->purge_orphan_claims();
-
-		$this->assertSame( 2, $deleted );
-		$this->assertSame( 1, (int) $wpdb->get_var( "SELECT COUNT(*) FROM {$wpdb->actionscheduler_claims}" ) );
-		$remaining_claim_id = (int) $wpdb->get_var( "SELECT claim_id FROM {$wpdb->actionscheduler_claims}" );
-		$this->assertSame( (int) $claim->get_id(), $remaining_claim_id );
-	}
-
-	/**
-	 * @testdox purge_orphan_claims() removes the claim of a deleted action once no action references it.
-	 */
-	public function test_purge_orphan_claims_clears_claim_after_action_deletion() {
-		global $wpdb;
-		$store = new ActionScheduler_DBStore();
-
-		$schedule  = new ActionScheduler_SimpleSchedule( as_get_datetime_object( '-1 hour' ) );
-		$action    = new ActionScheduler_Action( ActionScheduler_Callbacks::HOOK_WITH_CALLBACK, array(), $schedule );
-		$action_id = $store->save_action( $action );
-
-		$claim = $store->stake_claim();
-		$this->assertContains( $action_id, $claim->get_actions() );
-
-		$store->delete_action( $action_id );
-
-		// After delete_action() the claim row is still present (purging happens in a batch pass).
-		$this->assertSame( 1, (int) $wpdb->get_var( "SELECT COUNT(*) FROM {$wpdb->actionscheduler_claims}" ) );
-
-		$deleted = $store->purge_orphan_claims();
-
-		$this->assertSame( 1, $deleted );
-		$this->assertSame( 0, (int) $wpdb->get_var( "SELECT COUNT(*) FROM {$wpdb->actionscheduler_claims}" ) );
-	}
-
-	/**
-	 * @testdox purge_orphan_claims() is a no-op when there are no orphan claims.
-	 */
-	public function test_purge_orphan_claims_is_noop_when_no_orphans() {
-		global $wpdb;
-		$store = new ActionScheduler_DBStore();
-
-		$schedule = new ActionScheduler_SimpleSchedule( as_get_datetime_object( '-1 hour' ) );
-		$action   = new ActionScheduler_Action( ActionScheduler_Callbacks::HOOK_WITH_CALLBACK, array(), $schedule );
-		$store->save_action( $action );
-
-		$store->stake_claim();
-
-		$deleted = $store->purge_orphan_claims();
-
-		$this->assertSame( 0, $deleted );
-		$this->assertSame( 1, (int) $wpdb->get_var( "SELECT COUNT(*) FROM {$wpdb->actionscheduler_claims}" ) );
-	}
-
-	/**
-	 * @testdox delete_action() does not touch the claims table (the row is left for batch purging).
-	 */
-	public function test_delete_action_does_not_touch_claims_table() {
-		global $wpdb;
-		$store = new ActionScheduler_DBStore();
-
-		$schedule  = new ActionScheduler_SimpleSchedule( as_get_datetime_object( '-1 hour' ) );
-		$action    = new ActionScheduler_Action( ActionScheduler_Callbacks::HOOK_WITH_CALLBACK, array(), $schedule );
-		$action_id = $store->save_action( $action );
-
-		$store->stake_claim();
-		$claims_before = (int) $wpdb->get_var( "SELECT COUNT(*) FROM {$wpdb->actionscheduler_claims}" );
-
-		$store->delete_action( $action_id );
-
-		$claims_after = (int) $wpdb->get_var( "SELECT COUNT(*) FROM {$wpdb->actionscheduler_claims}" );
-
-		$this->assertSame( $claims_before, $claims_after, 'delete_action() must not modify the claims table; orphan cleanup is done in a batch pass.' );
+	public function partial_args_matching_provider() {
+		return array(
+			'like mode with short args'    => array( 'like', false ),
+			'like mode with extended args' => array( 'like', true ),
+			'json mode with short args'    => array( 'json', false ),
+			'json mode with extended args' => array( 'json', true ),
+		);
 	}
 }

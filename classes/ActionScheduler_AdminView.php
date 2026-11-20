@@ -53,6 +53,7 @@ class ActionScheduler_AdminView extends ActionScheduler_AdminView_Deprecated {
 		if ( is_admin() && ( ! defined( 'DOING_AJAX' ) || ! DOING_AJAX ) ) {
 
 			if ( class_exists( 'WooCommerce' ) ) {
+				add_action( 'load-woocommerce_page_wc-status', array( $this, 'maybe_process_wc_admin_ui' ) );
 				add_action( 'woocommerce_admin_status_content_action-scheduler', array( $this, 'render_admin_ui' ) );
 				add_action( 'woocommerce_system_status_report', array( $this, 'system_status_report' ) );
 				add_filter( 'woocommerce_admin_status_tabs', array( $this, 'register_system_status_tab' ) );
@@ -108,6 +109,17 @@ class ActionScheduler_AdminView extends ActionScheduler_AdminView_Deprecated {
 	 */
 	public function process_admin_ui() {
 		$this->get_list_table();
+	}
+
+	/**
+	 * Initialize the list table early on WooCommerce's Scheduled Actions tab.
+	 */
+	public function maybe_process_wc_admin_ui() {
+		$tab = isset( $_REQUEST['tab'] ) ? sanitize_key( wp_unslash( $_REQUEST['tab'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+
+		if ( 'action-scheduler' === $tab ) {
+			$this->process_admin_ui();
+		}
 	}
 
 	/**
@@ -213,21 +225,25 @@ class ActionScheduler_AdminView extends ActionScheduler_AdminView_Deprecated {
 		);
 
 		// Print notice.
-		$message = wp_kses(
-			// translators: 1) is the number of affected actions, 2) is a link to an admin screen.
-			_n(
-				'<strong>Action Scheduler:</strong> %1$d <a href="%2$s">past-due action</a> found; something may be wrong. <a href="https://actionscheduler.org/faq/#my-site-has-past-due-actions-what-can-i-do" target="_blank">Read documentation &raquo;</a>',
-				'<strong>Action Scheduler:</strong> %1$d <a href="%2$s">past-due actions</a> found; something may be wrong. <a href="https://actionscheduler.org/faq/#my-site-has-past-due-actions-what-can-i-do" target="_blank">Read documentation &raquo;</a>',
-				$num_pastdue_actions,
-				'action-scheduler'
-			),
-			array(
-				'strong' => array(),
-				'a'      => array(
-					'href'   => true,
-					'target' => true,
+		$message = sprintf(
+			wp_kses(
+				// translators: 1) is the number of affected actions, 2) is a link to an admin screen.
+				_n(
+					'<strong>Action Scheduler:</strong> %1$d <a href="%2$s">past-due action</a> found; something may be wrong. <a href="https://actionscheduler.org/faq/#my-site-has-past-due-actions-what-can-i-do" target="_blank">Read documentation &raquo;</a>',
+					'<strong>Action Scheduler:</strong> %1$d <a href="%2$s">past-due actions</a> found; something may be wrong. <a href="https://actionscheduler.org/faq/#my-site-has-past-due-actions-what-can-i-do" target="_blank">Read documentation &raquo;</a>',
+					$num_pastdue_actions,
+					'action-scheduler'
 				),
-			)
+				array(
+					'strong' => array(),
+					'a'      => array(
+						'href'   => true,
+						'target' => true,
+					),
+				)
+			),
+			absint( $num_pastdue_actions ),
+			esc_attr( esc_url( $actions_url ) )
 		);
 		wp_admin_notice(
 			$message,

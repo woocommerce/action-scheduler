@@ -85,6 +85,37 @@ class ActionScheduler_AsyncRequest_QueueRunner extends WP_Async_Request {
 	}
 
 	/**
+	 * Get post args, with the forwarded cookies unslashed and a short timeout.
+	 *
+	 * WordPress slashes $_COOKIE, and WP_Async_Request (possibly another plugin's copy) forwards it as-is, so each
+	 * chained request would otherwise add more backslashes to the Cookie header.
+	 *
+	 * Newer copies of WP_Async_Request default to a 5 second timeout. WordPress's cURL transport waits for the timeout
+	 * (at least 1 second) even for non-blocking requests, so that would delay the request dispatching the runner.
+	 *
+	 * @return array
+	 */
+	protected function get_post_args() {
+		$args = parent::get_post_args();
+
+		// Restore the short timeout of older copies, unless a filter chose another value.
+		if ( isset( $args['timeout'] ) && 5 === $args['timeout'] ) {
+			$args['timeout'] = 0.01;
+		}
+
+		if ( isset( $args['cookies'] ) && is_array( $args['cookies'] ) ) {
+			foreach ( $args['cookies'] as $name => $value ) {
+				// Leave cookies that were added or changed by a filter as they are.
+				if ( isset( $_COOKIE[ $name ] ) && $value === $_COOKIE[ $name ] ) {
+					$args['cookies'][ $name ] = wp_unslash( $value );
+				}
+			}
+		}
+
+		return $args;
+	}
+
+	/**
 	 * Chaining async requests can crash MySQL. A brief sleep call in PHP prevents that.
 	 */
 	protected function get_sleep_seconds() {

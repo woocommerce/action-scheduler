@@ -79,6 +79,12 @@ class ActionScheduler_QueueRunner extends ActionScheduler_Abstract_QueueRunner {
 
 		add_filter( 'cron_schedules', array( self::instance(), 'add_wp_cron_schedule' ) ); // phpcs:ignore WordPress.WP.CronInterval.CronSchedulesInterval
 
+		// WordPress deletes the host plugin's files later in an uninstall request, so set up nothing that could
+		// run after that point or outlive the plugin.
+		if ( ActionScheduler::is_uninstalling() ) {
+			return;
+		}
+
 		// Check for and remove any WP Cron hook scheduled by Action Scheduler < 3.0.0, which didn't include the $context param.
 		$next_timestamp = wp_next_scheduled( self::WP_CRON_HOOK );
 		if ( $next_timestamp ) {

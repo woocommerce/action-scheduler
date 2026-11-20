@@ -1,13 +1,45 @@
 *** Changelog ***
 
-= 4.1.0 - xxxx-xx-xx =
-* Use `wp_admin_notice()` to render admin notices, instead of custom HTML.
-* Fix an oversight in the lock implementation (used to rate-limit async request runners) that could result in a database error in unusual cases.
-* Fix the behavior of the `wp action-schedule clean` command so that the `--before` option correctly defaults to 31 days ago.
-* Dev - Updates the `wpPostStore` to capture any database errors that might occur while claiming actions.
-* Performance - Reduce the number of SQL queries on Action Scheduler admin page.
+= 4.3.0 - xxxx-xx-xx =
+* Fix - Make partial args matching (`partial_args_matching` set to `like` or `json`) find actions whose args are longer than 191 characters, and stop JSON matching from failing on MySQL when such actions exist.
+* Fix - Avoid PHP 8.6 deprecation notices when scheduling cron actions, and in a few other places, by using `instanceof` rather than `is_a()`.
+* Dev - Describe the `wp action-scheduler` command group accurately in WP-CLI help, rather than as "System info WP-CLI commands".
+* Dev - Document all WP-CLI commands and subcommands, including `fix-schema`, `source` and `action logs`, and correct the name of the `data-store` command.
+* Fix - Schedule the next instance of a recurring action before marking the current one complete, so that code checking for an existing action at that moment cannot create a duplicate.
+* Fix - Mark the running copy of Action Scheduler as active in the output of `wp action-scheduler source --all`, which previously showed `no` for every copy.
+* Fix - Update the bundled WP_Async_Request library, adding the `maybe_wp_die()` method that plugins extending newer copies of it may call.
+* Fix - Stop cookie values gaining backslashes with each chained async queue runner request, which could grow the Cookie header until the server rejected it.
+* Fix - Avoid autoloader conflicts with unrelated global classes and lookalike namespace prefixes.
+* Dev - Add a direct file access guard to the PHP files that lacked one, and stop shipping AGENTS.md and CLAUDE.md.
+* Fix - Stop `wp action-scheduler run` from emitting a `str_getcsv()` deprecation notice on PHP 8.4 and newer.
+* Fix - Only reset the migration status when the plugin providing the running copy of Action Scheduler is deactivated, instead of when any plugin is deactivated.
+* Performance - Optimize as_has_scheduled_action function for larger datasets.
+* Dev - Rename private method `ActionScheduler_Store::bulk_cancel_actions()` to `bulk_cancel_actions_by_id()`, limiting the potential for future confusion with `ActionScheduler_DBStore::bulk_cancel_actions()`.
+* Add - New `--force-up-to=<limit>` option for `wp action-scheduler run`, which forces a run despite the concurrent batches limit, but only while fewer than `<limit>` batches are in progress.
+* Dev - Add an FAQ entry on processing large datasets in batches, referencing WooCommerce's batch processing controller as an example.
+* Dev - Document what action groups and unique actions do, and correct the `$unique` docblocks, which did not say that the arguments are compared.
+* Fix - Report the number of completed actions correctly in `wp action-scheduler run` when its output is not sent to a terminal, for instance when it runs from the system scheduler, instead of always reporting zero.
+* Fix - Make `--free-memory-on` in `wp action-scheduler run` count actions across all batches, instead of restarting with each batch (memory was never freed when the batch size was smaller than the `--free-memory-on` value).
+* Dev - Add the `action_scheduler_runner_item_processed` hook, fired by the WP-CLI queue runner and the migration runner. Memory freeing during WP-CLI runs now listens to it instead of `action_scheduler/progress_tick`, so removing `ActionScheduler_DataController::maybe_free_memory` from `action_scheduler/progress_tick` no longer disables it.
+
+= 4.2.0 - 2026-09-16 =
+* Fix - Enforce unique action inserts atomically and release stale uniqueness keys during scheduled cleanup.
+* Fix - Show the per-page Screen Option on WooCommerce's Scheduled Actions tab.
+* Fix - Show the number of actions and the link in the past-due actions admin notice, instead of raw placeholders.
+* Fix - Escape the action hook name in the admin notice shown after a row action.
+* Add - Skip runtime scheduling (the WP Cron event, the async request dispatcher and the daily housekeeping action) when Action Scheduler is initialized from a plugin's `uninstall.php`, and add `as_supports( 'uninstall_bootstrap' )` so host plugins can detect it.
+
+= 4.1.0 - 2026-08-05 =
+* Fix - Correct an oversight in the lock implementation (used to rate-limit async request runners) that could leave a lock permanently stuck and result in database errors in unusual cases.
+* Fix - Correct the behavior of the `wp action-scheduler clean` command so that the `--before` option defaults to 31 days ago.
+* Performance - Reduce the number of SQL queries on the Action Scheduler admin page.
 * Performance - Cache resolved group IDs to reduce the number of SQL queries.
 * Performance - Use the WordPress caching layer for the option lock component.
+* Enhancement - Display action IDs in the admin list and allow searching by action ID.
+* Enhancement - Use `wp_admin_notice()` to render admin notices, instead of custom HTML.
+* Security - Add protections to guard against the risk of object-injection/deserialization attacks when retrieving stored schedule data.
+* Dev - Include the underlying database error in the exception thrown when the legacy post store fails to claim actions.
+* Dev - Add filters (`action_scheduler_allowed_nested_schedule_classes`, `action_scheduler_enforce_schedule_allowed_classes`) and an action (`action_scheduler_unexpected_schedule_class`) to tune and observe schedule deserialization.
 
 = 4.0.0 - 2026-06-16 =
 * Breaking change: action args are taken into account when scheduling unique actions.

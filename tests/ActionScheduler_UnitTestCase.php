@@ -31,6 +31,25 @@ class ActionScheduler_UnitTestCase extends WP_UnitTestCase {
 	}
 
 	/**
+	 * Set Action Scheduler's uninstall flag, returning its previous value.
+	 *
+	 * ActionScheduler::init() captures the flag once per request, so there is no other way for a test
+	 * to arrange for ActionScheduler::is_uninstalling() to report true.
+	 *
+	 * @param bool $is_uninstalling Whether Action Scheduler should report that it is uninstalling.
+	 *
+	 * @return bool The previous value.
+	 */
+	protected function set_uninstalling( $is_uninstalling ) {
+		$property = new ReflectionProperty( ActionScheduler::class, 'is_uninstalling' );
+		$property->setAccessible( true );
+		$previous = $property->getValue();
+		$property->setValue( null, $is_uninstalling );
+
+		return $previous;
+	}
+
+	/**
 	 * Counts the number of test cases executed by run(TestResult result).
 	 *
 	 * @return int

@@ -32,6 +32,13 @@ abstract class ActionScheduler {
 	private static $data_store_initialized = false;
 
 	/**
+	 * Initialized from a plugin's uninstall routine.
+	 *
+	 * @var bool
+	 */
+	private static $is_uninstalling = false;
+
+	/**
 	 * Factory.
 	 */
 	public static function factory() {
@@ -77,6 +84,22 @@ abstract class ActionScheduler {
 	}
 
 	/**
+	 * Whether this copy of Action Scheduler was initialized from a plugin's uninstall routine.
+	 *
+	 * WordPress deactivates a plugin before including its uninstall.php, so a plugin that bundles
+	 * Action Scheduler has to load and initialize it there in order to clean up its own actions. Such
+	 * a request must not set up the runtime: WordPress deletes the host plugin's files later in the
+	 * same request, so anything left hooked or newly scheduled outlives the code that would serve it.
+	 *
+	 * @since 4.2.0
+	 *
+	 * @return bool
+	 */
+	public static function is_uninstalling() {
+		return self::$is_uninstalling;
+	}
+
+	/**
 	 * Get the absolute system path to the plugin directory, or a file therein
 	 *
 	 * @static
@@ -113,10 +136,25 @@ abstract class ActionScheduler {
 		$classes_dir = self::plugin_path( 'classes' . $d );
 		$separator   = strrpos( $class, '\\' );
 		if ( false !== $separator ) {
-			if ( 0 !== strpos( $class, 'Action_Scheduler' ) ) {
+			if ( 0 !== strpos( $class, 'Action_Scheduler\\' ) ) {
 				return;
 			}
-			$class = substr( $class, $separator + 1 );
+			$namespace    = strtolower( substr( $class, 0, $separator ) );
+			$class        = substr( $class, $separator + 1 );
+			$is_migration = 'action_scheduler\\migration' === $namespace && self::is_class_migration( $class );
+			$is_cli       = 'action_scheduler\\wp_cli' === $namespace && self::is_class_cli( $class );
+
+			// ActionScheduler_* classes are global, including those in the migration and CLI directories.
+			if ( 0 === stripos( $class, 'ActionScheduler_' ) || ( ! $is_migration && ! $is_cli ) ) {
+				return;
+			}
+		} elseif (
+			0 !== stripos( $class, 'ActionScheduler_' )
+			&& 'CronExpression' !== $class && 0 !== strpos( $class, 'CronExpression_' )
+			&& 'WP_Async_Request' !== $class
+		) {
+			// CronExpression and WP_Async_Request are bundled libraries, so their global classes must also be supported.
+			return;
 		}
 
 		if ( 'Deprecated' === substr( $class, -10 ) ) {
@@ -175,6 +213,10 @@ abstract class ActionScheduler {
 	public static function init( $plugin_file ) {
 		self::$plugin_file = $plugin_file;
 		spl_autoload_register( array( __CLASS__, 'autoload' ) );
+
+		// Must be captured here rather than tested on demand: on a normal request the runtime is set up
+		// on 'init', where the late-bootstrap test below would also pass.
+		self::$is_uninstalling = defined( 'WP_UNINSTALL_PLUGIN' ) && did_action( 'plugins_loaded' ) && ! doing_action( 'plugins_loaded' );
 
 		/**
 		 * Fires in the early stages of Action Scheduler init hook.
@@ -244,7 +286,12 @@ abstract class ActionScheduler {
 			WP_CLI::add_command( 'action-scheduler', 'ActionScheduler_WPCLI_Scheduler_command' );
 			WP_CLI::add_command( 'action-scheduler', 'ActionScheduler_WPCLI_Clean_Command' );
 			WP_CLI::add_command( 'action-scheduler action', '\Action_Scheduler\WP_CLI\Action_Command' );
-			WP_CLI::add_command( 'action-scheduler', '\Action_Scheduler\WP_CLI\System_Command' );
+			// Each registration replaces the group's description, so this must remain the last 'action-scheduler' call.
+			WP_CLI::add_command(
+				'action-scheduler',
+				'\Action_Scheduler\WP_CLI\System_Command',
+				array( 'shortdesc' => 'Manage Action Scheduler and its queue of scheduled actions.' )
+			);
 			if ( ! ActionScheduler_DataController::is_migration_complete() && Controller::instance()->allow_migration() ) {
 				$command = new Migration_Command();
 				$command->register();
@@ -254,7 +301,7 @@ abstract class ActionScheduler {
 		/**
 		 * Handle WP comment cleanup after migration.
 		 */
-		if ( is_a( $logger, 'ActionScheduler_DBLogger' ) && ActionScheduler_DataController::is_migration_complete() && ActionScheduler_WPCommentCleaner::has_logs() ) {
+		if ( ( $logger instanceof ActionScheduler_DBLogger ) && ActionScheduler_DataController::is_migration_complete() && ActionScheduler_WPCommentCleaner::has_logs() ) {
 			ActionScheduler_WPCommentCleaner::init();
 		}
 

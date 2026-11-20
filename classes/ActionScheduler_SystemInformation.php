@@ -54,7 +54,7 @@ class ActionScheduler_SystemInformation {
 
 			$theme = wp_get_theme( $slug );
 
-			if ( ! is_object( $theme ) || ! is_a( $theme, \WP_Theme::class ) ) {
+			if ( ! is_object( $theme ) || ! ( $theme instanceof \WP_Theme ) ) {
 				continue;
 			}
 

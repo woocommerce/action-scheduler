@@ -378,7 +378,14 @@ class ActionScheduler_ListTable extends ActionScheduler_Abstract_ListTable {
 	public function display_admin_notices() {
 		global $wpdb;
 
-		if ( ( is_a( $this->store, 'ActionScheduler_HybridStore' ) || is_a( $this->store, 'ActionScheduler_DBStore' ) ) && apply_filters( 'action_scheduler_enable_recreate_data_store', true ) ) {
+		/**
+		 * Filter whether to check for missing custom tables, and attempt to recreate any that are missing, when displaying admin notices.
+		 *
+		 * @since 3.1.3
+		 *
+		 * @param bool $enable_recreate Whether to check for and recreate missing tables. Default true.
+		 */
+		if ( ( ( $this->store instanceof ActionScheduler_HybridStore ) || ( $this->store instanceof ActionScheduler_DBStore ) ) && apply_filters( 'action_scheduler_enable_recreate_data_store', true ) ) {
 			$table_list = array(
 				'actionscheduler_actions',
 				'actionscheduler_logs',
@@ -498,7 +505,7 @@ class ActionScheduler_ListTable extends ActionScheduler_Abstract_ListTable {
 
 		$schedule_display_string = '';
 
-		if ( is_a( $schedule, 'ActionScheduler_NullSchedule' ) ) {
+		if ( $schedule instanceof ActionScheduler_NullSchedule ) {
 			return __( 'async', 'action-scheduler' );
 		}
 
@@ -575,7 +582,7 @@ class ActionScheduler_ListTable extends ActionScheduler_Abstract_ListTable {
 	 * Force the data store schema updates.
 	 */
 	protected function recreate_tables() {
-		if ( is_a( $this->store, 'ActionScheduler_HybridStore' ) ) {
+		if ( $this->store instanceof ActionScheduler_HybridStore ) {
 			$store = $this->store;
 		} else {
 			$store = new ActionScheduler_HybridStore();
@@ -655,7 +662,7 @@ class ActionScheduler_ListTable extends ActionScheduler_Abstract_ListTable {
 			} catch ( Exception $e ) {
 				continue;
 			}
-			if ( is_a( $action, 'ActionScheduler_NullAction' ) ) {
+			if ( $action instanceof ActionScheduler_NullAction ) {
 				continue;
 			}
 			$status_name               = $this->store->get_status( $action_id );

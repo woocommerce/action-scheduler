@@ -502,11 +502,14 @@ abstract class ActionScheduler_Store extends ActionScheduler_Store_Deprecated {
 	/**
 	 * Purge old claim records that are no longer referenced by any action.
 	 *
-	 * Data stores that do not keep claim records separately have nothing to purge, and return false.
+	 * This default implementation does nothing and returns false, meaning the store does not support
+	 * purging orphan claims. Stores that support it (such as ActionScheduler_DBStore, which keeps claims
+	 * in a table of their own) should override this method and return the number of claims deleted
+	 * (including 0 when there was nothing to purge) to indicate that support.
 	 *
 	 * @since 4.3.0
 	 *
-	 * @return int|false Number of orphan claims deleted, or false if not supported by the store or on failure.
+	 * @return int|false Number of orphan claims deleted, or false if the store does not support purging orphan claims or the purge failed.
 	 */
 	public function purge_orphan_claims() {
 		return false;

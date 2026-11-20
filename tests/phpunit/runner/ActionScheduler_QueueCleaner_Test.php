@@ -5,13 +5,6 @@
  */
 class ActionScheduler_QueueCleaner_Test extends ActionScheduler_UnitTestCase {
 
-	public function tearDown(): void {
-		parent::tearDown();
-		$wpdb = $GLOBALS['wpdb'];
-		$wpdb->query( "TRUNCATE TABLE {$wpdb->prefix}actionscheduler_actions" );
-		$wpdb->query( "TRUNCATE TABLE {$wpdb->prefix}actionscheduler_claims" );
-	}
-
 	/**
 	 * @testdox clean_actions() invokes purge_orphan_claims() once at the end of a cleaning pass.
 	 */

@@ -274,4 +274,21 @@ class ActionScheduler_HybridStore_Test extends ActionScheduler_UnitTestCase {
 			$this->assertInstanceOf( ActionScheduler_FinishedAction::class, $action );
 		}
 	}
+
+	/**
+	 * @testdox purge_orphan_claims() is delegated to the table data store.
+	 */
+	public function test_purge_orphan_claims_uses_destination_store() {
+		$destination_store = $this->getMockBuilder( ActionScheduler_DBStore::class )->getMock();
+		$destination_store->expects( $this->once() )->method( 'purge_orphan_claims' )->willReturn( 7 );
+
+		$config = new Config();
+		$config->set_source_store( new PostStore() );
+		$config->set_source_logger( new CommentLogger() );
+		$config->set_destination_store( $destination_store );
+		$config->set_destination_logger( new ActionScheduler_DBLogger() );
+
+		$hybrid_store = new ActionScheduler_HybridStore( $config );
+		$this->assertSame( 7, $hybrid_store->purge_orphan_claims() );
+	}
 }

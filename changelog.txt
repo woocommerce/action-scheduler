@@ -1,6 +1,7 @@
 *** Changelog ***
 
 = 4.3.0 - xxxx-xx-xx =
+* Dev - Clarify the Recurrence item in the Help > Columns panel on Tools > Scheduled Actions, explaining the interval, cron expression and Non-repeating values it can show.
 * Fix - Avoid PHP 8.6 deprecation notices when scheduling cron actions, and in a few other places, by using `instanceof` rather than `is_a()`.
 * Dev - Describe the `wp action-scheduler` command group accurately in WP-CLI help, rather than as "System info WP-CLI commands".
 * Dev - Document all WP-CLI commands and subcommands, including `fix-schema`, `source` and `action logs`, and correct the name of the `data-store` command.

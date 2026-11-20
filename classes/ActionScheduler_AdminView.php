@@ -318,7 +318,7 @@ class ActionScheduler_AdminView extends ActionScheduler_AdminView_Deprecated {
 					sprintf( '<li><strong>%1$s</strong>: %2$s</li>', __( 'Status', 'action-scheduler' ), __( 'Action statuses are Pending, Complete, Canceled, Failed', 'action-scheduler' ) ) .
 					sprintf( '<li><strong>%1$s</strong>: %2$s</li>', __( 'Arguments', 'action-scheduler' ), __( 'Optional data array passed to the action hook.', 'action-scheduler' ) ) .
 					sprintf( '<li><strong>%1$s</strong>: %2$s</li>', __( 'Group', 'action-scheduler' ), __( 'Optional action group.', 'action-scheduler' ) ) .
-					sprintf( '<li><strong>%1$s</strong>: %2$s</li>', __( 'Recurrence', 'action-scheduler' ), __( 'How often the action repeats: an interval such as "Every 1 hour", a cron expression, or "Non-repeating" for an action that runs only once.', 'action-scheduler' ) ) .
+					sprintf( '<li><strong>%1$s</strong>: %2$s</li>', __( 'Recurrence', 'action-scheduler' ), __( 'How often the action repeats: an interval such as "Every 1 hour", a cron expression, or "Non-repeating" for an action that runs only once. Each run of a recurring action is listed separately, and its pending entry shows the next run in the Scheduled Date column.', 'action-scheduler' ) ) .
 					sprintf( '<li><strong>%1$s</strong>: %2$s</li>', __( 'Scheduled', 'action-scheduler' ), __( 'The date/time the action is/was scheduled to run.', 'action-scheduler' ) ) .
 					sprintf( '<li><strong>%1$s</strong>: %2$s</li>', __( 'Log', 'action-scheduler' ), __( 'Activity log for the action.', 'action-scheduler' ) ) .
 					'</ul>',

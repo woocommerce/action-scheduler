@@ -104,7 +104,7 @@ class ActionMigrator {
 			$this->source->delete_action( $source_action_id );
 
 			$test_action = $this->source->fetch_action( $source_action_id );
-			if ( ! is_a( $test_action, 'ActionScheduler_NullAction' ) ) {
+			if ( ! ( $test_action instanceof \ActionScheduler_NullAction ) ) {
 				// translators: %s is an action ID.
 				throw new \RuntimeException( sprintf( __( 'Unable to remove source migrated action %s', 'action-scheduler' ), $source_action_id ) );
 			}

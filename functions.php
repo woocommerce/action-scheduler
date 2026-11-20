@@ -5,13 +5,15 @@
  * @package ActionScheduler.
  */
 
+defined( 'ABSPATH' ) || exit;
+
 /**
  * Enqueue an action to run one time, as soon as possible
  *
  * @param string $hook The hook to trigger.
  * @param array  $args Arguments to pass when the hook triggers.
  * @param string $group The group to assign this job to.
- * @param bool   $unique Whether the action should be unique. It will not be scheduled if another pending or running action has the same hook and group parameters.
+ * @param bool   $unique Whether the action should be unique. It will not be scheduled if another pending or running action has the same hook, arguments and group.
  * @param int    $priority Lower values take precedence over higher values. Defaults to 10, with acceptable values falling in the range 0-255.
  *
  * @return int The action ID. Zero if there was an error scheduling the action.
@@ -61,7 +63,7 @@ function as_enqueue_async_action( $hook, $args = array(), $group = '', $unique =
  * @param string $hook The hook to trigger.
  * @param array  $args Arguments to pass when the hook triggers.
  * @param string $group The group to assign this job to.
- * @param bool   $unique Whether the action should be unique. It will not be scheduled if another pending or running action has the same hook and group parameters.
+ * @param bool   $unique Whether the action should be unique. It will not be scheduled if another pending or running action has the same hook, arguments and group.
  * @param int    $priority Lower values take precedence over higher values. Defaults to 10, with acceptable values falling in the range 0-255.
  *
  * @return int The action ID. Zero if there was an error scheduling the action.
@@ -114,7 +116,7 @@ function as_schedule_single_action( $timestamp, $hook, $args = array(), $group =
  * @param string $hook The hook to trigger.
  * @param array  $args Arguments to pass when the hook triggers.
  * @param string $group The group to assign this job to.
- * @param bool   $unique Whether the action should be unique. It will not be scheduled if another pending or running action has the same hook and group parameters.
+ * @param bool   $unique Whether the action should be unique. It will not be scheduled if another pending or running action has the same hook, arguments and group.
  * @param int    $priority Lower values take precedence over higher values. Defaults to 10, with acceptable values falling in the range 0-255.
  *
  * @return int The action ID. Zero if there was an error scheduling the action.
@@ -201,7 +203,7 @@ function as_schedule_recurring_action( $timestamp, $interval_in_seconds, $hook, 
  * @param string $hook The hook to trigger.
  * @param array  $args Arguments to pass when the hook triggers.
  * @param string $group The group to assign this job to.
- * @param bool   $unique Whether the action should be unique. It will not be scheduled if another pending or running action has the same hook and group parameters.
+ * @param bool   $unique Whether the action should be unique. It will not be scheduled if another pending or running action has the same hook, arguments and group.
  * @param int    $priority Lower values take precedence over higher values. Defaults to 10, with acceptable values falling in the range 0-255.
  *
  * @return int The action ID. Zero if there was an error scheduling the action.
@@ -359,20 +361,20 @@ function as_next_scheduled_action( $hook, $args = null, $group = '' ) {
 		$params['args'] = $args;
 	}
 
+	$store            = ActionScheduler::store();
 	$params['status'] = ActionScheduler_Store::STATUS_RUNNING;
-	$action_id        = ActionScheduler::store()->query_action( $params );
+	$action_id        = $store->query_action( $params );
 	if ( $action_id ) {
 		return true;
 	}
 
 	$params['status'] = ActionScheduler_Store::STATUS_PENDING;
-	$action_id        = ActionScheduler::store()->query_action( $params );
+	$action_id        = $store->query_action( $params );
 	if ( null === $action_id ) {
 		return false;
 	}
 
-	$action         = ActionScheduler::store()->fetch_action( $action_id );
-	$scheduled_date = $action->get_schedule()->get_date();
+	$scheduled_date = $store->fetch_action( $action_id )->get_schedule()->get_date();
 	if ( $scheduled_date ) {
 		return (int) $scheduled_date->format( 'U' );
 	} elseif ( null === $scheduled_date ) { // pending async action with NullSchedule.
@@ -403,16 +405,23 @@ function as_has_scheduled_action( $hook, $args = null, $group = '' ) {
 
 	$query_args = array(
 		'hook'    => $hook,
-		'status'  => array( ActionScheduler_Store::STATUS_RUNNING, ActionScheduler_Store::STATUS_PENDING ),
 		'group'   => $group,
 		'orderby' => 'none',
 	);
 
-	if ( null !== $args ) {
+	if ( is_array( $args ) ) {
 		$query_args['args'] = $args;
 	}
 
-	$action_id = ActionScheduler::store()->query_action( $query_args );
+	$store = ActionScheduler::store();
+	// Separate queries avoid SQL execution plan regression when the group JOIN combines with IN() on status.
+	if ( '' !== $group ) {
+		$action_id = $store->query_action( array_merge( $query_args, array( 'status' => ActionScheduler_Store::STATUS_RUNNING ) ) )
+			?? $store->query_action( array_merge( $query_args, array( 'status' => ActionScheduler_Store::STATUS_PENDING ) ) );
+	} else {
+		$query_args['status'] = array( ActionScheduler_Store::STATUS_RUNNING, ActionScheduler_Store::STATUS_PENDING );
+		$action_id            = $store->query_action( $query_args );
+	}
 
 	return null !== $action_id;
 }
@@ -507,7 +516,10 @@ function as_get_datetime_object( $date_string = null, $timezone = 'UTC' ) {
  * @return bool True if the feature is supported, false otherwise.
  */
 function as_supports( string $feature ): bool {
-	$supported_features = array( 'ensure_recurring_actions_hook' );
+	$supported_features = array(
+		'ensure_recurring_actions_hook',
+		'uninstall_bootstrap',
+	);
 
 	return in_array( $feature, $supported_features, true );
 }

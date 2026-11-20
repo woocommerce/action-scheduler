@@ -1,0 +1,68 @@
+name: Plugin Check on PR
+on:
+  pull_request:
+    branches:
+      - trunk
+
+permissions:
+  contents: read
+
+jobs:
+  plugin-check:
+    # Referenced by name from trunk's required status checks: rename both together.
+    name: Plugin Check
+    timeout-minutes: 20
+    runs-on: ubuntu-latest
+    env:
+      # Pinned so a new Plugin Check release cannot fail PRs on its own; bump deliberately.
+      PLUGIN_CHECK_VERSION: '2.1.0'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+
+      # Check what ships: git archive honors the export-ignore rules in .gitattributes. The
+      # directory name becomes the plugin slug.
+      - name: Build plugin package
+        run: |
+          mkdir -p build/action-scheduler
+          git archive HEAD | tar -x -C build/action-scheduler
+
+      # The action installs the latest Plugin Check unless one is already installed. It overwrites
+      # .wp-env.json, but wp-env merges the override file on top.
+      - name: Pin Plugin Check
+        run: |
+          printf '{ "plugins": [ "https://downloads.wordpress.org/plugin/plugin-check.%s.zip" ] }\n' "$PLUGIN_CHECK_VERSION" > .wp-env.override.json
+
+      # Existing findings, ignored because they are part of the design or the public API. Each code
+      # also suppresses new occurrences, so review before adding to this list. Built here because
+      # a YAML block cannot carry a comment per line.
+      - name: List ignored codes
+        id: ignored
+        run: |
+          codes=(
+            # Exceptions carry plain messages; escaping belongs to whatever displays them.
+            WordPress.Security.EscapeOutput.ExceptionNotEscaped
+            # The data stores query Action Scheduler's own tables.
+            WordPress.DB.DirectDatabaseQuery.DirectQuery
+            # Queue state must be read fresh, as claims change between requests.
+            WordPress.DB.DirectDatabaseQuery.NoCaching
+            # SQL is assembled from $wpdb table names and fragments prepared earlier.
+            PluginCheck.Security.DirectDB.UnescapedDBParameter
+            # The as_*() API and the deprecated wc_*() functions cannot be renamed.
+            WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedFunctionFound
+            # The pre_as_* filters are public, and the core hooks are fired deliberately.
+            WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound
+            # Actions fire the hooks their schedulers named.
+            WordPress.NamingConventions.PrefixAllGlobals.DynamicHooknameFound
+          )
+          echo "codes=$(IFS=,; echo "${codes[*]}")" >> "$GITHUB_OUTPUT"
+
+      - name: Run Plugin Check
+        uses: wordpress/plugin-check-action@10857da14b6c2246d15402b3e69f777edcf8c12e # v1.1.9
+        with:
+          build-dir: build/action-scheduler
+          # Report through workflow annotations and the results artifact only.
+          repo-token: ''
+          # Fail on warnings too.
+          strict: true
+          ignore-codes: ${{ steps.ignored.outputs.codes }}

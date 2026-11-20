@@ -649,4 +649,181 @@ class ActionScheduler_QueueRunner_Test extends ActionScheduler_UnitTestCase {
 		remove_action( 'baz', $baz );
 		remove_action( 'foobar', $foobar );
 	}
+
+	/**
+	 * Test that init() sets up the WP Cron event and the async request dispatcher.
+	 */
+	public function test_init_sets_up_cron_and_async_dispatch() {
+		$runner = ActionScheduler_Mocker::get_queue_runner();
+		$this->clear_queue_runner_cron_event();
+
+		$runner->init();
+
+		$this->assertNotFalse(
+			wp_next_scheduled( ActionScheduler_QueueRunner::WP_CRON_HOOK, array( 'WP Cron' ) ),
+			'The WP Cron event to run the queue should be scheduled.'
+		);
+		$this->assertNotFalse(
+			has_action( 'shutdown', array( $runner, 'maybe_dispatch_async_request' ) ),
+			'The async request dispatcher should be hooked into shutdown.'
+		);
+	}
+
+	/**
+	 * Test that init() sets up no queue callback, cron event or shutdown callback during a plugin uninstall.
+	 *
+	 * WordPress deletes the host plugin's files later in the same request, so anything that runs after
+	 * that point would fatal on the missing classes, and the cron event would outlive the code that serves it.
+	 */
+	public function test_init_skips_cron_and_async_dispatch_when_uninstalling() {
+		$runner       = ActionScheduler_Mocker::get_queue_runner();
+		$run_callback = array( ActionScheduler_QueueRunner::instance(), 'run' );
+		$priority     = has_action( ActionScheduler_QueueRunner::WP_CRON_HOOK, $run_callback );
+		$this->clear_queue_runner_cron_event();
+		remove_action( ActionScheduler_QueueRunner::WP_CRON_HOOK, $run_callback, $priority );
+		$was_uninstalling = $this->set_uninstalling( true );
+
+		try {
+			$runner->init();
+
+			$this->assertFalse(
+				has_action( ActionScheduler_QueueRunner::WP_CRON_HOOK, $run_callback ),
+				'The queue runner should not be hooked into the WP Cron hook during an uninstall.'
+			);
+			$this->assertFalse(
+				wp_next_scheduled( ActionScheduler_QueueRunner::WP_CRON_HOOK, array( 'WP Cron' ) ),
+				'No WP Cron event should be scheduled during an uninstall.'
+			);
+			$this->assertFalse(
+				has_action( 'shutdown', array( $runner, 'maybe_dispatch_async_request' ) ),
+				'The async request dispatcher should not be hooked into shutdown during an uninstall.'
+			);
+		} finally {
+			$this->set_uninstalling( $was_uninstalling );
+
+			if ( false !== $priority ) {
+				add_action( ActionScheduler_QueueRunner::WP_CRON_HOOK, $run_callback, $priority );
+			}
+		}
+	}
+
+	/**
+	 * When a recurring action completes, its next instance should already exist. Otherwise, code that checks for an
+	 * existing action before scheduling one (a common pattern on `init`) can find nothing and create a duplicate.
+	 *
+	 * @see https://github.com/woocommerce/action-scheduler/issues/698
+	 */
+	public function test_next_instance_of_recurring_action_exists_before_completion() {
+		$hook      = 'as_test_698_' . md5( wp_rand() );
+		$action_id = as_schedule_recurring_action( as_get_datetime_object( '1 minute ago' )->getTimestamp(), HOUR_IN_SECONDS, $hook );
+		$found     = null;
+
+		add_action( $hook, '__return_null' );
+
+		// Simulate concurrent requests, which try to schedule the same action at the moment the current one completes.
+		$on_complete = function ( $completed_action_id ) use ( $action_id, $hook, &$found ) {
+			if ( $completed_action_id !== $action_id ) {
+				return;
+			}
+
+			$found = as_has_scheduled_action( $hook );
+
+			if ( ! $found ) {
+				as_schedule_recurring_action( time(), HOUR_IN_SECONDS, $hook );
+			}
+
+			as_schedule_recurring_action( time(), HOUR_IN_SECONDS, $hook, array(), '', true );
+		};
+
+		add_action( 'action_scheduler_completed_action', $on_complete );
+		ActionScheduler_Mocker::get_queue_runner( ActionScheduler::store() )->run();
+		remove_action( 'action_scheduler_completed_action', $on_complete );
+
+		$this->assertTrue( $found, 'The next instance exists by the time the current action is marked complete.' );
+		$this->assertEquals( ActionScheduler_Store::STATUS_COMPLETE, ActionScheduler::store()->get_status( $action_id ) );
+		$this->assertCount(
+			1,
+			as_get_scheduled_actions(
+				array(
+					'hook'   => $hook,
+					'status' => ActionScheduler_Store::STATUS_PENDING,
+				),
+				'ids'
+			),
+			'Exactly one pending instance of the recurring action exists.'
+		);
+	}
+
+	/**
+	 * If the action cannot be marked as complete after its next instance was scheduled, it is marked as failed, but a
+	 * second instance must not be scheduled.
+	 */
+	public function test_recurring_action_is_rescheduled_once_if_marking_complete_fails() {
+		$hook      = 'as_test_698_' . md5( wp_rand() );
+		$action_id = as_schedule_recurring_action( as_get_datetime_object( '1 minute ago' )->getTimestamp(), HOUR_IN_SECONDS, $hook );
+		add_action( $hook, '__return_null' );
+
+		$on_complete = function ( $completed_action_id ) use ( $action_id ) {
+			if ( $completed_action_id === $action_id ) {
+				throw new Exception( 'Simulated failure while marking the action as complete.' );
+			}
+		};
+
+		add_action( 'action_scheduler_completed_action', $on_complete );
+		ActionScheduler_Mocker::get_queue_runner( ActionScheduler::store() )->run();
+		remove_action( 'action_scheduler_completed_action', $on_complete );
+
+		$this->assertEquals( ActionScheduler_Store::STATUS_FAILED, ActionScheduler::store()->get_status( $action_id ) );
+		$this->assertCount(
+			1,
+			as_get_scheduled_actions(
+				array(
+					'hook'   => $hook,
+					'status' => ActionScheduler_Store::STATUS_PENDING,
+				),
+				'ids'
+			),
+			'Exactly one pending instance of the recurring action exists.'
+		);
+	}
+
+	/**
+	 * A recurring action that ran successfully is still marked complete if scheduling its next instance raises an
+	 * error. As before, the error is not swallowed.
+	 */
+	public function test_recurring_action_is_marked_complete_if_rescheduling_errors() {
+		$store     = ActionScheduler::store();
+		$hook      = 'as_test_698_' . md5( wp_rand() );
+		$action_id = as_schedule_recurring_action( as_get_datetime_object( '1 minute ago' )->getTimestamp(), HOUR_IN_SECONDS, $hook );
+		$error     = null;
+
+		add_action( $hook, '__return_null' );
+
+		$runner = new class( $store ) extends ActionScheduler_QueueRunner {
+			// phpcs:ignore Generic.CodeAnalysis.UnusedFunctionParameter.FoundAfterLastUsed
+			protected function schedule_next_instance( ActionScheduler_Action $action, $action_id ) {
+				throw new Error( 'Simulated error while scheduling the next instance.' );
+			}
+		};
+
+		try {
+			$runner->process_action( $action_id );
+		} catch ( Error $e ) {
+			$error = $e;
+		}
+
+		$this->assertInstanceOf( Error::class, $error, 'The error raised while scheduling the next instance is re-thrown.' );
+		$this->assertEquals( 'Simulated error while scheduling the next instance.', $error->getMessage() );
+		$this->assertEquals( ActionScheduler_Store::STATUS_COMPLETE, $store->get_status( $action_id ), 'The action is marked complete.' );
+	}
+
+	/**
+	 * Unschedule the queue runner cron event scheduled while bootstrapping the test suite.
+	 *
+	 * @return void
+	 */
+	private function clear_queue_runner_cron_event() {
+		wp_clear_scheduled_hook( ActionScheduler_QueueRunner::WP_CRON_HOOK, array( 'WP Cron' ) );
+		wp_clear_scheduled_hook( ActionScheduler_QueueRunner::WP_CRON_HOOK );
+	}
 }

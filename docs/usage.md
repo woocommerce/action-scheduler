@@ -96,6 +96,38 @@ Action Scheduler will later initialize itself on `'init'` with priority `1`.  Ac
 
 When using Action Scheduler in themes, it's important to note that if Action Scheduler has been registered by a plugin, then the latest version registered by a plugin will be used, rather than the version included in the theme. This is because of the version dependency handling code using `'plugins_loaded'` since version 1.0.
 
+### Usage in `uninstall.php`
+
+WordPress deactivates a plugin before running its `uninstall.php`, so `'plugins_loaded'` has already fired without it. A plugin that needs to cancel its own scheduled actions on uninstall therefore has to load Action Scheduler itself, which a plain `require_once` is enough to do:
+
+```php
+<?php
+// Another still-active plugin may already have loaded Action Scheduler for this request,
+// or it may have been bootstrapped by an inactive plugin that was also being uninstalled.
+$as_already_loaded = class_exists( 'ActionScheduler', false );
+
+require_once plugin_dir_path( __FILE__ ) . '/libraries/action-scheduler/action-scheduler.php';
+
+as_unschedule_all_actions( 'my_plugin_recurring_action' );
+
+// Versions before 4.2.0 set up the runtime here too, and their async request dispatcher runs on
+// 'shutdown' - by which point WordPress has deleted this plugin's files, so the request fatals.
+if ( ! $as_already_loaded && ! ( function_exists( 'as_supports' ) && as_supports( 'uninstall_bootstrap' ) ) ) {
+	$runner = ActionScheduler::runner();
+
+	// A site can swap the runner via 'action_scheduler_queue_runner_class'; only the default one has this method.
+	if ( method_exists( $runner, 'unhook_dispatch_async_request' ) ) {
+		$runner->unhook_dispatch_async_request();
+	}
+}
+```
+
+Since Action Scheduler 4.2.0, initializing this way is recognized as an uninstall and no WP Cron event, async queue run or housekeeping action is created. The `$as_already_loaded` check matters because the version dependency handling described above has already run: if any active plugin loaded Action Scheduler earlier in the request, your `require_once` is a no-op and you are using that copy, whose runtime is set up legitimately and must be left alone.
+
+Only cancel your own actions here. Action Scheduler's tables belong to the site, not to your plugin, and another plugin bundling it may still be active.
+
+Note that WordPress only defines `WP_UNINSTALL_PLUGIN` for the `uninstall.php` file, and not for a callback registered with `register_uninstall_hook()` - it loads your main plugin file instead, which Action Scheduler cannot tell apart from a normal load. Prefer `uninstall.php`; if you do clean up from `register_uninstall_hook()`, unhook the dispatcher whenever your own code is what loaded Action Scheduler, regardless of its version.
+
 ## Scheduling Recurring Actions on Activation and Ensuring They Remain Scheduled
 
 When developing a plugin or extension that relies on recurring actions, it is essential to schedule those actions when the plugin is first activated or updated.
@@ -114,12 +146,17 @@ function my_plugin_activate() {
         as_schedule_recurring_action(
             time(),
             HOUR_IN_SECONDS,
-            'my_plugin_recurring_action'
+            'my_plugin_recurring_action',
+            array(),
+            '',
+            true // Unique: only one pending instance may exist.
         );
     }
 }
 register_activation_hook( __FILE__, 'my_plugin_activate' );
 ```
+
+The final `true` marks the action as unique (supported since Action Scheduler 3.6.0). The `as_has_scheduled_action()` check avoids unnecessary work, but on its own it cannot stop two requests that run at the same moment from both scheduling the action, leaving two copies that each keep recurring. With the unique flag set, only one of them will be created. This guarantee requires Action Scheduler 4.2.0 or later with its default custom tables. Earlier versions, and the legacy post-based store, still check and insert as separate steps, which narrows the window without closing it.
 
 ### Ensuring Recurring Actions Remain Scheduled
 
@@ -135,7 +172,10 @@ add_action( 'action_scheduler_ensure_recurring_actions', function() {
         as_schedule_recurring_action(
             time(),
             HOUR_IN_SECONDS,
-            'my_plugin_recurring_action'
+            'my_plugin_recurring_action',
+            array(),
+            '',
+            true // Unique: only one pending instance may exist.
         );
     }
 });
@@ -159,7 +199,10 @@ function my_plugin_schedule_my_recurring_action() {
 		as_schedule_recurring_action(
 			time(),
 			HOUR_IN_SECONDS,
-			'my_plugin_recurring_action'
+			'my_plugin_recurring_action',
+			array(),
+			'',
+			true // Unique: only one pending instance may exist.
 		);
 	}
 }

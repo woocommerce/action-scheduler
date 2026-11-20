@@ -25,12 +25,24 @@ These are the commands available to use with Action Scheduler:
   * `--batch-size` - This is the number of actions per status to clean in a single batch. Default is `20`.
   * `--batches` - This is the number of batches to process. Default 0 means that batches will continue to process until there are no more actions to delete.
   * `--status` - Process only actions with specific status or statuses. Default is `canceled` and `complete`. Define multiple statuses as a comma separated string (without spaces), e.g. `--status=complete,failed,canceled`
-  * `--before` - Process only actions with scheduled date older than this. Defaults to 31 days. e.g `--before='7 days ago'`, `--before='02-Feb-2020 20:20:20'`
+  * `--before` - Process only actions with a last modification date (attempt date) older than this. Defaults to 31 days. e.g `--before='7 days ago'`, `--before='02-Feb-2020 20:20:20'`
   * `--pause` - The number of seconds to pause between batches. Default no pause.
+
+* `action-scheduler fix-schema`
+
+  Creates Action Scheduler's custom database tables, or updates them to the current schema, even if the schema is already recorded as up to date. Useful if the tables are missing or were not created correctly.
 
 * `action-scheduler migrate`
 
-    **Note**: This command is only available while the migration to custom tables is in progress.
+  Migrates actions from the legacy post-based store to the custom database tables.
+
+  **Note**: This command is only available while the migration to custom tables is in progress.
+
+  Options:
+  * `--batch-size` - The number of actions to process in each batch. Default is `100`.
+  * `--free-memory-on` - The number of actions to process between freeing memory. Default is `50`, and `0` disables freeing memory.
+  * `--pause` - The number of seconds to pause when freeing memory. Default no pause.
+  * `--dry-run` - Reports on the actions that would have been migrated, but does not change any data.
 
 * `action-scheduler run`
     
@@ -41,19 +53,27 @@ These are the commands available to use with Action Scheduler:
     * `--group` - Process only actions in a specific group, like `'woocommerce-memberships'`. By default, actions in any group (or no group) will be processed.
     * `--exclude-groups` - Ignore actions from the specified group or groups (to specify multiple groups, supply a comma-separated list of slugs). This option is ignored if `--group` is also specified.
     * `--force` - By default, Action Scheduler limits the number of concurrent batches that can be run at once to ensure the server does not get overwhelmed. Using the `--force` flag overrides this behavior to force the WP CLI queue to run.
+    * `--force-up-to` - Like `--force`, but only while fewer than the specified number of batches are in progress, e.g. `--force-up-to=20`. Useful when running the queue from the system scheduler, to exceed the usual concurrency limit while still capping it. It never lowers the normal limit set by the `action_scheduler_queue_runner_concurrent_batches` filter. Takes precedence over `--force`.
     
-* `action-scheduler action cancel`
-* `action-scheduler action create`
-* `action-scheduler action delete`
-* `action-scheduler action generate`
-* `action-scheduler action get`
-* `action-scheduler action list`
-* `action-scheduler action next`
-* `action-scheduler action run`
-* `action-scheduler datastore`
-* `action-scheduler runner`
-* `action-scheduler status`
-* `action-scheduler version`
+The `action-scheduler action` commands work with individual actions:
+
+* `action-scheduler action cancel [<hook>]` - Cancels the next occurrence of a scheduled action, or all occurrences when `--all` is used. Can be narrowed with `--group` and `--args`.
+* `action-scheduler action create <hook> <start>` - Schedules a new action. `<start>` is a Unix timestamp, or `async`/`now` to enqueue an async action. Use `--interval` or `--cron` for a recurring action, plus `--args` and `--group` as needed.
+* `action-scheduler action delete <id>...` - Deletes one or more actions by ID.
+* `action-scheduler action generate <hook> <start>` - Schedules several actions at once (`--count`), spaced `--interval` seconds apart. Mostly useful for testing.
+* `action-scheduler action get <id>` - Shows the details of an action.
+* `action-scheduler action list` - Lists actions. Accepts any argument supported by [`as_get_scheduled_actions()`](/api/#function-reference--as_get_scheduled_actions), e.g. `--status=pending --group=my-group`, and supports `--format=ids` or `--format=count`.
+* `action-scheduler action logs <id>` - Shows the log entries for an action.
+* `action-scheduler action next <hook>` - Shows the next scheduled occurrence of an action, optionally narrowed with `--args` and `--group`.
+* `action-scheduler action run <id>...` - Runs one or more actions by ID, regardless of their scheduled date.
+
+The remaining commands report on the Action Scheduler installation itself:
+
+* `action-scheduler status` - Shows the data store, runner and version in use, plus the number of actions in each status along with the oldest and newest scheduled dates.
+* `action-scheduler version` - Shows the active version of Action Scheduler, or all registered versions with `--all`. Several plugins may each bundle a copy, and only the most recent one is loaded.
+* `action-scheduler source` - Shows the location the active copy of Action Scheduler was loaded from, or all registered copies with `--all`. Add `--fullpath` to show full paths.
+* `action-scheduler data-store` - Shows the class name of the data store in use.
+* `action-scheduler runner` - Shows the class name of the queue runner in use.
 
 The best way to get a full list of commands and their available options is to use WP CLI itself. This can be done by running `wp action-scheduler` to list all Action Scheduler commands, or by including the `--help` flag with any of the individual commands. This will provide all relevant parameters and flags for the command.
 

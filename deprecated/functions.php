@@ -9,6 +9,8 @@
  * @package ActionScheduler
  */
 
+defined( 'ABSPATH' ) || exit;
+
 /**
  * Schedule an action to run one time.
  *

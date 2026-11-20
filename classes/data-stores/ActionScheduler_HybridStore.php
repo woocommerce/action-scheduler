@@ -469,4 +469,15 @@ class ActionScheduler_HybridStore extends Store {
 	public function find_actions_by_claim_id( $claim_id ) {
 		return $this->primary_store->find_actions_by_claim_id( $claim_id );
 	}
+
+	/**
+	 * Purge old orphan claims from the table data store.
+	 *
+	 * @since 4.3.0
+	 *
+	 * @return int|false Number of orphan claims deleted, or false on failure.
+	 */
+	public function purge_orphan_claims() {
+		return $this->primary_store->purge_orphan_claims();
+	}
 }

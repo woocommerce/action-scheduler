@@ -77,7 +77,7 @@ class ActionScheduler_WPCommentCleaner {
 		if ( (bool) get_comments( $args ) ) {
 			$has_logs = 'yes';
 
-			if ( ! as_next_scheduled_action( self::$cleanup_hook ) ) {
+			if ( ! as_has_scheduled_action( self::$cleanup_hook ) ) {
 				as_schedule_single_action( gmdate( 'U' ) + ( 6 * MONTH_IN_SECONDS ), self::$cleanup_hook );
 			}
 		}
@@ -128,6 +128,12 @@ class ActionScheduler_WPCommentCleaner {
 			'https://github.com/woocommerce/action-scheduler/issues/368'
 		);
 
-		echo '<div class="notice notice-warning"><p>' . wp_kses_post( $notice ) . '</p></div>';
+		wp_admin_notice(
+			$notice,
+			array(
+				'type'           => 'warning',
+				'paragraph_wrap' => true,
+			)
+		);
 	}
 }

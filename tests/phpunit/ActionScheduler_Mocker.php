@@ -18,6 +18,9 @@ class ActionScheduler_Mocker {
 			$store = ActionScheduler_Store::instance();
 		}
 
+		// Mark the recurring-actions check as already done so it doesn't queue a recurring action during unrelated tests.
+		set_transient( 'as_is_ensure_recurring_actions_scheduled', true, HOUR_IN_SECONDS );
+
 		return new ActionScheduler_QueueRunner( $store, null, null, self::get_async_request_queue_runner( $store ) );
 	}
 

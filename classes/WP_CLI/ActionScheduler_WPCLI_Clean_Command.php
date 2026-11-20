@@ -19,7 +19,7 @@ class ActionScheduler_WPCLI_Clean_Command extends WP_CLI_Command {
 	 * : Only clean actions with the specified status. Defaults to Canceled, Completed. Define multiple statuses as a comma separated string (without spaces), e.g. `--status=complete,failed,canceled`
 	 *
 	 * [--before=<datestring>]
-	 * : Only delete actions with scheduled date older than this. Defaults to 31 days. e.g `--before='7 days ago'`, `--before='02-Feb-2020 20:20:20'`
+	 * : Only delete actions with a last modification date (attempt date) older than this. Defaults to 31 days. e.g `--before='7 days ago'`, `--before='02-Feb-2020 20:20:20'`
 	 *
 	 * [--pause=<seconds>]
 	 * : The number of seconds to pause between batches. Default no pause.
@@ -36,7 +36,7 @@ class ActionScheduler_WPCLI_Clean_Command extends WP_CLI_Command {
 		$batches = absint( \WP_CLI\Utils\get_flag_value( $assoc_args, 'batches', 0 ) );
 		$status  = explode( ',', WP_CLI\Utils\get_flag_value( $assoc_args, 'status', '' ) );
 		$status  = array_filter( array_map( 'trim', $status ) );
-		$before  = \WP_CLI\Utils\get_flag_value( $assoc_args, 'before', '' );
+		$before  = \WP_CLI\Utils\get_flag_value( $assoc_args, 'before', '31 days ago' );
 		$sleep   = \WP_CLI\Utils\get_flag_value( $assoc_args, 'pause', 0 );
 
 		$batches_completed = 0;

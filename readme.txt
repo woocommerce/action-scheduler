@@ -1,10 +1,10 @@
 === Action Scheduler ===
-Contributors: Automattic, wpmuguru, claudiosanches, peterfabian1000, vedjain, jamosova, obliviousharmony, konamiman, sadowski, royho, barryhughes-1
+Contributors: Automattic, wpmuguru, vedjain, konamiman, barryhughes-1, crstauf, jorgeatorres, coreymckrill, prettyboymp, ovidiul
 Tags: scheduler, cron
-Stable tag: 3.9.3
+Stable tag: 4.2.0
 License: GPLv3
-Requires at least: 6.5
-Tested up to: 6.8
+Requires at least: 6.9
+Tested up to: 7.1
 Requires PHP: 7.2
 
 Action Scheduler - Job Queue for WordPress
@@ -46,6 +46,45 @@ Action Scheduler is developed and maintained by [Automattic](http://automattic.c
 Collaboration is cool. We'd love to work with you to improve Action Scheduler. [Pull Requests](https://github.com/woocommerce/action-scheduler/pulls) welcome.
 
 == Changelog ==
+
+= 4.2.0 - 2026-09-16 =
+* Fix - Enforce unique action inserts atomically and release stale uniqueness keys during scheduled cleanup.
+* Fix - Show the per-page Screen Option on WooCommerce's Scheduled Actions tab.
+* Fix - Show the number of actions and the link in the past-due actions admin notice, instead of raw placeholders.
+* Fix - Escape the action hook name in the admin notice shown after a row action.
+* Add - Skip runtime scheduling (the WP Cron event, the async request dispatcher and the daily housekeeping action) when Action Scheduler is initialized from a plugin's `uninstall.php`, and add `as_supports( 'uninstall_bootstrap' )` so host plugins can detect it.
+
+= 4.1.0 - 2026-08-05 =
+* Fix - Correct an oversight in the lock implementation (used to rate-limit async request runners) that could leave a lock permanently stuck and result in database errors in unusual cases.
+* Fix - Correct the behavior of the `wp action-scheduler clean` command so that the `--before` option defaults to 31 days ago.
+* Performance - Reduce the number of SQL queries on the Action Scheduler admin page.
+* Performance - Cache resolved group IDs to reduce the number of SQL queries.
+* Performance - Use the WordPress caching layer for the option lock component.
+* Enhancement - Display action IDs in the admin list and allow searching by action ID.
+* Enhancement - Use `wp_admin_notice()` to render admin notices, instead of custom HTML.
+* Security - Add protections to guard against the risk of object-injection/deserialization attacks when retrieving stored schedule data.
+* Dev - Include the underlying database error in the exception thrown when the legacy post store fails to claim actions.
+* Dev - Add filters (`action_scheduler_allowed_nested_schedule_classes`, `action_scheduler_enforce_schedule_allowed_classes`) and an action (`action_scheduler_unexpected_schedule_class`) to tune and observe schedule deserialization.
+
+= 4.0.0 - 2026-06-16 =
+* Breaking change: action args are taken into account when scheduling unique actions.
+* Breaking change: failed actions are now automatically purged after 3 months by default, controlled by the `action_scheduler_retention_period_for_failed` filter.
+* Add `action_scheduler_enable_failed_action_cleanup` filter to disable automatic cleanup of failed actions.
+* Performance - Actions with corrupted data are automatically cancelled on detection and their excess logs cleaned up in batches, preventing queue stalls and log table bloat.
+* Performance - Action cleanup now runs as a dedicated daily task at 3 am site time with higher throughput.
+* Update favicon images.
+* Fix number formating for action numbers in list view.
+* Import missing `WP_CLI` class to prevent fatal error.
+* Fix possible undefined variable in `action cancel --all` CLI command.
+* Move recurring A-S cache key to transient.
+* Optimize `get_claim_count()` query for large stores.
+* Update `require_once` path for Cancel_CommandFix absolute import.
+* Fix `esc_html()` hook name in admin notice markup.
+* Ensure cleanup action is enqueued via queue runner.
+* Bump WordPress compatibility to version 7.0 and require at least 6.8.
+* Dev - Bump picomatch from 2.3.1 to 2.3.2.
+* Dev - Bump phpunit/phpunit from 8.5.42 to 8.5.52.
+* Dev - Bump lodash, grunt-legacy-log and grunt-legacy-util.
 
 = 3.9.3 - 2025-07-15 =
 * Add hook 'action_scheduler_ensure_recurring_actions' specifically for scheduling recurring actions.

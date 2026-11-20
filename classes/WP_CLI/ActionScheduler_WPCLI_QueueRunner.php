@@ -10,6 +10,13 @@ use Action_Scheduler\WP_CLI\ProgressBar;
 class ActionScheduler_WPCLI_QueueRunner extends ActionScheduler_Abstract_QueueRunner {
 
 	/**
+	 * Whether the cleaner instance is a non-default one.
+	 *
+	 * @var bool
+	 */
+	private $is_custom_cleaner;
+
+	/**
 	 * Claimed actions.
 	 *
 	 * @var array
@@ -31,6 +38,13 @@ class ActionScheduler_WPCLI_QueueRunner extends ActionScheduler_Abstract_QueueRu
 	protected $progress_bar;
 
 	/**
+	 * Number of actions processed by this runner, across all batches.
+	 *
+	 * @var int
+	 */
+	private $total_processed_actions = 0;
+
+	/**
 	 * ActionScheduler_WPCLI_QueueRunner constructor.
 	 *
 	 * @param ActionScheduler_Store|null             $store Store object.
@@ -46,6 +60,8 @@ class ActionScheduler_WPCLI_QueueRunner extends ActionScheduler_Abstract_QueueRu
 		}
 
 		parent::__construct( $store, $monitor, $cleaner );
+
+		$this->is_custom_cleaner = get_class( $this->cleaner ) !== ActionScheduler_QueueCleaner::class;
 	}
 
 	/**
@@ -60,7 +76,18 @@ class ActionScheduler_WPCLI_QueueRunner extends ActionScheduler_Abstract_QueueRu
 	 * @throws \WP_CLI\ExitException When there are too many concurrent batches.
 	 */
 	public function setup( $batch_size, $hooks = array(), $group = '', $force = false ) {
-		$this->run_cleanup();
+		$cleanup_time_limit = 10 * $this->get_time_limit();
+		// Backward compatibility: If the action cleaner is standard, cleaning will be performed as an action to improve throughput
+		// and enable daily runs. If not, cleaning will occur explicitly before processing actions to ensure backward compatibility.
+		if ( $this->is_custom_cleaner ) {
+			// Execute complete cleanup cycle, as in this logical branch deletion IS NOT executed via a separate action.
+			$this->cleaner->clean( $cleanup_time_limit );
+		} else {
+			// Execute partial cleanup cycle, as in this logical branch deletion IS executed via a separate action.
+			$this->cleaner->reset_timeouts( $cleanup_time_limit );
+			$this->cleaner->mark_failures( $cleanup_time_limit );
+		}
+
 		$this->add_hooks();
 
 		// Check to make sure there aren't too many concurrent processes running.
@@ -111,18 +138,36 @@ class ActionScheduler_WPCLI_QueueRunner extends ActionScheduler_Abstract_QueueRu
 	public function run( $context = 'WP CLI' ) {
 		do_action( 'action_scheduler_before_process_queue' );
 		$this->setup_progress_bar();
+
+		$completed = 0;
+		$claim_id  = $this->claim->get_id();
 		foreach ( $this->actions as $action_id ) {
-			// Error if we lost the claim.
-			if ( ! in_array( $action_id, $this->store->find_actions_by_claim_id( $this->claim->get_id() ), true ) ) {
+			// Bail if we lost the claim.
+			if ( $claim_id !== $this->store->get_claim_id( $action_id ) ) {
 				WP_CLI::warning( __( 'The claim has been lost. Aborting current batch.', 'action-scheduler' ) );
 				break;
 			}
 
 			$this->process_action( $action_id, $context );
 			$this->progress_bar->tick();
+			++$completed;
+			++$this->total_processed_actions;
+
+			/**
+			 * Fires after each item processed by the WP-CLI queue runner or the migration runner. Does not fire for the
+			 * WP-Cron or async queue runners.
+			 *
+			 * Action Scheduler uses this to periodically free memory during WP-CLI runs (see `--free-memory-on`).
+			 *
+			 * @since 4.3.0
+			 *
+			 * @param int    $total_processed The number of items processed so far by the current runner, across all
+			 *                                its batches. Migrations run outside WP-CLI use a new runner for each batch.
+			 * @param string $context         The source: the queue runner's context ('WP CLI' by default), or 'migration'.
+			 */
+			do_action( 'action_scheduler_runner_item_processed', $this->total_processed_actions, $context );
 		}
 
-		$completed = $this->progress_bar->current();
 		$this->progress_bar->finish();
 		$this->store->release_claim( $this->claim );
 		do_action( 'action_scheduler_after_process_queue' );

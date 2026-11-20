@@ -171,7 +171,7 @@ class System_Command {
 		$rows = array();
 
 		foreach ( $sources as $check_source => $version ) {
-			$active = dirname( $check_source ) === $source;
+			$active = trailingslashit( dirname( $check_source ) ) === $source;
 			$path   = $check_source;
 
 			if ( ! $fullpath ) {

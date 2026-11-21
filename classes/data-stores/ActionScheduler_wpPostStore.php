@@ -42,7 +42,16 @@ class ActionScheduler_wpPostStore extends ActionScheduler_Store {
 			$post_id    = $this->save_post_array( $post_array );
 			$this->save_post_schedule( $post_id, $action->get_schedule() );
 			$this->save_action_group( $post_id, $action->get_group() );
-			do_action( 'action_scheduler_stored_action', $post_id );
+			/**
+			 * Fires after an action has been saved to the data store.
+			 *
+			 * @since 1.0
+			 * @since 4.3.0 Added the `$action` parameter.
+			 *
+			 * @param int                    $action_id The ID of the stored action.
+			 * @param ActionScheduler_Action $action    The stored action.
+			 */
+			do_action( 'action_scheduler_stored_action', $post_id, $action );
 			return $post_id;
 		} catch ( Exception $e ) {
 			/* translators: %s: action error message */

@@ -22,6 +22,7 @@
 * Fix - Report the number of completed actions correctly in `wp action-scheduler run` when its output is not sent to a terminal, for instance when it runs from the system scheduler, instead of always reporting zero.
 * Fix - Make `--free-memory-on` in `wp action-scheduler run` count actions across all batches, instead of restarting with each batch (memory was never freed when the batch size was smaller than the `--free-memory-on` value).
 * Dev - Add the `action_scheduler_runner_item_processed` hook, fired by the WP-CLI queue runner and the migration runner. Memory freeing during WP-CLI runs now listens to it instead of `action_scheduler/progress_tick`, so removing `ActionScheduler_DataController::maybe_free_memory` from `action_scheduler/progress_tick` no longer disables it.
+* Add - Write a log entry when an action schedules a new action with the same hook while it is running, to help spot unintended rescheduling. The new `action_scheduler_rescheduled_during_execution` hook fires at the same time, and the `action_scheduler_stored_action` hook now also receives the stored action.
 
 = 4.2.0 - 2026-09-16 =
 * Fix - Enforce unique action inserts atomically and release stale uniqueness keys during scheduled cleanup.

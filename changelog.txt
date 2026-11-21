@@ -2,6 +2,8 @@
 
 = 4.3.0 - xxxx-xx-xx =
 * Add - New `as_get_executing_action_id()` and `as_get_executing_action_context()` functions, which make it possible to determine whether code is running as part of a scheduled action (whether it is processed via WP Cron, an async request, WP CLI or the admin screen) and, if so, which one.
+* Fix - Delete old claim records that no longer belong to any action during queue cleanup, so that they stop accumulating in the claims table.
+* Fix - Make partial args matching (`partial_args_matching` set to `like` or `json`) find actions whose args are longer than 191 characters, and stop JSON matching from failing on MySQL when such actions exist.
 * Fix - Avoid PHP 8.6 deprecation notices when scheduling cron actions, and in a few other places, by using `instanceof` rather than `is_a()`.
 * Dev - Describe the `wp action-scheduler` command group accurately in WP-CLI help, rather than as "System info WP-CLI commands".
 * Dev - Document all WP-CLI commands and subcommands, including `fix-schema`, `source` and `action logs`, and correct the name of the `data-store` command.

@@ -30,7 +30,7 @@ There you will find:
 
 ## Custom Table Existence Checks
 
-The `action_scheduler_schema_table_exists` filter lets integrations provide their own schema table existence checks while retaining the built-in check as a fallback. See [Custom Table Existence Checks](docs/perf.md#custom-table-existence-checks) for the callback contract and integration requirements.
+The `action_scheduler_schema_tables_exist` filter lets integrations check all tables in a schema together while retaining the built-in checks as a fallback. See [Custom Table Existence Checks](docs/perf.md#custom-table-existence-checks) for the callback contract and integration requirements.
 
 ## Credits
 

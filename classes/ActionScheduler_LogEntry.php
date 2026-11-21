@@ -42,7 +42,7 @@ class ActionScheduler_LogEntry {
 		 * goodness knows why, so we need to guard against that here instead of using a DateTime type declaration
 		 * for the constructor's 3rd param of $date and causing a fatal error with older versions of FUE.
 		 */
-		if ( null !== $date && ! is_a( $date, 'DateTime' ) ) {
+		if ( null !== $date && ! ( $date instanceof DateTime ) ) {
 			_doing_it_wrong( __METHOD__, 'The third parameter must be a valid DateTime instance, or null.', '2.0.0' );
 			$date = null;
 		}

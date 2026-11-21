@@ -77,7 +77,7 @@ class ActionScheduler_WPCommentCleaner {
 		if ( (bool) get_comments( $args ) ) {
 			$has_logs = 'yes';
 
-			if ( ! as_next_scheduled_action( self::$cleanup_hook ) ) {
+			if ( ! as_has_scheduled_action( self::$cleanup_hook ) ) {
 				as_schedule_single_action( gmdate( 'U' ) + ( 6 * MONTH_IN_SECONDS ), self::$cleanup_hook );
 			}
 		}

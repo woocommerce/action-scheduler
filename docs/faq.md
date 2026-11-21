@@ -127,3 +127,58 @@ add_filter( 'as_async_request_queue_runner_post_args', 'eg_define_custom_user_ag
 Actions that are past-due have missed their scheduled date; because of [how WP Cron works](https://developer.wordpress.org/plugins/cron/), it is normal to have some past-due actions.
 
 If there are several past-due actions more than one day old, there may be something wrong with your site. If you are using WooCommerce and need help determining the issue, please [contact us on our forum page](https://wordpress.org/support/plugin/woocommerce/).
+
+### How should I process a large dataset in batches?
+
+There are two broad approaches:
+
+1. **One action per item.** Schedule a separate action for each record that needs processing. This is the simplest option: the queue runner takes care of batching, claiming and concurrency for you, and one item failing does not hold up the rest. It does add a row (and log entries) per item, which is worth bearing in mind for very large datasets.
+2. **One action per batch of items.** Have each action process a chunk of records, then schedule the next action in the chain until nothing is left. This is usually the better fit when processing each item is cheap, as the per-action overhead is spread across the batch.
+
+If you go with the second approach, a self-rescheduling action can look something like this:
+
+```php
+add_action( 'my_plugin_process_batch', 'my_plugin_process_batch' );
+
+/**
+ * Processes the next batch of products, then schedules the batch after it.
+ *
+ * @param int $last_id The ID of the last product processed by the previous batch.
+ */
+function my_plugin_process_batch( $last_id = 0 ) {
+	global $wpdb;
+
+	$ids = $wpdb->get_col(
+		$wpdb->prepare(
+			"SELECT ID FROM {$wpdb->posts} WHERE post_type = 'product' AND ID > %d ORDER BY ID ASC LIMIT 20",
+			$last_id
+		)
+	);
+
+	if ( empty( $ids ) ) {
+		// Nothing left to process.
+		update_option( 'my_plugin_products_processed', 'yes' );
+		return;
+	}
+
+	foreach ( $ids as $id ) {
+		my_plugin_process_product( (int) $id );
+	}
+
+	as_enqueue_async_action( 'my_plugin_process_batch', array( (int) end( $ids ) ), 'my-plugin' );
+}
+
+// Start the chain.
+as_enqueue_async_action( 'my_plugin_process_batch', array( 0 ), 'my-plugin' );
+```
+
+A few things to keep in mind:
+
+* Track progress with something that stays stable while you work, such as the last ID processed (as above) or a flag marking unprocessed records. Paginating with `LIMIT`/`OFFSET` can skip records if processing changes which rows the query matches.
+* Keep batches small enough to finish well within the queue runner's time limit (30 seconds by default; see [Background Processing at Scale](https://actionscheduler.org/perf/)).
+* If a batch throws an exception, the action is marked as failed and, in the example above, the next batch is never scheduled. Decide how you want to recover: for instance, by catching errors and rescheduling the same batch after a delay, giving up after a set number of attempts.
+* Avoid starting a second chain while one is already running, for example by checking `as_has_scheduled_action()` first, or by passing `true` for the `$unique` parameter.
+
+For a fuller, production-tested example of this pattern, WooCommerce's [`BatchProcessingController`](https://github.com/woocommerce/woocommerce/blob/11.3.0/plugins/woocommerce/src/Internal/BatchProcessing/BatchProcessingController.php) and the [`BatchProcessorInterface`](https://github.com/woocommerce/woocommerce/blob/11.3.0/plugins/woocommerce/src/Internal/BatchProcessing/BatchProcessorInterface.php) it works with are worth studying. They are built on Action Scheduler: each job is an action that reschedules itself while items remain, a separate "watchdog" action restarts jobs that are queued but not yet scheduled, and a failed batch is retried after a delay, with the job dropped after repeated failures.
+
+__Note:__ WooCommerce's batch processing classes are intended as a reference only. They live in WooCommerce's `Internal` namespace, which [WooCommerce does not support for use by other plugins](https://github.com/woocommerce/woocommerce/blob/11.3.0/plugins/woocommerce/src/Internal/README.md) and which carries no backward compatibility guarantees. They are also only available when WooCommerce is active. Do not call or extend them from your own code: borrow the ideas instead.

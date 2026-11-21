@@ -38,6 +38,13 @@ class ActionScheduler_WPCLI_QueueRunner extends ActionScheduler_Abstract_QueueRu
 	protected $progress_bar;
 
 	/**
+	 * Number of actions processed by this runner, across all batches.
+	 *
+	 * @var int
+	 */
+	private $total_processed_actions = 0;
+
+	/**
 	 * ActionScheduler_WPCLI_QueueRunner constructor.
 	 *
 	 * @param ActionScheduler_Store|null             $store Store object.
@@ -132,7 +139,8 @@ class ActionScheduler_WPCLI_QueueRunner extends ActionScheduler_Abstract_QueueRu
 		do_action( 'action_scheduler_before_process_queue' );
 		$this->setup_progress_bar();
 
-		$claim_id = $this->claim->get_id();
+		$completed = 0;
+		$claim_id  = $this->claim->get_id();
 		foreach ( $this->actions as $action_id ) {
 			// Bail if we lost the claim.
 			if ( $claim_id !== $this->store->get_claim_id( $action_id ) ) {
@@ -142,9 +150,24 @@ class ActionScheduler_WPCLI_QueueRunner extends ActionScheduler_Abstract_QueueRu
 
 			$this->process_action( $action_id, $context );
 			$this->progress_bar->tick();
+			++$completed;
+			++$this->total_processed_actions;
+
+			/**
+			 * Fires after each item processed by the WP-CLI queue runner or the migration runner. Does not fire for the
+			 * WP-Cron or async queue runners.
+			 *
+			 * Action Scheduler uses this to periodically free memory during WP-CLI runs (see `--free-memory-on`).
+			 *
+			 * @since 4.3.0
+			 *
+			 * @param int    $total_processed The number of items processed so far by the current runner, across all
+			 *                                its batches. Migrations run outside WP-CLI use a new runner for each batch.
+			 * @param string $context         The source: the queue runner's context ('WP CLI' by default), or 'migration'.
+			 */
+			do_action( 'action_scheduler_runner_item_processed', $this->total_processed_actions, $context );
 		}
 
-		$completed = $this->progress_bar->current();
 		$this->progress_bar->finish();
 		$this->store->release_claim( $this->claim );
 		do_action( 'action_scheduler_after_process_queue' );

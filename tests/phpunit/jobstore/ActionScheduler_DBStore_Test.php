@@ -1649,6 +1649,73 @@ class ActionScheduler_DBStore_Test extends AbstractStoreTest {
 	}
 
 	/**
+	 * @testdox A pending schema update is skipped while another request holds the schema update lock, unless forced.
+	 */
+	public function test_schema_update_is_skipped_while_locked() {
+		$option_name = 'schema-' . ActionScheduler_StoreSchema::class;
+		$lock_option = 'action_scheduler_lock_schema_update_' . ActionScheduler_StoreSchema::class;
+		$updates     = 0;
+		$counter     = function () use ( &$updates ) {
+			++$updates;
+		};
+
+		add_action( 'action_scheduler_before_schema_update', $counter );
+		update_option( $option_name, '9.0.1' );
+		$this->assertTrue( ActionScheduler::lock()->set( 'schema_update_' . ActionScheduler_StoreSchema::class ) );
+
+		try {
+			( new ActionScheduler_StoreSchema() )->register_tables();
+			$this->assertSame( 0, $updates, 'The update was skipped while locked.' );
+			$this->assertSame( '9.0.1', get_option( $option_name ), 'The schema version was left unchanged.' );
+
+			( new ActionScheduler_StoreSchema() )->register_tables( true );
+			$this->assertGreaterThan( 0, $updates, 'A forced update ignores the lock.' );
+			$this->assertTrue( version_compare( get_option( $option_name ), '10', '>=' ) );
+
+			$updates = 0;
+			update_option( $option_name, '9.0.1' );
+			delete_option( $lock_option );
+			wp_cache_delete( $lock_option, 'action_scheduler_locks' );
+
+			( new ActionScheduler_StoreSchema() )->register_tables();
+			$this->assertGreaterThan( 0, $updates, 'The update ran once the lock was available.' );
+			$this->assertTrue( version_compare( get_option( $option_name ), '10', '>=' ) );
+		} finally {
+			remove_action( 'action_scheduler_before_schema_update', $counter );
+			delete_option( $lock_option );
+			wp_cache_delete( $lock_option, 'action_scheduler_locks' );
+			( new ActionScheduler_StoreSchema() )->register_tables( true );
+		}
+	}
+
+	/**
+	 * @testdox A new install creates the tables even while the schema update lock is held.
+	 */
+	public function test_new_install_ignores_schema_update_lock() {
+		$option_name = 'schema-' . ActionScheduler_StoreSchema::class;
+		$lock_option = 'action_scheduler_lock_schema_update_' . ActionScheduler_StoreSchema::class;
+		$updates     = 0;
+		$counter     = function () use ( &$updates ) {
+			++$updates;
+		};
+
+		add_action( 'action_scheduler_before_schema_update', $counter );
+		delete_option( $option_name );
+		$this->assertTrue( ActionScheduler::lock()->set( 'schema_update_' . ActionScheduler_StoreSchema::class ) );
+
+		try {
+			( new ActionScheduler_StoreSchema() )->register_tables();
+			$this->assertGreaterThan( 0, $updates );
+			$this->assertTrue( version_compare( get_option( $option_name ), '10', '>=' ) );
+		} finally {
+			remove_action( 'action_scheduler_before_schema_update', $counter );
+			delete_option( $lock_option );
+			wp_cache_delete( $lock_option, 'action_scheduler_locks' );
+			( new ActionScheduler_StoreSchema() )->register_tables( true );
+		}
+	}
+
+	/**
 	 * Changes the type of the extended_args column, clearing wpdb's cached table and column metadata.
 	 *
 	 * @param string $definition Column definition.

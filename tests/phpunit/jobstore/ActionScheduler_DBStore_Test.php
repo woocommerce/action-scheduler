@@ -1613,7 +1613,9 @@ class ActionScheduler_DBStore_Test extends AbstractStoreTest {
 	 * @testdox Args are accepted up to 65535 characters (encoded as JSON), and rejected beyond that.
 	 */
 	public function test_args_max_length() {
-		$this->assertNotEmpty( $this->save_action_with_args( $this->get_args_of_json_length( 65535 ) ) );
+		$args      = $this->get_args_of_json_length( 65535 );
+		$action_id = $this->save_action_with_args( $args );
+		$this->assertSame( $args, ( new ActionScheduler_DBStore() )->fetch_action( $action_id )->get_args() );
 
 		$this->expectException( RuntimeException::class );
 		$this->expectExceptionMessage( 'should not be more than 65535 characters' );
@@ -1621,29 +1623,45 @@ class ActionScheduler_DBStore_Test extends AbstractStoreTest {
 	}
 
 	/**
-	 * @testdox The legacy 8000 character limit applies until the store schema has been upgraded to version 10.
+	 * @testdox The legacy 8000 character limit applies while the extended_args column has not been widened.
 	 */
-	public function test_legacy_args_max_length_applies_before_schema_upgrade() {
-		$option_name    = 'schema-' . ActionScheduler_StoreSchema::class;
-		$schema_version = get_option( $option_name );
-		update_option( $option_name, '9.0.' . time() );
+	public function test_legacy_args_max_length_applies_before_column_is_widened() {
+		$this->set_extended_args_column_type( 'varchar(8000) DEFAULT NULL' );
 
 		try {
 			$this->assertNotEmpty( $this->save_action_with_args( $this->get_args_of_json_length( 8000 ) ) );
 
 			$exception = null;
 			try {
-				$this->save_action_with_args( $this->get_args_of_json_length( 8001 ) );
+				$this->save_action_with_args( $this->get_args_of_json_length( 20000 ) );
 			} catch ( RuntimeException $e ) {
 				$exception = $e;
 			}
 			$this->assertInstanceOf( RuntimeException::class, $exception );
 			$this->assertStringContainsString( 'should not be more than 8000 characters', $exception->getMessage() );
-
-			update_option( $option_name, '10.0.' . time() );
-			$this->assertNotEmpty( $this->save_action_with_args( $this->get_args_of_json_length( 8001 ) ) );
 		} finally {
-			update_option( $option_name, $schema_version );
+			$this->set_extended_args_column_type( 'longtext' );
+		}
+
+		$args      = $this->get_args_of_json_length( 20000 );
+		$action_id = $this->save_action_with_args( $args );
+		$this->assertSame( $args, ( new ActionScheduler_DBStore() )->fetch_action( $action_id )->get_args() );
+	}
+
+	/**
+	 * Changes the type of the extended_args column, clearing wpdb's cached table and column metadata.
+	 *
+	 * @param string $definition Column definition.
+	 */
+	private function set_extended_args_column_type( $definition ) {
+		global $wpdb;
+
+		$wpdb->query( "ALTER TABLE {$wpdb->actionscheduler_actions} MODIFY extended_args {$definition}" ); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+
+		foreach ( array( 'col_meta', 'table_charset' ) as $cache ) {
+			$property = new ReflectionProperty( $wpdb, $cache );
+			$property->setAccessible( true );
+			$property->setValue( $wpdb, array() );
 		}
 	}
 }

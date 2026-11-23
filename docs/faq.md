@@ -48,7 +48,7 @@ Action Scheduler 3+ migrates data from the custom post type to custom tables.
 
 ### How large can an action's arguments be?
 
-With the default custom tables, an action's `$args` can be up to 65,535 characters long once encoded as JSON (8,000 characters in versions before 4.3.0). Scheduling an action with longer arguments fails, and the scheduling function returns `0`. You can check for the higher limit with `as_supports( 'large_args' )`; even then, the old limit applies until the database update that comes with it has finished.
+With the default custom tables, an action's `$args` can be up to 65,535 characters long once encoded as JSON (8,000 characters in versions before 4.3.0). Scheduling an action with longer arguments fails, and the scheduling function returns `0`. You can check for the higher limit with `as_supports( 'large_args' )`; even then, the old limit applies until the database update that comes with it has been applied.
 
 Arguments are stored with every action, so for large or variable payloads it is usually better to save the data elsewhere and pass its ID (for example, a post ID) as the argument.
 

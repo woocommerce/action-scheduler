@@ -185,6 +185,7 @@ class ActionScheduler_DBStore_Test extends AbstractStoreTest {
 		$this->assertNull( $claim, 'No claim should be returned.' );
 		$this->assertInstanceOf( RuntimeException::class, $exception, 'An exception should be thrown.' );
 		$this->assertStringContainsString( 'actionscheduler_missing_claims_table', $exception->getMessage(), 'The database error should be included.' );
+		$this->assertStringNotContainsString( '&#039;', $exception->getMessage(), 'The message should not be HTML-escaped.' );
 		$this->assertSame( 0, $store->get_claim_id( $pending ), 'The pending action should not have been claimed.' );
 		$this->assertEquals( array( $pending ), $store->stake_claim()->get_actions(), 'Only the pending action should be available to a working claim.' );
 	}

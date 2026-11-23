@@ -1060,13 +1060,15 @@ AND args = %s
 				? _x( 'unknown', 'database error', 'action-scheduler' )
 				: $wpdb->last_error;
 
+			// phpcs:disable WordPress.Security.EscapeOutput.ExceptionNotEscaped -- Plain message for logs and WP-CLI; escaping belongs to whatever displays it.
 			throw new RuntimeException(
 				sprintf(
 					/* translators: %s database error. */
-					esc_html__( 'Unable to create a claim. Database error: %s.', 'action-scheduler' ),
-					esc_html( $error )
+					__( 'Unable to create a claim. Database error: %s.', 'action-scheduler' ),
+					$error
 				)
 			);
+			// phpcs:enable WordPress.Security.EscapeOutput.ExceptionNotEscaped
 		}
 
 		$this->claim_before_date = $before_date;

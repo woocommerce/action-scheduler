@@ -152,6 +152,43 @@ class ActionScheduler_DBStore_Test extends AbstractStoreTest {
 		$this->assertEqualSets( array_slice( $created_actions, 3, 3 ), $claim->get_actions() );
 	}
 
+	/**
+	 * If the claim cannot be recorded, no actions should be claimed. Otherwise every unclaimed action (which carries a
+	 * claim ID of zero) would be returned, and queue runners could run them without holding a claim.
+	 *
+	 * @see https://github.com/woocommerce/action-scheduler/issues/419
+	 */
+	public function test_stake_claim_throws_when_claim_cannot_be_recorded() {
+		global $wpdb;
+
+		$store     = new ActionScheduler_DBStore();
+		$schedule  = new ActionScheduler_SimpleSchedule( as_get_datetime_object( '1 hour ago' ) );
+		$pending   = $store->save_action( new ActionScheduler_Action( ActionScheduler_Callbacks::HOOK_WITH_CALLBACK, array( 'pending' ), $schedule ) );
+		$completed = $store->save_action( new ActionScheduler_Action( ActionScheduler_Callbacks::HOOK_WITH_CALLBACK, array( 'completed' ), $schedule ) );
+		$store->mark_complete( $completed );
+
+		$claims_table                 = $wpdb->actionscheduler_claims;
+		$wpdb->actionscheduler_claims = $wpdb->prefix . 'actionscheduler_missing_claims_table';
+		$suppress_errors              = $wpdb->suppress_errors( true );
+		$exception                    = null;
+		$claim                        = null;
+
+		try {
+			$claim = $store->stake_claim();
+		} catch ( RuntimeException $e ) {
+			$exception = $e;
+		} finally {
+			$wpdb->actionscheduler_claims = $claims_table;
+			$wpdb->suppress_errors( $suppress_errors );
+		}
+
+		$this->assertNull( $claim, 'No claim should be returned.' );
+		$this->assertInstanceOf( RuntimeException::class, $exception, 'An exception should be thrown.' );
+		$this->assertStringContainsString( 'actionscheduler_missing_claims_table', $exception->getMessage(), 'The database error should be included.' );
+		$this->assertSame( 0, $store->get_claim_id( $pending ), 'The pending action should not have been claimed.' );
+		$this->assertEquals( array( $pending ), $store->stake_claim()->get_actions(), 'Only the pending action should be available to a working claim.' );
+	}
+
 	public function test_claim_actions_order() {
 
 		$store           = new ActionScheduler_DBStore();

@@ -1042,9 +1042,32 @@ AND args = %s
 	 * @param string        $group Group to filter for.
 	 *
 	 * @return ActionScheduler_ActionClaim
+	 *
+	 * @throws RuntimeException When the claim cannot be created, or actions cannot be claimed.
 	 */
 	public function stake_claim( $max_actions = 10, ?DateTime $before_date = null, $hooks = array(), $group = '' ) {
 		$claim_id = $this->generate_claim_id();
+
+		/*
+		 * If the claim could not be recorded (for instance, because the claims table is missing or the database is
+		 * read-only), the claim ID will be zero. We must not continue, as zero is also the claim ID held by every
+		 * unclaimed action, so we would end up running actions without holding a claim on them.
+		 */
+		if ( 0 === (int) $claim_id ) {
+			global $wpdb;
+
+			$error = empty( $wpdb->last_error )
+				? _x( 'unknown', 'database error', 'action-scheduler' )
+				: $wpdb->last_error;
+
+			throw new RuntimeException(
+				sprintf(
+					/* translators: %s database error. */
+					esc_html__( 'Unable to create a claim. Database error: %s.', 'action-scheduler' ),
+					esc_html( $error )
+				)
+			);
+		}
 
 		$this->claim_before_date = $before_date;
 		$this->claim_actions( $claim_id, $max_actions, $before_date, $hooks, $group );

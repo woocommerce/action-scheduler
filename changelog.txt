@@ -1,6 +1,7 @@
 *** Changelog ***
 
 = 4.3.0 - xxxx-xx-xx =
+* Dev - Add the `action_scheduler_schema_tables_exist` filter for checking all tables in a schema together, with `as_supports( 'schema_tables_exist' )` feature detection and the existing queries as a fallback.
 * Fix - Delete old claim records that no longer belong to any action during queue cleanup, so that they stop accumulating in the claims table.
 * Fix - Make partial args matching (`partial_args_matching` set to `like` or `json`) find actions whose args are longer than 191 characters, and stop JSON matching from failing on MySQL when such actions exist.
 * Fix - Avoid PHP 8.6 deprecation notices when scheduling cron actions, and in a few other places, by using `instanceof` rather than `is_a()`.

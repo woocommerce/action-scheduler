@@ -37,6 +37,14 @@ abstract class ActionScheduler_Abstract_QueueRunner extends ActionScheduler_Abst
 	private $created_time;
 
 	/**
+	 * Consistent-failure assessments made before a failing recurring action was marked as failed, keyed by action ID,
+	 * so that the assessment (and its filters) runs once per failure.
+	 *
+	 * @var bool[]
+	 */
+	private $failing_recurring_action_assessments = array();
+
+	/**
 	 * ActionScheduler_Abstract_QueueRunner constructor.
 	 *
 	 * @param ActionScheduler_Store|null             $store Store object.
@@ -135,16 +143,42 @@ abstract class ActionScheduler_Abstract_QueueRunner extends ActionScheduler_Abst
 				throw new Exception( $e->getMessage(), $e->getCode(), $e );
 			}
 		} catch ( Exception $e ) {
+			/*
+			 * As on success, schedule the next instance of a failing recurring action before marking the current one
+			 * failed, so there is never a moment where neither is pending or in progress. This is skipped when the
+			 * action is consistently failing: schedule_next_instance() is then called below, once the action is marked
+			 * failed, and declines to reschedule it.
+			 */
+			if (
+				$valid_action
+				&& ! $rescheduled
+				&& isset( $action )
+				&& ( $action instanceof ActionScheduler_Action )
+				&& $action->get_schedule()->is_recurring()
+				&& ! $this->failing_recurring_action_will_stop( $action, $action_id )
+			) {
+				$rescheduled = true;
+
+				try {
+					$this->schedule_next_instance( $action, $action_id );
+				} catch ( Throwable $reschedule_exception ) {
+					// The action still needs to be marked as failed. The error is re-thrown below.
+					$reschedule_error = $reschedule_exception;
+				}
+			}
+
 			// This catch block exists for compatibility with PHP 5.6.
 			$this->handle_action_error( $action_id, $e, $context, $valid_action );
 		} finally {
 			restore_error_handler();
 		}
 
-		// Failed actions are rescheduled only after being marked as failed, as schedule_next_instance() relies on that.
+		// A consistently failing action reaches schedule_next_instance() only after being marked as failed, as it relies on that.
 		if ( ! $rescheduled && isset( $action ) && ( $action instanceof ActionScheduler_Action ) && $action->get_schedule()->is_recurring() ) {
 			$this->schedule_next_instance( $action, $action_id );
 		}
+
+		unset( $this->failing_recurring_action_assessments[ $action_id ] );
 
 		if ( null !== $reschedule_error ) {
 			throw $reschedule_error;
@@ -258,6 +292,13 @@ abstract class ActionScheduler_Abstract_QueueRunner extends ActionScheduler_Abst
 	 * @return bool
 	 */
 	private function recurring_action_is_consistently_failing( ActionScheduler_Action $action, $action_id ) {
+		// Already assessed by failing_recurring_action_will_stop(), before the action was marked as failed.
+		if ( isset( $this->failing_recurring_action_assessments[ $action_id ] ) ) {
+			$is_consistently_failing = $this->failing_recurring_action_assessments[ $action_id ];
+			unset( $this->failing_recurring_action_assessments[ $action_id ] );
+			return $is_consistently_failing;
+		}
+
 		/**
 		 * Controls the failure threshold for recurring actions.
 		 *
@@ -302,6 +343,59 @@ abstract class ActionScheduler_Abstract_QueueRunner extends ActionScheduler_Abst
 			$first_action_id_with_the_same_hook === $first_failing_action_id,
 			$action
 		);
+	}
+
+	/**
+	 * Determine, before a failing recurring action is marked as failed, whether it will be assessed as consistently
+	 * failing once it is, in which case its next instance must not be scheduled.
+	 *
+	 * The current run is counted as a failure, so the result matches what recurring_action_is_consistently_failing()
+	 * would find after the action is marked as failed: that the earliest actions with the same hook, up to the
+	 * threshold, have all failed. The same filters apply, and each runs once per failure, because a positive
+	 * assessment is reused when schedule_next_instance() is reached.
+	 *
+	 * @param ActionScheduler_Action $action    The failing recurring action.
+	 * @param int                    $action_id The ID of the failing recurring action.
+	 *
+	 * @return bool
+	 */
+	private function failing_recurring_action_will_stop( ActionScheduler_Action $action, $action_id ) {
+		/** This filter is documented in recurring_action_is_consistently_failing(). */
+		$consistent_failure_threshold = (int) apply_filters( 'action_scheduler_recurring_action_failure_threshold', 5 );
+
+		// Leave an unusual threshold to the assessment made after the action is marked as failed, as before.
+		if ( $consistent_failure_threshold < 1 ) {
+			return true;
+		}
+
+		$query_args = array(
+			'hook'         => $action->get_hook(),
+			'date'         => date_create( 'now', timezone_open( 'UTC' ) )->format( 'Y-m-d H:i:s' ),
+			'date_compare' => '<',
+			'per_page'     => $consistent_failure_threshold,
+		);
+
+		// The earliest actions with the same hook within the threshold, of any status, and the earliest failed ones.
+		$earliest_action_ids = array_map( 'intval', (array) $this->store->query_actions( $query_args ) );
+		$failed_action_ids   = array_map(
+			'intval',
+			(array) $this->store->query_actions( array_merge( $query_args, array( 'status' => ActionScheduler_Store::STATUS_FAILED ) ) )
+		);
+
+		// The current run is still in progress, but is about to be marked as failed.
+		$failed_action_ids[] = (int) $action_id;
+
+		$all_failed = count( $earliest_action_ids ) === $consistent_failure_threshold
+			&& array() === array_diff( $earliest_action_ids, $failed_action_ids );
+
+		/** This filter is documented in recurring_action_is_consistently_failing(). */
+		$is_consistently_failing = (bool) apply_filters( 'action_scheduler_recurring_action_is_consistently_failing', $all_failed, $action );
+
+		if ( $is_consistently_failing ) {
+			$this->failing_recurring_action_assessments[ $action_id ] = true;
+		}
+
+		return $is_consistently_failing;
 	}
 
 	/**

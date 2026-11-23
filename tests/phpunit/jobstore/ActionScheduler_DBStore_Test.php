@@ -1562,4 +1562,88 @@ class ActionScheduler_DBStore_Test extends AbstractStoreTest {
 		$this->assertSame( 1, $store->purge_orphan_claims() );
 		$this->assertSame( 0, $store->purge_orphan_claims() );
 	}
+
+	/**
+	 * Builds args which, when encoded as JSON, are exactly the requested length.
+	 *
+	 * @param int $length Desired length of the JSON-encoded args.
+	 * @return array
+	 */
+	private function get_args_of_json_length( $length ) {
+		$args = array( 'payload' => str_repeat( 'a', $length - strlen( '{"payload":""}' ) ) );
+		$this->assertSame( $length, strlen( wp_json_encode( $args ) ) );
+		return $args;
+	}
+
+	/**
+	 * Saves an action with the supplied args, returning the action ID.
+	 *
+	 * @param array $args Action args.
+	 * @return int
+	 */
+	private function save_action_with_args( array $args ) {
+		$action = new ActionScheduler_Action( ActionScheduler_Callbacks::HOOK_WITH_CALLBACK, $args, new ActionScheduler_SimpleSchedule( as_get_datetime_object() ) );
+		return ( new ActionScheduler_DBStore() )->save_action( $action );
+	}
+
+	/**
+	 * @testdox Args longer than the legacy 8000 character limit can be saved, fetched and matched.
+	 */
+	public function test_args_longer_than_legacy_limit() {
+		$args      = $this->get_args_of_json_length( 20000 );
+		$action_id = $this->save_action_with_args( $args );
+		$store     = new ActionScheduler_DBStore();
+
+		$this->assertSame( $args, $store->fetch_action( $action_id )->get_args() );
+		$this->assertSame(
+			array( $action_id ),
+			array_map(
+				'intval',
+				$store->query_actions(
+					array(
+						'hook' => ActionScheduler_Callbacks::HOOK_WITH_CALLBACK,
+						'args' => $args,
+					)
+				)
+			)
+		);
+	}
+
+	/**
+	 * @testdox Args are accepted up to 65535 characters (encoded as JSON), and rejected beyond that.
+	 */
+	public function test_args_max_length() {
+		$this->assertNotEmpty( $this->save_action_with_args( $this->get_args_of_json_length( 65535 ) ) );
+
+		$this->expectException( RuntimeException::class );
+		$this->expectExceptionMessage( 'should not be more than 65535 characters' );
+		$this->save_action_with_args( $this->get_args_of_json_length( 65536 ) );
+	}
+
+	/**
+	 * @testdox The legacy 8000 character limit applies until the store schema has been upgraded to version 10.
+	 */
+	public function test_legacy_args_max_length_applies_before_schema_upgrade() {
+		$option_name    = 'schema-' . ActionScheduler_StoreSchema::class;
+		$schema_version = get_option( $option_name );
+		update_option( $option_name, '9.0.' . time() );
+
+		try {
+			$this->assertNotEmpty( $this->save_action_with_args( $this->get_args_of_json_length( 8000 ) ) );
+
+			$exception = null;
+			try {
+				$this->save_action_with_args( $this->get_args_of_json_length( 8001 ) );
+			} catch ( RuntimeException $e ) {
+				$exception = $e;
+			}
+			$this->assertInstanceOf( RuntimeException::class, $exception );
+			$this->assertStringContainsString( 'should not be more than 8000 characters', $exception->getMessage() );
+
+			update_option( $option_name, '10.0.' . time() );
+			$this->assertNotEmpty( $this->save_action_with_args( $this->get_args_of_json_length( 8001 ) ) );
+		} finally {
+			update_option( $option_name, $schema_version );
+		}
+	}
 }

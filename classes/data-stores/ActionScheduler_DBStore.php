@@ -30,11 +30,28 @@ class ActionScheduler_DBStore extends ActionScheduler_Store {
 	private $claim_before_date = null;
 
 	/**
-	 * Maximum length of args.
+	 * Maximum length of args, when encoded as JSON.
+	 *
+	 * Until the actions table has been upgraded to schema version 10, the lower limit of
+	 * LEGACY_MAX_ARGS_LENGTH applies instead.
 	 *
 	 * @var int
 	 */
-	protected static $max_args_length = 8000;
+	protected static $max_args_length = 65535;
+
+	/**
+	 * Maximum length of args before schema version 10 widened the extended_args column.
+	 *
+	 * @var int
+	 */
+	private const LEGACY_MAX_ARGS_LENGTH = 8000;
+
+	/**
+	 * Store schema version from which the extended_args column can hold more than LEGACY_MAX_ARGS_LENGTH characters.
+	 *
+	 * @var string
+	 */
+	private const WIDE_EXTENDED_ARGS_SCHEMA_VERSION = '10';
 
 	/**
 	 * Maximum length of index.
@@ -373,6 +390,43 @@ AND args = %s
 		}
 
 		return 'v1:' . hash( 'sha256', $identity );
+	}
+
+	/**
+	 * Ensures the action's args will fit in the actions table.
+	 *
+	 * @param ActionScheduler_Action $action Action to be validated.
+	 * @throws InvalidArgumentException When json encoded args is too long.
+	 */
+	protected function validate_action( ActionScheduler_Action $action ) {
+		$max_length = $this->get_max_args_length();
+
+		if ( strlen( wp_json_encode( $action->get_args() ) ) > $max_length ) {
+			// translators: %d is a number (maximum length of action arguments).
+			throw new InvalidArgumentException( sprintf( __( 'ActionScheduler_Action::$args too long. Action args should not be more than %d characters when encoded as JSON.', 'action-scheduler' ), $max_length ) ); // phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- Message is not output as HTML here.
+		}
+	}
+
+	/**
+	 * Gets the maximum length of args (encoded as JSON) that can currently be stored.
+	 *
+	 * Until the schema update that widens the extended_args column has completed, longer args would not fit (and,
+	 * depending on the SQL mode, could be silently truncated), so the legacy limit applies.
+	 *
+	 * @return int
+	 */
+	private function get_max_args_length() {
+		$max_length = (int) static::$max_args_length;
+
+		if ( $max_length <= self::LEGACY_MAX_ARGS_LENGTH ) {
+			return $max_length;
+		}
+
+		$schema_version = (string) get_option( 'schema-' . ActionScheduler_StoreSchema::class, '0' );
+
+		return version_compare( $schema_version, self::WIDE_EXTENDED_ARGS_SCHEMA_VERSION, '>=' )
+			? $max_length
+			: self::LEGACY_MAX_ARGS_LENGTH;
 	}
 
 	/**

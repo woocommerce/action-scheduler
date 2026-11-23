@@ -360,7 +360,11 @@ abstract class ActionScheduler_Abstract_QueueRunner extends ActionScheduler_Abst
 	 * @return bool
 	 */
 	private function failing_recurring_action_will_stop( ActionScheduler_Action $action, $action_id ) {
-		/** This filter is documented in recurring_action_is_consistently_failing(). */
+		/**
+		 * This filter is documented in recurring_action_is_consistently_failing().
+		 *
+		 * @since 4.3.0 Also applied before a failing recurring action is marked as failed.
+		 */
 		$consistent_failure_threshold = (int) apply_filters( 'action_scheduler_recurring_action_failure_threshold', 5 );
 
 		// Leave an unusual threshold to the assessment made after the action is marked as failed, as before.
@@ -388,7 +392,11 @@ abstract class ActionScheduler_Abstract_QueueRunner extends ActionScheduler_Abst
 		$all_failed = count( $earliest_action_ids ) === $consistent_failure_threshold
 			&& array() === array_diff( $earliest_action_ids, $failed_action_ids );
 
-		/** This filter is documented in recurring_action_is_consistently_failing(). */
+		/**
+		 * This filter is documented in recurring_action_is_consistently_failing().
+		 *
+		 * @since 4.3.0 Also applied before a failing recurring action is marked as failed.
+		 */
 		$is_consistently_failing = (bool) apply_filters( 'action_scheduler_recurring_action_is_consistently_failing', $all_failed, $action );
 
 		if ( $is_consistently_failing ) {

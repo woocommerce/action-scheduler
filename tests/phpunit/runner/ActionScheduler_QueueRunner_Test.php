@@ -921,16 +921,16 @@ class ActionScheduler_QueueRunner_Test extends ActionScheduler_UnitTestCase {
 		}
 		$action_id = as_schedule_recurring_action( as_get_datetime_object( '6 hours ago' )->getTimestamp(), HOUR_IN_SECONDS, $hook );
 
-		$fail = function () {
+		$fail              = function () {
 			throw new Exception( 'Simulated failure of a recurring action.' );
 		};
 		$count_assessments = function ( $is_failing ) use ( &$observed ) {
-			$observed++;
+			++$observed;
 			return $is_failing;
 		};
-		$count_stored = function ( $stored_action_id ) use ( $action_id, &$stored ) {
+		$count_stored      = function ( $stored_action_id ) use ( $action_id, &$stored ) {
 			if ( $stored_action_id !== $action_id ) {
-				$stored++;
+				++$stored;
 			}
 		};
 

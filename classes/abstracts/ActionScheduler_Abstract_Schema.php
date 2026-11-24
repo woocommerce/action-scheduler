@@ -57,7 +57,7 @@ abstract class ActionScheduler_Abstract_Schema {
 		}
 
 		// create the tables.
-		if ( $this->schema_update_required() || $force_update ) {
+		if ( ( $this->schema_update_required() && $this->claim_schema_update() ) || $force_update ) {
 			foreach ( $this->tables as $table ) {
 				/**
 				 * Allow custom processing before updating a table schema.
@@ -115,6 +115,23 @@ abstract class ActionScheduler_Abstract_Schema {
 	}
 
 	/**
+	 * Claims the right to perform a pending schema update, so that concurrent requests do not each attempt it.
+	 *
+	 * Some updates rebuild a whole table, which can take a while on large sites. Requests that do not obtain the claim
+	 * skip the update and continue using the existing tables. A new install is always performed, as the tables are
+	 * needed before the request can continue.
+	 *
+	 * @return bool
+	 */
+	private function claim_schema_update() {
+		if ( empty( $this->db_version ) ) {
+			return true;
+		}
+
+		return (bool) ActionScheduler::lock()->set( 'schema_update_' . static::class );
+	}
+
+	/**
 	 * Update the option in WordPress to indicate that
 	 * our schema is now up to date
 	 *
@@ -169,10 +186,33 @@ abstract class ActionScheduler_Abstract_Schema {
 	public function tables_exist() {
 		global $wpdb;
 
+		$table_names = array();
+		foreach ( $this->tables as $table_name ) {
+			$table_names[] = $wpdb->prefix . $table_name;
+		}
+
+		/**
+		 * Short-circuit the existence check for all tables in this schema.
+		 *
+		 * This allows integrations with knowledge of their database routing to
+		 * check the tables together without issuing the built-in catalog queries.
+		 * Return null when the result is unknown so the default checks can run.
+		 *
+		 * @since 4.3.0
+		 *
+		 * @param bool|null                       $tables_exist Whether all tables exist, or null to use the default checks.
+		 * @param string[]                        $table_names  Full table names, including the current site's prefix.
+		 * @param ActionScheduler_Abstract_Schema $schema       Schema requesting the existence check.
+		 */
+		$tables_exist = apply_filters( 'action_scheduler_schema_tables_exist', null, $table_names, $this );
+
+		if ( is_bool( $tables_exist ) ) {
+			return $tables_exist;
+		}
+
 		$tables_exist = true;
 
-		foreach ( $this->tables as $table_name ) {
-			$table_name     = $wpdb->prefix . $table_name;
+		foreach ( $table_names as $table_name ) {
 			$pattern        = str_replace( '_', '\\_', $table_name );
 			$existing_table = $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $pattern ) );
 

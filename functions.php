@@ -518,6 +518,8 @@ function as_get_datetime_object( $date_string = null, $timezone = 'UTC' ) {
 function as_supports( string $feature ): bool {
 	$supported_features = array(
 		'ensure_recurring_actions_hook',
+		'large_args',
+		'schema_tables_exist',
 		'uninstall_bootstrap',
 	);
 

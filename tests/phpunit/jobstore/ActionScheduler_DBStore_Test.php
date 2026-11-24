@@ -1653,12 +1653,12 @@ class ActionScheduler_DBStore_Test extends AbstractStoreTest {
 	 */
 	public function test_schema_update_is_skipped_while_locked() {
 		$option_name = 'schema-' . ActionScheduler_StoreSchema::class;
-		$lock_option = 'action_scheduler_lock_schema_update_' . ActionScheduler_StoreSchema::class;
 		$updates     = 0;
 		$counter     = function () use ( &$updates ) {
 			++$updates;
 		};
 
+		$this->release_schema_update_lock();
 		add_action( 'action_scheduler_before_schema_update', $counter );
 		update_option( $option_name, '9.0.1' );
 		$this->assertTrue( ActionScheduler::lock()->set( 'schema_update_' . ActionScheduler_StoreSchema::class ) );
@@ -1674,17 +1674,18 @@ class ActionScheduler_DBStore_Test extends AbstractStoreTest {
 
 			$updates = 0;
 			update_option( $option_name, '9.0.1' );
-			delete_option( $lock_option );
-			wp_cache_delete( $lock_option, 'action_scheduler_locks' );
+			$this->release_schema_update_lock();
 
 			( new ActionScheduler_StoreSchema() )->register_tables();
 			$this->assertGreaterThan( 0, $updates, 'The update ran once the lock was available.' );
 			$this->assertTrue( version_compare( get_option( $option_name ), '10', '>=' ) );
 		} finally {
 			remove_action( 'action_scheduler_before_schema_update', $counter );
-			delete_option( $lock_option );
-			wp_cache_delete( $lock_option, 'action_scheduler_locks' );
 			( new ActionScheduler_StoreSchema() )->register_tables( true );
+			$this->release_schema_update_lock();
+
+			// Schema updates can implicitly commit the test transaction (and with it, the lock), so commit its removal too.
+			self::commit_transaction();
 		}
 	}
 
@@ -1693,12 +1694,12 @@ class ActionScheduler_DBStore_Test extends AbstractStoreTest {
 	 */
 	public function test_new_install_ignores_schema_update_lock() {
 		$option_name = 'schema-' . ActionScheduler_StoreSchema::class;
-		$lock_option = 'action_scheduler_lock_schema_update_' . ActionScheduler_StoreSchema::class;
 		$updates     = 0;
 		$counter     = function () use ( &$updates ) {
 			++$updates;
 		};
 
+		$this->release_schema_update_lock();
 		add_action( 'action_scheduler_before_schema_update', $counter );
 		delete_option( $option_name );
 		$this->assertTrue( ActionScheduler::lock()->set( 'schema_update_' . ActionScheduler_StoreSchema::class ) );
@@ -1709,10 +1710,21 @@ class ActionScheduler_DBStore_Test extends AbstractStoreTest {
 			$this->assertTrue( version_compare( get_option( $option_name ), '10', '>=' ) );
 		} finally {
 			remove_action( 'action_scheduler_before_schema_update', $counter );
-			delete_option( $lock_option );
-			wp_cache_delete( $lock_option, 'action_scheduler_locks' );
 			( new ActionScheduler_StoreSchema() )->register_tables( true );
+			$this->release_schema_update_lock();
+
+			// Schema updates can implicitly commit the test transaction (and with it, the lock), so commit its removal too.
+			self::commit_transaction();
 		}
+	}
+
+	/**
+	 * Removes the store schema's update lock, if held.
+	 */
+	private function release_schema_update_lock() {
+		$lock_option = 'action_scheduler_lock_schema_update_' . ActionScheduler_StoreSchema::class;
+		delete_option( $lock_option );
+		wp_cache_delete( $lock_option, 'action_scheduler_locks' );
 	}
 
 	/**

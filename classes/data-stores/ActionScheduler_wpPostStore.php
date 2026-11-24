@@ -1103,7 +1103,10 @@ class ActionScheduler_wpPostStore extends ActionScheduler_Store {
 	/**
 	 * Determine whether the post store can be migrated.
 	 *
-	 * @param [type] $setting - Setting value.
+	 * Migration is held back while any action has args too long to be saved by the custom tables data store, as those
+	 * actions cannot be migrated and would otherwise prevent the migration from completing.
+	 *
+	 * @param bool $setting Whether the migration dependencies are met.
 	 * @return bool
 	 */
 	public function migration_dependencies_met( $setting ) {
@@ -1111,15 +1114,28 @@ class ActionScheduler_wpPostStore extends ActionScheduler_Store {
 
 		$dependencies_met = get_transient( self::DEPENDENCIES_MET );
 		if ( empty( $dependencies_met ) ) {
-			$maximum_args_length = apply_filters( 'action_scheduler_maximum_args_length', 191 );
-			$found_action        = $wpdb->get_var( // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+			$default_maximum = ( new ActionScheduler_DBStore() )->get_max_storable_args_length();
+
+			/**
+			 * Filters the maximum length of action args (encoded as JSON) that can be migrated to the custom tables.
+			 *
+			 * @since 3.1.0
+			 *
+			 * @param int $maximum_args_length Maximum length. Defaults to what the custom tables data store can save.
+			 */
+			$maximum_args_length = (int) apply_filters( 'action_scheduler_maximum_args_length', $default_maximum );
+			if ( $maximum_args_length < 1 ) {
+				$maximum_args_length = $default_maximum;
+			}
+
+			$found_action     = $wpdb->get_var( // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 				$wpdb->prepare(
 					"SELECT ID FROM {$wpdb->posts} WHERE post_type = %s AND CHAR_LENGTH(post_content) > %d LIMIT 1",
-					$maximum_args_length,
-					self::POST_TYPE
+					self::POST_TYPE,
+					$maximum_args_length
 				)
 			);
-			$dependencies_met    = $found_action ? 'no' : 'yes';
+			$dependencies_met = $found_action ? 'no' : 'yes';
 			set_transient( self::DEPENDENCIES_MET, $dependencies_met, DAY_IN_SECONDS );
 		}
 

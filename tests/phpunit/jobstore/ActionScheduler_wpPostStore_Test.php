@@ -541,4 +541,76 @@ class ActionScheduler_wpPostStore_Test extends AbstractStoreTest {
 			$prop->setValue( null, $original_store );
 		}
 	}
+
+	/**
+	 * Saves an action to the post store, then sets its stored args to JSON of the requested length.
+	 *
+	 * The args are written directly, as the post store would otherwise flag args this long as incorrect usage.
+	 *
+	 * @param int $length Length of the JSON-encoded args.
+	 * @return int Action ID.
+	 */
+	private function save_action_with_args_length( $length ) {
+		global $wpdb;
+
+		$action    = new ActionScheduler_Action( ActionScheduler_Callbacks::HOOK_WITH_CALLBACK, array(), new ActionScheduler_SimpleSchedule( as_get_datetime_object() ) );
+		$action_id = ( new ActionScheduler_wpPostStore() )->save_action( $action );
+		$content   = wp_json_encode( array( 'payload' => str_repeat( 'a', $length - strlen( '{"payload":""}' ) ) ) );
+
+		$this->assertSame( $length, strlen( $content ) );
+		$wpdb->update( $wpdb->posts, array( 'post_content' => $content ), array( 'ID' => $action_id ) );
+
+		return $action_id;
+	}
+
+	/**
+	 * Checks the migration dependencies afresh, bypassing the cached result.
+	 *
+	 * @return bool
+	 */
+	private function check_migration_dependencies() {
+		delete_transient( ActionScheduler_wpPostStore::DEPENDENCIES_MET );
+		return ( new ActionScheduler_wpPostStore() )->migration_dependencies_met( true );
+	}
+
+	/**
+	 * @testdox Migration dependencies are met when all args fit in the custom tables, including args longer than 191 characters.
+	 */
+	public function test_migration_dependencies_met_when_args_fit() {
+		$this->save_action_with_args_length( 191 );
+		$this->save_action_with_args_length( 20000 );
+		$this->save_action_with_args_length( ( new ActionScheduler_DBStore() )->get_max_storable_args_length() );
+
+		$this->assertTrue( $this->check_migration_dependencies() );
+	}
+
+	/**
+	 * @testdox Migration dependencies are not met while an action has args too long for the custom tables.
+	 */
+	public function test_migration_dependencies_not_met_when_args_too_long() {
+		$this->save_action_with_args_length( 200 );
+		$this->save_action_with_args_length( ( new ActionScheduler_DBStore() )->get_max_storable_args_length() + 1 );
+
+		$this->assertFalse( $this->check_migration_dependencies() );
+	}
+
+	/**
+	 * @testdox The maximum args length used by the migration dependency check can be filtered.
+	 */
+	public function test_migration_dependencies_max_args_length_filter() {
+		$this->save_action_with_args_length( 2000 );
+
+		$filter = function () {
+			return 1000;
+		};
+		add_filter( 'action_scheduler_maximum_args_length', $filter );
+
+		try {
+			$this->assertFalse( $this->check_migration_dependencies() );
+		} finally {
+			remove_filter( 'action_scheduler_maximum_args_length', $filter );
+		}
+
+		$this->assertTrue( $this->check_migration_dependencies() );
+	}
 }

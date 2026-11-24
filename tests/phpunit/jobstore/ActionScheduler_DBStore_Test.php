@@ -1623,6 +1623,21 @@ class ActionScheduler_DBStore_Test extends AbstractStoreTest {
 	}
 
 	/**
+	 * @testdox get_max_storable_args_length() reports the configured maximum, limited by the extended_args column.
+	 */
+	public function test_get_max_storable_args_length() {
+		$store = new ActionScheduler_DBStore();
+		$this->assertSame( 65535, $store->get_max_storable_args_length() );
+
+		$this->set_extended_args_column_type( 'varchar(8000) DEFAULT NULL' );
+		try {
+			$this->assertSame( 8000, $store->get_max_storable_args_length() );
+		} finally {
+			$this->set_extended_args_column_type( 'longtext' );
+		}
+	}
+
+	/**
 	 * @testdox The legacy 8000 character limit applies while the extended_args column has not been widened.
 	 */
 	public function test_legacy_args_max_length_applies_before_column_is_widened() {

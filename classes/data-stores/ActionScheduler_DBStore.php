@@ -393,17 +393,36 @@ AND args = %s
 	 */
 	protected function validate_action( ActionScheduler_Action $action ) {
 		$args_length = strlen( wp_json_encode( $action->get_args() ) );
-		$max_length  = (int) static::$max_args_length;
 
-		// Args this long only fit once the extended_args column has been widened, so check that it has been.
-		if ( $args_length > self::LEGACY_MAX_ARGS_LENGTH && $args_length <= $max_length ) {
-			$max_length = min( $max_length, $this->get_extended_args_column_length() );
-		}
+		// Only args longer than the legacy limit depend on the extended_args column having been widened.
+		$max_length = $args_length > self::LEGACY_MAX_ARGS_LENGTH
+			? $this->get_max_storable_args_length()
+			: (int) static::$max_args_length;
 
 		if ( $args_length > $max_length ) {
 			// translators: %d is a number (maximum length of action arguments).
 			throw new InvalidArgumentException( sprintf( __( 'ActionScheduler_Action::$args too long. Action args should not be more than %d characters when encoded as JSON.', 'action-scheduler' ), $max_length ) ); // phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- Message is not output as HTML here.
 		}
+	}
+
+	/**
+	 * Gets the maximum length of args (encoded as JSON) that can currently be stored.
+	 *
+	 * This is the store's configured maximum, further limited by the length of the extended_args column as it exists
+	 * in the database.
+	 *
+	 * @since 4.3.0
+	 *
+	 * @return int
+	 */
+	public function get_max_storable_args_length() {
+		$max_length = (int) static::$max_args_length;
+
+		if ( $max_length <= self::LEGACY_MAX_ARGS_LENGTH ) {
+			return $max_length;
+		}
+
+		return min( $max_length, $this->get_extended_args_column_length() );
 	}
 
 	/**
@@ -417,6 +436,10 @@ AND args = %s
 	 */
 	private function get_extended_args_column_length() {
 		global $wpdb;
+
+		if ( empty( $wpdb->actionscheduler_actions ) ) {
+			return self::LEGACY_MAX_ARGS_LENGTH;
+		}
 
 		$column_length = $wpdb->get_col_length( $wpdb->actionscheduler_actions, 'extended_args' );
 

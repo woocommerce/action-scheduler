@@ -30,11 +30,21 @@ class ActionScheduler_DBStore extends ActionScheduler_Store {
 	private $claim_before_date = null;
 
 	/**
-	 * Maximum length of args.
+	 * Maximum length of args, when encoded as JSON.
+	 *
+	 * Args longer than LEGACY_MAX_ARGS_LENGTH are only accepted once the extended_args column has been widened (schema
+	 * version 10), and if the column's length cannot be determined the legacy limit applies.
 	 *
 	 * @var int
 	 */
-	protected static $max_args_length = 8000;
+	protected static $max_args_length = 65535;
+
+	/**
+	 * Maximum length of args before schema version 10 widened the extended_args column.
+	 *
+	 * @var int
+	 */
+	private const LEGACY_MAX_ARGS_LENGTH = 8000;
 
 	/**
 	 * Maximum length of index.
@@ -373,6 +383,46 @@ AND args = %s
 		}
 
 		return 'v1:' . hash( 'sha256', $identity );
+	}
+
+	/**
+	 * Ensures the action's args will fit in the actions table.
+	 *
+	 * @param ActionScheduler_Action $action Action to be validated.
+	 * @throws InvalidArgumentException When json encoded args is too long.
+	 */
+	protected function validate_action( ActionScheduler_Action $action ) {
+		$args_length = strlen( wp_json_encode( $action->get_args() ) );
+		$max_length  = (int) static::$max_args_length;
+
+		// Args this long only fit once the extended_args column has been widened, so check that it has been.
+		if ( $args_length > self::LEGACY_MAX_ARGS_LENGTH && $args_length <= $max_length ) {
+			$max_length = min( $max_length, $this->get_extended_args_column_length() );
+		}
+
+		if ( $args_length > $max_length ) {
+			// translators: %d is a number (maximum length of action arguments).
+			throw new InvalidArgumentException( sprintf( __( 'ActionScheduler_Action::$args too long. Action args should not be more than %d characters when encoded as JSON.', 'action-scheduler' ), $max_length ) ); // phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- Message is not output as HTML here.
+		}
+	}
+
+	/**
+	 * Gets the maximum length of the extended_args column, as it exists in the database.
+	 *
+	 * The schema update that widens the column may not have run yet or may have failed, and in either case longer args
+	 * would not fit (and, depending on the SQL mode, could be silently truncated). If the length cannot be determined,
+	 * the legacy limit is assumed.
+	 *
+	 * @return int
+	 */
+	private function get_extended_args_column_length() {
+		global $wpdb;
+
+		$column_length = $wpdb->get_col_length( $wpdb->actionscheduler_actions, 'extended_args' );
+
+		return is_array( $column_length ) && ! empty( $column_length['length'] )
+			? (int) $column_length['length']
+			: self::LEGACY_MAX_ARGS_LENGTH;
 	}
 
 	/**

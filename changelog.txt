@@ -2,6 +2,8 @@
 
 = 4.3.0 - xxxx-xx-xx =
 * Fix - Stop the queue runner when a claim cannot be created (for example, because the claims table is missing), rather than running unclaimed actions and looping over already-finished ones.
+* Add - Allow action args of up to 65,535 characters (encoded as JSON), up from 8,000, with `as_supports( 'large_args' )` feature detection. This widens the `extended_args` column of the actions table.
+* Enhancement - Database updates are now performed behind a lock, allowing other requests to carry on rather than queueing behind a long-running table change.
 * Dev - Add the `action_scheduler_schema_tables_exist` filter for checking all tables in a schema together, with `as_supports( 'schema_tables_exist' )` feature detection and the existing queries as a fallback.
 * Fix - Delete old claim records that no longer belong to any action during queue cleanup, so that they stop accumulating in the claims table.
 * Fix - Make partial args matching (`partial_args_matching` set to `like` or `json`) find actions whose args are longer than 191 characters, and stop JSON matching from failing on MySQL when such actions exist.

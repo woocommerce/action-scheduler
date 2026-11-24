@@ -1562,4 +1562,185 @@ class ActionScheduler_DBStore_Test extends AbstractStoreTest {
 		$this->assertSame( 1, $store->purge_orphan_claims() );
 		$this->assertSame( 0, $store->purge_orphan_claims() );
 	}
+
+	/**
+	 * Builds args which, when encoded as JSON, are exactly the requested length.
+	 *
+	 * @param int $length Desired length of the JSON-encoded args.
+	 * @return array
+	 */
+	private function get_args_of_json_length( $length ) {
+		$args = array( 'payload' => str_repeat( 'a', $length - strlen( '{"payload":""}' ) ) );
+		$this->assertSame( $length, strlen( wp_json_encode( $args ) ) );
+		return $args;
+	}
+
+	/**
+	 * Saves an action with the supplied args, returning the action ID.
+	 *
+	 * @param array $args Action args.
+	 * @return int
+	 */
+	private function save_action_with_args( array $args ) {
+		$action = new ActionScheduler_Action( ActionScheduler_Callbacks::HOOK_WITH_CALLBACK, $args, new ActionScheduler_SimpleSchedule( as_get_datetime_object() ) );
+		return ( new ActionScheduler_DBStore() )->save_action( $action );
+	}
+
+	/**
+	 * @testdox Args longer than the legacy 8000 character limit can be saved, fetched and matched.
+	 */
+	public function test_args_longer_than_legacy_limit() {
+		$args      = $this->get_args_of_json_length( 20000 );
+		$action_id = $this->save_action_with_args( $args );
+		$store     = new ActionScheduler_DBStore();
+
+		$this->assertSame( $args, $store->fetch_action( $action_id )->get_args() );
+		$this->assertSame(
+			array( $action_id ),
+			array_map(
+				'intval',
+				$store->query_actions(
+					array(
+						'hook' => ActionScheduler_Callbacks::HOOK_WITH_CALLBACK,
+						'args' => $args,
+					)
+				)
+			)
+		);
+	}
+
+	/**
+	 * @testdox Args are accepted up to 65535 characters (encoded as JSON), and rejected beyond that.
+	 */
+	public function test_args_max_length() {
+		$args      = $this->get_args_of_json_length( 65535 );
+		$action_id = $this->save_action_with_args( $args );
+		$this->assertSame( $args, ( new ActionScheduler_DBStore() )->fetch_action( $action_id )->get_args() );
+
+		$this->expectException( RuntimeException::class );
+		$this->expectExceptionMessage( 'should not be more than 65535 characters' );
+		$this->save_action_with_args( $this->get_args_of_json_length( 65536 ) );
+	}
+
+	/**
+	 * @testdox The legacy 8000 character limit applies while the extended_args column has not been widened.
+	 */
+	public function test_legacy_args_max_length_applies_before_column_is_widened() {
+		$this->set_extended_args_column_type( 'varchar(8000) DEFAULT NULL' );
+
+		try {
+			$this->assertNotEmpty( $this->save_action_with_args( $this->get_args_of_json_length( 8000 ) ) );
+
+			$exception = null;
+			try {
+				$this->save_action_with_args( $this->get_args_of_json_length( 20000 ) );
+			} catch ( RuntimeException $e ) {
+				$exception = $e;
+			}
+			$this->assertInstanceOf( RuntimeException::class, $exception );
+			$this->assertStringContainsString( 'should not be more than 8000 characters', $exception->getMessage() );
+		} finally {
+			$this->set_extended_args_column_type( 'longtext' );
+		}
+
+		$args      = $this->get_args_of_json_length( 20000 );
+		$action_id = $this->save_action_with_args( $args );
+		$this->assertSame( $args, ( new ActionScheduler_DBStore() )->fetch_action( $action_id )->get_args() );
+	}
+
+	/**
+	 * @testdox A pending schema update is skipped while another request holds the schema update lock, unless forced.
+	 */
+	public function test_schema_update_is_skipped_while_locked() {
+		$option_name = 'schema-' . ActionScheduler_StoreSchema::class;
+		$updates     = 0;
+		$counter     = function () use ( &$updates ) {
+			++$updates;
+		};
+
+		$this->release_schema_update_lock();
+		add_action( 'action_scheduler_before_schema_update', $counter );
+		update_option( $option_name, '9.0.1' );
+		$this->assertTrue( ActionScheduler::lock()->set( 'schema_update_' . ActionScheduler_StoreSchema::class ) );
+
+		try {
+			( new ActionScheduler_StoreSchema() )->register_tables();
+			$this->assertSame( 0, $updates, 'The update was skipped while locked.' );
+			$this->assertSame( '9.0.1', get_option( $option_name ), 'The schema version was left unchanged.' );
+
+			( new ActionScheduler_StoreSchema() )->register_tables( true );
+			$this->assertGreaterThan( 0, $updates, 'A forced update ignores the lock.' );
+			$this->assertTrue( version_compare( get_option( $option_name ), '10', '>=' ) );
+
+			$updates = 0;
+			update_option( $option_name, '9.0.1' );
+			$this->release_schema_update_lock();
+
+			( new ActionScheduler_StoreSchema() )->register_tables();
+			$this->assertGreaterThan( 0, $updates, 'The update ran once the lock was available.' );
+			$this->assertTrue( version_compare( get_option( $option_name ), '10', '>=' ) );
+		} finally {
+			remove_action( 'action_scheduler_before_schema_update', $counter );
+			( new ActionScheduler_StoreSchema() )->register_tables( true );
+			$this->release_schema_update_lock();
+
+			// Schema updates can implicitly commit the test transaction (and with it, the lock), so commit its removal too.
+			self::commit_transaction();
+		}
+	}
+
+	/**
+	 * @testdox A new install creates the tables even while the schema update lock is held.
+	 */
+	public function test_new_install_ignores_schema_update_lock() {
+		$option_name = 'schema-' . ActionScheduler_StoreSchema::class;
+		$updates     = 0;
+		$counter     = function () use ( &$updates ) {
+			++$updates;
+		};
+
+		$this->release_schema_update_lock();
+		add_action( 'action_scheduler_before_schema_update', $counter );
+		delete_option( $option_name );
+		$this->assertTrue( ActionScheduler::lock()->set( 'schema_update_' . ActionScheduler_StoreSchema::class ) );
+
+		try {
+			( new ActionScheduler_StoreSchema() )->register_tables();
+			$this->assertGreaterThan( 0, $updates );
+			$this->assertTrue( version_compare( get_option( $option_name ), '10', '>=' ) );
+		} finally {
+			remove_action( 'action_scheduler_before_schema_update', $counter );
+			( new ActionScheduler_StoreSchema() )->register_tables( true );
+			$this->release_schema_update_lock();
+
+			// Schema updates can implicitly commit the test transaction (and with it, the lock), so commit its removal too.
+			self::commit_transaction();
+		}
+	}
+
+	/**
+	 * Removes the store schema's update lock, if held.
+	 */
+	private function release_schema_update_lock() {
+		$lock_option = 'action_scheduler_lock_schema_update_' . ActionScheduler_StoreSchema::class;
+		delete_option( $lock_option );
+		wp_cache_delete( $lock_option, 'action_scheduler_locks' );
+	}
+
+	/**
+	 * Changes the type of the extended_args column, clearing wpdb's cached table and column metadata.
+	 *
+	 * @param string $definition Column definition.
+	 */
+	private function set_extended_args_column_type( $definition ) {
+		global $wpdb;
+
+		$wpdb->query( "ALTER TABLE {$wpdb->actionscheduler_actions} MODIFY extended_args {$definition}" ); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+
+		foreach ( array( 'col_meta', 'table_charset' ) as $cache ) {
+			$property = new ReflectionProperty( $wpdb, $cache );
+			$property->setAccessible( true );
+			$property->setValue( $wpdb, array() );
+		}
+	}
 }

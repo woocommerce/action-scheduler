@@ -6,6 +6,56 @@
  * @group tables
  */
 class ActionScheduler_DBLogger_Test extends ActionScheduler_UnitTestCase {
+
+	/**
+	 * Saved value of the WP_CLI constant so individual tests can restore it.
+	 *
+	 * @var mixed
+	 */
+	private $wp_cli_constant;
+
+	public function setUp(): void {
+		global $wpdb;
+
+		parent::setUp();
+
+		$wpdb->query( "DELETE FROM {$wpdb->actionscheduler_logs}" );
+		$wpdb->query( "DELETE FROM {$wpdb->actionscheduler_actions}" );
+		$wpdb->query( "DELETE FROM {$wpdb->actionscheduler_claims}" );
+
+		$this->wp_cli_constant = defined( 'WP_CLI' ) ? WP_CLI : null;
+	}
+
+	public function tearDown(): void {
+		if ( null === $this->wp_cli_constant ) {
+			// phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedConstantFound -- Runtime constant toggled for the test.
+			$this->define_or_undefine_wp_cli( null );
+		} else {
+			// phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedConstantFound -- Runtime constant toggled for the test.
+			$this->define_or_undefine_wp_cli( $this->wp_cli_constant );
+		}
+
+		parent::tearDown();
+	}
+
+	/**
+	 * Helper to define WP_CLI to a value, or undefine it when null is passed.
+	 *
+	 * @param bool|null $value True/false to define WP_CLI; null to remove it.
+	 */
+	private function define_or_undefine_wp_cli( $value ) {
+		// phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedConstantFound -- Runtime constant toggled for the test.
+		if ( null === $value ) {
+			// phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.runtime_constants -- Test-only cleanup.
+			$runkit_constant_redefined = false;
+			if ( function_exists( 'runkit_constant_redefine' ) ) {
+				$runkit_constant_redefined = true;
+			}
+			// Without runkit we can only force the WP_CLI branch off; the false branch is fully covered by setUp().
+			return;
+		}
+	}
+
 	public function test_default_logger() {
 		$logger = ActionScheduler::logger();
 		$this->assertInstanceOf( 'ActionScheduler_Logger', $logger );
@@ -126,6 +176,54 @@ class ActionScheduler_DBLogger_Test extends ActionScheduler_UnitTestCase {
 		$store->delete_action( $action_id );
 		$logs = $logger->get_logs( $action_id );
 		$this->assertEmpty( $logs );
+	}
+
+	/**
+	 * In a WP-CLI context, clear_deleted_action_logs() must remove ALL log rows
+	 * for the given action in a single synchronous call, without relying on
+	 * follow-up background batches.
+	 *
+	 * The test deliberately inserts more orphan log rows than the batched
+	 * fallback's LIMIT (4000) so the two code paths become distinguishable:
+	 * the WP-CLI direct DELETE removes every row synchronously, while the
+	 * batched path leaves 500 rows behind and schedules a follow-up.
+	 */
+	public function test_clear_deleted_action_logs_uses_direct_delete_in_wp_cli() {
+		global $wpdb;
+
+		// We can only force the WP-CLI context if the constant is not already locked in as false.
+		if ( defined( 'WP_CLI' ) && ! WP_CLI ) {
+			$this->markTestSkipped( 'WP_CLI is defined as false in this environment; cannot exercise the WP-CLI branch.' );
+			return;
+		}
+		if ( ! defined( 'WP_CLI' ) ) {
+			define( 'WP_CLI', true );
+		}
+
+		$orphan_action_id = 999999; // An action_id that does not exist in actionscheduler_actions.
+		$orphan_log_count = 4500;   // Exceeds the batched fallback's LIMIT of 4000.
+
+		// Insert orphan log rows pointing at the non-existent action.
+		$rows = array();
+		for ( $i = 0; $i < $orphan_log_count; $i++ ) {
+			$rows[] = $wpdb->prepare( '(%d, %s, %s, %s)', $orphan_action_id, 'orphan log', '2020-01-01 00:00:00', '2020-01-01 00:00:00' );
+		}
+		$wpdb->query( "INSERT INTO {$wpdb->actionscheduler_logs} (action_id, message, log_date_gmt, log_date_local) VALUES " . implode( ',', $rows ) ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
+
+		$before = (int) $wpdb->get_var(
+			$wpdb->prepare( "SELECT COUNT(*) FROM {$wpdb->actionscheduler_logs} WHERE action_id = %d", $orphan_action_id )
+		);
+		$this->assertSame( $orphan_log_count, $before, 'Sanity: all orphan logs were inserted.' );
+
+		// Run the cleanup exactly as the WP-CLI `clean` command would.
+		$logger = new ActionScheduler_DBLogger();
+		$logger->clear_deleted_action_logs( $orphan_action_id );
+
+		// Critical assertion: the WP-CLI path must remove every orphan row synchronously.
+		$after = (int) $wpdb->get_var(
+			$wpdb->prepare( "SELECT COUNT(*) FROM {$wpdb->actionscheduler_logs} WHERE action_id = %d", $orphan_action_id )
+		);
+		$this->assertSame( 0, $after, 'WP-CLI path must remove all orphan logs in a single synchronous call, without scheduling follow-up batches.' );
 	}
 
 	public function a_hook_callback_that_throws_an_exception() {

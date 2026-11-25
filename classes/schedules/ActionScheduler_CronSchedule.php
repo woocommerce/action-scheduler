@@ -28,7 +28,7 @@ class ActionScheduler_CronSchedule extends ActionScheduler_Abstract_RecurringSch
 	 * @param DateTime|null         $first (Optional) The date & time the first instance of this interval schedule ran. Default null, meaning this is the first instance.
 	 */
 	public function __construct( DateTime $start, $recurrence, ?DateTime $first = null ) {
-		if ( ! is_a( $recurrence, 'CronExpression' ) ) {
+		if ( ! ( $recurrence instanceof CronExpression ) ) {
 			$recurrence = CronExpression::factory( $recurrence );
 		}
 

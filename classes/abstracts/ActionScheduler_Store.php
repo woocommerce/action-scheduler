@@ -357,7 +357,7 @@ abstract class ActionScheduler_Store extends ActionScheduler_Store_Deprecated {
 	 * @throws ActionScheduler_InvalidActionException When the schedule is invalid.
 	 */
 	protected function validate_schedule( $schedule, $action_id ) {
-		if ( empty( $schedule ) || ! is_a( $schedule, 'ActionScheduler_Schedule' ) ) {
+		if ( empty( $schedule ) || ! ( $schedule instanceof ActionScheduler_Schedule ) ) {
 			throw ActionScheduler_InvalidActionException::from_schedule( $action_id, $schedule );
 		}
 	}
@@ -399,7 +399,7 @@ abstract class ActionScheduler_Store extends ActionScheduler_Store_Deprecated {
 				)
 			);
 
-			$this->bulk_cancel_actions( $action_ids );
+			$this->bulk_cancel_actions_by_id( $action_ids );
 		}
 	}
 
@@ -424,7 +424,7 @@ abstract class ActionScheduler_Store extends ActionScheduler_Store_Deprecated {
 				)
 			);
 
-			$this->bulk_cancel_actions( $action_ids );
+			$this->bulk_cancel_actions_by_id( $action_ids );
 		}
 	}
 
@@ -432,12 +432,14 @@ abstract class ActionScheduler_Store extends ActionScheduler_Store_Deprecated {
 	 * Cancel a set of action IDs.
 	 *
 	 * @since 3.0.0
+	 * @since 4.3.0 Renamed from bulk_cancel_actions(), to help prevent confusion with
+	 *              ActionScheduler_DBStore::bulk_cancel_actions().
 	 *
 	 * @param int[] $action_ids List of action IDs.
 	 *
 	 * @return void
 	 */
-	private function bulk_cancel_actions( $action_ids ) {
+	private function bulk_cancel_actions_by_id( $action_ids ) {
 		foreach ( $action_ids as $action_id ) {
 			$this->cancel_action( $action_id );
 		}
@@ -495,6 +497,22 @@ abstract class ActionScheduler_Store extends ActionScheduler_Store_Deprecated {
 	 * Flush all store caches.
 	 */
 	public function flush_caches() {
+	}
+
+	/**
+	 * Purge old claim records that are no longer referenced by any action.
+	 *
+	 * This default implementation does nothing and returns false, meaning the store does not support
+	 * purging orphan claims. Stores that support it (such as ActionScheduler_DBStore, which keeps claims
+	 * in a table of their own) should override this method and return the number of claims deleted
+	 * (including 0 when there was nothing to purge) to indicate that support.
+	 *
+	 * @since 4.3.0
+	 *
+	 * @return int|false Number of orphan claims deleted, or false if the store does not support purging orphan claims or the purge failed.
+	 */
+	public function purge_orphan_claims() {
+		return false;
 	}
 
 	/**

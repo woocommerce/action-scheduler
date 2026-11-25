@@ -160,6 +160,24 @@ add_filter( 'action_scheduler_default_cleaner_statuses', function( $statuses ) {
 wp action-scheduler clean --status=failed --batch-size=50 --before='90 days ago' --pause=2
 ```
 
+## Custom Table Existence Checks
+
+Since version 4.3.0, the `action_scheduler_schema_tables_exist` filter allows integrations to check all tables in a schema together. It runs once per call to `ActionScheduler_Abstract_Schema::tables_exist()`, before the built-in database checks. This is useful when an installation has a more efficient lookup that is known to work with its database topology.
+
+The filter receives three arguments:
+
+1. The current result, initially `null`.
+2. An array of all table names in the schema, each including the current site's prefix.
+3. The schema object requesting the check.
+
+Return `true` when all supplied tables are known to exist, `false` when at least one is known to be missing, or `null` when the result cannot be determined. Only boolean results bypass all built-in queries. Other values retain the existing per-table `SHOW TABLES LIKE` checks, including stopping at the first missing table. An empty schema returns `true` by default; the filter still runs once with an empty array and can override that result.
+
+Register the filter before the schema check runs, for example when loading an integration plugin. Integrations must account for database routing, permissions, multisite prefix changes, and table creation or deletion. Do not treat an unavailable metadata source or a database error as proof that a table is missing. When multiple callbacks are registered, preserve a boolean result supplied by an earlier callback unless an override is intentional.
+
+Integrations can detect support with `as_supports( 'schema_tables_exist' )` after Action Scheduler initializes. Register callbacks early enough to cover schema checks; do not defer registration until `action_scheduler_init` solely to perform feature detection, as schema checks may already have run. Registering a callback on an older copy of Action Scheduler is harmless, but that copy will not apply it.
+
+No alternative query or persistent cache is enabled by default. Installations without a callback retain the existing behavior, including compatibility with database drop-ins. The filter does not change migration status or when migration is scheduled. It covers schema checks only; the separate check in `ActionScheduler_ListTable::display_admin_notices()` does not use this filter.
+
 ## High Volume Plugin
 
 It's not necessary to add all of this code yourself, there is a handy plugin to get access to each of these increases - the [Action Scheduler - High Volume](https://github.com/woocommerce/action-scheduler-high-volume) plugin.

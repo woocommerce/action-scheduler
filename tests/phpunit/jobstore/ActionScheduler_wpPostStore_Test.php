@@ -128,6 +128,40 @@ class ActionScheduler_wpPostStore_Test extends AbstractStoreTest {
 		}
 	}
 
+	/**
+	 * This store uses the base class's cancel_actions_by_hook() and cancel_actions_by_group(). Both must
+	 * still report the IDs they cancel through the action_scheduler_bulk_cancel_actions hook, and leave
+	 * other actions alone.
+	 */
+	public function test_bulk_cancellation_reports_canceled_action_ids() {
+		$store    = new ActionScheduler_wpPostStore();
+		$reported = array();
+		$listener = function ( $action_ids ) use ( &$reported ) {
+			$reported = array_merge( $reported, $action_ids );
+		};
+		add_action( 'action_scheduler_bulk_cancel_actions', $listener );
+
+		$schedule = new ActionScheduler_SimpleSchedule( as_get_datetime_object( '+1 day' ) );
+		$by_hook  = array(
+			$store->save_action( new ActionScheduler_Action( 'bulk_cancel_by_hook_test', array( 1 ), $schedule ) ),
+			$store->save_action( new ActionScheduler_Action( 'bulk_cancel_by_hook_test', array( 2 ), $schedule ) ),
+		);
+		$by_group = array(
+			$store->save_action( new ActionScheduler_Action( ActionScheduler_Callbacks::HOOK_WITH_CALLBACK, array( 3 ), $schedule, 'bulk_cancel_by_group_test' ) ),
+		);
+		$other    = $store->save_action( new ActionScheduler_Action( ActionScheduler_Callbacks::HOOK_WITH_CALLBACK, array( 4 ), $schedule ) );
+
+		$store->cancel_actions_by_hook( 'bulk_cancel_by_hook_test' );
+		$store->cancel_actions_by_group( 'bulk_cancel_by_group_test' );
+		remove_action( 'action_scheduler_bulk_cancel_actions', $listener );
+
+		$expected = array_merge( $by_hook, $by_group );
+		sort( $expected );
+		sort( $reported );
+		$this->assertSame( array_map( 'intval', $expected ), array_map( 'intval', $reported ) );
+		$this->assertSame( ActionScheduler_Store::STATUS_PENDING, $store->get_status( $other ) );
+	}
+
 	public function test_claim_actions() {
 		$created_actions = array();
 		$store           = new ActionScheduler_wpPostStore();
@@ -470,5 +504,41 @@ class ActionScheduler_wpPostStore_Test extends AbstractStoreTest {
 		// Cleanup.
 		remove_filter( 'query', $simulate_unexpected_db_behavior );
 		$store->release_claim( $claim );
+	}
+
+	/**
+	 * @testdox store_unique_action() fallback uses check-then-insert when the store is not ActionScheduler_DBStore.
+	 *
+	 * @testWith [""]
+	 *           ["test_group"]
+	 *
+	 * @param string $group Action group.
+	 */
+	public function test_store_unique_action_fallback( $group ) {
+		$store = new ActionScheduler_wpPostStore();
+
+		// Inject the store which will trigger fallback branch; use reflection as the factory is singleton with already populated store instance.
+		$prop = new ReflectionProperty( ActionScheduler_Store::class, 'store' );
+		$prop->setAccessible( true );
+		$original_store = $prop->getValue();
+		$prop->setValue( null, $store );
+
+		try {
+			$hook    = md5( wp_rand() );
+			$factory = new ActionScheduler_ActionFactory();
+
+			$action_id = $factory->single_unique( $hook, array( 1 ), 'tomorrow', $group );
+			$this->assertNotSame( 0, $action_id, 'Unique action with no prior match is stored.' );
+			$this->assertSame( 0, $factory->single_unique( $hook, array( 1 ), 'tomorrow', $group ), 'Pending duplicate is rejected.' );
+			$this->assertNotSame( 0, $factory->single_unique( $hook, array( 2 ), 'tomorrow', $group ), 'Same hook with different args is stored.' );
+
+			$store->log_execution( $action_id );
+			$this->assertSame( 0, $factory->single_unique( $hook, array( 1 ), 'tomorrow', $group ), 'In-progress duplicate is rejected.' );
+
+			$store->mark_complete( $action_id );
+			$this->assertNotSame( 0, $factory->single_unique( $hook, array( 1 ), 'tomorrow', $group ), 'Completed action no longer blocks a new one.' );
+		} finally {
+			$prop->setValue( null, $original_store );
+		}
 	}
 }

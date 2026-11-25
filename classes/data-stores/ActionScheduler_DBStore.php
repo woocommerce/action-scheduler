@@ -30,11 +30,21 @@ class ActionScheduler_DBStore extends ActionScheduler_Store {
 	private $claim_before_date = null;
 
 	/**
-	 * Maximum length of args.
+	 * Maximum length of args, when encoded as JSON.
+	 *
+	 * Args longer than LEGACY_MAX_ARGS_LENGTH are only accepted once the extended_args column has been widened (schema
+	 * version 10), and if the column's length cannot be determined the legacy limit applies.
 	 *
 	 * @var int
 	 */
-	protected static $max_args_length = 8000;
+	protected static $max_args_length = 65535;
+
+	/**
+	 * Maximum length of args before schema version 10 widened the extended_args column.
+	 *
+	 * @var int
+	 */
+	private const LEGACY_MAX_ARGS_LENGTH = 8000;
 
 	/**
 	 * Maximum length of index.
@@ -376,6 +386,46 @@ AND args = %s
 	}
 
 	/**
+	 * Ensures the action's args will fit in the actions table.
+	 *
+	 * @param ActionScheduler_Action $action Action to be validated.
+	 * @throws InvalidArgumentException When json encoded args is too long.
+	 */
+	protected function validate_action( ActionScheduler_Action $action ) {
+		$args_length = strlen( wp_json_encode( $action->get_args() ) );
+		$max_length  = (int) static::$max_args_length;
+
+		// Args this long only fit once the extended_args column has been widened, so check that it has been.
+		if ( $args_length > self::LEGACY_MAX_ARGS_LENGTH && $args_length <= $max_length ) {
+			$max_length = min( $max_length, $this->get_extended_args_column_length() );
+		}
+
+		if ( $args_length > $max_length ) {
+			// translators: %d is a number (maximum length of action arguments).
+			throw new InvalidArgumentException( sprintf( __( 'ActionScheduler_Action::$args too long. Action args should not be more than %d characters when encoded as JSON.', 'action-scheduler' ), $max_length ) ); // phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- Message is not output as HTML here.
+		}
+	}
+
+	/**
+	 * Gets the maximum length of the extended_args column, as it exists in the database.
+	 *
+	 * The schema update that widens the column may not have run yet or may have failed, and in either case longer args
+	 * would not fit (and, depending on the SQL mode, could be silently truncated). If the length cannot be determined,
+	 * the legacy limit is assumed.
+	 *
+	 * @return int
+	 */
+	private function get_extended_args_column_length() {
+		global $wpdb;
+
+		$column_length = $wpdb->get_col_length( $wpdb->actionscheduler_actions, 'extended_args' );
+
+		return is_array( $column_length ) && ! empty( $column_length['length'] )
+			? (int) $column_length['length']
+			: self::LEGACY_MAX_ARGS_LENGTH;
+	}
+
+	/**
 	 * Generate a hash from json_encoded $args using MD5 as this isn't for security.
 	 *
 	 * @param string $args JSON encoded action args.
@@ -694,15 +744,16 @@ AND args = %s
 								)
 							);
 						}
-						$sql         .= ' AND JSON_EXTRACT(a.args, %s)=' . $placeholder;
+						$sql         .= ' AND JSON_EXTRACT(COALESCE(a.extended_args, a.args), %s)=' . $placeholder;
 						$sql_params[] = '$.' . $key;
 						$sql_params[] = $value;
 					}
 					break;
 				case 'like':
 					foreach ( $query['args'] as $key => $value ) {
-						$sql         .= ' AND a.args LIKE %s';
+						$sql         .= ' AND ((a.extended_args IS NULL AND a.args LIKE %s) OR a.extended_args LIKE %s)';
 						$json_partial = $wpdb->esc_like( trim( wp_json_encode( array( $key => $value ) ), '{}' ) );
+						$sql_params[] = "%{$json_partial}%";
 						$sql_params[] = "%{$json_partial}%";
 					}
 					break;
@@ -1041,9 +1092,34 @@ AND args = %s
 	 * @param string        $group Group to filter for.
 	 *
 	 * @return ActionScheduler_ActionClaim
+	 *
+	 * @throws RuntimeException When the claim cannot be created, or actions cannot be claimed.
 	 */
 	public function stake_claim( $max_actions = 10, ?DateTime $before_date = null, $hooks = array(), $group = '' ) {
 		$claim_id = $this->generate_claim_id();
+
+		/*
+		 * If the claim could not be recorded (for instance, because the claims table is missing or the database is
+		 * read-only), the claim ID will be zero. We must not continue, as zero is also the claim ID held by every
+		 * unclaimed action, so we would end up running actions without holding a claim on them.
+		 */
+		if ( 0 === (int) $claim_id ) {
+			global $wpdb;
+
+			$error = empty( $wpdb->last_error )
+				? _x( 'unknown', 'database error', 'action-scheduler' )
+				: $wpdb->last_error;
+
+			// phpcs:disable WordPress.Security.EscapeOutput.ExceptionNotEscaped -- Plain message for logs and WP-CLI; escaping belongs to whatever displays it.
+			throw new RuntimeException(
+				sprintf(
+					/* translators: %s database error. */
+					__( 'Unable to create a claim. Database error: %s.', 'action-scheduler' ),
+					$error
+				)
+			);
+			// phpcs:enable WordPress.Security.EscapeOutput.ExceptionNotEscaped
+		}
 
 		$this->claim_before_date = $before_date;
 		$this->claim_actions( $claim_id, $max_actions, $before_date, $hooks, $group );
@@ -1274,6 +1350,46 @@ AND args = %s
 		$sql = $wpdb->prepare( $sql, array( self::STATUS_PENDING, self::STATUS_RUNNING ) ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
 
 		return (int) $wpdb->get_var( $sql ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
+	}
+
+	/**
+	 * Purge old claim records that are no longer referenced by any action.
+	 *
+	 * Claims are only purged once they are at least a day old: a new claim record is created a moment
+	 * before any actions are assigned to it, so a recent claim with no actions may still be in use. At
+	 * most 1000 claims are purged per call, to bound the work on sites with a large backlog.
+	 *
+	 * @since 4.3.0
+	 *
+	 * @return int|false Number of orphan claims deleted, or false on failure.
+	 */
+	public function purge_orphan_claims() {
+		global $wpdb;
+
+		$cutoff = as_get_datetime_object( DAY_IN_SECONDS . ' seconds ago' );
+		$sql    = "
+			SELECT c.claim_id
+			FROM {$wpdb->actionscheduler_claims} c
+			WHERE c.date_created_gmt < %s
+			AND NOT EXISTS (
+				SELECT 1
+				FROM {$wpdb->actionscheduler_actions} a
+				WHERE a.claim_id = c.claim_id
+			)
+			LIMIT %d
+		";
+		$sql    = $wpdb->prepare( $sql, $cutoff->format( 'Y-m-d H:i:s' ), 1000 ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
+
+		$claim_ids = $wpdb->get_col( $sql ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
+		if ( empty( $claim_ids ) ) {
+			return $wpdb->last_error ? false : 0;
+		}
+
+		// Old claims cannot gain actions (claims are assigned immediately after creation), so a separate delete is safe.
+		$claim_id_string = implode( ',', array_map( 'absint', $claim_ids ) );
+		$deleted         = $wpdb->query( "DELETE FROM {$wpdb->actionscheduler_claims} WHERE claim_id IN ({$claim_id_string})" ); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+
+		return false === $deleted ? false : (int) $deleted;
 	}
 
 	/**

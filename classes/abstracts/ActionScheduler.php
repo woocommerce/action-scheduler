@@ -136,10 +136,25 @@ abstract class ActionScheduler {
 		$classes_dir = self::plugin_path( 'classes' . $d );
 		$separator   = strrpos( $class, '\\' );
 		if ( false !== $separator ) {
-			if ( 0 !== strpos( $class, 'Action_Scheduler' ) ) {
+			if ( 0 !== strpos( $class, 'Action_Scheduler\\' ) ) {
 				return;
 			}
-			$class = substr( $class, $separator + 1 );
+			$namespace    = strtolower( substr( $class, 0, $separator ) );
+			$class        = substr( $class, $separator + 1 );
+			$is_migration = 'action_scheduler\\migration' === $namespace && self::is_class_migration( $class );
+			$is_cli       = 'action_scheduler\\wp_cli' === $namespace && self::is_class_cli( $class );
+
+			// ActionScheduler_* classes are global, including those in the migration and CLI directories.
+			if ( 0 === stripos( $class, 'ActionScheduler_' ) || ( ! $is_migration && ! $is_cli ) ) {
+				return;
+			}
+		} elseif (
+			0 !== stripos( $class, 'ActionScheduler_' )
+			&& 'CronExpression' !== $class && 0 !== strpos( $class, 'CronExpression_' )
+			&& 'WP_Async_Request' !== $class
+		) {
+			// CronExpression and WP_Async_Request are bundled libraries, so their global classes must also be supported.
+			return;
 		}
 
 		if ( 'Deprecated' === substr( $class, -10 ) ) {
@@ -271,7 +286,12 @@ abstract class ActionScheduler {
 			WP_CLI::add_command( 'action-scheduler', 'ActionScheduler_WPCLI_Scheduler_command' );
 			WP_CLI::add_command( 'action-scheduler', 'ActionScheduler_WPCLI_Clean_Command' );
 			WP_CLI::add_command( 'action-scheduler action', '\Action_Scheduler\WP_CLI\Action_Command' );
-			WP_CLI::add_command( 'action-scheduler', '\Action_Scheduler\WP_CLI\System_Command' );
+			// Each registration replaces the group's description, so this must remain the last 'action-scheduler' call.
+			WP_CLI::add_command(
+				'action-scheduler',
+				'\Action_Scheduler\WP_CLI\System_Command',
+				array( 'shortdesc' => 'Manage Action Scheduler and its queue of scheduled actions.' )
+			);
 			if ( ! ActionScheduler_DataController::is_migration_complete() && Controller::instance()->allow_migration() ) {
 				$command = new Migration_Command();
 				$command->register();
@@ -281,7 +301,7 @@ abstract class ActionScheduler {
 		/**
 		 * Handle WP comment cleanup after migration.
 		 */
-		if ( is_a( $logger, 'ActionScheduler_DBLogger' ) && ActionScheduler_DataController::is_migration_complete() && ActionScheduler_WPCommentCleaner::has_logs() ) {
+		if ( ( $logger instanceof ActionScheduler_DBLogger ) && ActionScheduler_DataController::is_migration_complete() && ActionScheduler_WPCommentCleaner::has_logs() ) {
 			ActionScheduler_WPCommentCleaner::init();
 		}
 

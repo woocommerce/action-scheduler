@@ -20,8 +20,9 @@ class ActionScheduler_DBStore_Test extends AbstractStoreTest {
 	public function setUp(): void {
 		global $wpdb;
 
-		// Delete all actions before each test.
+		// Delete all actions and claims before each test.
 		$wpdb->query( "DELETE FROM {$wpdb->actionscheduler_actions}" );
+		$wpdb->query( "DELETE FROM {$wpdb->actionscheduler_claims}" );
 
 		parent::setUp();
 	}
@@ -149,6 +150,44 @@ class ActionScheduler_DBStore_Test extends AbstractStoreTest {
 
 		$this->assertCount( 3, $claim->get_actions() );
 		$this->assertEqualSets( array_slice( $created_actions, 3, 3 ), $claim->get_actions() );
+	}
+
+	/**
+	 * If the claim cannot be recorded, no actions should be claimed. Otherwise every unclaimed action (which carries a
+	 * claim ID of zero) would be returned, and queue runners could run them without holding a claim.
+	 *
+	 * @see https://github.com/woocommerce/action-scheduler/issues/419
+	 */
+	public function test_stake_claim_throws_when_claim_cannot_be_recorded() {
+		global $wpdb;
+
+		$store     = new ActionScheduler_DBStore();
+		$schedule  = new ActionScheduler_SimpleSchedule( as_get_datetime_object( '1 hour ago' ) );
+		$pending   = $store->save_action( new ActionScheduler_Action( ActionScheduler_Callbacks::HOOK_WITH_CALLBACK, array( 'pending' ), $schedule ) );
+		$completed = $store->save_action( new ActionScheduler_Action( ActionScheduler_Callbacks::HOOK_WITH_CALLBACK, array( 'completed' ), $schedule ) );
+		$store->mark_complete( $completed );
+
+		$claims_table                 = $wpdb->actionscheduler_claims;
+		$wpdb->actionscheduler_claims = $wpdb->prefix . 'actionscheduler_missing_claims_table';
+		$suppress_errors              = $wpdb->suppress_errors( true );
+		$exception                    = null;
+		$claim                        = null;
+
+		try {
+			$claim = $store->stake_claim();
+		} catch ( RuntimeException $e ) {
+			$exception = $e;
+		} finally {
+			$wpdb->actionscheduler_claims = $claims_table;
+			$wpdb->suppress_errors( $suppress_errors );
+		}
+
+		$this->assertNull( $claim, 'No claim should be returned.' );
+		$this->assertInstanceOf( RuntimeException::class, $exception, 'An exception should be thrown.' );
+		$this->assertStringContainsString( 'actionscheduler_missing_claims_table', $exception->getMessage(), 'The database error should be included.' );
+		$this->assertStringNotContainsString( '&#039;', $exception->getMessage(), 'The message should not be HTML-escaped.' );
+		$this->assertSame( 0, $store->get_claim_id( $pending ), 'The pending action should not have been claimed.' );
+		$this->assertEquals( array( $pending ), $store->stake_claim()->get_actions(), 'Only the pending action should be available to a working claim.' );
 	}
 
 	public function test_claim_actions_order() {
@@ -1327,5 +1366,381 @@ class ActionScheduler_DBStore_Test extends AbstractStoreTest {
 		$this->assertSame( (int) wp_cache_get( 'cached_group', ActionScheduler_DBStore::GROUP_IDS_CACHE_GROUP ), $ids[0] );
 		$this->assertSame( (int) wp_cache_get( 'uncached_group', ActionScheduler_DBStore::GROUP_IDS_CACHE_GROUP ), $ids[1] );
 		$this->assertSame( (int) wp_cache_get( ActionScheduler_DBStore::GROUP_IDS_DEFAULT_CACHE_KEY, ActionScheduler_DBStore::GROUP_IDS_CACHE_GROUP ), $ids[2] );
+	}
+
+	/**
+	 * Test partial_args_matching with both 'like' and 'json' modes for short and extended args.
+	 *
+	 * Each case also saves a decoy action under the same hook, with args of the other length, so that the query has
+	 * to cope with both storage formats at once (on MySQL, JSON_EXTRACT() fails on the hash stored in `args` for long
+	 * args, which used to break JSON matching for every action sharing the hook).
+	 *
+	 * @dataProvider partial_args_matching_provider
+	 *
+	 * @param string $mode              Partial args matching mode: 'like' or 'json'.
+	 * @param bool   $use_extended_args Whether the target action's args are long enough to be stored in extended_args.
+	 */
+	public function test_partial_args_matching( $mode, $use_extended_args ) {
+		if ( 'json' === $mode ) {
+			try {
+				$store = new ActionScheduler_DBStore();
+				$store->query_actions(
+					array(
+						'hook'                  => 'nonexistent_hook',
+						'args'                  => array( 'test' => 'value' ),
+						'partial_args_matching' => 'json',
+					)
+				);
+			} catch ( \RuntimeException $e ) {
+				$this->markTestSkipped( 'JSON functions not supported by database' );
+			}
+		}
+
+		global $wpdb;
+		$store    = new ActionScheduler_DBStore();
+		$schedule = new ActionScheduler_SimpleSchedule( as_get_datetime_object( 'tomorrow' ) );
+		$hook     = "test_hook_{$mode}";
+
+		$long_args  = array(
+			'key1' => str_repeat( 'a', 200 ),
+			'key2' => 'findme',
+		);
+		$short_args = array(
+			'key1' => 'value1',
+			'key2' => 'findme',
+		);
+
+		$args       = $use_extended_args ? $long_args : $short_args;
+		$decoy_args = $use_extended_args ? $short_args : $long_args;
+
+		$decoy_args['key2'] = 'decoy';
+
+		$action_id = $store->save_action( new ActionScheduler_Action( $hook, $args, $schedule ) );
+		$decoy_id  = $store->save_action( new ActionScheduler_Action( $hook, $decoy_args, $schedule ) );
+
+		$long_id = $use_extended_args ? $action_id : $decoy_id;
+		$row     = $wpdb->get_row( $wpdb->prepare( "SELECT args, extended_args FROM {$wpdb->actionscheduler_actions} WHERE action_id = %d", $long_id ) );
+		$this->assertNotNull( $row->extended_args, 'Extended args should be set for long args' );
+
+		$query = function ( $value ) use ( $store, $hook, $mode ) {
+			return array_map(
+				'intval',
+				$store->query_actions(
+					array(
+						'hook'                  => $hook,
+						'args'                  => array( 'key2' => $value ),
+						'partial_args_matching' => $mode,
+					)
+				)
+			);
+		};
+
+		$this->assertSame( array( $action_id ), $query( 'findme' ), 'Only the target action should match.' );
+		$this->assertSame( array( $decoy_id ), $query( 'decoy' ), 'Only the decoy action should match.' );
+		$this->assertSame( array(), $query( 'notfound' ), 'No action should match.' );
+	}
+
+	/**
+	 * Data provider for partial_args_matching tests.
+	 *
+	 * @return array Test cases with mode and extended_args flag.
+	 */
+	public function partial_args_matching_provider() {
+		return array(
+			'like mode with short args'    => array( 'like', false ),
+			'like mode with extended args' => array( 'like', true ),
+			'json mode with short args'    => array( 'json', false ),
+			'json mode with extended args' => array( 'json', true ),
+		);
+	}
+
+	/**
+	 * @testdox purge_orphan_claims() deletes old claims that no action references, and returns how many it deleted.
+	 */
+	public function test_purge_orphan_claims_returns_count() {
+		global $wpdb;
+		$store = new ActionScheduler_DBStore();
+
+		for ( $i = 0; $i < 3; $i++ ) {
+			$wpdb->insert( $wpdb->actionscheduler_claims, array( 'date_created_gmt' => '2020-01-01 00:00:00' ) );
+		}
+
+		$this->assertSame( 3, $store->purge_orphan_claims() );
+		$this->assertSame( 0, (int) $wpdb->get_var( "SELECT COUNT(*) FROM {$wpdb->actionscheduler_claims}" ) );
+	}
+
+	/**
+	 * @testdox purge_orphan_claims() keeps claims that are still referenced by an action.
+	 */
+	public function test_purge_orphan_claims_keeps_referenced_claims() {
+		global $wpdb;
+		$store = new ActionScheduler_DBStore();
+		$store->save_action( new ActionScheduler_Action( ActionScheduler_Callbacks::HOOK_WITH_CALLBACK, array(), new ActionScheduler_SimpleSchedule( as_get_datetime_object( '-1 hour' ) ) ) );
+
+		$claim = $store->stake_claim();
+		$this->assertCount( 1, $claim->get_actions() );
+
+		// Age the referenced claim past the purge cutoff, so that only the action reference protects it.
+		$wpdb->update( $wpdb->actionscheduler_claims, array( 'date_created_gmt' => '2020-01-01 00:00:00' ), array( 'claim_id' => $claim->get_id() ) );
+		$wpdb->insert( $wpdb->actionscheduler_claims, array( 'date_created_gmt' => '2020-01-01 00:00:00' ) );
+		$wpdb->insert( $wpdb->actionscheduler_claims, array( 'date_created_gmt' => '2020-01-01 00:00:00' ) );
+
+		$this->assertSame( 2, $store->purge_orphan_claims() );
+		$this->assertSame( array( (string) $claim->get_id() ), $wpdb->get_col( "SELECT claim_id FROM {$wpdb->actionscheduler_claims}" ) );
+	}
+
+	/**
+	 * @testdox purge_orphan_claims() deletes the old claim of a deleted action.
+	 */
+	public function test_purge_orphan_claims_clears_claim_after_action_deletion() {
+		global $wpdb;
+		$store     = new ActionScheduler_DBStore();
+		$action_id = $store->save_action( new ActionScheduler_Action( ActionScheduler_Callbacks::HOOK_WITH_CALLBACK, array(), new ActionScheduler_SimpleSchedule( as_get_datetime_object( '-1 hour' ) ) ) );
+
+		$claim = $store->stake_claim();
+		$wpdb->update( $wpdb->actionscheduler_claims, array( 'date_created_gmt' => '2020-01-01 00:00:00' ), array( 'claim_id' => $claim->get_id() ) );
+		$this->assertSame( 0, $store->purge_orphan_claims(), 'The claim is kept while its action exists.' );
+
+		$store->delete_action( $action_id );
+
+		$this->assertSame( 1, $store->purge_orphan_claims() );
+		$this->assertSame( 0, (int) $wpdb->get_var( "SELECT COUNT(*) FROM {$wpdb->actionscheduler_claims}" ) );
+	}
+
+	/**
+	 * @testdox purge_orphan_claims() keeps recent claims even if no action references them yet.
+	 */
+	public function test_purge_orphan_claims_keeps_recent_orphans() {
+		global $wpdb;
+		$store = new ActionScheduler_DBStore();
+
+		$wpdb->insert( $wpdb->actionscheduler_claims, array( 'date_created_gmt' => as_get_datetime_object()->format( 'Y-m-d H:i:s' ) ) );
+		$wpdb->insert( $wpdb->actionscheduler_claims, array( 'date_created_gmt' => as_get_datetime_object( '23 hours ago' )->format( 'Y-m-d H:i:s' ) ) );
+		$wpdb->insert( $wpdb->actionscheduler_claims, array( 'date_created_gmt' => as_get_datetime_object( '25 hours ago' )->format( 'Y-m-d H:i:s' ) ) );
+
+		$this->assertSame( 1, $store->purge_orphan_claims() );
+		$this->assertSame( 2, (int) $wpdb->get_var( "SELECT COUNT(*) FROM {$wpdb->actionscheduler_claims}" ) );
+	}
+
+	/**
+	 * @testdox purge_orphan_claims() does not delete a claim created between claim row insertion and action assignment.
+	 */
+	public function test_purge_orphan_claims_does_not_delete_claim_being_staked() {
+		global $wpdb;
+		$store = new ActionScheduler_DBStore();
+		$store->save_action( new ActionScheduler_Action( ActionScheduler_Callbacks::HOOK_WITH_CALLBACK, array(), new ActionScheduler_SimpleSchedule( as_get_datetime_object( '-1 hour' ) ) ) );
+
+		// Simulate a concurrent cleaner running after generate_claim_id() but before claim_actions() assigns the claim.
+		$fired  = false;
+		$filter = function ( $sql ) use ( $store, &$fired ) {
+			if ( ! $fired && 0 === strpos( trim( $sql ), 'UPDATE' ) && false !== strpos( $sql, 'SET claim_id=' ) ) {
+				$fired = true;
+				$store->purge_orphan_claims();
+			}
+			return $sql;
+		};
+		add_filter( 'query', $filter );
+		$claim = $store->stake_claim();
+		remove_filter( 'query', $filter );
+
+		$this->assertTrue( $fired, 'The claim assignment query was intercepted.' );
+		$this->assertCount( 1, $claim->get_actions() );
+		$this->assertSame( 1, (int) $wpdb->get_var( $wpdb->prepare( "SELECT COUNT(*) FROM {$wpdb->actionscheduler_claims} WHERE claim_id = %d", $claim->get_id() ) ), 'The live claim row survived the purge.' );
+		$this->assertSame( 1, $store->get_claim_count(), 'The active claim is still counted for concurrency limiting.' );
+	}
+
+	/**
+	 * @testdox purge_orphan_claims() deletes at most 1000 claims per call.
+	 */
+	public function test_purge_orphan_claims_is_bounded() {
+		global $wpdb;
+		$store = new ActionScheduler_DBStore();
+
+		$wpdb->query( "INSERT INTO {$wpdb->actionscheduler_claims} (date_created_gmt) VALUES " . implode( ',', array_fill( 0, 1001, "('2020-01-01 00:00:00')" ) ) ); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+
+		$this->assertSame( 1000, $store->purge_orphan_claims() );
+		$this->assertSame( 1, $store->purge_orphan_claims() );
+		$this->assertSame( 0, $store->purge_orphan_claims() );
+	}
+
+	/**
+	 * Builds args which, when encoded as JSON, are exactly the requested length.
+	 *
+	 * @param int $length Desired length of the JSON-encoded args.
+	 * @return array
+	 */
+	private function get_args_of_json_length( $length ) {
+		$args = array( 'payload' => str_repeat( 'a', $length - strlen( '{"payload":""}' ) ) );
+		$this->assertSame( $length, strlen( wp_json_encode( $args ) ) );
+		return $args;
+	}
+
+	/**
+	 * Saves an action with the supplied args, returning the action ID.
+	 *
+	 * @param array $args Action args.
+	 * @return int
+	 */
+	private function save_action_with_args( array $args ) {
+		$action = new ActionScheduler_Action( ActionScheduler_Callbacks::HOOK_WITH_CALLBACK, $args, new ActionScheduler_SimpleSchedule( as_get_datetime_object() ) );
+		return ( new ActionScheduler_DBStore() )->save_action( $action );
+	}
+
+	/**
+	 * @testdox Args longer than the legacy 8000 character limit can be saved, fetched and matched.
+	 */
+	public function test_args_longer_than_legacy_limit() {
+		$args      = $this->get_args_of_json_length( 20000 );
+		$action_id = $this->save_action_with_args( $args );
+		$store     = new ActionScheduler_DBStore();
+
+		$this->assertSame( $args, $store->fetch_action( $action_id )->get_args() );
+		$this->assertSame(
+			array( $action_id ),
+			array_map(
+				'intval',
+				$store->query_actions(
+					array(
+						'hook' => ActionScheduler_Callbacks::HOOK_WITH_CALLBACK,
+						'args' => $args,
+					)
+				)
+			)
+		);
+	}
+
+	/**
+	 * @testdox Args are accepted up to 65535 characters (encoded as JSON), and rejected beyond that.
+	 */
+	public function test_args_max_length() {
+		$args      = $this->get_args_of_json_length( 65535 );
+		$action_id = $this->save_action_with_args( $args );
+		$this->assertSame( $args, ( new ActionScheduler_DBStore() )->fetch_action( $action_id )->get_args() );
+
+		$this->expectException( RuntimeException::class );
+		$this->expectExceptionMessage( 'should not be more than 65535 characters' );
+		$this->save_action_with_args( $this->get_args_of_json_length( 65536 ) );
+	}
+
+	/**
+	 * @testdox The legacy 8000 character limit applies while the extended_args column has not been widened.
+	 */
+	public function test_legacy_args_max_length_applies_before_column_is_widened() {
+		$this->set_extended_args_column_type( 'varchar(8000) DEFAULT NULL' );
+
+		try {
+			$this->assertNotEmpty( $this->save_action_with_args( $this->get_args_of_json_length( 8000 ) ) );
+
+			$exception = null;
+			try {
+				$this->save_action_with_args( $this->get_args_of_json_length( 20000 ) );
+			} catch ( RuntimeException $e ) {
+				$exception = $e;
+			}
+			$this->assertInstanceOf( RuntimeException::class, $exception );
+			$this->assertStringContainsString( 'should not be more than 8000 characters', $exception->getMessage() );
+		} finally {
+			$this->set_extended_args_column_type( 'longtext' );
+		}
+
+		$args      = $this->get_args_of_json_length( 20000 );
+		$action_id = $this->save_action_with_args( $args );
+		$this->assertSame( $args, ( new ActionScheduler_DBStore() )->fetch_action( $action_id )->get_args() );
+	}
+
+	/**
+	 * @testdox A pending schema update is skipped while another request holds the schema update lock, unless forced.
+	 */
+	public function test_schema_update_is_skipped_while_locked() {
+		$option_name = 'schema-' . ActionScheduler_StoreSchema::class;
+		$updates     = 0;
+		$counter     = function () use ( &$updates ) {
+			++$updates;
+		};
+
+		$this->release_schema_update_lock();
+		add_action( 'action_scheduler_before_schema_update', $counter );
+		update_option( $option_name, '9.0.1' );
+		$this->assertTrue( ActionScheduler::lock()->set( 'schema_update_' . ActionScheduler_StoreSchema::class ) );
+
+		try {
+			( new ActionScheduler_StoreSchema() )->register_tables();
+			$this->assertSame( 0, $updates, 'The update was skipped while locked.' );
+			$this->assertSame( '9.0.1', get_option( $option_name ), 'The schema version was left unchanged.' );
+
+			( new ActionScheduler_StoreSchema() )->register_tables( true );
+			$this->assertGreaterThan( 0, $updates, 'A forced update ignores the lock.' );
+			$this->assertTrue( version_compare( get_option( $option_name ), '10', '>=' ) );
+
+			$updates = 0;
+			update_option( $option_name, '9.0.1' );
+			$this->release_schema_update_lock();
+
+			( new ActionScheduler_StoreSchema() )->register_tables();
+			$this->assertGreaterThan( 0, $updates, 'The update ran once the lock was available.' );
+			$this->assertTrue( version_compare( get_option( $option_name ), '10', '>=' ) );
+		} finally {
+			remove_action( 'action_scheduler_before_schema_update', $counter );
+			( new ActionScheduler_StoreSchema() )->register_tables( true );
+			$this->release_schema_update_lock();
+
+			// Schema updates can implicitly commit the test transaction (and with it, the lock), so commit its removal too.
+			self::commit_transaction();
+		}
+	}
+
+	/**
+	 * @testdox A new install creates the tables even while the schema update lock is held.
+	 */
+	public function test_new_install_ignores_schema_update_lock() {
+		$option_name = 'schema-' . ActionScheduler_StoreSchema::class;
+		$updates     = 0;
+		$counter     = function () use ( &$updates ) {
+			++$updates;
+		};
+
+		$this->release_schema_update_lock();
+		add_action( 'action_scheduler_before_schema_update', $counter );
+		delete_option( $option_name );
+		$this->assertTrue( ActionScheduler::lock()->set( 'schema_update_' . ActionScheduler_StoreSchema::class ) );
+
+		try {
+			( new ActionScheduler_StoreSchema() )->register_tables();
+			$this->assertGreaterThan( 0, $updates );
+			$this->assertTrue( version_compare( get_option( $option_name ), '10', '>=' ) );
+		} finally {
+			remove_action( 'action_scheduler_before_schema_update', $counter );
+			( new ActionScheduler_StoreSchema() )->register_tables( true );
+			$this->release_schema_update_lock();
+
+			// Schema updates can implicitly commit the test transaction (and with it, the lock), so commit its removal too.
+			self::commit_transaction();
+		}
+	}
+
+	/**
+	 * Removes the store schema's update lock, if held.
+	 */
+	private function release_schema_update_lock() {
+		$lock_option = 'action_scheduler_lock_schema_update_' . ActionScheduler_StoreSchema::class;
+		delete_option( $lock_option );
+		wp_cache_delete( $lock_option, 'action_scheduler_locks' );
+	}
+
+	/**
+	 * Changes the type of the extended_args column, clearing wpdb's cached table and column metadata.
+	 *
+	 * @param string $definition Column definition.
+	 */
+	private function set_extended_args_column_type( $definition ) {
+		global $wpdb;
+
+		$wpdb->query( "ALTER TABLE {$wpdb->actionscheduler_actions} MODIFY extended_args {$definition}" ); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+
+		foreach ( array( 'col_meta', 'table_charset' ) as $cache ) {
+			$property = new ReflectionProperty( $wpdb, $cache );
+			$property->setAccessible( true );
+			$property->setValue( $wpdb, array() );
+		}
 	}
 }

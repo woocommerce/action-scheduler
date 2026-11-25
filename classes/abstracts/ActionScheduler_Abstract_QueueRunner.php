@@ -204,11 +204,11 @@ abstract class ActionScheduler_Abstract_QueueRunner extends ActionScheduler_Abst
 			try {
 				$this->store->mark_failure( $action_id );
 			} catch ( Exception $mark_failure_exception ) {
+				// Another process may have deleted the action, or already marked it as failed.
 				// phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log
 				error_log(
 					sprintf(
-						/* translators: %1$d is the action ID, %2$s is the exception message. */
-						__( 'Caught exception while marking action %1$d as failed: %2$s', 'action-scheduler' ),
+						'Caught exception while marking action %1$d as failed: %2$s',
 						$action_id,
 						$mark_failure_exception->getMessage()
 					)

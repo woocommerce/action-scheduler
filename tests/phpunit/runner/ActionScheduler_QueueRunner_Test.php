@@ -396,40 +396,55 @@ class ActionScheduler_QueueRunner_Test extends ActionScheduler_UnitTestCase {
 	}
 
 	/**
-	 * When an action is deleted by another process while it is being executed, marking it as failed should not
-	 * raise an uncaught exception that escalates into a fatal error.
+	 * If an action fails and the store then cannot mark it as failed, because another process deleted the action or
+	 * already marked it as failed, the error is logged instead of escalating into a fatal error.
 	 *
 	 * @see https://github.com/woocommerce/action-scheduler/issues/970
 	 *
 	 * @return void
 	 */
-	public function test_failure_is_handled_when_action_deleted_mid_execution() {
-		$store  = ActionScheduler_Store::instance();
-		$runner = ActionScheduler_Mocker::get_queue_runner( $store );
+	public function test_action_that_cannot_be_marked_as_failed_does_not_cause_a_fatal_error() {
+		$store     = new ActionScheduler_DBStore();
+		$hook      = 'as_test_970_' . md5( wp_rand() );
+		$action_id = $store->save_action( new ActionScheduler_Action( $hook, array(), new ActionScheduler_SimpleSchedule( as_get_datetime_object( '1 minute ago' ) ) ) );
 
-		$hook      = 'as_test_action_deleted_mid_execution';
-		$action_id = as_schedule_single_action( time(), $hook );
-
-		// Mimic another process deleting the action between it being claimed and its failure being recorded.
-		$callback = function () use ( $store, $action_id ) {
-			$store->delete_action( $action_id );
-			throw new RuntimeException( 'Action failed after being deleted by another process.' );
+		$callback = function () {
+			throw new Exception( 'Simulated failure of the action callback.' );
 		};
+
+		// Make the query that marks the action as failed update no rows, as it does when another process got there first.
+		$update_no_rows = function ( $sql ) use ( $action_id ) {
+			global $wpdb;
+
+			if ( 0 !== strpos( $sql, "UPDATE `{$wpdb->actionscheduler_actions}` SET `status` = 'failed'" ) ) {
+				return $sql;
+			}
+
+			return str_replace( "WHERE `action_id` = {$action_id}", 'WHERE `action_id` = 0', $sql );
+		};
+
+		$execution_error     = null;
+		$on_failed_execution = function ( $failed_action_id, $e ) use ( &$execution_error ) {
+			$execution_error = $e;
+		};
+
+		$error_capture    = tmpfile();
+		$actual_error_log = ini_set( 'error_log', stream_get_meta_data( $error_capture )['uri'] ); // phpcs:ignore WordPress.PHP.IniSet.Risky
+
 		add_action( $hook, $callback );
+		add_filter( 'query', $update_no_rows );
+		add_action( 'action_scheduler_failed_execution', $on_failed_execution, 10, 2 );
 
-		$failed_execution_fired = false;
-		$spy                    = function () use ( &$failed_execution_fired ) {
-			$failed_execution_fired = true;
-		};
-		add_action( 'action_scheduler_failed_execution', $spy );
-
-		// Before the fix, mark_failure() throws because the action no longer exists and the exception is uncaught.
-		$runner->process_action( $action_id );
-
-		$this->assertTrue( $failed_execution_fired, 'The action_scheduler_failed_execution hook should still fire when the action was already deleted.' );
+		ActionScheduler_Mocker::get_queue_runner( $store )->process_action( $action_id );
 
 		remove_action( $hook, $callback );
-		remove_action( 'action_scheduler_failed_execution', $spy );
+		remove_filter( 'query', $update_no_rows );
+		remove_action( 'action_scheduler_failed_execution', $on_failed_execution, 10 );
+		ini_set( 'error_log', $actual_error_log ); // phpcs:ignore WordPress.PHP.IniSet.Risky
+
+		$this->assertInstanceOf( Exception::class, $execution_error, 'The action_scheduler_failed_execution hook still fires.' );
+		$this->assertEquals( 'Simulated failure of the action callback.', $execution_error->getPrevious()->getMessage(), 'The hook receives the error raised by the action, not the one raised while marking it as failed.' );
+		$this->assertStringContainsString( "Caught exception while marking action {$action_id} as failed: Unidentified action {$action_id}", stream_get_contents( $error_capture ) );
 	}
 
 	/**

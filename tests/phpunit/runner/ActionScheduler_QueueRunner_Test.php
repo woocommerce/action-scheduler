@@ -870,6 +870,147 @@ class ActionScheduler_QueueRunner_Test extends ActionScheduler_UnitTestCase {
 	}
 
 	/**
+	 * When a recurring action fails, its next instance should already exist by the time it is marked as failed, as on
+	 * success. Otherwise, code that checks for an existing action before scheduling one can find nothing and create a
+	 * duplicate.
+	 *
+	 * @see https://github.com/woocommerce/action-scheduler/issues/1416
+	 */
+	public function test_next_instance_of_recurring_action_exists_before_failure() {
+		$hook      = 'as_test_1416_' . md5( wp_rand() );
+		$action_id = as_schedule_recurring_action( as_get_datetime_object( '1 minute ago' )->getTimestamp(), HOUR_IN_SECONDS, $hook );
+		$found     = null;
+
+		$fail = function () {
+			throw new Exception( 'Simulated failure of a recurring action.' );
+		};
+
+		// Simulate concurrent requests, which try to schedule the same action at the moment the current one fails.
+		$on_failure = function ( $failed_action_id ) use ( $action_id, $hook, &$found ) {
+			if ( $failed_action_id !== $action_id ) {
+				return;
+			}
+
+			$found = as_has_scheduled_action( $hook );
+
+			if ( ! $found ) {
+				as_schedule_recurring_action( time(), HOUR_IN_SECONDS, $hook );
+			}
+
+			as_schedule_recurring_action( time(), HOUR_IN_SECONDS, $hook, array(), '', true );
+		};
+
+		add_action( $hook, $fail );
+		add_action( 'action_scheduler_failed_execution', $on_failure );
+		ActionScheduler_Mocker::get_queue_runner( ActionScheduler::store() )->run();
+		remove_action( 'action_scheduler_failed_execution', $on_failure );
+		remove_action( $hook, $fail );
+
+		$this->assertTrue( $found, 'The next instance exists by the time the current action is marked as failed.' );
+		$this->assertEquals( ActionScheduler_Store::STATUS_FAILED, ActionScheduler::store()->get_status( $action_id ) );
+		$this->assertCount(
+			1,
+			as_get_scheduled_actions(
+				array(
+					'hook'   => $hook,
+					'status' => ActionScheduler_Store::STATUS_PENDING,
+				),
+				'ids'
+			),
+			'Exactly one pending instance of the recurring action exists.'
+		);
+	}
+
+	/**
+	 * A failing recurring action is still marked as failed if scheduling its next instance raises an error, and the
+	 * error is not swallowed.
+	 */
+	public function test_failing_recurring_action_is_marked_failed_if_rescheduling_errors() {
+		$store     = ActionScheduler::store();
+		$hook      = 'as_test_1416_' . md5( wp_rand() );
+		$action_id = as_schedule_recurring_action( as_get_datetime_object( '1 minute ago' )->getTimestamp(), HOUR_IN_SECONDS, $hook );
+		$error     = null;
+
+		$fail = function () {
+			throw new Exception( 'Simulated failure of a recurring action.' );
+		};
+		add_action( $hook, $fail );
+
+		$runner = new class( $store ) extends ActionScheduler_QueueRunner {
+			// phpcs:ignore Generic.CodeAnalysis.UnusedFunctionParameter.FoundAfterLastUsed
+			protected function schedule_next_instance( ActionScheduler_Action $action, $action_id ) {
+				throw new Error( 'Simulated error while scheduling the next instance.' );
+			}
+		};
+
+		try {
+			$runner->process_action( $action_id );
+		} catch ( Error $e ) {
+			$error = $e;
+		}
+
+		remove_action( $hook, $fail );
+
+		$this->assertInstanceOf( Error::class, $error, 'The error raised while scheduling the next instance is re-thrown.' );
+		$this->assertEquals( 'Simulated error while scheduling the next instance.', $error->getMessage() );
+		$this->assertEquals( ActionScheduler_Store::STATUS_FAILED, $store->get_status( $action_id ), 'The action is marked as failed.' );
+	}
+
+	/**
+	 * Whether a failing recurring action is consistently failing is now decided before it is marked as failed. The
+	 * consistent-failure filter must still run once per failure, and a consistently failing action must still not be
+	 * rescheduled, nor its next instance be created and then removed.
+	 */
+	public function test_consistently_failing_recurring_action_is_assessed_once_and_not_rescheduled() {
+		$store    = ActionScheduler::store();
+		$hook     = 'as_test_1416_' . md5( wp_rand() );
+		$observed = 0;
+		$stored   = 0;
+
+		// Four earlier failures, then a pending, past-due instance that will fail too: five in a row.
+		for ( $i = 0; $i < 4; $i++ ) {
+			$store->mark_failure( as_schedule_recurring_action( as_get_datetime_object( 12 - $i . ' hours ago' )->getTimestamp(), HOUR_IN_SECONDS, $hook ) );
+		}
+		$action_id = as_schedule_recurring_action( as_get_datetime_object( '6 hours ago' )->getTimestamp(), HOUR_IN_SECONDS, $hook );
+
+		$fail              = function () {
+			throw new Exception( 'Simulated failure of a recurring action.' );
+		};
+		$count_assessments = function ( $is_failing ) use ( &$observed ) {
+			++$observed;
+			return $is_failing;
+		};
+		$count_stored      = function ( $stored_action_id ) use ( $action_id, &$stored ) {
+			if ( $stored_action_id !== $action_id ) {
+				++$stored;
+			}
+		};
+
+		add_action( $hook, $fail );
+		add_filter( 'action_scheduler_recurring_action_is_consistently_failing', $count_assessments );
+		add_action( 'action_scheduler_stored_action', $count_stored );
+		ActionScheduler_Mocker::get_queue_runner( $store )->process_action( $action_id );
+		remove_action( 'action_scheduler_stored_action', $count_stored );
+		remove_filter( 'action_scheduler_recurring_action_is_consistently_failing', $count_assessments );
+		remove_action( $hook, $fail );
+
+		$this->assertEquals( ActionScheduler_Store::STATUS_FAILED, $store->get_status( $action_id ) );
+		$this->assertEquals( 1, $observed, 'The consistent-failure filter runs once.' );
+		$this->assertEquals( 0, $stored, 'No next instance is stored for a consistently failing action.' );
+		$this->assertCount(
+			0,
+			as_get_scheduled_actions(
+				array(
+					'hook'   => $hook,
+					'status' => ActionScheduler_Store::STATUS_PENDING,
+				),
+				'ids'
+			),
+			'A consistently failing recurring action is not rescheduled.'
+		);
+	}
+
+	/**
 	 * Unschedule the queue runner cron event scheduled while bootstrapping the test suite.
 	 *
 	 * @return void

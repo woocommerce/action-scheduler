@@ -57,7 +57,7 @@ abstract class ActionScheduler_Abstract_Schema {
 		}
 
 		// create the tables.
-		if ( $this->schema_update_required() || $force_update ) {
+		if ( ( $this->schema_update_required() && $this->claim_schema_update() ) || $force_update ) {
 			foreach ( $this->tables as $table ) {
 				/**
 				 * Allow custom processing before updating a table schema.
@@ -112,6 +112,23 @@ abstract class ActionScheduler_Abstract_Schema {
 		}
 
 		return version_compare( $this->db_version, $this->schema_version, '<' );
+	}
+
+	/**
+	 * Claims the right to perform a pending schema update, so that concurrent requests do not each attempt it.
+	 *
+	 * Some updates rebuild a whole table, which can take a while on large sites. Requests that do not obtain the claim
+	 * skip the update and continue using the existing tables. A new install is always performed, as the tables are
+	 * needed before the request can continue.
+	 *
+	 * @return bool
+	 */
+	private function claim_schema_update() {
+		if ( empty( $this->db_version ) ) {
+			return true;
+		}
+
+		return (bool) ActionScheduler::lock()->set( 'schema_update_' . static::class );
 	}
 
 	/**

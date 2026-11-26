@@ -35,6 +35,58 @@ class ActionScheduler_QueueRunner_Test extends ActionScheduler_UnitTestCase {
 		$this->assertEquals( 5, $actions_run );
 	}
 
+	/**
+	 * If a claim cannot be recorded, the runner should stop without executing anything, rather than running unclaimed
+	 * actions (or looping over already-finished ones) indefinitely.
+	 *
+	 * @see https://github.com/woocommerce/action-scheduler/issues/419
+	 */
+	public function test_run_stops_when_claim_cannot_be_recorded() {
+		global $wpdb;
+
+		$store    = ActionScheduler::store();
+		$runner   = ActionScheduler_Mocker::get_queue_runner( $store );
+		$mock     = new MockAction();
+		$hook     = md5( wp_rand() );
+		$schedule = new ActionScheduler_SimpleSchedule( as_get_datetime_object( '1 day ago' ) );
+		$attempts = 0;
+
+		add_action( $hook, array( $mock, 'action' ) );
+		$store->save_action( new ActionScheduler_Action( $hook, array( 'pending' ), $schedule ) );
+		$store->mark_complete( $store->save_action( new ActionScheduler_Action( $hook, array( 'completed' ), $schedule ) ) );
+
+		// Count execution attempts, and stop the runner after a few of them so that a regression fails rather than hangs.
+		$count_attempts = function () use ( &$attempts ) {
+			++$attempts;
+		};
+		$cap_attempts   = function ( $exceeded ) use ( &$attempts ) {
+			return $exceeded || $attempts >= 10;
+		};
+		add_action( 'action_scheduler_before_execute', $count_attempts );
+		add_filter( 'action_scheduler_maximum_execution_time_likely_to_be_exceeded', $cap_attempts );
+
+		$claims_table                 = $wpdb->actionscheduler_claims;
+		$wpdb->actionscheduler_claims = $wpdb->prefix . 'actionscheduler_missing_claims_table';
+		$suppress_errors              = $wpdb->suppress_errors( true );
+		$exception                    = null;
+
+		try {
+			$runner->run();
+		} catch ( RuntimeException $e ) {
+			$exception = $e;
+		} finally {
+			$wpdb->actionscheduler_claims = $claims_table;
+			$wpdb->suppress_errors( $suppress_errors );
+			remove_action( 'action_scheduler_before_execute', $count_attempts );
+			remove_filter( 'action_scheduler_maximum_execution_time_likely_to_be_exceeded', $cap_attempts );
+			remove_action( $hook, array( $mock, 'action' ) );
+		}
+
+		$this->assertInstanceOf( RuntimeException::class, $exception, 'The runner should stop with an exception.' );
+		$this->assertSame( 0, $attempts, 'No actions should be attempted.' );
+		$this->assertSame( 0, $mock->get_call_count(), 'The pending action should not run.' );
+	}
+
 	public function test_run_with_future_actions() {
 		$store  = ActionScheduler::store();
 		$runner = ActionScheduler_Mocker::get_queue_runner( $store );

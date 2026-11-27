@@ -396,6 +396,58 @@ class ActionScheduler_QueueRunner_Test extends ActionScheduler_UnitTestCase {
 	}
 
 	/**
+	 * If an action fails and the store then cannot mark it as failed, because another process deleted the action or
+	 * already marked it as failed, the error is logged instead of escalating into a fatal error.
+	 *
+	 * @see https://github.com/woocommerce/action-scheduler/issues/970
+	 *
+	 * @return void
+	 */
+	public function test_action_that_cannot_be_marked_as_failed_does_not_cause_a_fatal_error() {
+		$store     = new ActionScheduler_DBStore();
+		$hook      = 'as_test_970_' . md5( wp_rand() );
+		$action_id = $store->save_action( new ActionScheduler_Action( $hook, array(), new ActionScheduler_SimpleSchedule( as_get_datetime_object( '1 minute ago' ) ) ) );
+
+		$callback = function () {
+			throw new Exception( 'Simulated failure of the action callback.' );
+		};
+
+		// Make the query that marks the action as failed update no rows, as it does when another process got there first.
+		$update_no_rows = function ( $sql ) use ( $action_id ) {
+			global $wpdb;
+
+			if ( 0 !== strpos( $sql, "UPDATE `{$wpdb->actionscheduler_actions}` SET `status` = 'failed'" ) ) {
+				return $sql;
+			}
+
+			return str_replace( "WHERE `action_id` = {$action_id}", 'WHERE `action_id` = 0', $sql );
+		};
+
+		$execution_error     = null;
+		$on_failed_execution = function ( $failed_action_id, $e ) use ( &$execution_error ) {
+			$execution_error = $e;
+		};
+
+		$error_capture    = tmpfile();
+		$actual_error_log = ini_set( 'error_log', stream_get_meta_data( $error_capture )['uri'] ); // phpcs:ignore WordPress.PHP.IniSet.Risky
+
+		add_action( $hook, $callback );
+		add_filter( 'query', $update_no_rows );
+		add_action( 'action_scheduler_failed_execution', $on_failed_execution, 10, 2 );
+
+		ActionScheduler_Mocker::get_queue_runner( $store )->process_action( $action_id );
+
+		remove_action( $hook, $callback );
+		remove_filter( 'query', $update_no_rows );
+		remove_action( 'action_scheduler_failed_execution', $on_failed_execution, 10 );
+		ini_set( 'error_log', $actual_error_log ); // phpcs:ignore WordPress.PHP.IniSet.Risky
+
+		$this->assertInstanceOf( Exception::class, $execution_error, 'The action_scheduler_failed_execution hook still fires.' );
+		$this->assertEquals( 'Simulated failure of the action callback.', $execution_error->getPrevious()->getMessage(), 'The hook receives the error raised by the action, not the one raised while marking it as failed.' );
+		$this->assertStringContainsString( "Caught exception while marking action {$action_id} as failed: Unidentified action {$action_id}", stream_get_contents( $error_capture ) );
+	}
+
+	/**
 	 * If a recurring action continually fails, it will not be re-scheduled. However, a hook makes it possible to
 	 * exempt specific actions from this behavior (without impacting other unrelated recurring actions).
 	 *

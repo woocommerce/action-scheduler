@@ -296,17 +296,30 @@ class ActionScheduler_ListTable extends ActionScheduler_Abstract_ListTable {
 	 * @return string
 	 */
 	public function column_args( array $row ) {
-		if ( empty( $row['args'] ) ) {
-			return $this->maybe_collapse_args_html( apply_filters( 'action_scheduler_list_table_column_args', '', $row ) );
+		$row_html = '';
+
+		if ( ! empty( $row['args'] ) ) {
+			$row_html = '<ul>';
+			foreach ( $row['args'] as $key => $value ) {
+				$row_html .= sprintf( '<li><code>%s => %s</code></li>', esc_html( var_export( $key, true ) ), esc_html( var_export( $value, true ) ) ); // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_var_export
+			}
+			$row_html .= '</ul>';
 		}
 
-		$row_html = '<ul>';
-		foreach ( $row['args'] as $key => $value ) {
-			$row_html .= sprintf( '<li><code>%s => %s</code></li>', esc_html( var_export( $key, true ) ), esc_html( var_export( $value, true ) ) ); // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_var_export
-		}
-		$row_html .= '</ul>';
+		/**
+		 * Filters the HTML for the arguments column of the actions list table.
+		 *
+		 * The filtered HTML is collapsed behind an expandable summary if the text it displays is longer than 500
+		 * characters.
+		 *
+		 * @since 2.0.0
+		 *
+		 * @param string $row_html The HTML listing the action's args, or an empty string if it has none.
+		 * @param array  $row      The array representation of the current row of the table.
+		 */
+		$row_html = apply_filters( 'action_scheduler_list_table_column_args', $row_html, $row );
 
-		return $this->maybe_collapse_args_html( apply_filters( 'action_scheduler_list_table_column_args', $row_html, $row ) );
+		return $this->maybe_collapse_args_html( $row_html );
 	}
 
 	/**

@@ -525,3 +525,45 @@ function as_supports( string $feature ): bool {
 
 	return in_array( $feature, $supported_features, true );
 }
+
+/**
+ * Get the ID of the action currently being executed by Action Scheduler.
+ *
+ * Actions can be processed via WP Cron, async requests, WP CLI or the admin screen, so wp_doing_cron() cannot be relied
+ * on to determine whether code is running as part of a scheduled action. This can be used instead, for instance to
+ * allow longer timeouts for remote requests made from the callbacks of scheduled actions.
+ *
+ * An action is considered to be executing from the moment the `action_scheduler_begin_execute` hook fires until it has
+ * been marked as complete or failed, so this includes the action's callbacks and the callbacks of the hooks fired in
+ * between.
+ *
+ * @since 4.3.0
+ *
+ * @return int The ID of the executing action, or 0 if no action is being executed.
+ */
+function as_get_executing_action_id(): int {
+	// If the queue runner has not been loaded, no action can be executing.
+	if ( ! class_exists( 'ActionScheduler_Abstract_QueueRunner', false ) ) {
+		return 0;
+	}
+
+	return ActionScheduler_Abstract_QueueRunner::get_executing_action_id();
+}
+
+/**
+ * Get the context in which the action currently being executed by Action Scheduler is being processed.
+ *
+ * @see as_get_executing_action_id()
+ *
+ * @since 4.3.0
+ *
+ * @return string The context, such as 'WP Cron', 'Async Request', 'WP CLI' or 'Admin List Table', or an empty string if
+ *                no action is being executed (or if the code processing it did not specify a context).
+ */
+function as_get_executing_action_context(): string {
+	if ( ! class_exists( 'ActionScheduler_Abstract_QueueRunner', false ) ) {
+		return '';
+	}
+
+	return ActionScheduler_Abstract_QueueRunner::get_executing_action_context();
+}

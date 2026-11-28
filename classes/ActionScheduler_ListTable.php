@@ -8,6 +8,14 @@
 class ActionScheduler_ListTable extends ActionScheduler_Abstract_ListTable {
 
 	/**
+	 * Arguments whose displayed text is longer than this many characters are collapsed, so that a single action with
+	 * large arguments does not stretch its row far down the page.
+	 *
+	 * @var int
+	 */
+	private const ARGS_COLLAPSE_LENGTH = 500;
+
+	/**
 	 * The package name.
 	 *
 	 * @var string
@@ -289,7 +297,7 @@ class ActionScheduler_ListTable extends ActionScheduler_Abstract_ListTable {
 	 */
 	public function column_args( array $row ) {
 		if ( empty( $row['args'] ) ) {
-			return apply_filters( 'action_scheduler_list_table_column_args', '', $row );
+			return $this->maybe_collapse_args_html( apply_filters( 'action_scheduler_list_table_column_args', '', $row ) );
 		}
 
 		$row_html = '<ul>';
@@ -298,7 +306,42 @@ class ActionScheduler_ListTable extends ActionScheduler_Abstract_ListTable {
 		}
 		$row_html .= '</ul>';
 
-		return apply_filters( 'action_scheduler_list_table_column_args', $row_html, $row );
+		return $this->maybe_collapse_args_html( apply_filters( 'action_scheduler_list_table_column_args', $row_html, $row ) );
+	}
+
+	/**
+	 * Wraps the HTML for the arguments column in a disclosure widget if its text is long, so that it is collapsed by
+	 * default and can be expanded on demand. Shorter arguments are left as they are.
+	 *
+	 * This is applied after the action_scheduler_list_table_column_args filter, so that callbacks continue to receive
+	 * the same markup as before.
+	 *
+	 * @param mixed $args_html The (filtered) HTML for the arguments column.
+	 *
+	 * @return mixed
+	 */
+	private function maybe_collapse_args_html( $args_html ) {
+		if ( ! is_string( $args_html ) ) {
+			return $args_html;
+		}
+
+		$length = mb_strlen( html_entity_decode( wp_strip_all_tags( $args_html ), ENT_QUOTES, 'UTF-8' ) );
+
+		if ( $length <= self::ARGS_COLLAPSE_LENGTH ) {
+			return $args_html;
+		}
+
+		return sprintf(
+			'<details><summary>%1$s</summary>%2$s</details>',
+			esc_html(
+				sprintf(
+					/* translators: %s: number of characters. */
+					_n( 'Arguments (%s character)', 'Arguments (%s characters)', $length, 'action-scheduler' ),
+					number_format_i18n( $length )
+				)
+			),
+			$args_html
+		);
 	}
 
 	/**

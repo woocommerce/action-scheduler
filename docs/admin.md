@@ -18,6 +18,8 @@ Among other tasks, from the admin screen you can:
 * Sort scheduled actions by hook name, scheduled date, group, claim ID or status.
 * Search for actions by hook, args, action ID or claim ID.
 
+Long arguments (more than 500 characters, as displayed) are collapsed by default, so that they do not stretch the table. To expand them, select the summary shown in their place in the **Arguments** column, which states their length.
+
 Still have questions? Check out the [FAQ](/faq).
 
 ![](https://cldup.com/5BA2BNB1sw.png)

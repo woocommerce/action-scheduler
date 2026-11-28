@@ -72,6 +72,7 @@ abstract class ActionScheduler_Logger {
 		add_action( 'action_scheduler_unexpected_shutdown', array( $this, 'log_unexpected_shutdown' ), 10, 2 );
 		add_action( 'action_scheduler_reset_action', array( $this, 'log_reset_action' ), 10, 1 );
 		add_action( 'action_scheduler_execution_ignored', array( $this, 'log_ignored_action' ), 10, 2 );
+		add_action( 'action_scheduler_rescheduled_during_execution', array( $this, 'log_rescheduled_during_execution' ), 10, 2 );
 		add_action( 'action_scheduler_failed_fetch_action', array( $this, 'log_failed_fetch_action' ), 10, 2 );
 		add_action( 'action_scheduler_failed_to_schedule_next_instance', array( $this, 'log_failed_schedule_next_instance' ), 10, 2 );
 		add_action( 'action_scheduler_bulk_cancel_actions', array( $this, 'bulk_log_cancel_actions' ), 10, 1 );
@@ -207,6 +208,17 @@ abstract class ActionScheduler_Logger {
 			$message = __( 'action ignored', 'action-scheduler' );
 		}
 		$this->log( $action_id, $message );
+	}
+
+	/**
+	 * Log that an action scheduled a new action with the same hook while it was being executed.
+	 *
+	 * @param int $action_id     ID of the action being executed.
+	 * @param int $new_action_id ID of the newly scheduled action.
+	 */
+	public function log_rescheduled_during_execution( $action_id, $new_action_id ) {
+		/* translators: %d: ID of the newly scheduled action */
+		$this->log( $action_id, sprintf( __( 'action rescheduled itself during execution (new action ID: %d)', 'action-scheduler' ), $new_action_id ) );
 	}
 
 	/**

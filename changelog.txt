@@ -1,6 +1,7 @@
 *** Changelog ***
 
 = 4.3.0 - xxxx-xx-xx =
+* Enhancement - Collapse long action arguments on the Scheduled Actions screen behind an expandable summary, so that a single action with large arguments no longer stretches its row far down the page.
 * Fix - Prevent a fatal error when a non-recurring action fails after another process has deleted it.
 * Fix - Stop the queue runner when a claim cannot be created (for example, because the claims table is missing), rather than running unclaimed actions and looping over already-finished ones.
 * Add - Allow action args of up to 65,535 characters (encoded as JSON), up from 8,000, with `as_supports( 'large_args' )` feature detection. This widens the `extended_args` column of the actions table.
